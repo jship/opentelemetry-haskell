@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           hotel-api-trace
-version:        0.0.0.0
+version:        0.0.0
 synopsis:       STUB
 description:    @hotel@ STUB
 category:       System
@@ -29,7 +29,6 @@ source-repository head
 
 library
   exposed-modules:
-      OTel.API
       OTel.API.Trace
       OTel.API.Trace.Internal
   other-modules:

@@ -1,5 +1,5 @@
 name: hotel-api-trace
-version: '0.0.0.0'
+version: '0.0.0'
 github: "jship/opentelemetry-haskell"
 license: Apache
 license-file: LICENSE

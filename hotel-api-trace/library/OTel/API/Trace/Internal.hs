@@ -1,35 +1,36 @@
 {-# LANGUAGE BlockArguments #-}
-{-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE StrictData #-}
-{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 module OTel.API.Trace.Internal
-  ( -- * Synopsis
-    -- $synopsis
+  ( -- * Disclaimer
+    -- $disclaimer
     MonadTracing(..)
   , trace
   , traceCS
 
+  , TracingT(..)
+  , runTracingT
+  , mapTracingT
+
+  , NoTracingT(..)
+  , runNoTracingT
+  , mapNoTracingT
+
+  , Tracer(..)
+  , Span(..)
   , SpanContext(..)
   , TraceId(..)
   , SpanId(..)
   , TraceFlags(..)
-  , TraceState
-  , Span(..)
-
-  , Tracer(..)
-  , TracingT(..)
-  , mapTracingT
-
-  , NoTracingT(..)
-  , mapNoTracingT
+  , TraceState(..)
+  , Nanoseconds(..)
+  , Attributes(..)
+  , SpanEvents(..)
+  , SpanLinks(..)
   ) where
 
 import Data.Text (Text)
@@ -75,59 +76,6 @@ import qualified Control.Monad.Trans.Writer.Strict as Trans.Writer.Strict
 import qualified Control.Monad.Writer.Class as MTL.Writer.Class
 import qualified System.IO.Unsafe as IO.Unsafe
 
-data SpanContext = SpanContext
-  { spanContextTraceId :: TraceId
-  , spanContextSpanId :: SpanId
-  , spanContextTraceFlags :: TraceFlags
-  , spanContextTraceState :: TraceState
-  } deriving stock (Eq, Generic, Show)
-
-data TraceId = TraceId
-  { traceIdHi :: Word64
-  , traceIdLo :: Word64
-  } deriving stock (Eq, Generic, Show)
-
-data SpanId = SpanId
-  { spanIdLo :: Word64
-  } deriving stock (Eq, Generic, Show)
-
-newtype TraceFlags = TraceFlags
-  { unTraceFlags :: Word8
-  } deriving stock (Eq, Generic, Show)
-
-newtype TraceState = TraceState
-  { unTraceState :: [(Text, Text)] -- TODO: Better type
-  } deriving stock (Eq, Generic, Show)
-
-data Span = Span
-  { spanParent :: Maybe SpanId
-  , spanContext :: SpanContext
-  , spanName :: Text
-  , spanStartNanoseconds :: Word64
-  , spanEnd :: UTCTime
-  , spanAttributes :: Attributes
-  , spanEvents :: SpanEvents
-  , spanLinks :: SpanLinks
-  } deriving stock (Eq, Generic, Show)
-
-newtype Nanoseconds = Nanoseconds
-  { unNanoseconds :: Word64
-  } deriving stock (Eq, Generic, Show)
-
-newtype Attributes = Attributes
-  { unAttributes :: [(Text, Text)] -- TODO: Better type
-  } deriving stock (Eq, Generic, Show)
-
-newtype SpanEvents = SpanEvents
-  { unSpanEvents :: [(Text, Text)] -- TODO: Better type
-  } deriving stock (Eq, Generic, Show)
-
-newtype SpanLinks = SpanLinks
-  { unSpanLinks :: [(Text, Text)] -- TODO: Better type
-  } deriving stock (Eq, Generic, Show)
-
--------------------------------------------------------------------------------
-
 class (Monad m) => MonadTracing m where
   monadTracingTrace :: CallStack -> m a -> m a
 
@@ -136,8 +84,6 @@ trace = traceCS callStack
 
 traceCS :: (MonadTracing m) => CallStack -> m a -> m a
 traceCS = monadTracingTrace
-
--------------------------------------------------------------------------------
 
 instance (MonadTracing m, Monoid w) => MonadTracing (AccumT w m) where
   monadTracingTrace = Trans.Accum.mapAccumT . monadTracingTrace
@@ -181,15 +127,8 @@ instance (MonadTracing m, Monoid w) => MonadTracing (Trans.Writer.Lazy.WriterT w
 instance (MonadTracing m, Monoid w) => MonadTracing (Trans.Writer.Strict.WriterT w m) where
   monadTracingTrace = Trans.Writer.Strict.mapWriterT . monadTracingTrace
 
--------------------------------------------------------------------------------
-
-data Tracer = Tracer
-  { startTrace :: Maybe SpanContext -> IO Span
-  , reportTrace :: Span -> IO ()
-  }
-
 newtype TracingT m a = TracingT
-  { runTracingT :: ReaderT Tracer m a
+  { unTracingT :: ReaderT Tracer m a
   } deriving
       ( Applicative
       , Functor
@@ -207,6 +146,8 @@ newtype TracingT m a = TracingT
       , MTL.State.MonadState s
       , MTL.Writer.Class.MonadWriter w
       , Unlift.MonadUnliftIO
+      -- TODO: MonadLogger instance
+      -- TODO: Add @since annotations
       ) via (ReaderT Tracer m)
 
 instance MonadTrans TracingT where
@@ -218,31 +159,31 @@ instance (MTL.Reader.MonadReader r m) => MTL.Reader.MonadReader r (TracingT m) w
   local = mapTracingT . MTL.Reader.local
 
 instance (MonadIO m, Exceptions.MonadMask m) => MonadTracing (TracingT m) where
-  monadTracingTrace :: CallStack -> TracingT m a -> TracingT m a
   monadTracingTrace _cs action =
     TracingT $ ReaderT \tracer -> do
       Exceptions.bracket (start tracer) (end tracer) \span -> do
         Context.use spanContextStore (spanContext span) do
-          runReaderT (runTracingT action) tracer
+          runTracingT action tracer
     where
     start tracer = do
       mSpanContext <- Context.mineMay spanContextStore
       liftIO $ startTrace tracer mSpanContext
-    end tracer span = liftIO $ reportTrace tracer span
+    end tracer span = liftIO $ endTrace tracer span
+
+runTracingT :: TracingT m a -> Tracer -> m a
+runTracingT action = runReaderT (unTracingT action)
 
 mapTracingT :: (m a -> n b) -> TracingT m a -> TracingT n b
-mapTracingT f x = TracingT $ ReaderT \tracer ->
-  f $ runReaderT (runTracingT x) tracer
+mapTracingT f action = TracingT $ ReaderT \tracer ->
+  f $ runTracingT action tracer
 
 spanContextStore :: Context.Store SpanContext
 spanContextStore =
   IO.Unsafe.unsafePerformIO $ Context.newStore Context.noPropagation $ Nothing
 {-# NOINLINE spanContextStore #-}
 
--------------------------------------------------------------------------------
-
 newtype NoTracingT m a = NoTracingT
-  { runNoTracingT :: m a
+  { unNoTracingT :: m a
   } deriving
       ( Applicative
       , Functor
@@ -269,9 +210,71 @@ instance MonadTrans NoTracingT where
 instance (Monad m) => MonadTracing (NoTracingT m) where
   monadTracingTrace _cs action = action
 
+runNoTracingT :: NoTracingT m a -> m a
+runNoTracingT = unNoTracingT
+
 mapNoTracingT :: (m a -> n b) -> NoTracingT m a -> NoTracingT n b
 mapNoTracingT f = NoTracingT . f . runNoTracingT
 
--- $synopsis
+data Tracer = Tracer
+  { startTrace :: Maybe SpanContext -> IO Span
+  , endTrace :: Span -> IO ()
+
+  }
+data Span = Span
+  { spanParent :: Maybe SpanId
+  , spanContext :: SpanContext
+  , spanName :: Text
+  , spanStartNanoseconds :: Word64
+  , spanEnd :: UTCTime
+  , spanAttributes :: Attributes
+  , spanEvents :: SpanEvents
+  , spanLinks :: SpanLinks
+  } deriving stock (Eq, Generic, Show)
+
+data SpanContext = SpanContext
+  { spanContextTraceId :: TraceId
+  , spanContextSpanId :: SpanId
+  , spanContextTraceFlags :: TraceFlags
+  , spanContextTraceState :: TraceState
+  } deriving stock (Eq, Generic, Show)
+
+data TraceId = TraceId
+  { traceIdHi :: Word64
+  , traceIdLo :: Word64
+  } deriving stock (Eq, Generic, Show)
+
+data SpanId = SpanId
+  { spanIdLo :: Word64
+  } deriving stock (Eq, Generic, Show)
+
+newtype TraceFlags = TraceFlags
+  { unTraceFlags :: Word8
+  } deriving stock (Eq, Generic, Show)
+
+newtype TraceState = TraceState
+  { unTraceState :: [(Text, Text)] -- TODO: Better type
+  } deriving stock (Eq, Generic, Show)
+
+newtype Nanoseconds = Nanoseconds
+  { unNanoseconds :: Word64
+  } deriving stock (Eq, Generic, Show)
+
+newtype Attributes = Attributes
+  { unAttributes :: [(Text, Text)] -- TODO: Better type
+  } deriving stock (Eq, Generic, Show)
+
+newtype SpanEvents = SpanEvents
+  { unSpanEvents :: [(Text, Text)] -- TODO: Better type
+  } deriving stock (Eq, Generic, Show)
+
+newtype SpanLinks = SpanLinks
+  { unSpanLinks :: [(Text, Text)] -- TODO: Better type
+  } deriving stock (Eq, Generic, Show)
+
+
+-- $disclaimer
 --
--- @monad-tracer@ STUB
+-- In general, changes to this module will not be reflected in the library's
+-- version updates. Direct use of this module should be done with utmost care,
+-- otherwise invariants will easily be violated.
