@@ -1,0 +1,41 @@
+name: hotel-api-trace
+version: '0.0.0.0'
+github: "jship/opentelemetry-haskell"
+license: Apache
+license-file: LICENSE
+copyright: 2022 (c) Jason Shipman
+author: "Jason Shipman"
+maintainer: "Jason Shipman"
+synopsis: STUB
+description: |
+  @hotel@ STUB
+category: System
+
+extra-source-files:
+- package.yaml
+- README.md
+- LICENSE
+- CHANGELOG.md
+
+default-extensions:
+- NoImplicitPrelude
+
+ghc-options:
+  - -Wall
+  - -fwarn-tabs
+  - -Wincomplete-uni-patterns
+  - -Wredundant-constraints
+
+library:
+  dependencies:
+  - aeson >=1.5.2.0 && <2.1.3.0
+  - base >=4.11.1.0 && <5
+  - context >=0.2.0.0 && <0.3
+  - exceptions
+  - transformers
+  - mtl >=2.3
+  - safe-exceptions
+  - text
+  - time
+  - unliftio-core
+  source-dirs: library
