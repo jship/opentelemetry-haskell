@@ -15,7 +15,21 @@ module OTel.API.Trace
 
   , Tracer(..)
 
+  , Context
+  , useSpanContext
+
+  , SpanDetails
+  , defaultSpanDetails
+
   , Span
+
+  , SpanLineageSource(..)
+  , implicitSpanLineageSource
+  , explicitSpanLineageSource
+
+  , SpanLineage
+  , rootSpanLineage
+  , childSpanLineage
 
   , SpanContext
   , TraceId
@@ -23,7 +37,7 @@ module OTel.API.Trace
   , TraceFlags
   , TraceState
 
-  , Nanoseconds
+  , Timestamp
 
   , Attributes
 
@@ -37,3 +51,4 @@ import OTel.API.Trace.Internal
 -- $synopsis
 --
 -- @hotel-api-trace@ STUB
+--
