@@ -1,6 +1,5 @@
 resolver: nightly-2022-07-10
 packages:
-  - ./hotel-api
   - ./hotel-api-trace
 extra-deps:
 - exceptions-0.10.5@sha256:b2c634a95ba2a68e0df3ae67d006f0dabb02edbe4dc77b321133551e308ca047,2832

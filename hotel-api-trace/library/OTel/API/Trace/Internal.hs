@@ -2,7 +2,11 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE UndecidableInstances #-}
 module OTel.API.Trace.Internal
@@ -11,6 +15,7 @@ module OTel.API.Trace.Internal
     MonadTracing(..)
   , trace
   , traceCS
+  , updateSpan
 
   , TracingT(..)
   , runTracingT
@@ -23,12 +28,16 @@ module OTel.API.Trace.Internal
   , Tracer(..)
 
   , Context(..)
-  , useSpanContext
+  , activateSpan
 
   , SpanDetails(..)
   , defaultSpanDetails
 
+  , SpanUpdate(..)
+  , defaultSpanUpdate
+
   , Span(..)
+  , EndedSpan(..)
 
   , SpanLineageSource(..)
   , implicitSpanLineageSource
@@ -37,6 +46,18 @@ module OTel.API.Trace.Internal
   , SpanLineage(..)
   , rootSpanLineage
   , childSpanLineage
+
+  , SpanKind(..)
+  , serverSpanKind
+  , clientSpanKind
+  , producerSpanKind
+  , consumerSpanKind
+  , internalSpanKind
+
+  , SpanStatus(..)
+  , unsetSpanStatus
+  , okSpanStatus
+  , errorSpanStatus
 
   , SpanContext(..)
   , TraceId(..)
@@ -69,12 +90,14 @@ import Control.Monad.Trans.Select (SelectT)
 import Control.Monad.Trans.State (StateT)
 import Data.String (IsString(fromString))
 import Data.Text (Text)
-import Data.Time (UTCTime)
 import Data.Word (Word64, Word8)
 import GHC.Generics (Generic)
-import GHC.Stack (CallStack, HasCallStack, callStack)
+import GHC.Stack (CallStack, HasCallStack, SrcLoc, callStack)
 import Prelude hiding (span)
 import qualified Context
+import qualified Context.Internal
+import qualified Context.Internal as Context.Internal.Store (Store(ref))
+import qualified Control.Concurrent as Concurrent
 import qualified Control.Exception.Safe as Exceptions
 import qualified Control.Monad.Accum as MTL.Accum
 import qualified Control.Monad.Cont as MTL.Cont
@@ -99,22 +122,28 @@ import qualified Control.Monad.Trans.Writer.CPS as Trans.Writer.CPS
 import qualified Control.Monad.Trans.Writer.Lazy as Trans.Writer.Lazy
 import qualified Control.Monad.Trans.Writer.Strict as Trans.Writer.Strict
 import qualified Control.Monad.Writer.Class as MTL.Writer.Class
+import qualified Data.IORef as IORef
+import qualified Data.Map.Strict as Map
+import qualified Data.Maybe as Maybe
 import qualified Data.Text as Text
 
+foo :: (MonadTracing m) => m ()
+foo = do
+  trace "abc" defaultSpanDetails do
+    trace "def" defaultSpanDetails do
+
+      pure ()
+
 class (Monad m) => MonadTracing m where
-  monadTracingTrace
-    :: CallStack
-    -> SpanName
-    -> SpanDetails
-    -> (Span -> m a)
-    -> m a
+  monadTracingTrace :: CallStack -> SpanName -> SpanDetails -> m a -> m a
+  monadTracingUpdateSpan :: SpanUpdate -> Span -> m (Maybe Span)
 
 trace
   :: forall m a
    . (MonadTracing m, HasCallStack)
   => SpanName
   -> SpanDetails
-  -> (Span -> m a)
+  -> m a
   -> m a
 trace = traceCS callStack
 
@@ -124,52 +153,74 @@ traceCS
   => CallStack
   -> SpanName
   -> SpanDetails
-  -> (Span -> m a)
   -> m a
-traceCS cs spanName = monadTracingTrace cs spanName
+  -> m a
+traceCS = monadTracingTrace
+
+updateSpan
+  :: forall m
+   . (MonadTracing m)
+  => SpanUpdate
+  -> Span
+  -> m (Maybe Span)
+updateSpan = monadTracingUpdateSpan
 
 -- TODO: Account for change where now the Span is passed to callback
 instance (MonadTracing m, Monoid w) => MonadTracing (AccumT w m) where
   monadTracingTrace cs spanName = Trans.Accum.mapAccumT . monadTracingTrace cs spanName
+  monadTracingUpdateSpan spanUpdate = lift . monadTracingUpdateSpan spanUpdate
 
 instance (MonadTracing m) => MonadTracing (ContT r m) where
   monadTracingTrace cs spanName = Trans.Cont.mapContT . monadTracingTrace cs spanName
+  monadTracingUpdateSpan spanUpdate = lift . monadTracingUpdateSpan spanUpdate
 
 instance (MonadTracing m) => MonadTracing (ExceptT e m) where
   monadTracingTrace cs spanName = Trans.Except.mapExceptT . monadTracingTrace cs spanName
+  monadTracingUpdateSpan spanUpdate = lift . monadTracingUpdateSpan spanUpdate
 
 instance (MonadTracing m) => MonadTracing (IdentityT m) where
   monadTracingTrace cs spanName = Trans.Identity.mapIdentityT . monadTracingTrace cs spanName
+  monadTracingUpdateSpan spanUpdate = lift . monadTracingUpdateSpan spanUpdate
 
 instance (MonadTracing m) => MonadTracing (MaybeT m) where
   monadTracingTrace cs spanName = Trans.Maybe.mapMaybeT . monadTracingTrace cs spanName
+  monadTracingUpdateSpan spanUpdate = lift . monadTracingUpdateSpan spanUpdate
 
 instance (MonadTracing m) => MonadTracing (ReaderT r m) where
   monadTracingTrace cs spanName = Trans.Reader.mapReaderT . monadTracingTrace cs spanName
+  monadTracingUpdateSpan spanUpdate = lift . monadTracingUpdateSpan spanUpdate
 
 instance (MonadTracing m) => MonadTracing (StateT r m) where
   monadTracingTrace cs spanName = Trans.State.mapStateT . monadTracingTrace cs spanName
+  monadTracingUpdateSpan spanUpdate = lift . monadTracingUpdateSpan spanUpdate
 
 instance (MonadTracing m, Monoid w) => MonadTracing (Trans.RWS.CPS.RWST r w s m) where
   monadTracingTrace cs spanName = Trans.RWS.CPS.mapRWST . monadTracingTrace cs spanName
+  monadTracingUpdateSpan spanUpdate = lift . monadTracingUpdateSpan spanUpdate
 
 instance (MonadTracing m, Monoid w) => MonadTracing (Trans.RWS.Lazy.RWST r w s m) where
   monadTracingTrace cs spanName = Trans.RWS.Lazy.mapRWST . monadTracingTrace cs spanName
+  monadTracingUpdateSpan spanUpdate = lift . monadTracingUpdateSpan spanUpdate
 
 instance (MonadTracing m, Monoid w) => MonadTracing (Trans.RWS.Strict.RWST r w s m) where
   monadTracingTrace cs spanName = Trans.RWS.Strict.mapRWST . monadTracingTrace cs spanName
+  monadTracingUpdateSpan spanUpdate = lift . monadTracingUpdateSpan spanUpdate
 
 instance (MonadTracing m) => MonadTracing (SelectT r m) where
   monadTracingTrace cs spanName = Trans.Select.mapSelectT . monadTracingTrace cs spanName
+  monadTracingUpdateSpan spanUpdate = lift . monadTracingUpdateSpan spanUpdate
 
 instance (MonadTracing m, Monoid w) => MonadTracing (Trans.Writer.CPS.WriterT w m) where
   monadTracingTrace cs spanName = Trans.Writer.CPS.mapWriterT . monadTracingTrace cs spanName
+  monadTracingUpdateSpan spanUpdate = lift . monadTracingUpdateSpan spanUpdate
 
 instance (MonadTracing m, Monoid w) => MonadTracing (Trans.Writer.Lazy.WriterT w m) where
   monadTracingTrace cs spanName = Trans.Writer.Lazy.mapWriterT . monadTracingTrace cs spanName
+  monadTracingUpdateSpan spanUpdate = lift . monadTracingUpdateSpan spanUpdate
 
 instance (MonadTracing m, Monoid w) => MonadTracing (Trans.Writer.Strict.WriterT w m) where
   monadTracingTrace cs spanName = Trans.Writer.Strict.mapWriterT . monadTracingTrace cs spanName
+  monadTracingUpdateSpan spanUpdate = lift . monadTracingUpdateSpan spanUpdate
 
 newtype TracingT m a = TracingT
   { unTracingT :: ReaderT Tracer m a
@@ -206,12 +257,33 @@ instance (MonadIO m, Exceptions.MonadMask m) => MonadTracing (TracingT m) where
   monadTracingTrace _cs spanName spanDetails action =
     TracingT $ ReaderT \tracer -> do
       Exceptions.bracket (start tracer) (end tracer) \span -> do
-        let spanCtx = spanContext span
-        useSpanContext (tracerContext tracer) spanCtx do
+        activateSpan (tracerContext tracer) span do
           runTracingT action tracer
     where
     start tracer = liftIO $ tracerStartSpan tracer spanName spanDetails
     end tracer span = liftIO $ tracerEndSpan tracer span
+
+  monadTracingUpdateSpan spanUpdate span = do
+    TracingT $ ReaderT \tracer -> do
+      liftIO $ veryUnsafeSpanReplace (tracerContext tracer) span'
+    where
+    span' =
+      span
+        { spanName =
+            Maybe.fromMaybe (spanName span) spanUpdateName
+        , spanStatus =
+            Maybe.fromMaybe (spanStatus span) $ spanUpdateStatus
+        , spanAttributes =
+            maybe id (\as -> (<> as)) spanUpdateAttributes $ spanAttributes span
+        , spanEvents =
+            maybe id (\es -> (<> es)) spanUpdateEvents $ spanEvents span
+        }
+    SpanUpdate
+      { spanUpdateName
+      , spanUpdateStatus
+      , spanUpdateAttributes
+      , spanUpdateEvents
+      } = spanUpdate
 
 runTracingT :: TracingT m a -> Tracer -> m a
 runTracingT action = runReaderT (unTracingT action)
@@ -220,6 +292,31 @@ mapTracingT :: (m a -> n b) -> TracingT m a -> TracingT n b
 mapTracingT f action =
   TracingT $ ReaderT \tracer -> do
     f $ runTracingT action tracer
+
+veryUnsafeSpanReplace :: Context -> Span -> IO (Maybe Span)
+veryUnsafeSpanReplace context replacementSpan = do
+  threadId <- Concurrent.myThreadId
+  IORef.atomicModifyIORef' ref
+    \state@Context.Internal.State { Context.Internal.stacks } ->
+      case Map.lookup threadId stacks of
+        Nothing ->
+          (state, Nothing)
+        Just [] -> bug "veryUnsafeSpanReplace"
+        Just spans ->
+          ( state
+              { Context.Internal.stacks =
+                  -- TODO: Change to a fold
+                  flip (Map.insert threadId) stacks $ flip fmap spans \span ->
+                    if spanContext span /= spanContext replacementSpan then
+                      span
+                    else
+                      replacementSpan
+              }
+          , Just undefined -- TODO: Make sure we actually find the thing in the fold above
+          )
+  where
+  Context.Internal.Store { Context.Internal.Store.ref } = contextStore
+  Context { contextStore } = context
 
 newtype NoTracingT m a = NoTracingT
   { unNoTracingT :: m a
@@ -248,6 +345,7 @@ instance MonadTrans NoTracingT where
 
 instance (Monad m) => MonadTracing (NoTracingT m) where
   monadTracingTrace _cs _spanName _spanDetails action = action
+  monadTracingUpdateSpan _spanUpdate _span = pure Nothing
 
 runNoTracingT :: NoTracingT m a -> m a
 runNoTracingT = unNoTracingT
@@ -263,21 +361,22 @@ data Tracer = Tracer
   }
 
 newtype Context = Context
-  { contextStore :: Context.Store SpanContext
+  { contextStore :: Context.Store Span
   }
 
-useSpanContext
+activateSpan
   :: forall m a
    . (MonadIO m, Exceptions.MonadMask m)
   => Context
-  -> SpanContext
+  -> Span
   -> m a
   -> m a
-useSpanContext Context { contextStore } = Context.use contextStore
+activateSpan Context { contextStore } = Context.use contextStore
 
 data SpanDetails = SpanDetails
   { spanDetailsLineageSource :: SpanLineageSource
   , spanDetailsStart :: TimestampSource
+  , spanDetailsKind :: SpanKind
   , spanDetailsAttributes :: Attributes
   , spanDetailsLinks :: SpanLinks
   } deriving stock (Eq, Generic, Show)
@@ -287,8 +386,25 @@ defaultSpanDetails =
   SpanDetails
     { spanDetailsLineageSource = implicitSpanLineageSource
     , spanDetailsStart = nowTimestampSource
+    , spanDetailsKind = internalSpanKind
     , spanDetailsAttributes = mempty
     , spanDetailsLinks = mempty
+    }
+
+data SpanUpdate = SpanUpdate
+  { spanUpdateName :: Maybe Text
+  , spanUpdateStatus :: Maybe SpanStatus
+  , spanUpdateAttributes :: Maybe Attributes
+  , spanUpdateEvents :: Maybe SpanEvents
+  }
+
+defaultSpanUpdate :: SpanUpdate
+defaultSpanUpdate =
+  SpanUpdate
+    { spanUpdateName = Nothing
+    , spanUpdateStatus = Nothing
+    , spanUpdateAttributes = Nothing
+    , spanUpdateEvents = Nothing
     }
 
 newtype SpanName = SpanName
@@ -303,11 +419,28 @@ data Span = Span
   { spanLineage :: SpanLineage
   , spanContext :: SpanContext
   , spanName :: Text
+  , spanStatus :: SpanStatus
   , spanStart :: Timestamp
-  , spanEnd :: UTCTime
+  , spanKind :: SpanKind
   , spanAttributes :: Attributes
   , spanEvents :: SpanEvents
   , spanLinks :: SpanLinks
+  , spanIsRecording :: Bool
+  , spanSrcLoc :: SrcLoc
+  } deriving stock (Eq, Generic, Show)
+
+data EndedSpan = EndedSpan
+  { endedSpanLineage :: SpanLineage
+  , endedSpanContext :: SpanContext
+  , endedSpanName :: Text
+  , endedSpanStatus :: SpanStatus
+  , endedSpanStart :: Timestamp
+  , endedSpanEnd :: Timestamp
+  , endedSpanKind :: SpanKind
+  , endedSpanAttributes :: Attributes
+  , endedSpanEvents :: SpanEvents
+  , endedSpanLinks :: SpanLinks
+  , endedSpanSrcLoc :: SrcLoc
   } deriving stock (Eq, Generic, Show)
 
 data SpanLineageSource
@@ -331,6 +464,44 @@ rootSpanLineage = SpanLineageRoot
 
 childSpanLineage :: SpanContext -> SpanLineage
 childSpanLineage = SpanLineageChildOf
+
+data SpanKind
+  = SpanKindServer
+  | SpanKindClient
+  | SpanKindProducer
+  | SpanKindConsumer
+  | SpanKindInternal
+  deriving stock (Eq, Generic, Show)
+
+serverSpanKind :: SpanKind
+serverSpanKind = SpanKindServer
+
+clientSpanKind :: SpanKind
+clientSpanKind = SpanKindClient
+
+producerSpanKind :: SpanKind
+producerSpanKind = SpanKindProducer
+
+consumerSpanKind :: SpanKind
+consumerSpanKind = SpanKindConsumer
+
+internalSpanKind :: SpanKind
+internalSpanKind = SpanKindInternal
+
+data SpanStatus
+  = SpanStatusUnset
+  | SpanStatusOk
+  | SpanStatusError Text
+  deriving stock (Eq, Generic, Show)
+
+unsetSpanStatus :: SpanStatus
+unsetSpanStatus = SpanStatusUnset
+
+okSpanStatus :: SpanStatus
+okSpanStatus = SpanStatusOk
+
+errorSpanStatus :: Text -> SpanStatus
+errorSpanStatus = SpanStatusError
 
 data SpanContext = SpanContext
   { spanContextTraceId :: TraceId
@@ -368,7 +539,7 @@ atTimestampSource :: Timestamp -> TimestampSource
 atTimestampSource = TimestampSourceAt
 
 newtype Timestamp = Timestamp
-  { unTimestamp :: Word64
+  { unTimestamp :: Word64 -- ^ nanoseconds
   } deriving stock (Eq, Generic, Show)
 
 newtype Attributes = Attributes
@@ -379,11 +550,19 @@ newtype Attributes = Attributes
 newtype SpanEvents = SpanEvents
   { unSpanEvents :: [(Text, Text)] -- TODO: Better type
   } deriving stock (Eq, Generic, Show)
+    deriving newtype (Semigroup, Monoid)
 
 newtype SpanLinks = SpanLinks
   { unSpanLinks :: [(Text, Text)] -- TODO: Better type
   } deriving stock (Eq, Generic, Show)
     deriving newtype (Semigroup, Monoid)
+
+bug :: HasCallStack => String -> a
+bug prefix =
+  error $
+    "OTel.API.Trace.Internal." <> prefix <> ": Impossible! (if you see this "
+      <> "message, please report it as a bug at "
+      <> "https://github.com/jship/opentelemetry-haskell)"
 
 -- $disclaimer
 --

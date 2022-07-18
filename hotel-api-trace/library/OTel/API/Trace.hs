@@ -16,20 +16,36 @@ module OTel.API.Trace
   , Tracer(..)
 
   , Context
-  , useSpanContext
+  , activateSpan
 
-  , SpanDetails
+  , SpanDetails -- TODO: Export fields
   , defaultSpanDetails
 
-  , Span
+  , SpanUpdate
+  , defaultSpanUpdate -- TODO: Export fields
 
-  , SpanLineageSource(..)
+  , Span(..)
+  , EndedSpan(..)
+
+  , SpanLineageSource
   , implicitSpanLineageSource
   , explicitSpanLineageSource
 
   , SpanLineage
   , rootSpanLineage
   , childSpanLineage
+
+  , SpanKind
+  , serverSpanKind
+  , clientSpanKind
+  , producerSpanKind
+  , consumerSpanKind
+  , internalSpanKind
+
+  , SpanStatus
+  , unsetSpanStatus
+  , okSpanStatus
+  , errorSpanStatus
 
   , SpanContext
   , TraceId
