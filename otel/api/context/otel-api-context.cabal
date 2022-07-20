@@ -1,0 +1,53 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.34.4.
+--
+-- see: https://github.com/sol/hpack
+
+name:           otel-api-context
+version:        0.0.0
+synopsis:       STUB
+description:    @otel-api-context@ STUB
+category:       System
+homepage:       https://github.com/jship/opentelemetry-haskell#readme
+bug-reports:    https://github.com/jship/opentelemetry-haskell/issues
+author:         Jason Shipman
+maintainer:     Jason Shipman
+copyright:      2022 (c) Jason Shipman
+license:        Apache-2.0
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    package.yaml
+    README.md
+    LICENSE
+    CHANGELOG.md
+
+source-repository head
+  type: git
+  location: https://github.com/jship/opentelemetry-haskell
+
+library
+  exposed-modules:
+      OTel.API.Context
+      OTel.API.Context.Internal
+  other-modules:
+      Paths_otel_api_context
+  hs-source-dirs:
+      library
+  default-extensions:
+      NoImplicitPrelude
+  ghc-options: -Wall -fwarn-tabs -Wincomplete-uni-patterns -Wredundant-constraints
+  build-depends:
+      aeson >=1.5.2.0 && <2.1.3.0
+    , base >=4.11.1.0 && <5
+    , containers
+    , context >=0.2.0.0 && <0.3
+    , exceptions
+    , mtl >=2.3
+    , safe-exceptions
+    , text
+    , time
+    , transformers
+    , unliftio-core
+  default-language: Haskell2010

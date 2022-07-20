@@ -4,17 +4,17 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 
-name:           hotel-api-trace
+name:           otel-api-trace
 version:        0.0.0
 synopsis:       STUB
-description:    @hotel@ STUB
+description:    @otel-api-trace@ STUB
 category:       System
 homepage:       https://github.com/jship/opentelemetry-haskell#readme
 bug-reports:    https://github.com/jship/opentelemetry-haskell/issues
 author:         Jason Shipman
 maintainer:     Jason Shipman
 copyright:      2022 (c) Jason Shipman
-license:        Apache
+license:        Apache-2.0
 license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
@@ -32,7 +32,7 @@ library
       OTel.API.Trace
       OTel.API.Trace.Internal
   other-modules:
-      Paths_hotel_api_trace
+      Paths_otel_api_trace
   hs-source-dirs:
       library
   default-extensions:

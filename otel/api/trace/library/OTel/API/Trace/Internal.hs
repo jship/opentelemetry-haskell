@@ -9,6 +9,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE FunctionalDependencies #-}
 module OTel.API.Trace.Internal
   ( -- * Disclaimer
     -- $disclaimer
@@ -127,12 +128,25 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Maybe as Maybe
 import qualified Data.Text as Text
 
-foo :: (MonadTracing m) => m ()
-foo = do
-  trace "abc" defaultSpanDetails do
-    trace "def" defaultSpanDetails do
+data Context = Context
+  { contextStoreSpan :: Context.Store Span
+  }
 
-      pure ()
+activateSpan
+  :: forall m a
+   . (MonadIO m, Exceptions.MonadMask m)
+  => Context
+  -> Span
+  -> m a
+  -> m a
+activateSpan Context { contextStoreSpan } = Context.use contextStoreSpan
+
+--foo :: (MonadTracing m) => m ()
+--foo = do
+--  trace "abc" defaultSpanDetails do
+--    trace "def" defaultSpanDetails do
+--
+--      pure ()
 
 class (Monad m) => MonadTracing m where
   monadTracingTrace :: CallStack -> SpanName -> SpanDetails -> m a -> m a
@@ -315,8 +329,8 @@ veryUnsafeSpanReplace context replacementSpan = do
           , Just undefined -- TODO: Make sure we actually find the thing in the fold above
           )
   where
-  Context.Internal.Store { Context.Internal.Store.ref } = contextStore
-  Context { contextStore } = context
+  Context.Internal.Store { Context.Internal.Store.ref } = contextStoreSpan
+  Context { contextStoreSpan } = context
 
 newtype NoTracingT m a = NoTracingT
   { unNoTracingT :: m a
@@ -359,19 +373,6 @@ data Tracer = Tracer
   , tracerEndSpan :: Span -> IO ()
   , tracerContext :: Context
   }
-
-newtype Context = Context
-  { contextStore :: Context.Store Span
-  }
-
-activateSpan
-  :: forall m a
-   . (MonadIO m, Exceptions.MonadMask m)
-  => Context
-  -> Span
-  -> m a
-  -> m a
-activateSpan Context { contextStore } = Context.use contextStore
 
 data SpanDetails = SpanDetails
   { spanDetailsLineageSource :: SpanLineageSource

@@ -1,14 +1,14 @@
-name: hotel-api-trace
+name: otel-api-trace
 version: '0.0.0'
 github: "jship/opentelemetry-haskell"
-license: Apache
+license: Apache-2.0
 license-file: LICENSE
 copyright: 2022 (c) Jason Shipman
 author: "Jason Shipman"
 maintainer: "Jason Shipman"
 synopsis: STUB
 description: |
-  @hotel@ STUB
+  @otel-api-trace@ STUB
 category: System
 
 extra-source-files:
