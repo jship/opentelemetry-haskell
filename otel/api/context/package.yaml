@@ -21,22 +21,26 @@ default-extensions:
 - NoImplicitPrelude
 
 ghc-options:
-  - -Wall
-  - -fwarn-tabs
-  - -Wincomplete-uni-patterns
-  - -Wredundant-constraints
+- -Wall
+- -fwarn-tabs
+- -Wincomplete-uni-patterns
+- -Wredundant-constraints
 
 library:
   dependencies:
   - aeson >=1.5.2.0 && <2.1.3.0
   - base >=4.11.1.0 && <5
-  - context >=0.2.0.0 && <0.3
   - containers
+  - context >=0.2.0.0 && <0.3
   - exceptions
-  - transformers
+  - monad-control
+  - monad-logger
   - mtl >=2.3
+  - resourcet
   - safe-exceptions
   - text
   - time
+  - transformers
+  - transformers-base
   - unliftio-core
   source-dirs: library
