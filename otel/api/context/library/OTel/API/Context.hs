@@ -1,13 +1,7 @@
 module OTel.API.Context
   ( -- * Synopsis
     -- $synopsis
-    attachContext
-  , updateContext
-  , getAttachedContext
-  , getAttachedContextKey
-  , getContextStatus
-
-  , MonadContext(..)
+    MonadContext(..)
 
   , ContextT
   , runContextT
