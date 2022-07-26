@@ -1,19 +1,18 @@
 module OTel.API.Context
   ( -- * Synopsis
     -- $synopsis
-    MonadContext(..)
-
+    MonadKeyedContext(..)
+  , MonadContext(..)
   , ContextT
   , runContextT
   , mapContextT
 
-  , ContextKey
-  , ContextStatus
-  , contextStatusAttached
-  , contextStatusDetached
-
   , ContextBackend
   , withContextBackend
+
+  , ContextKey
+  , ContextSnapshot(..)
+  , ContextStatus(..)
   ) where
 
 import OTel.API.Context.Internal

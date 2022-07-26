@@ -13,26 +13,24 @@
 module OTel.API.Context.Internal
   ( -- * Disclaimer
     -- $disclaimer
-    MonadContext(..)
-
+    MonadKeyedContext(..)
+  , MonadContext(..)
   , ContextT(..)
   , runContextT
   , mapContextT
 
   , ContextKey(..)
+  , ContextSnapshot(..)
+  , ContextStatus(..)
+  , ContextBackend(..)
+  , withContextBackend
+
   , ContextRef(..)
   , newContextRef
   , updateContextRef
   , markAsDetached
   , updateContextRefStatus
   , updateContextRefValue
-  , ContextSnapshot(..)
-  , ContextStatus(..)
-  , contextStatusAttached
-  , contextStatusDetached
-
-  , ContextBackend(..)
-  , withContextBackend
   ) where
 
 import Context (Store)
@@ -45,6 +43,7 @@ import Control.Monad.Fix (MonadFix)
 import Control.Monad.IO.Class (MonadIO(liftIO))
 import Control.Monad.IO.Unlift (MonadUnliftIO(withRunInIO))
 import Control.Monad.Logger (LoggingT, MonadLogger)
+import Control.Monad.Reader (MonadReader)
 import Control.Monad.Select (MonadSelect)
 import Control.Monad.State (MonadState)
 import Control.Monad.Trans.Class (MonadTrans(lift))
@@ -71,10 +70,39 @@ import qualified Control.Monad.Trans.Writer.Lazy as Trans.Writer.Lazy
 import qualified Control.Monad.Trans.Writer.Strict as Trans.Writer.Strict
 import qualified Data.IORef as IORef
 
-class (Monad m) => MonadContext ctx m | m -> ctx where
-  attachContext :: ctx -> (ContextKey ctx -> m a) -> m a
-  updateContext :: ContextKey ctx -> (ctx -> ctx) -> m (ContextSnapshot ctx)
+class (Monad m) => MonadKeyedContext ctx m | m -> ctx where
   getContext :: ContextKey ctx -> m (ContextSnapshot ctx)
+  updateContext :: ContextKey ctx -> (ctx -> ctx) -> m (ContextSnapshot ctx)
+
+  default getContext
+    :: (MonadTrans t, MonadKeyedContext ctx n, m ~ t n)
+    => ContextKey ctx
+    -> m (ContextSnapshot ctx)
+  getContext =
+    lift . getContext
+
+  default updateContext
+    :: (MonadTrans t, MonadKeyedContext ctx n, m ~ t n)
+    => ContextKey ctx
+    -> (ctx -> ctx)
+    -> m (ContextSnapshot ctx)
+  updateContext ctxKey =
+    lift . updateContext ctxKey
+
+instance (MonadKeyedContext ctx m) => MonadKeyedContext ctx (ExceptT e m)
+instance (MonadKeyedContext ctx m) => MonadKeyedContext ctx (IdentityT m)
+instance (MonadKeyedContext ctx m) => MonadKeyedContext ctx (MaybeT m)
+instance (MonadKeyedContext ctx m) => MonadKeyedContext ctx (ReaderT r m)
+instance (MonadKeyedContext ctx m) => MonadKeyedContext ctx (StateT r m)
+instance (MonadKeyedContext ctx m, Monoid w) => MonadKeyedContext ctx (Trans.RWS.Lazy.RWST r w s m)
+instance (MonadKeyedContext ctx m, Monoid w) => MonadKeyedContext ctx (Trans.RWS.Strict.RWST r w s m)
+instance (MonadKeyedContext ctx m, Monoid w) => MonadKeyedContext ctx (Trans.Writer.Lazy.WriterT w m)
+instance (MonadKeyedContext ctx m, Monoid w) => MonadKeyedContext ctx (Trans.Writer.Strict.WriterT w m)
+instance (MonadKeyedContext ctx m) => MonadKeyedContext ctx (LoggingT m)
+instance (MonadKeyedContext ctx m) => MonadKeyedContext ctx (ResourceT m)
+
+class (MonadKeyedContext ctx m) => MonadContext ctx m | m -> ctx where
+  attachContext :: ctx -> (ContextKey ctx -> m a) -> m a
   getAttachedContextKey :: m (Maybe (ContextKey ctx))
 
   default attachContext
@@ -85,21 +113,6 @@ class (Monad m) => MonadContext ctx m | m -> ctx where
   attachContext ctx action = do
     Trans.Control.restoreT . pure
       =<< Trans.Control.liftWith \run -> attachContext ctx (run . action)
-
-  default updateContext
-    :: (MonadTrans t, MonadContext ctx n, m ~ t n)
-    => ContextKey ctx
-    -> (ctx -> ctx)
-    -> m (ContextSnapshot ctx)
-  updateContext ctxKey =
-    lift . updateContext ctxKey
-
-  default getContext
-    :: (MonadTrans t, MonadContext ctx n, m ~ t n)
-    => ContextKey ctx
-    -> m (ContextSnapshot ctx)
-  getContext =
-    lift . getContext
 
   default getAttachedContextKey
     :: (MonadTrans t, MonadContext ctx n, m ~ t n)
@@ -121,7 +134,6 @@ instance (MonadContext ctx m, MonadUnliftIO m) => MonadContext ctx (ResourceT m)
   attachContext ctx action = do
     withRunInIO \runInIO -> do
       runInIO $ attachContext ctx action
-  updateContext ctxKey = lift . updateContext ctxKey
   getAttachedContextKey = lift getAttachedContextKey
 
 type ContextT :: Type -> (Type -> Type) -> Type -> Type
@@ -146,12 +158,19 @@ newtype ContextT ctx m a = ContextT
       ( Semigroup, Monoid -- @base@
       ) via (Ap (ReaderT (ContextBackend ctx) m) a)
 
-instance (MTL.Reader.MonadReader r m) => MTL.Reader.MonadReader r (ContextT ctx m) where
+instance (MTL.Reader.MonadReader r m) => MonadReader r (ContextT ctx m) where
   ask = lift MTL.Reader.ask
   reader = lift . MTL.Reader.reader
   local = mapContextT . MTL.Reader.local
 
 instance (MTL.RWS.Class.MonadRWS r w s m) => MTL.RWS.Class.MonadRWS r w s (ContextT ctx m)
+
+instance (MonadIO m) => MonadKeyedContext ctx (ContextT ctx m) where
+  updateContext ctxKey updater =
+    ContextT \_contextBackend ->
+      liftIO $ updateContextRefValue (contextKeyRef ctxKey) updater
+
+  getContext ctxKey = updateContext ctxKey id
 
 instance (MonadIO m, MonadMask m) => MonadContext ctx (ContextT ctx m) where
   attachContext ctx f =
@@ -160,12 +179,6 @@ instance (MonadIO m, MonadMask m) => MonadContext ctx (ContextT ctx m) where
       Context.use (contextBackendStore contextBackend) ctxRef do
         runContextT (f ContextKey { contextKeyRef = ctxRef }) contextBackend
         `Exception.finally` liftIO (markAsDetached ctxRef)
-
-  updateContext ctxKey updater =
-    ContextT \_contextBackend ->
-      liftIO $ updateContextRefValue (contextKeyRef ctxKey) updater
-
-  getContext ctxKey = updateContext ctxKey id
 
   getAttachedContextKey =
     ContextT \contextBackend -> do
@@ -189,15 +202,38 @@ newtype ContextKey ctx = ContextKey
   { contextKeyRef :: ContextRef ctx
   }
 
+data ContextSnapshot ctx = ContextSnapshot
+  { contextSnapshotStatus :: ContextStatus
+  , contextSnapshotValue :: ctx
+  }
+
+data ContextStatus
+  = ContextStatusDetached
+  | ContextStatusAttached
+  deriving stock (Eq, Show)
+
+newtype ContextBackend ctx = ContextBackend
+  { contextBackendStore :: Store (ContextRef ctx)
+  }
+
+withContextBackend
+  :: forall m ctx a
+   . (MonadIO m, MonadMask m)
+  => (ContextBackend ctx -> m a)
+  -> m a
+withContextBackend action = do
+  Context.withStore Context.noPropagation Nothing \contextBackendStore ->
+    action ContextBackend { contextBackendStore }
+
 newtype ContextRef ctx = ContextRef
   { unContextRef :: IORef (ContextSnapshot ctx)
   }
 
 newContextRef :: ContextStatus -> ctx -> IO (ContextRef ctx)
-newContextRef contextStateStatus contextStateValue = do
+newContextRef contextSnapshotStatus contextSnapshotValue = do
   fmap ContextRef $ IORef.newIORef ContextSnapshot
-    { contextStateStatus
-    , contextStateValue
+    { contextSnapshotStatus
+    , contextSnapshotValue
     }
 
 updateContextRef
@@ -220,7 +256,7 @@ updateContextRefStatus
 updateContextRefStatus ctxRef updater =
   updateContextRef ctxRef \ctxSnapshot ->
     ctxSnapshot
-      { contextStateStatus = updater $ contextStateStatus ctxSnapshot
+      { contextSnapshotStatus = updater $ contextSnapshotStatus ctxSnapshot
       }
 
 updateContextRefValue
@@ -230,37 +266,8 @@ updateContextRefValue
 updateContextRefValue ctxRef updater =
   updateContextRef ctxRef \ctxSnapshot ->
     ctxSnapshot
-      { contextStateValue = updater $ contextStateValue ctxSnapshot
+      { contextSnapshotValue = updater $ contextSnapshotValue ctxSnapshot
       }
-
-data ContextSnapshot ctx = ContextSnapshot
-  { contextStateStatus :: ContextStatus
-  , contextStateValue :: ctx
-  }
-
-data ContextStatus
-  = ContextStatusDetached
-  | ContextStatusAttached
-  deriving stock (Eq, Show)
-
-contextStatusDetached :: ContextStatus
-contextStatusDetached = ContextStatusDetached
-
-contextStatusAttached :: ContextStatus
-contextStatusAttached = ContextStatusAttached
-
-newtype ContextBackend ctx = ContextBackend
-  { contextBackendStore :: Store (ContextRef ctx)
-  }
-
-withContextBackend
-  :: forall m ctx a
-   . (MonadIO m, MonadMask m)
-  => (ContextBackend ctx -> m a)
-  -> m a
-withContextBackend action = do
-  Context.withStore Context.noPropagation Nothing \contextBackendStore ->
-    action ContextBackend { contextBackendStore }
 
 -- $disclaimer
 --
