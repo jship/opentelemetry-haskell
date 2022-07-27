@@ -1,5 +1,6 @@
 resolver: nightly-2022-07-10
 packages:
+  - ./otel/api/context/core
   - ./otel/api/context
   - ./otel/api/trace
 extra-deps:
