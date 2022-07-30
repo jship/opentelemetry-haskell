@@ -30,17 +30,20 @@ module OTel.API.Context
   , Core.ContextStatus(..)
   ) where
 
-import Control.Exception.Safe (MonadMask)
+import Control.Monad.Catch (MonadMask)
 import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.IO.Unlift (MonadUnliftIO(withRunInIO))
 import Control.Monad.Logger (LoggingT)
+import Control.Monad.Trans.Accum (AccumT)
 import Control.Monad.Trans.Class (MonadTrans(lift))
+import Control.Monad.Trans.Cont (ContT)
 import Control.Monad.Trans.Control (MonadTransControl)
 import Control.Monad.Trans.Except (ExceptT)
 import Control.Monad.Trans.Identity (IdentityT)
 import Control.Monad.Trans.Maybe (MaybeT)
 import Control.Monad.Trans.Reader (ReaderT(..))
 import Control.Monad.Trans.Resource (ResourceT)
+import Control.Monad.Trans.Select (SelectT)
 import Control.Monad.Trans.State (StateT)
 import Prelude
 import qualified Control.Monad.Trans.Control as Trans.Control
@@ -58,22 +61,23 @@ class (Monad m) => MonadKeyedContext ctx m | m -> ctx where
     :: (MonadTrans t, MonadKeyedContext ctx n, m ~ t n)
     => Core.ContextKey ctx
     -> m (Core.ContextSnapshot ctx)
-  getContext =
-    lift . getContext
+  getContext = lift . getContext
 
   default updateContext
     :: (MonadTrans t, MonadKeyedContext ctx n, m ~ t n)
     => Core.ContextKey ctx
     -> (ctx -> ctx)
     -> m (Core.ContextSnapshot ctx)
-  updateContext ctxKey =
-    lift . updateContext ctxKey
+  updateContext ctxKey = lift . updateContext ctxKey
 
+instance (MonadKeyedContext ctx m, Monoid w) => MonadKeyedContext ctx (AccumT w m)
+instance (MonadKeyedContext ctx m) => MonadKeyedContext ctx (ContT r m)
 instance (MonadKeyedContext ctx m) => MonadKeyedContext ctx (ExceptT e m)
 instance (MonadKeyedContext ctx m) => MonadKeyedContext ctx (IdentityT m)
 instance (MonadKeyedContext ctx m) => MonadKeyedContext ctx (MaybeT m)
 instance (MonadKeyedContext ctx m) => MonadKeyedContext ctx (ReaderT r m)
 instance (MonadKeyedContext ctx m) => MonadKeyedContext ctx (StateT r m)
+instance (MonadKeyedContext ctx m) => MonadKeyedContext ctx (SelectT r m)
 instance (MonadKeyedContext ctx m, Monoid w) => MonadKeyedContext ctx (Trans.RWS.Lazy.RWST r w s m)
 instance (MonadKeyedContext ctx m, Monoid w) => MonadKeyedContext ctx (Trans.RWS.Strict.RWST r w s m)
 instance (MonadKeyedContext ctx m, Monoid w) => MonadKeyedContext ctx (Trans.Writer.Lazy.WriterT w m)

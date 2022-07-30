@@ -13,6 +13,11 @@ module OTel.API.Context.Core.Internal
   , runContextT
   , mapContextT
 
+  , updateContext
+  , getContext
+  , attachContext
+  , getAttachedContextKey
+
   , ContextBackend(..)
   , withContextBackend
 
@@ -30,13 +35,13 @@ module OTel.API.Context.Core.Internal
   ) where
 
 import Context (Store)
-import Control.Exception.Safe (MonadCatch, MonadMask, MonadThrow)
 import Control.Monad.Accum (MonadAccum)
 import Control.Monad.Base (MonadBase)
+import Control.Monad.Catch (MonadCatch, MonadMask, MonadThrow)
 import Control.Monad.Cont (MonadCont)
 import Control.Monad.Except (MonadError)
 import Control.Monad.Fix (MonadFix)
-import Control.Monad.IO.Class (MonadIO)
+import Control.Monad.IO.Class (MonadIO(liftIO))
 import Control.Monad.IO.Unlift (MonadUnliftIO)
 import Control.Monad.Logger (MonadLogger)
 import Control.Monad.Reader (MonadReader)
@@ -52,6 +57,7 @@ import Data.Kind (Type)
 import Data.Monoid (Ap(..))
 import Prelude
 import qualified Context
+import qualified Control.Monad.Catch as Catch
 import qualified Control.Monad.RWS.Class as MTL.RWS.Class
 import qualified Control.Monad.Reader as MTL.Reader
 import qualified Data.IORef as IORef
@@ -98,6 +104,44 @@ mapContextT
   -> ContextT ctx m a
   -> ContextT ctx n b
 mapContextT f action = ContextT $ f . runContextT action
+
+updateContext
+  :: forall m ctx
+   . (MonadIO m)
+  => ContextKey ctx
+  -> (ctx -> ctx)
+  -> ContextT ctx m (ContextSnapshot ctx)
+updateContext ctxKey updater =
+  ContextT \_contextBackend ->
+    liftIO $ updateContextRefValue (contextKeyRef ctxKey) updater
+
+getContext
+  :: forall m ctx
+   . (MonadIO m)
+  => ContextKey ctx
+  -> ContextT ctx m (ContextSnapshot ctx)
+getContext ctxKey = updateContext ctxKey id
+
+attachContext
+  :: forall m ctx a
+   . (MonadIO m, MonadMask m)
+  => ctx
+  -> (ContextKey ctx -> ContextT ctx m a)
+  -> ContextT ctx m a
+attachContext ctx f =
+  ContextT \contextBackend -> do
+    ctxRef <- liftIO $ newContextRef ContextStatusAttached ctx
+    Context.use (contextBackendStore contextBackend) ctxRef do
+      runContextT (f ContextKey { contextKeyRef = ctxRef }) contextBackend
+      `Catch.finally` liftIO (markAsDetached ctxRef)
+
+getAttachedContextKey
+  :: forall m ctx
+   . (MonadIO m)
+  => ContextT ctx m (Maybe (ContextKey ctx))
+getAttachedContextKey =
+  ContextT \contextBackend -> do
+    Context.minesMay (contextBackendStore contextBackend) ContextKey
 
 newtype ContextBackend ctx = ContextBackend
   { contextBackendStore :: Store (ContextRef ctx)

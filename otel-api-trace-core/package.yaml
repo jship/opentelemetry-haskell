@@ -1,4 +1,4 @@
-name: otel-api-context-core
+name: otel-api-trace-core
 version: '0.0.0'
 github: "jship/opentelemetry-haskell"
 license: Apache-2.0
@@ -8,7 +8,7 @@ author: "Jason Shipman"
 maintainer: "Jason Shipman"
 synopsis: STUB
 description: |
-  @otel-api-context-core@ STUB
+  @otel-api-trace-core@ STUB
 category: System
 
 extra-source-files:
@@ -21,21 +21,22 @@ default-extensions:
 - NoImplicitPrelude
 
 ghc-options:
-- -Wall
-- -fwarn-tabs
-- -Wincomplete-uni-patterns
-- -Wredundant-constraints
+  - -Wall
+  - -fwarn-tabs
+  - -Wincomplete-uni-patterns
+  - -Wredundant-constraints
 
 library:
   dependencies:
+  - aeson >=1.5.2.0 && <2.1.3.0
   - base >=4.11.1.0 && <5
+  - containers
   - context >=0.2.0.0 && <0.3
-  - monad-control
-  - monad-logger
+  - exceptions
   - mtl >=2.3
-  - resourcet
   - safe-exceptions
+  - text
+  - time
   - transformers
-  - transformers-base
   - unliftio-core
   source-dirs: library

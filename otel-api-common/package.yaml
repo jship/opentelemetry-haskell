@@ -1,0 +1,34 @@
+name: otel-api-common
+version: '0.0.0'
+github: "jship/opentelemetry-haskell"
+license: Apache-2.0
+license-file: LICENSE
+copyright: 2022 (c) Jason Shipman
+author: "Jason Shipman"
+maintainer: "Jason Shipman"
+synopsis: STUB
+description: |
+  @otel-api-trace-common@ STUB
+category: System
+
+extra-source-files:
+- package.yaml
+- README.md
+- LICENSE
+- CHANGELOG.md
+
+default-extensions:
+- NoImplicitPrelude
+
+ghc-options:
+  - -Wall
+  - -fwarn-tabs
+  - -Wincomplete-uni-patterns
+  - -Wredundant-constraints
+
+library:
+  dependencies:
+  - base >=4.11.1.0 && <5
+  - network-uri
+  - text
+  source-dirs: library
