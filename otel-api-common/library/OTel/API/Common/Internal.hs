@@ -1,5 +1,7 @@
+{-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE StrictData #-}
 module OTel.API.Common.Internal
   ( -- * Disclaimer
@@ -12,10 +14,16 @@ module OTel.API.Common.Internal
   , TimestampSource(..)
   , InstrumentationScope(..)
   , InstrumentationScopeName(..)
+  , Version(..)
+  , SchemaURL(..)
+  , schemaURLFromText
+  , schemaURLToText
 
     -- * Tracing
   , SpanContext(..)
   , defaultSpanContext
+  , buildSpanUpdater
+  , recordException
   , spanContextIsValid
   , TraceId(..)
   , nullTraceId
@@ -29,6 +37,9 @@ module OTel.API.Common.Internal
   , defaultSpanSpec
   , SpanUpdateSpec(..)
   , defaultSpanUpdateSpec
+  , SpanEventSpecs(..)
+  , SpanEventSpec(..)
+  , defaultSpanEventSpec
   , SpanName(..)
   , Span(..)
   , EndedSpan(..)
@@ -42,14 +53,17 @@ module OTel.API.Common.Internal
   , bug
   ) where
 
+import Control.Exception (SomeException(..))
 import Data.Int (Int64)
 import Data.String (IsString(fromString))
 import Data.Text (Text)
 import Data.Word (Word64, Word8)
 import GHC.Stack (HasCallStack, SrcLoc)
-import Network.URI (URI)
 import Prelude hiding (span)
+import qualified Control.Exception as Exception
+import qualified Data.Maybe as Maybe
 import qualified Data.Text as Text
+import qualified Data.Traversable as Traversable
 
 newtype Attributes = Attributes
   { unAttributes :: [(Text, Text)] -- TODO: Better type
@@ -70,14 +84,20 @@ data TimestampSource
 
 data InstrumentationScope = InstrumentationScope
   { instrumentationScopeName :: InstrumentationScopeName
-  , instrumentationScopeVersion :: Maybe InstrumentationScopeVersion
-  , instrumentationScopeSchemaURL :: Maybe URI
+  , instrumentationScopeVersion :: Maybe Version
+  , instrumentationScopeSchemaURL :: Maybe SchemaURL
   }
 
-buildInstrumentationScope :: InstrumentationScopeName -> InstrumentationScope
-buildInstrumentationScope instrumentationScopeName =
+instance IsString InstrumentationScope where
+  fromString s =
+    defaultInstrumentationScope
+      { instrumentationScopeName = fromString s
+      }
+
+defaultInstrumentationScope :: InstrumentationScope
+defaultInstrumentationScope =
   InstrumentationScope
-    { instrumentationScopeName
+    { instrumentationScopeName = ""
     , instrumentationScopeVersion = Nothing
     , instrumentationScopeSchemaURL = Nothing
     }
@@ -89,12 +109,22 @@ newtype InstrumentationScopeName = InstrumentationScopeName
 instance IsString InstrumentationScopeName where
   fromString = InstrumentationScopeName . Text.pack
 
-newtype InstrumentationScopeVersion = InstrumentationScopeVersion
-  { unInstrumentationScopeVersion :: Text
+newtype Version = Version
+  { unVersion :: Text
   } deriving stock (Eq, Show)
 
-instance IsString InstrumentationScopeVersion where
-  fromString = InstrumentationScopeVersion . Text.pack
+instance IsString Version where
+  fromString = Version . Text.pack
+
+newtype SchemaURL = SchemaURL
+  { unSchemaURL :: Text
+  } deriving stock (Eq, Show)
+
+schemaURLFromText :: Text -> Either Text SchemaURL
+schemaURLFromText = Right . SchemaURL
+
+schemaURLToText :: SchemaURL -> Text
+schemaURLToText = unSchemaURL
 
 data SpanContext = SpanContext
   { spanContextTraceId :: TraceId
@@ -148,9 +178,49 @@ newtype TraceState = TraceState
   } deriving stock (Eq, Show)
 
 newtype SpanEvents = SpanEvents
-  { unSpanEvents :: [(Text, Text)] -- TODO: Better type
+  { unSpanEvents :: [SpanEvent] -- TODO: Better type
   } deriving stock (Eq, Show)
-    deriving (Semigroup, Monoid) via [(Text, Text)]
+    deriving (Semigroup, Monoid) via [SpanEvent]
+
+data SpanEvent = SpanEvent
+  { spanEventName :: SpanEventName
+  , spanEventTimestamp :: Timestamp
+  , spanEventAttributes :: Attributes
+  } deriving stock (Eq, Show)
+
+newtype SpanEventSpecs = SpanEventSpecs
+  { unSpanEventSpecs :: [SpanEventSpec] -- TODO: Better type
+  } deriving stock (Eq, Show)
+    deriving (Semigroup, Monoid) via [SpanEventSpec]
+
+data SpanEventSpec = SpanEventSpec
+  { spanEventSpecName :: SpanEventName
+  , spanEventSpecTimestamp :: TimestampSource
+  , spanEventSpecAttributes :: Attributes
+  } deriving stock (Eq, Show)
+
+defaultSpanEventSpec :: SpanEventSpec
+defaultSpanEventSpec =
+  SpanEventSpec
+    { spanEventSpecName = ""
+    , spanEventSpecTimestamp = TimestampSourceNow
+    , spanEventSpecAttributes = mempty
+    }
+
+instance IsString SpanEventSpec where
+  fromString s =
+    defaultSpanEventSpec
+      { spanEventSpecName = fromString s
+      }
+
+newtype SpanEventName = SpanEventName
+  { unSpanEventName :: Text
+  } deriving stock (Eq, Show)
+
+instance IsString SpanEventName where
+  fromString = SpanEventName . Text.pack
+
+--exceptionToSpanEvent
 
 newtype SpanLinks = SpanLinks
   { unSpanLinks :: [(Text, Text)] -- TODO: Better type
@@ -176,10 +246,10 @@ defaultSpanSpec =
     }
 
 data SpanUpdateSpec = SpanUpdateSpec
-  { spanUpdateSpecName :: Maybe Text
+  { spanUpdateSpecName :: Maybe SpanName
   , spanUpdateSpecStatus :: Maybe SpanStatus
   , spanUpdateSpecAttributes :: Maybe Attributes
-  , spanUpdateSpecEvents :: Maybe SpanEvents
+  , spanUpdateSpecEvents :: Maybe SpanEventSpecs
   }
 
 defaultSpanUpdateSpec :: SpanUpdateSpec
@@ -189,6 +259,60 @@ defaultSpanUpdateSpec =
     , spanUpdateSpecStatus = Nothing
     , spanUpdateSpecAttributes = Nothing
     , spanUpdateSpecEvents = Nothing
+    }
+
+buildSpanUpdater
+  :: (Monad m)
+  => m Timestamp
+  -> SpanUpdateSpec
+  -> m (Span -> Span)
+buildSpanUpdater getTimestamp spanUpdateSpec = do
+  newSpanEvents <- do
+    case spanUpdateSpecEvents of
+      Nothing -> pure mempty
+      Just spanEventSpecs -> do
+        Traversable.for (unSpanEventSpecs spanEventSpecs) \spanEventSpec -> do
+          spanEventTimestamp <- do
+            case spanEventSpecTimestamp spanEventSpec of
+              TimestampSourceAt timestamp -> pure timestamp
+              TimestampSourceNow -> getTimestamp
+          pure SpanEvent
+            { spanEventName = spanEventSpecName spanEventSpec
+            , spanEventTimestamp
+            , spanEventAttributes = spanEventSpecAttributes spanEventSpec
+            }
+  pure \span -> span
+    { spanName =
+        Maybe.fromMaybe (spanName span) spanUpdateSpecName
+    , spanStatus =
+        Maybe.fromMaybe (spanStatus span) spanUpdateSpecStatus
+    , spanAttributes =
+        maybe id (\as -> (<> as)) spanUpdateSpecAttributes $ spanAttributes span
+    , spanEvents =
+        spanEvents span <> SpanEvents newSpanEvents
+    }
+  where
+  SpanUpdateSpec
+    { spanUpdateSpecName
+    , spanUpdateSpecStatus
+    , spanUpdateSpecAttributes
+    , spanUpdateSpecEvents
+    } = spanUpdateSpec
+
+-- TODO: See https://opentelemetry.io/docs/reference/specification/trace/semantic_conventions/exceptions/
+-- TODO: Should there be a convenience wrapper that produces a SpanUpdateSpec?
+recordException
+  :: SomeException
+  -> TimestampSource
+  -> Attributes
+  -> SpanEventSpec
+recordException (SomeException e) timestamp attributes =
+  SpanEventSpec
+    { spanEventSpecName = "exception"
+    , spanEventSpecTimestamp = timestamp
+    , spanEventSpecAttributes =
+        Attributes [("exception.message", Text.pack $ Exception.displayException e)]
+          <> attributes
     }
 
 newtype SpanName = SpanName

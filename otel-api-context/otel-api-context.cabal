@@ -30,6 +30,7 @@ source-repository head
 library
   exposed-modules:
       OTel.API.Context
+      OTel.API.Context.Internal
   other-modules:
       Paths_otel_api_context
   hs-source-dirs:
@@ -39,11 +40,11 @@ library
   ghc-options: -Wall -fwarn-tabs -Wincomplete-uni-patterns -Wredundant-constraints
   build-depends:
       base >=4.11.1.0 && <5
+    , context >=0.2.0.0 && <0.3
     , exceptions
     , monad-control
     , monad-logger
     , mtl >=2.3
-    , otel-api-context-core
     , resourcet
     , transformers
     , transformers-base

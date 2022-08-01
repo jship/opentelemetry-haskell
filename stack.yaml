@@ -2,7 +2,6 @@ resolver: nightly-2022-07-10
 packages:
 - ./otel-api-common
 - ./otel-api-context
-- ./otel-api-context-core
 - ./otel-api-trace
 - ./otel-api-trace-core
 extra-deps:

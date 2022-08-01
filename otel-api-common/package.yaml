@@ -21,14 +21,15 @@ default-extensions:
 - NoImplicitPrelude
 
 ghc-options:
-  - -Wall
-  - -fwarn-tabs
-  - -Wincomplete-uni-patterns
-  - -Wredundant-constraints
+- -Wall
+- -fwarn-tabs
+- -Wincomplete-uni-patterns
+- -Wredundant-constraints
 
 library:
   dependencies:
   - base >=4.11.1.0 && <5
   - network-uri
+  - otel-api-context
   - text
   source-dirs: library

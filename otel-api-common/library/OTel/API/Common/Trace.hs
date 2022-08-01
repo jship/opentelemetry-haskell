@@ -24,6 +24,8 @@ module OTel.API.Common.Trace
       , spanSpecLinks
       )
   , defaultSpanSpec
+  , buildSpanUpdater
+  , recordException
 
   , SpanUpdateSpec
       ( spanUpdateSpecName
@@ -32,6 +34,13 @@ module OTel.API.Common.Trace
       , spanUpdateSpecEvents
       )
   , defaultSpanUpdateSpec
+
+  , SpanEventSpec
+      ( spanEventSpecName
+      , spanEventSpecTimestamp
+      , spanEventSpecAttributes
+      )
+  , defaultSpanEventSpec
 
   , SpanName(..)
   , Span(..)
@@ -59,20 +68,23 @@ module OTel.API.Common.Trace
   , SpanStatus(..)
 
   , SpanEvents
+  , SpanEventSpecs(..) -- TODO: Constructor exposed :(
 
   , SpanLinks
   ) where
 
+import OTel.API.Context (ContextBackend)
 import OTel.API.Common.Internal
 import Prelude
 
-data TracerProvider = TracerProvider
-  { tracerProviderGetTracer :: IO Tracer
-  , tracerProviderShutdown :: IO ()
-  }
+--data TracerProvider = TracerProvider
+--  { tracerProviderGetTracer :: IO Tracer
+--  , tracerProviderShutdown :: IO ()
+--  }
 
 data Tracer = Tracer
   { tracerGetCurrentTimestamp :: IO Timestamp
   , tracerStartSpan :: SpanName -> SpanSpec -> IO Span
-  , tracerOnSpanEnded :: EndedSpan -> IO ()
+  , tracerProcessSpan :: EndedSpan -> IO ()
+  , tracerContextBackend :: ContextBackend Span
   }

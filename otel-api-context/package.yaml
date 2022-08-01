@@ -29,11 +29,11 @@ ghc-options:
 library:
   dependencies:
   - base >=4.11.1.0 && <5
+  - context >=0.2.0.0 && <0.3
   - exceptions
   - monad-control
   - monad-logger
   - mtl >=2.3
-  - otel-api-context-core
   - resourcet
   - transformers
   - transformers-base

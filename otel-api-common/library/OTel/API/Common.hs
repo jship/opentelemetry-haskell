@@ -2,8 +2,14 @@ module OTel.API.Common
   ( -- * Synopsis
     -- $synopsis
     module OTel.API.Common.Attributes
-  , module OTel.API.Common.Context
   , module OTel.API.Common.Trace
+
+  , InstrumentationScope(..)
+  , InstrumentationScopeName(..)
+  , Version(..)
+  , SchemaURL
+  , schemaURLFromText
+  , schemaURLToText
 
   , Timestamp
   , timestampFromNanoseconds
@@ -11,7 +17,6 @@ module OTel.API.Common
   ) where
 
 import OTel.API.Common.Attributes
-import OTel.API.Common.Context
 import OTel.API.Common.Internal
 import OTel.API.Common.Trace
 

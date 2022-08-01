@@ -1,4 +1,5 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -6,11 +7,10 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE UndecidableInstances #-}
-module OTel.API.Context.Core.Internal
+module OTel.API.Context.Internal
   ( -- * Disclaimer
     -- $disclaimer
     ContextT(..)
-  , runContextT
   , mapContextT
 
   , updateContext
@@ -44,7 +44,8 @@ import Control.Monad.Fix (MonadFix)
 import Control.Monad.IO.Class (MonadIO(liftIO))
 import Control.Monad.IO.Unlift (MonadUnliftIO)
 import Control.Monad.Logger (MonadLogger)
-import Control.Monad.Reader (MonadReader)
+import Control.Monad.RWS.Class (MonadRWS)
+import Control.Monad.Reader (MonadReader(ask, local, reader), MonadReader)
 import Control.Monad.Select (MonadSelect)
 import Control.Monad.State (MonadState)
 import Control.Monad.Trans.Class (MonadTrans(lift))
@@ -58,14 +59,12 @@ import Data.Monoid (Ap(..))
 import Prelude
 import qualified Context
 import qualified Control.Monad.Catch as Catch
-import qualified Control.Monad.RWS.Class as MTL.RWS.Class
-import qualified Control.Monad.Reader as MTL.Reader
 import qualified Data.IORef as IORef
 
 type ContextT :: Type -> (Type -> Type) -> Type -> Type
 
 newtype ContextT ctx m a = ContextT
-  { unContextT :: ContextBackend ctx -> m a
+  { runContextT :: ContextBackend ctx -> m a
   } deriving
       ( Applicative, Functor, Monad, MonadFail, MonadFix, MonadIO -- @base@
       , MonadAccum w, MonadCont, MonadError e, MonadSelect r, MonadState s, MonadWriter w -- @mtl@
@@ -84,19 +83,12 @@ newtype ContextT ctx m a = ContextT
       ( Semigroup, Monoid -- @base@
       ) via (Ap (ReaderT (ContextBackend ctx) m) a)
 
-instance (MTL.Reader.MonadReader r m) => MonadReader r (ContextT ctx m) where
-  ask = lift MTL.Reader.ask
-  reader = lift . MTL.Reader.reader
-  local = mapContextT . MTL.Reader.local
+instance (MonadReader r m) => MonadReader r (ContextT ctx m) where
+  ask = lift ask
+  reader = lift . reader
+  local = mapContextT . local
 
-instance (MTL.RWS.Class.MonadRWS r w s m) => MTL.RWS.Class.MonadRWS r w s (ContextT ctx m)
-
-runContextT
-  :: forall ctx m a
-   . ContextT ctx m a
-  -> ContextBackend ctx
-  -> m a
-runContextT = unContextT
+instance (MonadRWS r w s m) => MonadRWS r w s (ContextT ctx m)
 
 mapContextT
   :: forall m n ctx a b
@@ -163,7 +155,7 @@ newtype ContextKey ctx = ContextKey
 data ContextSnapshot ctx = ContextSnapshot
   { contextSnapshotStatus :: ContextStatus
   , contextSnapshotValue :: ctx
-  } deriving stock (Eq, Show)
+  } deriving stock (Eq, Functor, Show)
 
 data ContextStatus
   = ContextStatusDetached

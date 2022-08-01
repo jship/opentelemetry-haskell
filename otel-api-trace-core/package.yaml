@@ -33,10 +33,16 @@ library:
   - containers
   - context >=0.2.0.0 && <0.3
   - exceptions
+  - monad-control
+  - monad-logger
   - mtl >=2.3
+  - otel-api-common
+  - otel-api-context
+  - resourcet
   - safe-exceptions
   - text
   - time
   - transformers
+  - transformers-base
   - unliftio-core
   source-dirs: library
