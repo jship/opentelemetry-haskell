@@ -35,7 +35,7 @@ library:
   - monad-control
   - monad-logger
   - mtl >=2.3
-  - otel-api-common
+  - otel-api-core
   - otel-api-context
   - otel-api-trace-core
   - resourcet

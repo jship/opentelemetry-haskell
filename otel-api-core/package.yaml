@@ -1,4 +1,4 @@
-name: otel-api-common
+name: otel-api-core
 version: '0.0.0'
 github: "jship/opentelemetry-haskell"
 license: Apache-2.0
@@ -8,7 +8,7 @@ author: "Jason Shipman"
 maintainer: "Jason Shipman"
 synopsis: STUB
 description: |
-  @otel-api-trace-common@ STUB
+  @otel-api-core@ STUB
 category: System
 
 extra-source-files:

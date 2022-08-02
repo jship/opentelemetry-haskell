@@ -10,23 +10,13 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
-module OTel.API.Common.Internal
+module OTel.API.Core.Internal
   ( -- * Disclaimer
     -- $disclaimer
 
     -- * General
     KV(..)
-  , Attributes(..)
-  , fromAttributes
   , Key(..)
-  , Attribute(..)
-  , AttrValue(..)
-  , ToAttrValue(..)
-  , KnownPrimAttrType(..)
-  , primAttrVal
-  , primAttrVal'
-  , PrimAttrType(..)
-  , PrimAttrValue(..)
   , Timestamp(..)
   , timestampFromNanoseconds
   , timestampToNanoseconds
@@ -37,6 +27,18 @@ module OTel.API.Common.Internal
   , SchemaURL(..)
   , schemaURLFromText
   , schemaURLToText
+
+    -- * Attributes
+  , Attributes(..)
+  , fromAttributes
+  , Attribute(..)
+  , AttrValue(..)
+  , ToAttrValue(..)
+  , KnownPrimAttrType(..)
+  , primAttrVal
+  , primAttrVal'
+  , PrimAttrType(..)
+  , PrimAttrValue(..)
 
     -- * Tracing
   , Tracer(..)
@@ -91,28 +93,12 @@ import qualified Data.Maybe as Maybe
 import qualified Data.Text as Text
 import qualified Data.Traversable as Traversable
 
-class KV (kv :: Type) where
-  type ToValue kv :: Type -> Constraint
-  (.@) :: ToValue kv v => Key -> v -> kv
-
-instance KV Attributes where
-  type ToValue Attributes = ToAttrValue
-  name .@ value =
-    Attributes $ singletonDList Attribute
-      { attributeKey = name
-      , attributeValue = toAttrValue value
-      }
-
 newtype Attributes = Attributes
   { unAttributes :: DList Attribute
   } deriving (Eq, Semigroup, Show, Monoid) via (DList Attribute)
 
 fromAttributes :: Attributes -> [Attribute]
 fromAttributes = fromDList . unAttributes
-
-newtype Key = Key
-  { unKey :: Text
-  } deriving stock (Eq, Show)
 
 instance IsString Key where
   fromString = Key . Text.pack
@@ -231,6 +217,22 @@ data PrimAttrValue a where
 
 deriving stock instance (Eq a) => Eq (PrimAttrValue a)
 deriving stock instance (Show a) => Show (PrimAttrValue a)
+
+class KV (kv :: Type) where
+  type ToValue kv :: Type -> Constraint
+  (.@) :: ToValue kv v => Key -> v -> kv
+
+instance KV Attributes where
+  type ToValue Attributes = ToAttrValue
+  name .@ value =
+    Attributes $ singletonDList Attribute
+      { attributeKey = name
+      , attributeValue = toAttrValue value
+      }
+
+newtype Key = Key
+  { unKey :: Text
+  } deriving stock (Eq, Show)
 
 newtype Timestamp = Timestamp
   { unTimestamp :: Integer -- ^ nanoseconds

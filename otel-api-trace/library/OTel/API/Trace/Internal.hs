@@ -38,7 +38,7 @@ import Control.Monad.Trans.Resource (MonadResource)
 import Control.Monad.Writer.Class (MonadWriter)
 import Data.Kind (Type)
 import Data.Monoid (Ap(..))
-import OTel.API.Common
+import OTel.API.Core
   ( NewSpanSpec(..), Span(spanContext, spanIsRecording), SpanEventSpecs(..), SpanLineage(..)
   , SpanLineageSource(..), SpanSpec(..), TimestampSource(..), Tracer(..)
   , UpdateSpanSpec(updateSpanSpecEvents), EndedSpan, Timestamp, buildSpanUpdater

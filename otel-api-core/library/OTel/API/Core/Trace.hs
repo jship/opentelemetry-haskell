@@ -1,4 +1,4 @@
-module OTel.API.Common.Trace
+module OTel.API.Core.Trace
   ( Tracer(..)
 
   , SpanContext
@@ -74,4 +74,4 @@ module OTel.API.Common.Trace
   , SpanLinks
   ) where
 
-import OTel.API.Common.Internal
+import OTel.API.Core.Internal

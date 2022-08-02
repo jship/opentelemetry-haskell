@@ -28,7 +28,7 @@ import Control.Monad.Trans.Reader (ReaderT(..))
 import Control.Monad.Trans.Resource (ResourceT)
 import Control.Monad.Trans.Select (SelectT)
 import GHC.Stack (CallStack, HasCallStack, callStack)
-import OTel.API.Common (Span(..), NewSpanSpec, SpanContext, UpdateSpanSpec)
+import OTel.API.Core (Span(..), NewSpanSpec, SpanContext, UpdateSpanSpec)
 import OTel.API.Context (ContextSnapshot)
 import OTel.API.Trace.Core.Internal (MutableSpan(..))
 import Prelude

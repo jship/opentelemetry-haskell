@@ -47,8 +47,8 @@ library
     , monad-control
     , monad-logger
     , mtl >=2.3
-    , otel-api-common
     , otel-api-context
+    , otel-api-core
     , resourcet
     , safe-exceptions
     , text

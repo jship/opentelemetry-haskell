@@ -1,8 +1,8 @@
-module OTel.API.Common
+module OTel.API.Core
   ( -- * Synopsis
     -- $synopsis
-    module OTel.API.Common.Attributes
-  , module OTel.API.Common.Trace
+    module OTel.API.Core.Attributes
+  , module OTel.API.Core.Trace
 
   , InstrumentationScope(..)
   , InstrumentationScopeName(..)
@@ -17,9 +17,9 @@ module OTel.API.Common
   , TimestampSource(..)
   ) where
 
-import OTel.API.Common.Attributes
-import OTel.API.Common.Internal
-import OTel.API.Common.Trace
+import OTel.API.Core.Attributes
+import OTel.API.Core.Internal
+import OTel.API.Core.Trace
 
 -- $synopsis
 --
