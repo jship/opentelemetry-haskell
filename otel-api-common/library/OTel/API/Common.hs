@@ -13,6 +13,7 @@ module OTel.API.Common
 
   , Timestamp
   , timestampFromNanoseconds
+  , timestampToNanoseconds
   , TimestampSource(..)
   ) where
 

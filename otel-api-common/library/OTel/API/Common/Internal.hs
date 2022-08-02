@@ -1,16 +1,35 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE StrictData #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
 module OTel.API.Common.Internal
   ( -- * Disclaimer
     -- $disclaimer
 
     -- * General
-    Attributes(..)
+    KV(..)
+  , Attributes(..)
+  , fromAttributes
+  , Key(..)
+  , Attribute(..)
+  , AttrValue(..)
+  , ToAttrValue(..)
+  , KnownPrimAttrType(..)
+  , primAttrVal
+  , primAttrVal'
+  , PrimAttrType(..)
+  , PrimAttrValue(..)
   , Timestamp(..)
   , timestampFromNanoseconds
+  , timestampToNanoseconds
   , TimestampSource(..)
   , InstrumentationScope(..)
   , InstrumentationScopeName(..)
@@ -20,6 +39,7 @@ module OTel.API.Common.Internal
   , schemaURLToText
 
     -- * Tracing
+  , Tracer(..)
   , SpanContext(..)
   , defaultSpanContext
   , buildSpanUpdater
@@ -34,9 +54,10 @@ module OTel.API.Common.Internal
   , SpanEvents(..)
   , SpanLinks(..)
   , SpanSpec(..)
-  , defaultSpanSpec
-  , SpanUpdateSpec(..)
-  , defaultSpanUpdateSpec
+  , NewSpanSpec(..)
+  , defaultNewSpanSpec
+  , UpdateSpanSpec(..)
+  , defaultUpdateSpanSpec
   , SpanEventSpecs(..)
   , SpanEventSpec(..)
   , defaultSpanEventSpec
@@ -50,32 +71,176 @@ module OTel.API.Common.Internal
   , SpanStatus(..)
 
     -- * Miscellaneous
-  , bug
+  , DList(..)
+  , fromDList
   ) where
 
 import Control.Exception (SomeException(..))
 import Data.Int (Int64)
+import Data.Kind (Constraint, Type)
+import Data.Monoid (Endo(..))
+import Data.Proxy (Proxy(..))
 import Data.String (IsString(fromString))
 import Data.Text (Text)
+import Data.Typeable ((:~:)(..), Typeable, eqT)
 import Data.Word (Word64, Word8)
-import GHC.Stack (HasCallStack, SrcLoc)
+import OTel.API.Context (ContextBackend)
 import Prelude hiding (span)
 import qualified Control.Exception as Exception
 import qualified Data.Maybe as Maybe
 import qualified Data.Text as Text
 import qualified Data.Traversable as Traversable
 
+class KV (kv :: Type) where
+  type ToValue kv :: Type -> Constraint
+  (.@) :: ToValue kv v => Key -> v -> kv
+
+instance KV Attributes where
+  type ToValue Attributes = ToAttrValue
+  name .@ value =
+    Attributes $ singletonDList Attribute
+      { attributeKey = name
+      , attributeValue = toAttrValue value
+      }
+
 newtype Attributes = Attributes
-  { unAttributes :: [(Text, Text)] -- TODO: Better type
+  { unAttributes :: DList Attribute
+  } deriving (Eq, Semigroup, Show, Monoid) via (DList Attribute)
+
+fromAttributes :: Attributes -> [Attribute]
+fromAttributes = fromDList . unAttributes
+
+newtype Key = Key
+  { unKey :: Text
   } deriving stock (Eq, Show)
-    deriving (Semigroup, Monoid) via [(Text, Text)]
+
+instance IsString Key where
+  fromString = Key . Text.pack
+
+data Attribute = Attribute
+  { attributeKey :: Key
+  , attributeValue :: AttrValue
+  } deriving stock (Eq, Show)
+
+data AttrValue where
+  AttrValuePrimitive
+    :: (KnownPrimAttrType a)
+    => PrimAttrValue a
+    -> AttrValue
+  AttrValueArray
+    :: (KnownPrimAttrType a)
+    => [PrimAttrValue a]
+    -> AttrValue
+
+instance Eq AttrValue where
+  ax == ay =
+    case (ax, ay) of
+      (AttrValuePrimitive x, AttrValuePrimitive y) ->
+        case eqTPrim x y of
+          Nothing -> False
+          Just Refl -> x == y
+      (AttrValueArray xs, AttrValueArray ys) ->
+        case eqTPrimList xs ys of
+          Nothing -> False
+          Just Refl -> xs == ys
+      (_, _) -> False
+    where
+    eqTPrim
+      :: forall a b
+       . (Typeable a, Typeable b)
+      => PrimAttrValue a
+      -> PrimAttrValue b
+      -> Maybe (a :~: b)
+    eqTPrim _ _ = eqT @a @b
+
+    eqTPrimList
+      :: forall a b
+       . (Typeable a, Typeable b)
+      => [PrimAttrValue a]
+      -> [PrimAttrValue b]
+      -> Maybe (a :~: b)
+    eqTPrimList _ _ = eqT @a @b
+
+instance Show AttrValue where
+  show = \case
+    AttrValuePrimitive x -> show x
+    AttrValueArray xs -> show xs
+
+class ToAttrValue a where
+  toAttrValue :: a -> AttrValue
+
+instance ToAttrValue Text where
+  toAttrValue = AttrValuePrimitive . PrimAttrValueText
+
+instance ToAttrValue Bool where
+  toAttrValue = AttrValuePrimitive . PrimAttrValueBool
+
+instance ToAttrValue Double where
+  toAttrValue = AttrValuePrimitive . PrimAttrValueDouble
+
+instance ToAttrValue Int64 where
+  toAttrValue = AttrValuePrimitive . PrimAttrValueInt
+
+instance (KnownPrimAttrType a) => ToAttrValue [a] where
+  toAttrValue = AttrValueArray . fmap primAttrVal
+
+class (Eq a, Show a, Typeable a) => KnownPrimAttrType a where
+  primAttrTypeVal :: proxy a -> PrimAttrType a
+
+instance KnownPrimAttrType Text where
+  primAttrTypeVal _ = PrimAttrTypeText
+
+instance KnownPrimAttrType Bool where
+  primAttrTypeVal _ = PrimAttrTypeBool
+
+instance KnownPrimAttrType Double where
+  primAttrTypeVal _ = PrimAttrTypeDouble
+
+instance KnownPrimAttrType Int64 where
+  primAttrTypeVal _ = PrimAttrTypeInt
+
+primAttrVal
+  :: forall a
+   . (KnownPrimAttrType a)
+  => a
+  -> PrimAttrValue a
+primAttrVal x = primAttrVal' (primAttrTypeVal $ Proxy @a) x
+
+primAttrVal' :: PrimAttrType a -> a -> PrimAttrValue a
+primAttrVal' ty x =
+  case ty of
+    PrimAttrTypeText -> PrimAttrValueText x
+    PrimAttrTypeBool -> PrimAttrValueBool x
+    PrimAttrTypeDouble -> PrimAttrValueDouble x
+    PrimAttrTypeInt -> PrimAttrValueInt x
+
+data PrimAttrType a where
+  PrimAttrTypeText   :: PrimAttrType Text
+  PrimAttrTypeBool   :: PrimAttrType Bool
+  PrimAttrTypeDouble :: PrimAttrType Double
+  PrimAttrTypeInt    :: PrimAttrType Int64
+
+deriving stock instance (Eq a) => Eq (PrimAttrType a)
+deriving stock instance (Show a) => Show (PrimAttrType a)
+
+data PrimAttrValue a where
+  PrimAttrValueText   :: Text   -> PrimAttrValue Text
+  PrimAttrValueBool   :: Bool   -> PrimAttrValue Bool
+  PrimAttrValueDouble :: Double -> PrimAttrValue Double
+  PrimAttrValueInt    :: Int64  -> PrimAttrValue Int64
+
+deriving stock instance (Eq a) => Eq (PrimAttrValue a)
+deriving stock instance (Show a) => Show (PrimAttrValue a)
 
 newtype Timestamp = Timestamp
-  { unTimestamp :: Int64 -- ^ nanoseconds
+  { unTimestamp :: Integer -- ^ nanoseconds
   } deriving stock (Eq, Show)
 
-timestampFromNanoseconds :: Int64 -> Timestamp
+timestampFromNanoseconds :: Integer -> Timestamp
 timestampFromNanoseconds = Timestamp
+
+timestampToNanoseconds :: Timestamp -> Integer
+timestampToNanoseconds = unTimestamp
 
 data TimestampSource
   = TimestampSourceNow
@@ -125,6 +290,18 @@ schemaURLFromText = Right . SchemaURL
 
 schemaURLToText :: SchemaURL -> Text
 schemaURLToText = unSchemaURL
+
+--data TracerProvider = TracerProvider
+--  { tracerProviderGetTracer :: IO Tracer
+--  , tracerProviderShutdown :: IO ()
+--  }
+
+data Tracer = Tracer
+  { tracerGetCurrentTimestamp :: IO Timestamp
+  , tracerStartSpan :: SpanSpec -> IO Span
+  , tracerProcessSpan :: EndedSpan -> IO ()
+  , tracerContextBackend :: ContextBackend Span
+  }
 
 data SpanContext = SpanContext
   { spanContextTraceId :: TraceId
@@ -220,55 +397,69 @@ newtype SpanEventName = SpanEventName
 instance IsString SpanEventName where
   fromString = SpanEventName . Text.pack
 
---exceptionToSpanEvent
-
 newtype SpanLinks = SpanLinks
   { unSpanLinks :: [(Text, Text)] -- TODO: Better type
   } deriving stock (Eq, Show)
     deriving (Semigroup, Monoid) via [(Text, Text)]
 
 data SpanSpec = SpanSpec
-  { spanSpecLineageSource :: SpanLineageSource
-  , spanSpecStart :: TimestampSource
+  { spanSpecLineage :: SpanLineage
+  , spanSpecStart :: Timestamp
   , spanSpecKind :: SpanKind
   , spanSpecAttributes :: Attributes
   , spanSpecLinks :: SpanLinks
   } deriving stock (Eq, Show)
 
-defaultSpanSpec :: SpanSpec
-defaultSpanSpec =
-  SpanSpec
-    { spanSpecLineageSource = SpanLineageSourceImplicit
-    , spanSpecStart = TimestampSourceNow
-    , spanSpecKind = SpanKindInternal
-    , spanSpecAttributes = mempty
-    , spanSpecLinks = mempty
+data NewSpanSpec = NewSpanSpec
+  { newSpanSpecName :: SpanName
+  , newSpanSpecLineageSource :: SpanLineageSource
+  , newSpanSpecStart :: TimestampSource
+  , newSpanSpecKind :: SpanKind
+  , newSpanSpecAttributes :: Attributes
+  , newSpanSpecLinks :: SpanLinks
+  } deriving stock (Eq, Show)
+
+instance IsString NewSpanSpec where
+  fromString s =
+    defaultNewSpanSpec
+      { newSpanSpecName = fromString s
+      }
+
+defaultNewSpanSpec :: NewSpanSpec
+defaultNewSpanSpec =
+  NewSpanSpec
+    { newSpanSpecName = ""
+    , newSpanSpecLineageSource = SpanLineageSourceImplicit
+    , newSpanSpecStart = TimestampSourceNow
+    , newSpanSpecKind = SpanKindInternal
+    , newSpanSpecAttributes = mempty
+    , newSpanSpecLinks = mempty
     }
 
-data SpanUpdateSpec = SpanUpdateSpec
-  { spanUpdateSpecName :: Maybe SpanName
-  , spanUpdateSpecStatus :: Maybe SpanStatus
-  , spanUpdateSpecAttributes :: Maybe Attributes
-  , spanUpdateSpecEvents :: Maybe SpanEventSpecs
+data UpdateSpanSpec = UpdateSpanSpec
+  { updateSpanSpecName :: Maybe SpanName
+  , updateSpanSpecStatus :: Maybe SpanStatus
+  , updateSpanSpecAttributes :: Maybe Attributes
+  , updateSpanSpecEvents :: Maybe SpanEventSpecs
   }
 
-defaultSpanUpdateSpec :: SpanUpdateSpec
-defaultSpanUpdateSpec =
-  SpanUpdateSpec
-    { spanUpdateSpecName = Nothing
-    , spanUpdateSpecStatus = Nothing
-    , spanUpdateSpecAttributes = Nothing
-    , spanUpdateSpecEvents = Nothing
+defaultUpdateSpanSpec :: UpdateSpanSpec
+defaultUpdateSpanSpec =
+  UpdateSpanSpec
+    { updateSpanSpecName = Nothing
+    , updateSpanSpecStatus = Nothing
+    , updateSpanSpecAttributes = Nothing
+    , updateSpanSpecEvents = Nothing
     }
 
 buildSpanUpdater
   :: (Monad m)
   => m Timestamp
-  -> SpanUpdateSpec
+  -> UpdateSpanSpec
   -> m (Span -> Span)
-buildSpanUpdater getTimestamp spanUpdateSpec = do
+buildSpanUpdater getTimestamp updateSpanSpec = do
   newSpanEvents <- do
-    case spanUpdateSpecEvents of
+    case updateSpanSpecEvents of
       Nothing -> pure mempty
       Just spanEventSpecs -> do
         Traversable.for (unSpanEventSpecs spanEventSpecs) \spanEventSpec -> do
@@ -281,26 +472,30 @@ buildSpanUpdater getTimestamp spanUpdateSpec = do
             , spanEventTimestamp
             , spanEventAttributes = spanEventSpecAttributes spanEventSpec
             }
-  pure \span -> span
-    { spanName =
-        Maybe.fromMaybe (spanName span) spanUpdateSpecName
-    , spanStatus =
-        Maybe.fromMaybe (spanStatus span) spanUpdateSpecStatus
-    , spanAttributes =
-        maybe id (\as -> (<> as)) spanUpdateSpecAttributes $ spanAttributes span
-    , spanEvents =
-        spanEvents span <> SpanEvents newSpanEvents
-    }
+  pure \span ->
+    if not $ spanIsRecording span then
+      span
+    else
+      span
+        { spanName =
+            Maybe.fromMaybe (spanName span) updateSpanSpecName
+        , spanStatus =
+            Maybe.fromMaybe (spanStatus span) updateSpanSpecStatus
+        , spanAttributes =
+            maybe id (\as -> (<> as)) updateSpanSpecAttributes $ spanAttributes span
+        , spanEvents =
+            spanEvents span <> SpanEvents newSpanEvents
+        }
   where
-  SpanUpdateSpec
-    { spanUpdateSpecName
-    , spanUpdateSpecStatus
-    , spanUpdateSpecAttributes
-    , spanUpdateSpecEvents
-    } = spanUpdateSpec
+  UpdateSpanSpec
+    { updateSpanSpecName
+    , updateSpanSpecStatus
+    , updateSpanSpecAttributes
+    , updateSpanSpecEvents
+    } = updateSpanSpec
 
 -- TODO: See https://opentelemetry.io/docs/reference/specification/trace/semantic_conventions/exceptions/
--- TODO: Should there be a convenience wrapper that produces a SpanUpdateSpec?
+-- TODO: Should there be a convenience wrapper that produces a UpdateSpanSpec?
 recordException
   :: SomeException
   -> TimestampSource
@@ -311,7 +506,7 @@ recordException (SomeException e) timestamp attributes =
     { spanEventSpecName = "exception"
     , spanEventSpecTimestamp = timestamp
     , spanEventSpecAttributes =
-        Attributes [("exception.message", Text.pack $ Exception.displayException e)]
+        "exception.message" .@ (Text.pack $ Exception.displayException e)
           <> attributes
     }
 
@@ -333,7 +528,6 @@ data Span = Span
   , spanLinks :: SpanLinks
   , spanEvents :: SpanEvents
   , spanIsRecording :: Bool
-  , spanSrcLoc :: SrcLoc
   } deriving stock (Eq, Show)
 
 data EndedSpan = EndedSpan
@@ -347,7 +541,6 @@ data EndedSpan = EndedSpan
   , endedSpanAttributes :: Attributes
   , endedSpanLinks :: SpanLinks
   , endedSpanEvents :: SpanEvents
-  , endedSpanSrcLoc :: SrcLoc
   } deriving stock (Eq, Show)
 
 toEndedSpan :: Timestamp -> Span -> EndedSpan
@@ -363,7 +556,6 @@ toEndedSpan endedSpanEnd span =
     , endedSpanAttributes = spanAttributes span
     , endedSpanLinks = spanLinks span
     , endedSpanEvents = spanEvents span
-    , endedSpanSrcLoc = spanSrcLoc span
     }
 
 data SpanLineageSource
@@ -390,12 +582,21 @@ data SpanStatus
   | SpanStatusError Text
   deriving stock (Eq, Show)
 
-bug :: HasCallStack => String -> a
-bug prefix =
-  error $
-    "OTel.API.Trace.Internal." <> prefix <> ": Impossible! (if you see this "
-      <> "message, please report it as a bug at "
-      <> "https://github.com/jship/opentelemetry-haskell)"
+newtype DList a = DList
+  { unDList :: [a] -> [a]
+  } deriving (Semigroup, Monoid) via (Endo [a])
+
+instance (Eq a) => Eq (DList a) where
+  x == y = fromDList x == fromDList y
+
+instance (Show a) => Show (DList a) where
+  show = show . fromDList
+
+fromDList :: DList a -> [a]
+fromDList dlist = unDList dlist []
+
+singletonDList :: a -> DList a
+singletonDList = DList . (:)
 
 -- $disclaimer
 --

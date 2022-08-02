@@ -28,9 +28,9 @@ import Control.Monad.Trans.Reader (ReaderT(..))
 import Control.Monad.Trans.Resource (ResourceT)
 import Control.Monad.Trans.Select (SelectT)
 import GHC.Stack (CallStack, HasCallStack, callStack)
-import OTel.API.Common (Span, SpanContext, SpanName, SpanSpec, SpanUpdateSpec)
+import OTel.API.Common (Span(..), NewSpanSpec, SpanContext, UpdateSpanSpec)
 import OTel.API.Context (ContextSnapshot)
-import OTel.API.Trace.Core.Internal (MutableSpan)
+import OTel.API.Trace.Core.Internal (MutableSpan(..))
 import Prelude
 import qualified Control.Monad.Trans.RWS.CPS as RWS.CPS
 import qualified Control.Monad.Trans.RWS.Lazy as RWS.Lazy
@@ -43,25 +43,23 @@ import qualified Control.Monad.Trans.Writer.Strict as Writer.Strict
 
 trace
   :: (MonadTracing m, HasCallStack)
-  => SpanName
-  -> SpanSpec
+  => NewSpanSpec
   -> (MutableSpan -> m a)
   -> m a
 trace = traceCS callStack
 
 class (Monad m) => MonadTracing m where
-  traceCS :: CallStack -> SpanName -> SpanSpec -> (MutableSpan -> m a) -> m a
+  traceCS :: CallStack -> NewSpanSpec -> (MutableSpan -> m a) -> m a
 
   default traceCS
     :: (MonadTransControl t, MonadTracing n, m ~ t n)
     => CallStack
-    -> SpanName
-    -> SpanSpec
+    -> NewSpanSpec
     -> (MutableSpan -> m a)
     -> m a
-  traceCS cs spanName spanSpec f = do
+  traceCS cs newSpanSpec f = do
     restoreT . pure
-      =<< liftWith \run -> traceCS cs spanName spanSpec (run . f)
+      =<< liftWith \run -> traceCS cs newSpanSpec (run . f)
 
 instance (MonadTracing m) => MonadTracing (ExceptT e m)
 instance (MonadTracing m) => MonadTracing (IdentityT m)
@@ -75,13 +73,13 @@ instance (MonadTracing m, Monoid w) => MonadTracing (Writer.Lazy.WriterT w m)
 instance (MonadTracing m, Monoid w) => MonadTracing (Writer.Strict.WriterT w m)
 instance (MonadTracing m) => MonadTracing (LoggingT m)
 instance (MonadTracing m, MonadUnliftIO m) => MonadTracing (ResourceT m) where
-  traceCS cs spanName spanSpec f = do
+  traceCS cs newSpanSpec f = do
     withRunInIO \runInIO -> do
-      runInIO $ traceCS cs spanName spanSpec f
+      runInIO $ traceCS cs newSpanSpec f
 
 class (Monad m) => MonadTraceContext m where
   getSpanContext :: MutableSpan -> m (ContextSnapshot SpanContext)
-  updateSpan :: MutableSpan -> SpanUpdateSpec -> m (ContextSnapshot Span)
+  updateSpan :: MutableSpan -> UpdateSpanSpec -> m (ContextSnapshot Span)
 
   default getSpanContext
     :: (MonadTrans t, MonadTraceContext n, m ~ t n)
@@ -92,7 +90,7 @@ class (Monad m) => MonadTraceContext m where
   default updateSpan
     :: (MonadTrans t, MonadTraceContext n, m ~ t n)
     => MutableSpan
-    -> SpanUpdateSpec
+    -> UpdateSpanSpec
     -> m (ContextSnapshot Span)
   updateSpan ctxKey = lift . updateSpan ctxKey
 

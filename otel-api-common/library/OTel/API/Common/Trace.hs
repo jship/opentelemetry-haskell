@@ -16,24 +16,26 @@ module OTel.API.Common.Trace
   , TraceFlags
   , TraceState
 
-  , SpanSpec
-      ( spanSpecLineageSource
-      , spanSpecStart
-      , spanSpecKind
-      , spanSpecAttributes
-      , spanSpecLinks
+  , SpanSpec(..)
+
+  , NewSpanSpec
+      ( newSpanSpecLineageSource
+      , newSpanSpecStart
+      , newSpanSpecKind
+      , newSpanSpecAttributes
+      , newSpanSpecLinks
       )
-  , defaultSpanSpec
+  , defaultNewSpanSpec
   , buildSpanUpdater
   , recordException
 
-  , SpanUpdateSpec
-      ( spanUpdateSpecName
-      , spanUpdateSpecStatus
-      , spanUpdateSpecAttributes
-      , spanUpdateSpecEvents
+  , UpdateSpanSpec
+      ( updateSpanSpecName
+      , updateSpanSpecStatus
+      , updateSpanSpecAttributes
+      , updateSpanSpecEvents
       )
-  , defaultSpanUpdateSpec
+  , defaultUpdateSpanSpec
 
   , SpanEventSpec
       ( spanEventSpecName
@@ -56,7 +58,6 @@ module OTel.API.Common.Trace
       , endedSpanAttributes
       , endedSpanLinks
       , endedSpanEvents
-      , endedSpanSrcLoc
       )
   , toEndedSpan
 
@@ -73,18 +74,4 @@ module OTel.API.Common.Trace
   , SpanLinks
   ) where
 
-import OTel.API.Context (ContextBackend)
 import OTel.API.Common.Internal
-import Prelude
-
---data TracerProvider = TracerProvider
---  { tracerProviderGetTracer :: IO Tracer
---  , tracerProviderShutdown :: IO ()
---  }
-
-data Tracer = Tracer
-  { tracerGetCurrentTimestamp :: IO Timestamp
-  , tracerStartSpan :: SpanName -> SpanSpec -> IO Span
-  , tracerProcessSpan :: EndedSpan -> IO ()
-  , tracerContextBackend :: ContextBackend Span
-  }

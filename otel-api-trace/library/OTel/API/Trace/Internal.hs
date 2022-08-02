@@ -1,6 +1,7 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -13,6 +14,8 @@ module OTel.API.Trace.Internal
     TracingT(..)
   , runTracingT
   , mapTracingT
+
+  , buildSpanSpec
   ) where
 
 import Control.Exception.Safe (MonadCatch, MonadMask, MonadThrow, SomeException)
@@ -36,12 +39,14 @@ import Control.Monad.Writer.Class (MonadWriter)
 import Data.Kind (Type)
 import Data.Monoid (Ap(..))
 import OTel.API.Common
-  ( Span(spanContext, spanIsRecording), SpanEventSpecs(..), SpanUpdateSpec(spanUpdateSpecEvents)
-  , TimestampSource(TimestampSourceNow), Tracer(..), EndedSpan, SpanName, SpanSpec, Timestamp
-  , buildSpanUpdater, defaultSpanUpdateSpec, recordException, toEndedSpan
+  ( NewSpanSpec(..), Span(spanContext, spanIsRecording), SpanEventSpecs(..), SpanLineage(..)
+  , SpanLineageSource(..), SpanSpec(..), TimestampSource(..), Tracer(..)
+  , UpdateSpanSpec(updateSpanSpecEvents), EndedSpan, Timestamp, buildSpanUpdater
+  , defaultUpdateSpanSpec, recordException, toEndedSpan
   )
 import OTel.API.Context
-  ( ContextSnapshot(..), ContextT(..), ContextKey, attachContext, getContext, updateContext
+  ( ContextSnapshot(..), ContextT(..), ContextKey, attachContext, getAttachedContextKey, getContext
+  , updateContext
   )
 import OTel.API.Trace.Core (MonadTraceContext(..), MonadTracing(..))
 import OTel.API.Trace.Core.Internal (MutableSpan(..))
@@ -89,53 +94,49 @@ instance MonadTransControl TracingT where
 
 instance (MonadIO m, MonadMask m) => MonadTracing (TracingT m) where
   -- TODO: Record callstack in attributes
-  traceCS _cs spanName spanSpec action =
+  traceCS _cs newSpanSpec action =
     TracingT \tracerOps -> do
-      span <- liftIO $ tracerOpsStartSpan tracerOps spanName spanSpec
+      spanSpec <- buildSpanSpec (tracerOpsNow tracerOps) newSpanSpec
+      span <- liftIO $ tracerOpsStartSpan tracerOps spanSpec
       attachContext span \spanKey -> do
         result <- unTracingT (action MutableSpan { spanKey }) tracerOps
         result <$ processSpan tracerOps spanKey
         `Safe.withException` handler tracerOps spanKey
     where
-    handler
-      :: TracerOps
-      -> ContextKey Span
-      -> SomeException
-      -> ContextT Span m ()
-    handler tracerOps spanKey someEx = do
-      updater <- do
-        -- TODO: Set status to error? Spec docs make it sound like application
-        -- authors set the status, and the API shouldn't set the status.
-        buildSpanUpdater
-          (liftIO $ tracerOpsGetCurrentTimestamp tracerOps)
-          defaultSpanUpdateSpec
-            { spanUpdateSpecEvents =
-                Just $ SpanEventSpecs
-                  [ recordException someEx TimestampSourceNow mempty
-                  ]
-            }
-      () <$ updateContext spanKey updater
-      processSpan tracerOps spanKey
-
     processSpan :: TracerOps -> ContextKey Span -> ContextT Span m ()
     processSpan tracerOps spanKey = do
       span <- fmap contextSnapshotValue $ getContext spanKey
-      timestamp <- liftIO $ tracerOpsGetCurrentTimestamp tracerOps
+      timestamp <- liftIO $ tracerOpsNow tracerOps
       liftIO $ tracerOpsProcessSpan tracerOps $ toEndedSpan timestamp span
       () <$ updateContext spanKey \s -> s { spanIsRecording = False }
+
+    handler :: TracerOps -> ContextKey Span -> SomeException -> ContextT Span m ()
+    handler tracerOps spanKey someEx = do
+      -- TODO: Set status to error? Spec docs make it sound like application
+      -- authors set the status, and the API shouldn't set the status.
+      -- https://opentelemetry.io/docs/reference/specification/trace/api/#set-status
+      -- Probably would be convenient if this was a config option.
+      _ <- updateContext spanKey
+             =<< buildSpanUpdater (liftIO $ tracerOpsNow tracerOps) defaultUpdateSpanSpec
+                   { updateSpanSpecEvents =
+                       Just $ SpanEventSpecs
+                         [ recordException someEx TimestampSourceNow mempty
+                         ]
+                   }
+      -- N.B. It is important that we finish the span after recording the
+      -- exception and not the other way around, because the span is no longer
+      -- recording after it is ended.
+      processSpan tracerOps spanKey
 
 instance (MonadIO m) => MonadTraceContext (TracingT m) where
   getSpanContext mutableSpan =
     TracingT \_tracerOps ->
       fmap (fmap spanContext) $ getContext $ spanKey mutableSpan
 
-  updateSpan mutableSpan spanUpdateSpec =
+  updateSpan mutableSpan updateSpanSpec =
     TracingT \tracerOps -> do
-      updater <- do
-        buildSpanUpdater
-          (liftIO $ tracerOpsGetCurrentTimestamp tracerOps)
-          spanUpdateSpec
-      updateContext (spanKey mutableSpan) updater
+      updateContext (spanKey mutableSpan)
+        =<< buildSpanUpdater (liftIO $ tracerOpsNow tracerOps) updateSpanSpec
 
 runTracingT
   :: forall m a
@@ -147,7 +148,7 @@ runTracingT action tracer =
   where
   tracerOps =
     TracerOps
-      { tracerOpsGetCurrentTimestamp = tracerGetCurrentTimestamp tracer
+      { tracerOpsNow = tracerGetCurrentTimestamp tracer
       , tracerOpsStartSpan = tracerStartSpan tracer
       , tracerOpsProcessSpan = tracerProcessSpan tracer
       }
@@ -163,9 +164,38 @@ mapTracingT f action =
     ContextT \contextBackend ->
       f $ runContextT (unTracingT action tracerOps) contextBackend
 
+buildSpanSpec
+  :: (MonadIO m)
+  => IO Timestamp
+  -> NewSpanSpec
+  -> ContextT Span m SpanSpec
+buildSpanSpec getCurrentTimestamp newSpanSpec = do
+  spanSpecLineage <- do
+    case newSpanSpecLineageSource newSpanSpec of
+      SpanLineageSourceExplicit spanLineage -> pure spanLineage
+      SpanLineageSourceImplicit -> do
+        getAttachedContextKey >>= \case
+          Nothing -> pure SpanLineageRoot
+          Just ctxKey -> do
+            ContextSnapshot { contextSnapshotValue } <- getContext ctxKey
+            pure $ SpanLineageChildOf $ spanContext contextSnapshotValue
+
+  spanSpecStart <- do
+    case newSpanSpecStart newSpanSpec of
+      TimestampSourceAt timestamp -> pure timestamp
+      TimestampSourceNow -> liftIO getCurrentTimestamp
+
+  pure SpanSpec
+    { spanSpecLineage
+    , spanSpecStart
+    , spanSpecKind = newSpanSpecKind newSpanSpec
+    , spanSpecAttributes = newSpanSpecAttributes newSpanSpec
+    , spanSpecLinks = newSpanSpecLinks newSpanSpec
+    }
+
 data TracerOps = TracerOps
-  { tracerOpsGetCurrentTimestamp :: IO Timestamp
-  , tracerOpsStartSpan :: SpanName -> SpanSpec -> IO Span
+  { tracerOpsNow :: IO Timestamp
+  , tracerOpsStartSpan :: SpanSpec -> IO Span
   , tracerOpsProcessSpan :: EndedSpan -> IO ()
   }
 
