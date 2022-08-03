@@ -6,6 +6,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE StrictData #-}
@@ -22,7 +23,7 @@ module OTel.API.Core.Internal
   , Timestamp(..)
   , timestampFromNanoseconds
   , timestampToNanoseconds
-  , TimestampSource(..)
+  , TimestampSource(.., Now, At)
   , InstrumentationScope(..)
   , InstrumentationScopeName(..)
   , Version(..)
@@ -32,12 +33,10 @@ module OTel.API.Core.Internal
 
     -- * Attributes
   , Attrs(..)
-  , fromAttrs
+  , attrsToList
   , SomeAttr(..)
   , Attr(..)
   , AttrVals(..)
-  , fromAttrVals
-  , toAttrVals
   , AttrType(..)
   , KnownAttrType(..)
 
@@ -68,10 +67,10 @@ module OTel.API.Core.Internal
   , Span(..)
   , EndedSpan(..)
   , toEndedSpan
-  , SpanLineageSource(..)
-  , SpanLineage(..)
-  , SpanKind(..)
-  , SpanStatus(..)
+  , SpanParentSource(.., Implicit, Explicit)
+  , SpanParent(.., Root, ChildOf)
+  , SpanKind(.., Server, Client, Producer, Consumer, Internal)
+  , SpanStatus(.., Unset, OK, Error)
   ) where
 
 import Control.Exception (SomeException(..))
@@ -128,6 +127,16 @@ data TimestampSource
   | TimestampSourceAt Timestamp
   deriving stock (Eq, Show)
 
+pattern Now :: TimestampSource
+pattern Now <- TimestampSourceNow where
+  Now = TimestampSourceNow
+
+pattern At :: Timestamp -> TimestampSource
+pattern At timestamp <- TimestampSourceAt timestamp where
+  At timestamp = TimestampSourceAt timestamp
+
+{-# COMPLETE Now, At :: TimestampSource #-}
+
 data InstrumentationScope = InstrumentationScope
   { instrumentationScopeName :: InstrumentationScopeName
   , instrumentationScopeVersion :: Maybe Version
@@ -176,8 +185,8 @@ newtype Attrs = Attrs
   { unAttrs :: DList SomeAttr
   } deriving (Eq, Monoid, Semigroup, Show) via (DList SomeAttr)
 
-fromAttrs :: Attrs -> [SomeAttr]
-fromAttrs = DList.toList . unAttrs
+attrsToList :: Attrs -> [SomeAttr]
+attrsToList = DList.toList . unAttrs
 
 data SomeAttr where
   SomeAttr :: Attr a -> SomeAttr
@@ -219,15 +228,6 @@ newtype AttrVals a = AttrVals
   { unAttrVals :: DList a
   } deriving (Eq, Monoid, Semigroup, Show) via (DList a)
     deriving (Foldable, Functor, Applicative, Monad) via DList
-
-instance Traversable AttrVals where
-  traverse f (AttrVals xs) = fmap AttrVals $ traverse f xs
-
-fromAttrVals :: AttrVals a -> [a]
-fromAttrVals = DList.toList . unAttrVals
-
-toAttrVals :: [a] -> AttrVals a
-toAttrVals = AttrVals . DList.fromList
 
 data AttrType (a :: Type) where
   AttrTypeText        :: AttrType Text
@@ -384,7 +384,7 @@ newtype SpanLinks = SpanLinks
     deriving (Semigroup, Monoid) via [(Text, Text)]
 
 data SpanSpec = SpanSpec
-  { spanSpecLineage :: SpanLineage
+  { spanSpecParent :: SpanParent
   , spanSpecStart :: Timestamp
   , spanSpecKind :: SpanKind
   , spanSpecAttributes :: Attrs
@@ -393,7 +393,7 @@ data SpanSpec = SpanSpec
 
 data NewSpanSpec = NewSpanSpec
   { newSpanSpecName :: SpanName
-  , newSpanSpecLineageSource :: SpanLineageSource
+  , newSpanSpecParentSource :: SpanParentSource
   , newSpanSpecStart :: TimestampSource
   , newSpanSpecKind :: SpanKind
   , newSpanSpecAttributes :: Attrs
@@ -410,7 +410,7 @@ defaultNewSpanSpec :: NewSpanSpec
 defaultNewSpanSpec =
   NewSpanSpec
     { newSpanSpecName = ""
-    , newSpanSpecLineageSource = SpanLineageSourceImplicit
+    , newSpanSpecParentSource = SpanParentSourceImplicit
     , newSpanSpecStart = TimestampSourceNow
     , newSpanSpecKind = SpanKindInternal
     , newSpanSpecAttributes = mempty
@@ -499,7 +499,7 @@ instance IsString SpanName where
   fromString = SpanName . Text.pack
 
 data Span = Span
-  { spanLineage :: SpanLineage
+  { spanParent :: SpanParent
   , spanContext :: SpanContext
   , spanName :: SpanName
   , spanStatus :: SpanStatus
@@ -512,7 +512,7 @@ data Span = Span
   } deriving stock (Eq, Show)
 
 data EndedSpan = EndedSpan
-  { endedSpanLineage :: SpanLineage
+  { endedSpanParent :: SpanParent
   , endedSpanContext :: SpanContext
   , endedSpanName :: SpanName
   , endedSpanStatus :: SpanStatus
@@ -527,7 +527,7 @@ data EndedSpan = EndedSpan
 toEndedSpan :: Timestamp -> Span -> EndedSpan
 toEndedSpan endedSpanEnd span =
   EndedSpan
-    { endedSpanLineage = spanLineage span
+    { endedSpanParent = spanParent span
     , endedSpanContext = spanContext span
     , endedSpanName = spanName span
     , endedSpanStatus = spanStatus span
@@ -539,15 +539,35 @@ toEndedSpan endedSpanEnd span =
     , endedSpanEvents = spanEvents span
     }
 
-data SpanLineageSource
-  = SpanLineageSourceImplicit
-  | SpanLineageSourceExplicit SpanLineage
+data SpanParentSource
+  = SpanParentSourceImplicit
+  | SpanParentSourceExplicit SpanParent
   deriving stock (Eq, Show)
 
-data SpanLineage
-  = SpanLineageRoot
-  | SpanLineageChildOf SpanContext
+pattern Implicit :: SpanParentSource
+pattern Implicit <- SpanParentSourceImplicit where
+  Implicit = SpanParentSourceImplicit
+
+pattern Explicit :: SpanParent -> SpanParentSource
+pattern Explicit sp <- SpanParentSourceExplicit sp where
+  Explicit sp = SpanParentSourceExplicit sp
+
+{-# COMPLETE Implicit, Explicit :: SpanParentSource #-}
+
+data SpanParent
+  = SpanParentRoot
+  | SpanParentChildOf SpanContext
   deriving stock (Eq, Show)
+
+pattern Root :: SpanParent
+pattern Root <- SpanParentRoot where
+  Root = SpanParentRoot
+
+pattern ChildOf :: SpanContext -> SpanParent
+pattern ChildOf sc <- SpanParentChildOf sc where
+  ChildOf sc = SpanParentChildOf sc
+
+{-# COMPLETE Root, ChildOf :: SpanParent #-}
 
 data SpanKind
   = SpanKindServer
@@ -557,11 +577,47 @@ data SpanKind
   | SpanKindInternal
   deriving stock (Eq, Show)
 
+pattern Server :: SpanKind
+pattern Server <- SpanKindServer where
+  Server = SpanKindServer
+
+pattern Client :: SpanKind
+pattern Client <- SpanKindClient where
+  Client = SpanKindClient
+
+pattern Producer :: SpanKind
+pattern Producer <- SpanKindProducer where
+  Producer = SpanKindProducer
+
+pattern Consumer :: SpanKind
+pattern Consumer <- SpanKindConsumer where
+  Consumer = SpanKindConsumer
+
+pattern Internal :: SpanKind
+pattern Internal <- SpanKindInternal where
+  Internal = SpanKindInternal
+
+{-# COMPLETE Server, Client, Producer, Consumer, Internal :: SpanKind #-}
+
 data SpanStatus
   = SpanStatusUnset
   | SpanStatusOk
   | SpanStatusError Text
   deriving stock (Eq, Show)
+
+pattern Unset :: SpanStatus
+pattern Unset <- SpanStatusUnset where
+  Unset = SpanStatusUnset
+
+pattern OK :: SpanStatus
+pattern OK <- SpanStatusOk where
+  OK = SpanStatusOk
+
+pattern Error :: Text -> SpanStatus
+pattern Error errText <- SpanStatusError errText where
+  Error errText = SpanStatusError errText
+
+{-# COMPLETE Unset, OK, Error :: SpanStatus #-}
 
 -- $disclaimer
 --

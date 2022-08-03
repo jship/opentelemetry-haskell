@@ -39,8 +39,8 @@ import Control.Monad.Writer.Class (MonadWriter)
 import Data.Kind (Type)
 import Data.Monoid (Ap(..))
 import OTel.API.Core
-  ( NewSpanSpec(..), Span(spanContext, spanIsRecording), SpanEventSpecs(..), SpanLineage(..)
-  , SpanLineageSource(..), SpanSpec(..), TimestampSource(..), Tracer(..)
+  ( NewSpanSpec(..), Span(spanContext, spanIsRecording), SpanEventSpecs(..), SpanParent(..)
+  , SpanParentSource(..), SpanSpec(..), TimestampSource(..), Tracer(..)
   , UpdateSpanSpec(updateSpanSpecEvents), EndedSpan, Timestamp, buildSpanUpdater
   , defaultUpdateSpanSpec, recordException, toEndedSpan
   )
@@ -170,15 +170,15 @@ buildSpanSpec
   -> NewSpanSpec
   -> ContextT Span m SpanSpec
 buildSpanSpec getCurrentTimestamp newSpanSpec = do
-  spanSpecLineage <- do
-    case newSpanSpecLineageSource newSpanSpec of
-      SpanLineageSourceExplicit spanLineage -> pure spanLineage
-      SpanLineageSourceImplicit -> do
+  spanSpecParent <- do
+    case newSpanSpecParentSource newSpanSpec of
+      SpanParentSourceExplicit spanParent -> pure spanParent
+      SpanParentSourceImplicit -> do
         getAttachedContextKey >>= \case
-          Nothing -> pure SpanLineageRoot
+          Nothing -> pure SpanParentRoot
           Just ctxKey -> do
             ContextSnapshot { contextSnapshotValue } <- getContext ctxKey
-            pure $ SpanLineageChildOf $ spanContext contextSnapshotValue
+            pure $ SpanParentChildOf $ spanContext contextSnapshotValue
 
   spanSpecStart <- do
     case newSpanSpecStart newSpanSpec of
@@ -186,7 +186,7 @@ buildSpanSpec getCurrentTimestamp newSpanSpec = do
       TimestampSourceNow -> liftIO getCurrentTimestamp
 
   pure SpanSpec
-    { spanSpecLineage
+    { spanSpecParent
     , spanSpecStart
     , spanSpecKind = newSpanSpecKind newSpanSpec
     , spanSpecAttributes = newSpanSpecAttributes newSpanSpec

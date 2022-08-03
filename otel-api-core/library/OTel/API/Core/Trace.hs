@@ -19,7 +19,7 @@ module OTel.API.Core.Trace
   , SpanSpec(..)
 
   , NewSpanSpec
-      ( newSpanSpecLineageSource
+      ( newSpanSpecParentSource
       , newSpanSpecStart
       , newSpanSpecKind
       , newSpanSpecAttributes
@@ -48,7 +48,7 @@ module OTel.API.Core.Trace
   , Span(..)
 
   , EndedSpan
-      ( endedSpanLineage
+      ( endedSpanParent
       , endedSpanContext
       , endedSpanName
       , endedSpanStatus
@@ -61,8 +61,8 @@ module OTel.API.Core.Trace
       )
   , toEndedSpan
 
-  , SpanLineageSource(..)
-  , SpanLineage(..)
+  , SpanParentSource(..)
+  , SpanParent(..)
 
   , SpanKind(..)
 

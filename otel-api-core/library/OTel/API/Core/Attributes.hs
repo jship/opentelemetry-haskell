@@ -1,13 +1,11 @@
 module OTel.API.Core.Attributes
   ( Attrs
-  , fromAttrs
+  , attrsToList
 
   , SomeAttr(..)
   , Attr(..)
 
   , AttrVals
-  , fromAttrVals
-  , toAttrVals
 
   , AttrType(..)
   , KnownAttrType(..)
