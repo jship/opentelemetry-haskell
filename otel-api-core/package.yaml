@@ -29,7 +29,7 @@ ghc-options:
 library:
   dependencies:
   - base >=4.11.1.0 && <5
+  - dlist
   - otel-api-context
   - text
-  - vector
   source-dirs: library

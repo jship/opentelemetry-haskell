@@ -1,5 +1,7 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -29,16 +31,15 @@ module OTel.API.Core.Internal
   , schemaURLToText
 
     -- * Attributes
-  , Attributes(..)
-  , fromAttributes
-  , Attribute(..)
-  , AttrValue(..)
-  , ToAttrValue(..)
-  , KnownPrimAttrType(..)
-  , primAttrVal
-  , primAttrVal'
-  , PrimAttrType(..)
-  , PrimAttrValue(..)
+  , Attrs(..)
+  , fromAttrs
+  , SomeAttr(..)
+  , Attr(..)
+  , AttrVals(..)
+  , fromAttrVals
+  , toAttrVals
+  , AttrType(..)
+  , KnownAttrType(..)
 
     -- * Tracing
   , Tracer(..)
@@ -71,168 +72,46 @@ module OTel.API.Core.Internal
   , SpanLineage(..)
   , SpanKind(..)
   , SpanStatus(..)
-
-    -- * Miscellaneous
-  , DList(..)
-  , fromDList
   ) where
 
 import Control.Exception (SomeException(..))
+import Data.DList (DList)
 import Data.Int (Int64)
 import Data.Kind (Constraint, Type)
-import Data.Monoid (Endo(..))
 import Data.Proxy (Proxy(..))
 import Data.String (IsString(fromString))
 import Data.Text (Text)
-import Data.Typeable ((:~:)(..), Typeable, eqT)
 import Data.Word (Word64, Word8)
 import OTel.API.Context (ContextBackend)
 import Prelude hiding (span)
 import qualified Control.Exception as Exception
+import qualified Data.DList as DList
 import qualified Data.Maybe as Maybe
 import qualified Data.Text as Text
 import qualified Data.Traversable as Traversable
 
-newtype Attributes = Attributes
-  { unAttributes :: DList Attribute
-  } deriving (Eq, Semigroup, Show, Monoid) via (DList Attribute)
-
-fromAttributes :: Attributes -> [Attribute]
-fromAttributes = fromDList . unAttributes
-
-instance IsString Key where
-  fromString = Key . Text.pack
-
-data Attribute = Attribute
-  { attributeKey :: Key
-  , attributeValue :: AttrValue
-  } deriving stock (Eq, Show)
-
-data AttrValue where
-  AttrValuePrimitive
-    :: (KnownPrimAttrType a)
-    => PrimAttrValue a
-    -> AttrValue
-  AttrValueArray
-    :: (KnownPrimAttrType a)
-    => [PrimAttrValue a]
-    -> AttrValue
-
-instance Eq AttrValue where
-  ax == ay =
-    case (ax, ay) of
-      (AttrValuePrimitive x, AttrValuePrimitive y) ->
-        case eqTPrim x y of
-          Nothing -> False
-          Just Refl -> x == y
-      (AttrValueArray xs, AttrValueArray ys) ->
-        case eqTPrimList xs ys of
-          Nothing -> False
-          Just Refl -> xs == ys
-      (_, _) -> False
-    where
-    eqTPrim
-      :: forall a b
-       . (Typeable a, Typeable b)
-      => PrimAttrValue a
-      -> PrimAttrValue b
-      -> Maybe (a :~: b)
-    eqTPrim _ _ = eqT @a @b
-
-    eqTPrimList
-      :: forall a b
-       . (Typeable a, Typeable b)
-      => [PrimAttrValue a]
-      -> [PrimAttrValue b]
-      -> Maybe (a :~: b)
-    eqTPrimList _ _ = eqT @a @b
-
-instance Show AttrValue where
-  show = \case
-    AttrValuePrimitive x -> show x
-    AttrValueArray xs -> show xs
-
-class ToAttrValue a where
-  toAttrValue :: a -> AttrValue
-
-instance ToAttrValue Text where
-  toAttrValue = AttrValuePrimitive . PrimAttrValueText
-
-instance ToAttrValue Bool where
-  toAttrValue = AttrValuePrimitive . PrimAttrValueBool
-
-instance ToAttrValue Double where
-  toAttrValue = AttrValuePrimitive . PrimAttrValueDouble
-
-instance ToAttrValue Int64 where
-  toAttrValue = AttrValuePrimitive . PrimAttrValueInt
-
-instance (KnownPrimAttrType a) => ToAttrValue [a] where
-  toAttrValue = AttrValueArray . fmap primAttrVal
-
-class (Eq a, Show a, Typeable a) => KnownPrimAttrType a where
-  primAttrTypeVal :: proxy a -> PrimAttrType a
-
-instance KnownPrimAttrType Text where
-  primAttrTypeVal _ = PrimAttrTypeText
-
-instance KnownPrimAttrType Bool where
-  primAttrTypeVal _ = PrimAttrTypeBool
-
-instance KnownPrimAttrType Double where
-  primAttrTypeVal _ = PrimAttrTypeDouble
-
-instance KnownPrimAttrType Int64 where
-  primAttrTypeVal _ = PrimAttrTypeInt
-
-primAttrVal
-  :: forall a
-   . (KnownPrimAttrType a)
-  => a
-  -> PrimAttrValue a
-primAttrVal x = primAttrVal' (primAttrTypeVal $ Proxy @a) x
-
-primAttrVal' :: PrimAttrType a -> a -> PrimAttrValue a
-primAttrVal' ty x =
-  case ty of
-    PrimAttrTypeText -> PrimAttrValueText x
-    PrimAttrTypeBool -> PrimAttrValueBool x
-    PrimAttrTypeDouble -> PrimAttrValueDouble x
-    PrimAttrTypeInt -> PrimAttrValueInt x
-
-data PrimAttrType a where
-  PrimAttrTypeText   :: PrimAttrType Text
-  PrimAttrTypeBool   :: PrimAttrType Bool
-  PrimAttrTypeDouble :: PrimAttrType Double
-  PrimAttrTypeInt    :: PrimAttrType Int64
-
-deriving stock instance (Eq a) => Eq (PrimAttrType a)
-deriving stock instance (Show a) => Show (PrimAttrType a)
-
-data PrimAttrValue a where
-  PrimAttrValueText   :: Text   -> PrimAttrValue Text
-  PrimAttrValueBool   :: Bool   -> PrimAttrValue Bool
-  PrimAttrValueDouble :: Double -> PrimAttrValue Double
-  PrimAttrValueInt    :: Int64  -> PrimAttrValue Int64
-
-deriving stock instance (Eq a) => Eq (PrimAttrValue a)
-deriving stock instance (Show a) => Show (PrimAttrValue a)
-
 class KV (kv :: Type) where
-  type ToValue kv :: Type -> Constraint
-  (.@) :: ToValue kv v => Key -> v -> kv
+  type ValueConstraints kv :: Type -> Constraint
+  (.@) :: ValueConstraints kv v => Key v -> v -> kv
 
-instance KV Attributes where
-  type ToValue Attributes = ToAttrValue
-  name .@ value =
-    Attributes $ singletonDList Attribute
-      { attributeKey = name
-      , attributeValue = toAttrValue value
-      }
+instance KV Attrs where
+  type ValueConstraints Attrs = KnownAttrType
+  (.@) = go
+    where
+    go :: forall a. (KnownAttrType a) => Key a -> a -> Attrs
+    go k v =
+      Attrs $ DList.singleton $ SomeAttr Attr
+        { attrType = attrTypeVal $ Proxy @a
+        , attrKey = k
+        , attrVal = v
+        }
 
-newtype Key = Key
+newtype Key a = Key
   { unKey :: Text
   } deriving stock (Eq, Show)
+
+instance IsString (Key a) where
+  fromString = Key . Text.pack
 
 newtype Timestamp = Timestamp
   { unTimestamp :: Integer -- ^ nanoseconds
@@ -292,6 +171,106 @@ schemaURLFromText = Right . SchemaURL
 
 schemaURLToText :: SchemaURL -> Text
 schemaURLToText = unSchemaURL
+
+newtype Attrs = Attrs
+  { unAttrs :: DList SomeAttr
+  } deriving (Eq, Monoid, Semigroup, Show) via (DList SomeAttr)
+
+fromAttrs :: Attrs -> [SomeAttr]
+fromAttrs = DList.toList . unAttrs
+
+data SomeAttr where
+  SomeAttr :: Attr a -> SomeAttr
+
+instance Eq SomeAttr where
+  sa1 == sa2 =
+    case (sa1, sa2) of
+      (SomeAttr a1, SomeAttr a2) ->
+        case (attrType a1, attrType a2) of
+          (AttrTypeText, AttrTypeText) -> a1 == a2
+          (AttrTypeBool, AttrTypeBool) -> a1 == a2
+          (AttrTypeDouble, AttrTypeDouble) -> a1 == a2
+          (AttrTypeInt, AttrTypeInt) -> a1 == a2
+          (AttrTypeTextArray, AttrTypeTextArray) -> a1 == a2
+          (AttrTypeBoolArray, AttrTypeBoolArray) -> a1 == a2
+          (AttrTypeDoubleArray, AttrTypeDoubleArray) -> a1 == a2
+          (AttrTypeIntArray, AttrTypeIntArray) -> a1 == a2
+          (_, _) -> False
+
+instance Show SomeAttr where
+  show (SomeAttr attr) =
+    case attrType attr of
+      AttrTypeText -> show attr
+      AttrTypeBool -> show attr
+      AttrTypeDouble -> show attr
+      AttrTypeInt -> show attr
+      AttrTypeTextArray -> show attr
+      AttrTypeBoolArray -> show attr
+      AttrTypeDoubleArray -> show attr
+      AttrTypeIntArray -> show attr
+
+data Attr a = Attr
+  { attrType :: AttrType a
+  , attrKey :: Key a
+  , attrVal :: a
+  } deriving stock (Eq, Show)
+
+newtype AttrVals a = AttrVals
+  { unAttrVals :: DList a
+  } deriving (Eq, Monoid, Semigroup, Show) via (DList a)
+    deriving (Foldable, Functor, Applicative, Monad) via DList
+
+instance Traversable AttrVals where
+  traverse f (AttrVals xs) = fmap AttrVals $ traverse f xs
+
+fromAttrVals :: AttrVals a -> [a]
+fromAttrVals = DList.toList . unAttrVals
+
+toAttrVals :: [a] -> AttrVals a
+toAttrVals = AttrVals . DList.fromList
+
+data AttrType (a :: Type) where
+  AttrTypeText        :: AttrType Text
+  AttrTypeBool        :: AttrType Bool
+  AttrTypeDouble      :: AttrType Double
+  AttrTypeInt         :: AttrType Int64
+  AttrTypeTextArray   :: AttrType (AttrVals Text)
+  AttrTypeBoolArray   :: AttrType (AttrVals Bool)
+  AttrTypeDoubleArray :: AttrType (AttrVals Double)
+  AttrTypeIntArray    :: AttrType (AttrVals Int64)
+
+deriving stock instance (Eq a) => Eq (AttrType a)
+deriving stock instance (Show a) => Show (AttrType a)
+
+class KnownAttrType a where
+  attrTypeVal :: Proxy a -> AttrType a
+
+instance KnownAttrType Text where
+  attrTypeVal _ = AttrTypeText
+
+instance KnownAttrType Bool where
+  attrTypeVal _ = AttrTypeBool
+
+instance KnownAttrType Double where
+  attrTypeVal _ = AttrTypeDouble
+
+instance KnownAttrType Int64 where
+  attrTypeVal _ = AttrTypeInt
+
+instance KnownAttrType (AttrVals Text) where
+  attrTypeVal _ = AttrTypeTextArray
+
+instance KnownAttrType (AttrVals Bool) where
+  attrTypeVal _ = AttrTypeBoolArray
+
+instance KnownAttrType (AttrVals Double) where
+  attrTypeVal _ = AttrTypeDoubleArray
+
+instance KnownAttrType (AttrVals Int64) where
+  attrTypeVal _ = AttrTypeIntArray
+
+-- TODO: Provide convenience conversions from other types to known attribute
+-- types.
 
 --data TracerProvider = TracerProvider
 --  { tracerProviderGetTracer :: IO Tracer
@@ -364,7 +343,7 @@ newtype SpanEvents = SpanEvents
 data SpanEvent = SpanEvent
   { spanEventName :: SpanEventName
   , spanEventTimestamp :: Timestamp
-  , spanEventAttributes :: Attributes
+  , spanEventAttributes :: Attrs
   } deriving stock (Eq, Show)
 
 newtype SpanEventSpecs = SpanEventSpecs
@@ -375,7 +354,7 @@ newtype SpanEventSpecs = SpanEventSpecs
 data SpanEventSpec = SpanEventSpec
   { spanEventSpecName :: SpanEventName
   , spanEventSpecTimestamp :: TimestampSource
-  , spanEventSpecAttributes :: Attributes
+  , spanEventSpecAttributes :: Attrs
   } deriving stock (Eq, Show)
 
 defaultSpanEventSpec :: SpanEventSpec
@@ -408,7 +387,7 @@ data SpanSpec = SpanSpec
   { spanSpecLineage :: SpanLineage
   , spanSpecStart :: Timestamp
   , spanSpecKind :: SpanKind
-  , spanSpecAttributes :: Attributes
+  , spanSpecAttributes :: Attrs
   , spanSpecLinks :: SpanLinks
   } deriving stock (Eq, Show)
 
@@ -417,7 +396,7 @@ data NewSpanSpec = NewSpanSpec
   , newSpanSpecLineageSource :: SpanLineageSource
   , newSpanSpecStart :: TimestampSource
   , newSpanSpecKind :: SpanKind
-  , newSpanSpecAttributes :: Attributes
+  , newSpanSpecAttributes :: Attrs
   , newSpanSpecLinks :: SpanLinks
   } deriving stock (Eq, Show)
 
@@ -441,7 +420,7 @@ defaultNewSpanSpec =
 data UpdateSpanSpec = UpdateSpanSpec
   { updateSpanSpecName :: Maybe SpanName
   , updateSpanSpecStatus :: Maybe SpanStatus
-  , updateSpanSpecAttributes :: Maybe Attributes
+  , updateSpanSpecAttributes :: Maybe Attrs
   , updateSpanSpecEvents :: Maybe SpanEventSpecs
   }
 
@@ -501,7 +480,7 @@ buildSpanUpdater getTimestamp updateSpanSpec = do
 recordException
   :: SomeException
   -> TimestampSource
-  -> Attributes
+  -> Attrs
   -> SpanEventSpec
 recordException (SomeException e) timestamp attributes =
   SpanEventSpec
@@ -526,7 +505,7 @@ data Span = Span
   , spanStatus :: SpanStatus
   , spanStart :: Timestamp
   , spanKind :: SpanKind
-  , spanAttributes :: Attributes
+  , spanAttributes :: Attrs
   , spanLinks :: SpanLinks
   , spanEvents :: SpanEvents
   , spanIsRecording :: Bool
@@ -540,7 +519,7 @@ data EndedSpan = EndedSpan
   , endedSpanStart :: Timestamp
   , endedSpanEnd :: Timestamp
   , endedSpanKind :: SpanKind
-  , endedSpanAttributes :: Attributes
+  , endedSpanAttributes :: Attrs
   , endedSpanLinks :: SpanLinks
   , endedSpanEvents :: SpanEvents
   } deriving stock (Eq, Show)
@@ -583,22 +562,6 @@ data SpanStatus
   | SpanStatusOk
   | SpanStatusError Text
   deriving stock (Eq, Show)
-
-newtype DList a = DList
-  { unDList :: [a] -> [a]
-  } deriving (Semigroup, Monoid) via (Endo [a])
-
-instance (Eq a) => Eq (DList a) where
-  x == y = fromDList x == fromDList y
-
-instance (Show a) => Show (DList a) where
-  show = show . fromDList
-
-fromDList :: DList a -> [a]
-fromDList dlist = unDList dlist []
-
-singletonDList :: a -> DList a
-singletonDList = DList . (:)
 
 -- $disclaimer
 --
