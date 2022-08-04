@@ -38,15 +38,15 @@ import Control.Monad.Trans.Resource (MonadResource)
 import Control.Monad.Writer.Class (MonadWriter)
 import Data.Kind (Type)
 import Data.Monoid (Ap(..))
-import OTel.API.Core
-  ( NewSpanSpec(..), Span(spanContext, spanIsRecording), SpanEventSpecs(..), SpanParent(..)
-  , SpanParentSource(..), SpanSpec(..), TimestampSource(..), Tracer(..)
-  , UpdateSpanSpec(updateSpanSpecEvents), EndedSpan, Timestamp, buildSpanUpdater
-  , defaultUpdateSpanSpec, recordException, toEndedSpan
-  )
 import OTel.API.Context
   ( ContextSnapshot(..), ContextT(..), ContextKey, attachContext, getAttachedContextKey, getContext
   , updateContext
+  )
+import OTel.API.Core
+  ( NewSpanSpec(..), Span(spanContext, spanIsRecording), SpanParent(..), SpanParentSource(..)
+  , SpanSpec(..), TimestampSource(..), Tracer(..), UpdateSpanSpec(updateSpanSpecEvents), EndedSpan
+  , Timestamp, buildSpanUpdater, defaultUpdateSpanSpec, recordException, spanEventSpecsFromList
+  , toEndedSpan
   )
 import OTel.API.Trace.Core (MonadTraceContext(..), MonadTracing(..))
 import OTel.API.Trace.Core.Internal (MutableSpan(..))
@@ -119,7 +119,7 @@ instance (MonadIO m, MonadMask m) => MonadTracing (TracingT m) where
       _ <- updateContext spanKey
              =<< buildSpanUpdater (liftIO $ tracerOpsNow tracerOps) defaultUpdateSpanSpec
                    { updateSpanSpecEvents =
-                       Just $ SpanEventSpecs
+                       Just $ spanEventSpecsFromList
                          [ recordException someEx TimestampSourceNow mempty
                          ]
                    }
