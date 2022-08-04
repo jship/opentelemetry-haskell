@@ -47,24 +47,33 @@ module OTel.API.Core.Internal
     -- * Tracing
   , Tracer(..)
   , SpanContext(..)
-  , defaultSpanContext
+  , emptySpanContext
   , buildSpanUpdater
   , recordException
   , spanContextIsValid
   , TraceId(..)
-  , nullTraceId
+  , emptyTraceId
   , SpanId(..)
-  , nullSpanId
+  , emptySpanId
   , TraceFlags(..)
   , TraceState(..)
   , SpanEvents(..)
+  , spanEventsFromList
+  , spanEventsToList
+  , SpanEvent(..)
+  , SpanEventName(..)
   , SpanLinks(..)
+  , SpanLink(..)
+  , defaultSpanLink
+  , SpanLinkName(..)
   , SpanSpec(..)
   , NewSpanSpec(..)
   , defaultNewSpanSpec
   , UpdateSpanSpec(..)
   , defaultUpdateSpanSpec
   , SpanEventSpecs(..)
+  , spanEventSpecsFromList
+  , spanEventSpecsToList
   , SpanEventSpec(..)
   , defaultSpanEventSpec
   , SpanName(..)
@@ -531,11 +540,11 @@ data SpanContext = SpanContext
   , spanContextIsRemote :: Bool
   } deriving stock (Eq, Show)
 
-defaultSpanContext :: SpanContext
-defaultSpanContext =
+emptySpanContext :: SpanContext
+emptySpanContext =
   SpanContext
-    { spanContextTraceId = nullTraceId
-    , spanContextSpanId = nullSpanId
+    { spanContextTraceId = emptyTraceId
+    , spanContextSpanId = emptySpanId
     , spanContextTraceFlags = TraceFlags { unTraceFlags = 0 }
     , spanContextTraceState = TraceState  { unTraceState = [] }
     , spanContextIsRemote = False
@@ -543,7 +552,7 @@ defaultSpanContext =
 
 spanContextIsValid :: SpanContext -> Bool
 spanContextIsValid spanContext =
-  spanContextTraceId /= nullTraceId && spanContextSpanId /= nullSpanId
+  spanContextTraceId /= emptyTraceId && spanContextSpanId /= emptySpanId
   where
   SpanContext { spanContextTraceId, spanContextSpanId } = spanContext
 
@@ -554,8 +563,8 @@ data TraceId = TraceId
   , traceIdLo :: Word64
   } deriving stock (Eq, Show)
 
-nullTraceId :: TraceId
-nullTraceId = TraceId { traceIdHi = 0, traceIdLo = 0 }
+emptyTraceId :: TraceId
+emptyTraceId = TraceId { traceIdHi = 0, traceIdLo = 0 }
 
 -- TODO: Get hex string
 -- TODO: Get byte array
@@ -563,8 +572,8 @@ data SpanId = SpanId
   { spanIdLo :: Word64
   } deriving stock (Eq, Show)
 
-nullSpanId :: SpanId
-nullSpanId = SpanId { spanIdLo = 0 }
+emptySpanId :: SpanId
+emptySpanId = SpanId { spanIdLo = 0 }
 
 newtype TraceFlags = TraceFlags
   { unTraceFlags :: Word8
@@ -575,9 +584,14 @@ newtype TraceState = TraceState
   } deriving stock (Eq, Show)
 
 newtype SpanEvents = SpanEvents
-  { unSpanEvents :: [SpanEvent] -- TODO: Better type
-  } deriving stock (Eq, Show)
-    deriving (Semigroup, Monoid) via [SpanEvent]
+  { unSpanEvents :: DList SpanEvent
+  } deriving (Eq, Monoid, Semigroup, Show) via (DList SpanEvent)
+
+spanEventsFromList :: [SpanEvent] -> SpanEvents
+spanEventsFromList = SpanEvents . DList.fromList
+
+spanEventsToList :: SpanEvents -> [SpanEvent]
+spanEventsToList = Foldable.toList . unSpanEvents
 
 data SpanEvent = SpanEvent
   { spanEventName :: SpanEventName
@@ -586,9 +600,14 @@ data SpanEvent = SpanEvent
   } deriving stock (Eq, Show)
 
 newtype SpanEventSpecs = SpanEventSpecs
-  { unSpanEventSpecs :: [SpanEventSpec] -- TODO: Better type
-  } deriving stock (Eq, Show)
-    deriving (Semigroup, Monoid) via [SpanEventSpec]
+  { unSpanEventSpecs :: DList SpanEventSpec
+  } deriving (Eq, Monoid, Semigroup, Show) via (DList SpanEventSpec)
+
+spanEventSpecsFromList :: [SpanEventSpec] -> SpanEventSpecs
+spanEventSpecsFromList = SpanEventSpecs . DList.fromList
+
+spanEventSpecsToList :: SpanEventSpecs -> [SpanEventSpec]
+spanEventSpecsToList = Foldable.toList . unSpanEventSpecs
 
 data SpanEventSpec = SpanEventSpec
   { spanEventSpecName :: SpanEventName
@@ -618,9 +637,27 @@ instance IsString SpanEventName where
   fromString = SpanEventName . Text.pack
 
 newtype SpanLinks = SpanLinks
-  { unSpanLinks :: [(Text, Text)] -- TODO: Better type
+  { unSpanLinks :: DList SpanLink
+  } deriving (Eq, Monoid, Semigroup, Show) via (DList SpanLink)
+
+data SpanLink = SpanLink
+  { spanLinkSpanContext :: SpanContext
+  , spanLinkAttributes :: Attrs
   } deriving stock (Eq, Show)
-    deriving (Semigroup, Monoid) via [(Text, Text)]
+
+defaultSpanLink :: SpanLink
+defaultSpanLink =
+  SpanLink
+    { spanLinkSpanContext = emptySpanContext
+    , spanLinkAttributes = mempty
+    }
+
+newtype SpanLinkName = SpanLinkName
+  { unSpanLinkName :: Text
+  } deriving stock (Eq, Show)
+
+instance IsString SpanLinkName where
+  fromString = SpanLinkName . Text.pack
 
 data SpanSpec = SpanSpec
   { spanSpecParent :: SpanParent

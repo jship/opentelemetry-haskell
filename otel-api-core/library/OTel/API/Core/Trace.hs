@@ -8,7 +8,7 @@ module OTel.API.Core.Trace
       , spanContextTraceState
       , spanContextIsRemote
       )
-  , defaultSpanContext
+  , emptySpanContext
   , spanContextIsValid
 
   , TraceId
@@ -36,6 +36,10 @@ module OTel.API.Core.Trace
       , updateSpanSpecEvents
       )
   , defaultUpdateSpanSpec
+
+  , SpanEventSpecs
+  , spanEventSpecsFromList
+  , spanEventSpecsToList
 
   , SpanEventSpec
       ( spanEventSpecName
@@ -69,9 +73,18 @@ module OTel.API.Core.Trace
   , SpanStatus(..)
 
   , SpanEvents
-  , SpanEventSpecs(..) -- TODO: Constructor exposed :(
+  , spanEventsFromList
+  , spanEventsToList
+  , SpanEvent(..)
+  , SpanEventName(..)
 
   , SpanLinks
+  , SpanLink
+      ( spanLinkSpanContext
+      , spanLinkAttributes
+      )
+  , defaultSpanLink
+  , SpanLinkName(..)
   ) where
 
 import OTel.API.Core.Internal
