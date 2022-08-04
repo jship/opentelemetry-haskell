@@ -9,6 +9,7 @@ module OTel.API.Core.Attributes
 
   , AttrType(..)
   , KnownAttrType(..)
+  , ToAttrVal(..)
   ) where
 
 import OTel.API.Core.Internal

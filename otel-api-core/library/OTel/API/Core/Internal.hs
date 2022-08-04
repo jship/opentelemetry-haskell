@@ -2,8 +2,10 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
@@ -13,6 +15,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE UndecidableInstances #-}
 module OTel.API.Core.Internal
   ( -- * Disclaimer
     -- $disclaimer
@@ -39,6 +42,7 @@ module OTel.API.Core.Internal
   , AttrVals(..)
   , AttrType(..)
   , KnownAttrType(..)
+  , ToAttrVal(..)
 
     -- * Tracing
   , Tracer(..)
@@ -75,34 +79,39 @@ module OTel.API.Core.Internal
 
 import Control.Exception (SomeException(..))
 import Data.DList (DList)
-import Data.Int (Int64)
+import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Kind (Constraint, Type)
 import Data.Proxy (Proxy(..))
+import Data.Sequence (Seq)
 import Data.String (IsString(fromString))
 import Data.Text (Text)
-import Data.Word (Word64, Word8)
+import Data.Vector (Vector)
+import Data.Word (Word16, Word32, Word64, Word8)
+import GHC.Float (float2Double)
 import OTel.API.Context (ContextBackend)
 import Prelude hiding (span)
 import qualified Control.Exception as Exception
 import qualified Data.DList as DList
+import qualified Data.Foldable as Foldable
 import qualified Data.Maybe as Maybe
 import qualified Data.Text as Text
+import qualified Data.Text.Lazy as Text.Lazy
 import qualified Data.Traversable as Traversable
 
 class KV (kv :: Type) where
-  type ValueConstraints kv :: Type -> Constraint
-  (.@) :: ValueConstraints kv v => Key v -> v -> kv
+  type KVConstraints kv :: Type -> Type -> Constraint
+  (.@) :: KVConstraints kv from to => Key to -> from -> kv
 
 instance KV Attrs where
-  type ValueConstraints Attrs = KnownAttrType
+  type KVConstraints Attrs = ToAttrVal
   (.@) = go
     where
-    go :: forall a. (KnownAttrType a) => Key a -> a -> Attrs
+    go :: forall to from. (ToAttrVal from to) => Key to -> from -> Attrs
     go k v =
       Attrs $ DList.singleton $ SomeAttr Attr
-        { attrType = attrTypeVal $ Proxy @a
+        { attrType = attrTypeVal $ Proxy @to
         , attrKey = k
-        , attrVal = v
+        , attrVal = toAttrVal @from @to v
         }
 
 newtype Key a = Key
@@ -269,8 +278,238 @@ instance KnownAttrType (AttrVals Double) where
 instance KnownAttrType (AttrVals Int64) where
   attrTypeVal _ = AttrTypeIntArray
 
--- TODO: Provide convenience conversions from other types to known attribute
--- types.
+class (KnownAttrType to) => ToAttrVal from to | from -> to where
+  toAttrVal :: from -> to
+
+instance ToAttrVal Text Text where
+  toAttrVal = id
+
+instance ToAttrVal Text.Lazy.Text Text where
+  toAttrVal = Text.Lazy.toStrict
+
+instance ToAttrVal String Text where
+  toAttrVal = Text.pack
+
+instance ToAttrVal Bool Bool where
+  toAttrVal = id
+
+instance ToAttrVal Double Double where
+  toAttrVal = id
+
+instance ToAttrVal Float Double where
+  toAttrVal = float2Double
+
+-- | Precision may be lost.
+instance ToAttrVal Rational Double where
+  toAttrVal = fromRational
+
+instance ToAttrVal Int Int64 where
+  toAttrVal = fromIntegral
+
+instance ToAttrVal Int8 Int64 where
+  toAttrVal = fromIntegral
+
+instance ToAttrVal Int16 Int64 where
+  toAttrVal = fromIntegral
+
+instance ToAttrVal Int32 Int64 where
+  toAttrVal = fromIntegral
+
+instance ToAttrVal Int64 Int64 where
+  toAttrVal = id
+
+instance ToAttrVal Word8 Int64 where
+  toAttrVal = fromIntegral
+
+instance ToAttrVal Word16 Int64 where
+  toAttrVal = fromIntegral
+
+instance ToAttrVal Word32 Int64 where
+  toAttrVal = fromIntegral
+
+instance ToAttrVal (AttrVals Text) (AttrVals Text) where
+  toAttrVal = id
+
+instance ToAttrVal [Text] (AttrVals Text) where
+  toAttrVal = AttrVals . DList.fromList
+
+instance ToAttrVal (Seq Text) (AttrVals Text) where
+  toAttrVal = AttrVals . DList.fromList . Foldable.toList
+
+instance ToAttrVal (Vector Text) (AttrVals Text) where
+  toAttrVal = AttrVals . DList.fromList . Foldable.toList
+
+instance ToAttrVal (AttrVals Text.Lazy.Text) (AttrVals Text) where
+  toAttrVal = fmap (toAttrVal @Text.Lazy.Text @Text)
+
+instance ToAttrVal [Text.Lazy.Text] (AttrVals Text) where
+  toAttrVal = AttrVals . DList.fromList . fmap (toAttrVal @Text.Lazy.Text @Text)
+
+instance ToAttrVal (Seq Text.Lazy.Text) (AttrVals Text) where
+  toAttrVal = AttrVals . DList.fromList . Foldable.toList . fmap (toAttrVal @Text.Lazy.Text @Text)
+
+instance ToAttrVal (Vector Text.Lazy.Text) (AttrVals Text) where
+  toAttrVal = AttrVals . DList.fromList . Foldable.toList . fmap (toAttrVal @Text.Lazy.Text @Text)
+
+instance ToAttrVal (AttrVals String) (AttrVals Text) where
+  toAttrVal = fmap (toAttrVal @String @Text)
+
+instance ToAttrVal [String] (AttrVals Text) where
+  toAttrVal = AttrVals . DList.fromList . fmap (toAttrVal @String @Text)
+
+instance ToAttrVal (Seq String) (AttrVals Text) where
+  toAttrVal = AttrVals . DList.fromList . Foldable.toList . fmap (toAttrVal @String @Text)
+
+instance ToAttrVal (Vector String) (AttrVals Text) where
+  toAttrVal = AttrVals . DList.fromList . Foldable.toList . fmap (toAttrVal @String @Text)
+
+instance ToAttrVal (AttrVals Bool) (AttrVals Bool) where
+  toAttrVal = id
+
+instance ToAttrVal [Bool] (AttrVals Bool) where
+  toAttrVal = AttrVals . DList.fromList
+
+instance ToAttrVal (Seq Bool) (AttrVals Bool) where
+  toAttrVal = AttrVals . DList.fromList . Foldable.toList
+
+instance ToAttrVal (Vector Bool) (AttrVals Bool) where
+  toAttrVal = AttrVals . DList.fromList . Foldable.toList
+
+instance ToAttrVal (AttrVals Double) (AttrVals Double) where
+  toAttrVal = id
+
+instance ToAttrVal [Double] (AttrVals Double) where
+  toAttrVal = AttrVals . DList.fromList
+
+instance ToAttrVal (Seq Double) (AttrVals Double) where
+  toAttrVal = AttrVals . DList.fromList . Foldable.toList
+
+instance ToAttrVal (Vector Double) (AttrVals Double) where
+  toAttrVal = AttrVals . DList.fromList . Foldable.toList
+
+instance ToAttrVal (AttrVals Float) (AttrVals Double) where
+  toAttrVal = fmap (toAttrVal @Float @Double)
+
+instance ToAttrVal [Float] (AttrVals Double) where
+  toAttrVal = AttrVals . DList.fromList . fmap (toAttrVal @Float @Double)
+
+instance ToAttrVal (Seq Float) (AttrVals Double) where
+  toAttrVal = AttrVals . DList.fromList . Foldable.toList . fmap (toAttrVal @Float @Double)
+
+instance ToAttrVal (Vector Float) (AttrVals Double) where
+  toAttrVal = AttrVals . DList.fromList . Foldable.toList . fmap (toAttrVal @Float @Double)
+
+-- | Precision may be lost.
+instance ToAttrVal (AttrVals Rational) (AttrVals Double) where
+  toAttrVal = fmap (toAttrVal @Rational @Double)
+
+-- | Precision may be lost.
+instance ToAttrVal [Rational] (AttrVals Double) where
+  toAttrVal = AttrVals . DList.fromList . fmap (toAttrVal @Rational @Double)
+
+-- | Precision may be lost.
+instance ToAttrVal (Seq Rational) (AttrVals Double) where
+  toAttrVal = AttrVals . DList.fromList . Foldable.toList . fmap (toAttrVal @Rational @Double)
+
+-- | Precision may be lost.
+instance ToAttrVal (Vector Rational) (AttrVals Double) where
+  toAttrVal = AttrVals . DList.fromList . Foldable.toList . fmap (toAttrVal @Rational @Double)
+
+instance ToAttrVal (AttrVals Int) (AttrVals Int64) where
+  toAttrVal = fmap (toAttrVal @Int @Int64)
+
+instance ToAttrVal [Int] (AttrVals Int64) where
+  toAttrVal = AttrVals . DList.fromList . fmap (toAttrVal @Int @Int64)
+
+instance ToAttrVal (Seq Int) (AttrVals Int64) where
+  toAttrVal = AttrVals . DList.fromList . Foldable.toList . fmap (toAttrVal @Int @Int64)
+
+instance ToAttrVal (Vector Int) (AttrVals Int64) where
+  toAttrVal = AttrVals . DList.fromList . Foldable.toList . fmap (toAttrVal @Int @Int64)
+
+instance ToAttrVal (AttrVals Int8) (AttrVals Int64) where
+  toAttrVal = fmap (toAttrVal @Int8 @Int64)
+
+instance ToAttrVal [Int8] (AttrVals Int64) where
+  toAttrVal = AttrVals . DList.fromList . fmap (toAttrVal @Int8 @Int64)
+
+instance ToAttrVal (Seq Int8) (AttrVals Int64) where
+  toAttrVal = AttrVals . DList.fromList . Foldable.toList . fmap (toAttrVal @Int8 @Int64)
+
+instance ToAttrVal (Vector Int8) (AttrVals Int64) where
+  toAttrVal = AttrVals . DList.fromList . Foldable.toList . fmap (toAttrVal @Int8 @Int64)
+
+instance ToAttrVal (AttrVals Int16) (AttrVals Int64) where
+  toAttrVal = fmap (toAttrVal @Int16 @Int64)
+
+instance ToAttrVal [Int16] (AttrVals Int64) where
+  toAttrVal = AttrVals . DList.fromList . fmap (toAttrVal @Int16 @Int64)
+
+instance ToAttrVal (Seq Int16) (AttrVals Int64) where
+  toAttrVal = AttrVals . DList.fromList . Foldable.toList . fmap (toAttrVal @Int16 @Int64)
+
+instance ToAttrVal (Vector Int16) (AttrVals Int64) where
+  toAttrVal = AttrVals . DList.fromList . Foldable.toList . fmap (toAttrVal @Int16 @Int64)
+
+instance ToAttrVal (AttrVals Int32) (AttrVals Int64) where
+  toAttrVal = fmap (toAttrVal @Int32 @Int64)
+
+instance ToAttrVal [Int32] (AttrVals Int64) where
+  toAttrVal = AttrVals . DList.fromList . fmap (toAttrVal @Int32 @Int64)
+
+instance ToAttrVal (Seq Int32) (AttrVals Int64) where
+  toAttrVal = AttrVals . DList.fromList . Foldable.toList . fmap (toAttrVal @Int32 @Int64)
+
+instance ToAttrVal (Vector Int32) (AttrVals Int64) where
+  toAttrVal = AttrVals . DList.fromList . Foldable.toList . fmap (toAttrVal @Int32 @Int64)
+
+instance ToAttrVal (AttrVals Int64) (AttrVals Int64) where
+  toAttrVal = fmap (toAttrVal @Int64 @Int64)
+
+instance ToAttrVal [Int64] (AttrVals Int64) where
+  toAttrVal = AttrVals . DList.fromList
+
+instance ToAttrVal (Seq Int64) (AttrVals Int64) where
+  toAttrVal = AttrVals . DList.fromList . Foldable.toList
+
+instance ToAttrVal (Vector Int64) (AttrVals Int64) where
+  toAttrVal = AttrVals . DList.fromList . Foldable.toList
+
+instance ToAttrVal (AttrVals Word8) (AttrVals Int64) where
+  toAttrVal = fmap (toAttrVal @Word8 @Int64)
+
+instance ToAttrVal [Word8] (AttrVals Int64) where
+  toAttrVal = AttrVals . DList.fromList . fmap (toAttrVal @Word8 @Int64)
+
+instance ToAttrVal (Seq Word8) (AttrVals Int64) where
+  toAttrVal = AttrVals . DList.fromList . Foldable.toList . fmap (toAttrVal @Word8 @Int64)
+
+instance ToAttrVal (Vector Word8) (AttrVals Int64) where
+  toAttrVal = AttrVals . DList.fromList . Foldable.toList . fmap (toAttrVal @Word8 @Int64)
+
+instance ToAttrVal (AttrVals Word16) (AttrVals Int64) where
+  toAttrVal = fmap (toAttrVal @Word16 @Int64)
+
+instance ToAttrVal [Word16] (AttrVals Int64) where
+  toAttrVal = AttrVals . DList.fromList . fmap (toAttrVal @Word16 @Int64)
+
+instance ToAttrVal (Seq Word16) (AttrVals Int64) where
+  toAttrVal = AttrVals . DList.fromList . Foldable.toList . fmap (toAttrVal @Word16 @Int64)
+
+instance ToAttrVal (Vector Word16) (AttrVals Int64) where
+  toAttrVal = AttrVals . DList.fromList . Foldable.toList . fmap (toAttrVal @Word16 @Int64)
+
+instance ToAttrVal (AttrVals Word32) (AttrVals Int64) where
+  toAttrVal = fmap (toAttrVal @Word32 @Int64)
+
+instance ToAttrVal [Word32] (AttrVals Int64) where
+  toAttrVal = AttrVals . DList.fromList . fmap (toAttrVal @Word32 @Int64)
+
+instance ToAttrVal (Seq Word32) (AttrVals Int64) where
+  toAttrVal = AttrVals . DList.fromList . Foldable.toList . fmap (toAttrVal @Word32 @Int64)
+
+instance ToAttrVal (Vector Word32) (AttrVals Int64) where
+  toAttrVal = AttrVals . DList.fromList . Foldable.toList . fmap (toAttrVal @Word32 @Int64)
 
 --data TracerProvider = TracerProvider
 --  { tracerProviderGetTracer :: IO Tracer
@@ -487,8 +726,7 @@ recordException (SomeException e) timestamp attributes =
     { spanEventSpecName = "exception"
     , spanEventSpecTimestamp = timestamp
     , spanEventSpecAttributes =
-        "exception.message" .@ (Text.pack $ Exception.displayException e)
-          <> attributes
+        "exception.message" .@ Exception.displayException e <> attributes
     }
 
 newtype SpanName = SpanName
