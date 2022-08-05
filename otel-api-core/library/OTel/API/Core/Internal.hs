@@ -216,7 +216,14 @@ schemaURLToText = unSchemaURL
 
 newtype Attrs = Attrs
   { unAttrs :: HashMap Text SomeAttr
-  } deriving (Eq, Monoid, Semigroup, Show) via (HashMap Text SomeAttr)
+  } deriving (Eq, Show) via (HashMap Text SomeAttr)
+
+instance Semigroup Attrs where
+  Attrs x <> Attrs y = Attrs $ y <> x
+
+instance Monoid Attrs where
+  mempty = Attrs $ HashMap.empty
+  mappend = (<>)
 
 nullAttrs :: Attrs -> Bool
 nullAttrs = HashMap.null . unAttrs
