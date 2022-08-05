@@ -1,9 +1,13 @@
 module OTel.API.Core.Attributes
   ( Attrs
-  , attrsToList
 
   , SomeAttr(..)
   , Attr(..)
+  , nullAttrs
+  , sizeAttrs
+  , memberAttrs
+  , lookupAttrs
+  , foldMapWithKeyAttrs
 
   , AttrVals
 

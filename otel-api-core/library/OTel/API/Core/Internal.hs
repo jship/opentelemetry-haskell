@@ -16,6 +16,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE RankNTypes #-}
 module OTel.API.Core.Internal
   ( -- * Disclaimer
     -- $disclaimer
@@ -36,7 +37,11 @@ module OTel.API.Core.Internal
 
     -- * Attributes
   , Attrs(..)
-  , attrsToList
+  , nullAttrs
+  , sizeAttrs
+  , memberAttrs
+  , lookupAttrs
+  , foldMapWithKeyAttrs
   , SomeAttr(..)
   , Attr(..)
   , AttrVals(..)
@@ -88,6 +93,7 @@ module OTel.API.Core.Internal
 
 import Control.Exception (SomeException(..))
 import Data.DList (DList)
+import Data.HashMap.Strict (HashMap)
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Kind (Constraint, Type)
 import Data.Proxy (Proxy(..))
@@ -102,6 +108,7 @@ import Prelude hiding (span)
 import qualified Control.Exception as Exception
 import qualified Data.DList as DList
 import qualified Data.Foldable as Foldable
+import qualified Data.HashMap.Strict as HashMap
 import qualified Data.Maybe as Maybe
 import qualified Data.Text as Text
 import qualified Data.Text.Lazy as Text.Lazy
@@ -117,9 +124,8 @@ instance KV Attrs where
     where
     go :: forall to from. (ToAttrVal from to) => Key to -> from -> Attrs
     go k v =
-      Attrs $ DList.singleton $ SomeAttr Attr
+      Attrs $ HashMap.singleton (unKey k) $ SomeAttr Attr
         { attrType = attrTypeVal $ Proxy @to
-        , attrKey = k
         , attrVal = toAttrVal @from @to v
         }
 
@@ -200,11 +206,49 @@ schemaURLToText :: SchemaURL -> Text
 schemaURLToText = unSchemaURL
 
 newtype Attrs = Attrs
-  { unAttrs :: DList SomeAttr
-  } deriving (Eq, Monoid, Semigroup, Show) via (DList SomeAttr)
+  { unAttrs :: HashMap Text SomeAttr
+  } deriving (Eq, Monoid, Semigroup, Show) via (HashMap Text SomeAttr)
 
-attrsToList :: Attrs -> [SomeAttr]
-attrsToList = DList.toList . unAttrs
+nullAttrs :: Attrs -> Bool
+nullAttrs = HashMap.null . unAttrs
+
+sizeAttrs :: Attrs -> Int
+sizeAttrs = HashMap.size . unAttrs
+
+memberAttrs :: Key a -> Attrs -> Bool
+memberAttrs key = HashMap.member (unKey key) . unAttrs
+
+lookupAttrs
+  :: forall a
+   . (KnownAttrType a)
+  => Key a
+  -> Attrs
+  -> Maybe (Attr a)
+lookupAttrs key attrs =
+  case HashMap.lookup (unKey key) $ unAttrs attrs of
+    Nothing -> Nothing
+    Just (SomeAttr attr) ->
+      case (attrTypeVal $ Proxy @a, attrType attr) of
+        (AttrTypeText, AttrTypeText) -> Just attr
+        (AttrTypeBool, AttrTypeBool) -> Just attr
+        (AttrTypeDouble, AttrTypeDouble) -> Just attr
+        (AttrTypeInt, AttrTypeInt) -> Just attr
+        (AttrTypeTextArray, AttrTypeTextArray) -> Just attr
+        (AttrTypeBoolArray, AttrTypeBoolArray) -> Just attr
+        (AttrTypeDoubleArray, AttrTypeDoubleArray) -> Just attr
+        (AttrTypeIntArray, AttrTypeIntArray) -> Just attr
+        (_, _) -> Nothing
+
+foldMapWithKeyAttrs
+  :: forall m
+   . (Monoid m)
+  => (forall a. Key a -> Attr a -> m)
+  -> Attrs
+  -> m
+foldMapWithKeyAttrs f attrs =
+  flip HashMap.foldMapWithKey (unAttrs attrs) \keyText someAttr ->
+    case someAttr of
+      SomeAttr attr -> f (Key keyText) attr
 
 data SomeAttr where
   SomeAttr :: Attr a -> SomeAttr
@@ -238,7 +282,6 @@ instance Show SomeAttr where
 
 data Attr a = Attr
   { attrType :: AttrType a
-  , attrKey :: Key a
   , attrVal :: a
   } deriving stock (Eq, Show)
 
