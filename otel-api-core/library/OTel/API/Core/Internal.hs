@@ -9,6 +9,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE StrictData #-}
@@ -16,7 +17,6 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE RankNTypes #-}
 module OTel.API.Core.Internal
   ( -- * Disclaimer
     -- $disclaimer
@@ -68,15 +68,23 @@ module OTel.API.Core.Internal
   , SpanEvent(..)
   , SpanEventName(..)
   , SpanLinks(..)
+  , spanLinksFromList
+  , spanLinksToList
   , SpanLink(..)
-  , defaultSpanLink
   , SpanLinkName(..)
+  , SpanLinkSpecs(..)
+  , singletonSpanLinkSpecs
+  , spanLinkSpecsFromList
+  , spanLinkSpecsToList
+  , SpanLinkSpec(..)
+  , defaultSpanLinkSpec
   , SpanSpec(..)
   , NewSpanSpec(..)
   , defaultNewSpanSpec
   , UpdateSpanSpec(..)
   , defaultUpdateSpanSpec
   , SpanEventSpecs(..)
+  , singletonSpanEventSpecs
   , spanEventSpecsFromList
   , spanEventSpecsToList
   , SpanEventSpec(..)
@@ -113,6 +121,7 @@ import qualified Data.Maybe as Maybe
 import qualified Data.Text as Text
 import qualified Data.Text.Lazy as Text.Lazy
 import qualified Data.Traversable as Traversable
+import qualified Data.Vector as Vector
 
 class KV (kv :: Type) where
   type KVConstraints kv :: Type -> Type -> Constraint
@@ -286,9 +295,12 @@ data Attr a = Attr
   } deriving stock (Eq, Show)
 
 newtype AttrVals a = AttrVals
-  { unAttrVals :: DList a
-  } deriving (Eq, Monoid, Semigroup, Show) via (DList a)
-    deriving (Foldable, Functor, Applicative, Monad) via DList
+  { unAttrVals :: Vector a
+  } deriving (Eq, Monoid, Semigroup, Show) via (Vector a)
+    deriving (Foldable, Functor, Applicative, Monad) via Vector
+
+instance Traversable AttrVals where
+  traverse f (AttrVals xs) = fmap AttrVals $ traverse f xs
 
 data AttrType (a :: Type) where
   AttrTypeText        :: AttrType Text
@@ -383,73 +395,73 @@ instance ToAttrVal (AttrVals Text) (AttrVals Text) where
   toAttrVal = id
 
 instance ToAttrVal [Text] (AttrVals Text) where
-  toAttrVal = AttrVals . DList.fromList
+  toAttrVal = AttrVals . Vector.fromList
 
 instance ToAttrVal (Seq Text) (AttrVals Text) where
-  toAttrVal = AttrVals . DList.fromList . Foldable.toList
+  toAttrVal = AttrVals . Vector.fromList . Foldable.toList
 
 instance ToAttrVal (Vector Text) (AttrVals Text) where
-  toAttrVal = AttrVals . DList.fromList . Foldable.toList
+  toAttrVal = AttrVals
 
 instance ToAttrVal (AttrVals Text.Lazy.Text) (AttrVals Text) where
   toAttrVal = fmap (toAttrVal @Text.Lazy.Text @Text)
 
 instance ToAttrVal [Text.Lazy.Text] (AttrVals Text) where
-  toAttrVal = AttrVals . DList.fromList . fmap (toAttrVal @Text.Lazy.Text @Text)
+  toAttrVal = AttrVals . Vector.fromList . fmap (toAttrVal @Text.Lazy.Text @Text)
 
 instance ToAttrVal (Seq Text.Lazy.Text) (AttrVals Text) where
-  toAttrVal = AttrVals . DList.fromList . Foldable.toList . fmap (toAttrVal @Text.Lazy.Text @Text)
+  toAttrVal = AttrVals . Vector.fromList . Foldable.toList . fmap (toAttrVal @Text.Lazy.Text @Text)
 
 instance ToAttrVal (Vector Text.Lazy.Text) (AttrVals Text) where
-  toAttrVal = AttrVals . DList.fromList . Foldable.toList . fmap (toAttrVal @Text.Lazy.Text @Text)
+  toAttrVal = AttrVals . fmap (toAttrVal @Text.Lazy.Text @Text)
 
 instance ToAttrVal (AttrVals String) (AttrVals Text) where
   toAttrVal = fmap (toAttrVal @String @Text)
 
 instance ToAttrVal [String] (AttrVals Text) where
-  toAttrVal = AttrVals . DList.fromList . fmap (toAttrVal @String @Text)
+  toAttrVal = AttrVals . Vector.fromList . fmap (toAttrVal @String @Text)
 
 instance ToAttrVal (Seq String) (AttrVals Text) where
-  toAttrVal = AttrVals . DList.fromList . Foldable.toList . fmap (toAttrVal @String @Text)
+  toAttrVal = AttrVals . Vector.fromList . Foldable.toList . fmap (toAttrVal @String @Text)
 
 instance ToAttrVal (Vector String) (AttrVals Text) where
-  toAttrVal = AttrVals . DList.fromList . Foldable.toList . fmap (toAttrVal @String @Text)
+  toAttrVal = AttrVals . fmap (toAttrVal @String @Text)
 
 instance ToAttrVal (AttrVals Bool) (AttrVals Bool) where
   toAttrVal = id
 
 instance ToAttrVal [Bool] (AttrVals Bool) where
-  toAttrVal = AttrVals . DList.fromList
+  toAttrVal = AttrVals . Vector.fromList
 
 instance ToAttrVal (Seq Bool) (AttrVals Bool) where
-  toAttrVal = AttrVals . DList.fromList . Foldable.toList
+  toAttrVal = AttrVals . Vector.fromList . Foldable.toList
 
 instance ToAttrVal (Vector Bool) (AttrVals Bool) where
-  toAttrVal = AttrVals . DList.fromList . Foldable.toList
+  toAttrVal = AttrVals
 
 instance ToAttrVal (AttrVals Double) (AttrVals Double) where
   toAttrVal = id
 
 instance ToAttrVal [Double] (AttrVals Double) where
-  toAttrVal = AttrVals . DList.fromList
+  toAttrVal = AttrVals . Vector.fromList
 
 instance ToAttrVal (Seq Double) (AttrVals Double) where
-  toAttrVal = AttrVals . DList.fromList . Foldable.toList
+  toAttrVal = AttrVals . Vector.fromList . Foldable.toList
 
 instance ToAttrVal (Vector Double) (AttrVals Double) where
-  toAttrVal = AttrVals . DList.fromList . Foldable.toList
+  toAttrVal = AttrVals
 
 instance ToAttrVal (AttrVals Float) (AttrVals Double) where
   toAttrVal = fmap (toAttrVal @Float @Double)
 
 instance ToAttrVal [Float] (AttrVals Double) where
-  toAttrVal = AttrVals . DList.fromList . fmap (toAttrVal @Float @Double)
+  toAttrVal = AttrVals . Vector.fromList . fmap (toAttrVal @Float @Double)
 
 instance ToAttrVal (Seq Float) (AttrVals Double) where
-  toAttrVal = AttrVals . DList.fromList . Foldable.toList . fmap (toAttrVal @Float @Double)
+  toAttrVal = AttrVals . Vector.fromList . Foldable.toList . fmap (toAttrVal @Float @Double)
 
 instance ToAttrVal (Vector Float) (AttrVals Double) where
-  toAttrVal = AttrVals . DList.fromList . Foldable.toList . fmap (toAttrVal @Float @Double)
+  toAttrVal = AttrVals . fmap (toAttrVal @Float @Double)
 
 -- | Precision may be lost.
 instance ToAttrVal (AttrVals Rational) (AttrVals Double) where
@@ -457,111 +469,111 @@ instance ToAttrVal (AttrVals Rational) (AttrVals Double) where
 
 -- | Precision may be lost.
 instance ToAttrVal [Rational] (AttrVals Double) where
-  toAttrVal = AttrVals . DList.fromList . fmap (toAttrVal @Rational @Double)
+  toAttrVal = AttrVals . Vector.fromList . fmap (toAttrVal @Rational @Double)
 
 -- | Precision may be lost.
 instance ToAttrVal (Seq Rational) (AttrVals Double) where
-  toAttrVal = AttrVals . DList.fromList . Foldable.toList . fmap (toAttrVal @Rational @Double)
+  toAttrVal = AttrVals . Vector.fromList . Foldable.toList . fmap (toAttrVal @Rational @Double)
 
 -- | Precision may be lost.
 instance ToAttrVal (Vector Rational) (AttrVals Double) where
-  toAttrVal = AttrVals . DList.fromList . Foldable.toList . fmap (toAttrVal @Rational @Double)
+  toAttrVal = AttrVals . fmap (toAttrVal @Rational @Double)
 
 instance ToAttrVal (AttrVals Int) (AttrVals Int64) where
   toAttrVal = fmap (toAttrVal @Int @Int64)
 
 instance ToAttrVal [Int] (AttrVals Int64) where
-  toAttrVal = AttrVals . DList.fromList . fmap (toAttrVal @Int @Int64)
+  toAttrVal = AttrVals . Vector.fromList . fmap (toAttrVal @Int @Int64)
 
 instance ToAttrVal (Seq Int) (AttrVals Int64) where
-  toAttrVal = AttrVals . DList.fromList . Foldable.toList . fmap (toAttrVal @Int @Int64)
+  toAttrVal = AttrVals . Vector.fromList . Foldable.toList . fmap (toAttrVal @Int @Int64)
 
 instance ToAttrVal (Vector Int) (AttrVals Int64) where
-  toAttrVal = AttrVals . DList.fromList . Foldable.toList . fmap (toAttrVal @Int @Int64)
+  toAttrVal = AttrVals . fmap (toAttrVal @Int @Int64)
 
 instance ToAttrVal (AttrVals Int8) (AttrVals Int64) where
   toAttrVal = fmap (toAttrVal @Int8 @Int64)
 
 instance ToAttrVal [Int8] (AttrVals Int64) where
-  toAttrVal = AttrVals . DList.fromList . fmap (toAttrVal @Int8 @Int64)
+  toAttrVal = AttrVals . Vector.fromList . fmap (toAttrVal @Int8 @Int64)
 
 instance ToAttrVal (Seq Int8) (AttrVals Int64) where
-  toAttrVal = AttrVals . DList.fromList . Foldable.toList . fmap (toAttrVal @Int8 @Int64)
+  toAttrVal = AttrVals . Vector.fromList . Foldable.toList . fmap (toAttrVal @Int8 @Int64)
 
 instance ToAttrVal (Vector Int8) (AttrVals Int64) where
-  toAttrVal = AttrVals . DList.fromList . Foldable.toList . fmap (toAttrVal @Int8 @Int64)
+  toAttrVal = AttrVals . fmap (toAttrVal @Int8 @Int64)
 
 instance ToAttrVal (AttrVals Int16) (AttrVals Int64) where
   toAttrVal = fmap (toAttrVal @Int16 @Int64)
 
 instance ToAttrVal [Int16] (AttrVals Int64) where
-  toAttrVal = AttrVals . DList.fromList . fmap (toAttrVal @Int16 @Int64)
+  toAttrVal = AttrVals . Vector.fromList . fmap (toAttrVal @Int16 @Int64)
 
 instance ToAttrVal (Seq Int16) (AttrVals Int64) where
-  toAttrVal = AttrVals . DList.fromList . Foldable.toList . fmap (toAttrVal @Int16 @Int64)
+  toAttrVal = AttrVals . Vector.fromList . Foldable.toList . fmap (toAttrVal @Int16 @Int64)
 
 instance ToAttrVal (Vector Int16) (AttrVals Int64) where
-  toAttrVal = AttrVals . DList.fromList . Foldable.toList . fmap (toAttrVal @Int16 @Int64)
+  toAttrVal = AttrVals . fmap (toAttrVal @Int16 @Int64)
 
 instance ToAttrVal (AttrVals Int32) (AttrVals Int64) where
   toAttrVal = fmap (toAttrVal @Int32 @Int64)
 
 instance ToAttrVal [Int32] (AttrVals Int64) where
-  toAttrVal = AttrVals . DList.fromList . fmap (toAttrVal @Int32 @Int64)
+  toAttrVal = AttrVals . Vector.fromList . fmap (toAttrVal @Int32 @Int64)
 
 instance ToAttrVal (Seq Int32) (AttrVals Int64) where
-  toAttrVal = AttrVals . DList.fromList . Foldable.toList . fmap (toAttrVal @Int32 @Int64)
+  toAttrVal = AttrVals . Vector.fromList . Foldable.toList . fmap (toAttrVal @Int32 @Int64)
 
 instance ToAttrVal (Vector Int32) (AttrVals Int64) where
-  toAttrVal = AttrVals . DList.fromList . Foldable.toList . fmap (toAttrVal @Int32 @Int64)
+  toAttrVal = AttrVals . fmap (toAttrVal @Int32 @Int64)
 
 instance ToAttrVal (AttrVals Int64) (AttrVals Int64) where
   toAttrVal = fmap (toAttrVal @Int64 @Int64)
 
 instance ToAttrVal [Int64] (AttrVals Int64) where
-  toAttrVal = AttrVals . DList.fromList
+  toAttrVal = AttrVals . Vector.fromList
 
 instance ToAttrVal (Seq Int64) (AttrVals Int64) where
-  toAttrVal = AttrVals . DList.fromList . Foldable.toList
+  toAttrVal = AttrVals . Vector.fromList . Foldable.toList
 
 instance ToAttrVal (Vector Int64) (AttrVals Int64) where
-  toAttrVal = AttrVals . DList.fromList . Foldable.toList
+  toAttrVal = AttrVals
 
 instance ToAttrVal (AttrVals Word8) (AttrVals Int64) where
   toAttrVal = fmap (toAttrVal @Word8 @Int64)
 
 instance ToAttrVal [Word8] (AttrVals Int64) where
-  toAttrVal = AttrVals . DList.fromList . fmap (toAttrVal @Word8 @Int64)
+  toAttrVal = AttrVals . Vector.fromList . fmap (toAttrVal @Word8 @Int64)
 
 instance ToAttrVal (Seq Word8) (AttrVals Int64) where
-  toAttrVal = AttrVals . DList.fromList . Foldable.toList . fmap (toAttrVal @Word8 @Int64)
+  toAttrVal = AttrVals . Vector.fromList . Foldable.toList . fmap (toAttrVal @Word8 @Int64)
 
 instance ToAttrVal (Vector Word8) (AttrVals Int64) where
-  toAttrVal = AttrVals . DList.fromList . Foldable.toList . fmap (toAttrVal @Word8 @Int64)
+  toAttrVal = AttrVals . fmap (toAttrVal @Word8 @Int64)
 
 instance ToAttrVal (AttrVals Word16) (AttrVals Int64) where
   toAttrVal = fmap (toAttrVal @Word16 @Int64)
 
 instance ToAttrVal [Word16] (AttrVals Int64) where
-  toAttrVal = AttrVals . DList.fromList . fmap (toAttrVal @Word16 @Int64)
+  toAttrVal = AttrVals . Vector.fromList . fmap (toAttrVal @Word16 @Int64)
 
 instance ToAttrVal (Seq Word16) (AttrVals Int64) where
-  toAttrVal = AttrVals . DList.fromList . Foldable.toList . fmap (toAttrVal @Word16 @Int64)
+  toAttrVal = AttrVals . Vector.fromList . Foldable.toList . fmap (toAttrVal @Word16 @Int64)
 
 instance ToAttrVal (Vector Word16) (AttrVals Int64) where
-  toAttrVal = AttrVals . DList.fromList . Foldable.toList . fmap (toAttrVal @Word16 @Int64)
+  toAttrVal = AttrVals . fmap (toAttrVal @Word16 @Int64)
 
 instance ToAttrVal (AttrVals Word32) (AttrVals Int64) where
   toAttrVal = fmap (toAttrVal @Word32 @Int64)
 
 instance ToAttrVal [Word32] (AttrVals Int64) where
-  toAttrVal = AttrVals . DList.fromList . fmap (toAttrVal @Word32 @Int64)
+  toAttrVal = AttrVals . Vector.fromList . fmap (toAttrVal @Word32 @Int64)
 
 instance ToAttrVal (Seq Word32) (AttrVals Int64) where
-  toAttrVal = AttrVals . DList.fromList . Foldable.toList . fmap (toAttrVal @Word32 @Int64)
+  toAttrVal = AttrVals . Vector.fromList . Foldable.toList . fmap (toAttrVal @Word32 @Int64)
 
 instance ToAttrVal (Vector Word32) (AttrVals Int64) where
-  toAttrVal = AttrVals . DList.fromList . Foldable.toList . fmap (toAttrVal @Word32 @Int64)
+  toAttrVal = AttrVals . fmap (toAttrVal @Word32 @Int64)
 
 --data TracerProvider = TracerProvider
 --  { tracerProviderGetTracer :: IO Tracer
@@ -646,6 +658,9 @@ newtype SpanEventSpecs = SpanEventSpecs
   { unSpanEventSpecs :: DList SpanEventSpec
   } deriving (Eq, Monoid, Semigroup, Show) via (DList SpanEventSpec)
 
+singletonSpanEventSpecs :: SpanEventSpec -> SpanEventSpecs
+singletonSpanEventSpecs = SpanEventSpecs . DList.singleton
+
 spanEventSpecsFromList :: [SpanEventSpec] -> SpanEventSpecs
 spanEventSpecsFromList = SpanEventSpecs . DList.fromList
 
@@ -683,17 +698,29 @@ newtype SpanLinks = SpanLinks
   { unSpanLinks :: DList SpanLink
   } deriving (Eq, Monoid, Semigroup, Show) via (DList SpanLink)
 
+spanLinksFromList :: [SpanLink] -> SpanLinks
+spanLinksFromList = SpanLinks . DList.fromList
+
+spanLinksToList :: SpanLinks -> [SpanLink]
+spanLinksToList = Foldable.toList . unSpanLinks
+
+newtype SpanLinkSpecs = SpanLinkSpecs
+  { unSpanLinkSpecs :: DList SpanLinkSpec
+  } deriving (Eq, Monoid, Semigroup, Show) via (DList SpanLinkSpec)
+
+singletonSpanLinkSpecs :: SpanLinkSpec -> SpanLinkSpecs
+singletonSpanLinkSpecs = SpanLinkSpecs . DList.singleton
+
+spanLinkSpecsFromList :: [SpanLinkSpec] -> SpanLinkSpecs
+spanLinkSpecsFromList = SpanLinkSpecs . DList.fromList
+
+spanLinkSpecsToList :: SpanLinkSpecs -> [SpanLinkSpec]
+spanLinkSpecsToList = Foldable.toList . unSpanLinkSpecs
+
 data SpanLink = SpanLink
   { spanLinkSpanContext :: SpanContext
   , spanLinkAttributes :: Attrs
   } deriving stock (Eq, Show)
-
-defaultSpanLink :: SpanLink
-defaultSpanLink =
-  SpanLink
-    { spanLinkSpanContext = emptySpanContext
-    , spanLinkAttributes = mempty
-    }
 
 newtype SpanLinkName = SpanLinkName
   { unSpanLinkName :: Text
@@ -701,6 +728,18 @@ newtype SpanLinkName = SpanLinkName
 
 instance IsString SpanLinkName where
   fromString = SpanLinkName . Text.pack
+
+data SpanLinkSpec = SpanLinkSpec
+  { spanLinkSpecSpanContext :: SpanContext
+  , spanLinkSpecAttributes :: Attrs
+  } deriving stock (Eq, Show)
+
+defaultSpanLinkSpec :: SpanLinkSpec
+defaultSpanLinkSpec =
+  SpanLinkSpec
+    { spanLinkSpecSpanContext = emptySpanContext
+    , spanLinkSpecAttributes = mempty
+    }
 
 data SpanSpec = SpanSpec
   { spanSpecParent :: SpanParent
@@ -759,19 +798,20 @@ buildSpanUpdater
   -> m (Span -> Span)
 buildSpanUpdater getTimestamp updateSpanSpec = do
   newSpanEvents <- do
-    case updateSpanSpecEvents of
-      Nothing -> pure mempty
-      Just spanEventSpecs -> do
-        Traversable.for (unSpanEventSpecs spanEventSpecs) \spanEventSpec -> do
-          spanEventTimestamp <- do
-            case spanEventSpecTimestamp spanEventSpec of
-              TimestampSourceAt timestamp -> pure timestamp
-              TimestampSourceNow -> getTimestamp
-          pure SpanEvent
-            { spanEventName = spanEventSpecName spanEventSpec
-            , spanEventTimestamp
-            , spanEventAttributes = spanEventSpecAttributes spanEventSpec
-            }
+    fmap SpanEvents do
+      case updateSpanSpecEvents of
+        Nothing -> pure mempty
+        Just spanEventSpecs -> do
+          Traversable.for (unSpanEventSpecs spanEventSpecs) \spanEventSpec -> do
+            spanEventTimestamp <- do
+              case spanEventSpecTimestamp spanEventSpec of
+                TimestampSourceAt timestamp -> pure timestamp
+                TimestampSourceNow -> getTimestamp
+            pure SpanEvent
+              { spanEventName = spanEventSpecName spanEventSpec
+              , spanEventTimestamp
+              , spanEventAttributes = spanEventSpecAttributes spanEventSpec
+              }
   pure \span ->
     if not $ spanIsRecording span then
       span
@@ -784,7 +824,7 @@ buildSpanUpdater getTimestamp updateSpanSpec = do
         , spanAttributes =
             maybe id (\as -> (<> as)) updateSpanSpecAttributes $ spanAttributes span
         , spanEvents =
-            spanEvents span <> SpanEvents newSpanEvents
+            spanEvents span <> newSpanEvents
         }
   where
   UpdateSpanSpec

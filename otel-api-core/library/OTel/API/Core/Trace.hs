@@ -38,6 +38,7 @@ module OTel.API.Core.Trace
   , defaultUpdateSpanSpec
 
   , SpanEventSpecs
+  , singletonSpanEventSpecs
   , spanEventSpecsFromList
   , spanEventSpecsToList
 
@@ -75,16 +76,30 @@ module OTel.API.Core.Trace
   , SpanEvents
   , spanEventsFromList
   , spanEventsToList
+
   , SpanEvent(..)
   , SpanEventName(..)
 
   , SpanLinks
+  , spanLinksFromList
+  , spanLinksToList
+
   , SpanLink
       ( spanLinkSpanContext
       , spanLinkAttributes
       )
-  , defaultSpanLink
   , SpanLinkName(..)
+
+  , SpanLinkSpecs(..)
+  , singletonSpanLinkSpecs
+  , spanLinkSpecsFromList
+  , spanLinkSpecsToList
+
+  , SpanLinkSpec
+      ( spanLinkSpecSpanContext
+      , spanLinkSpecAttributes
+      )
+  , defaultSpanLinkSpec
   ) where
 
 import OTel.API.Core.Internal

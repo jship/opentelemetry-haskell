@@ -1,7 +1,6 @@
 module OTel.API.Core.Attributes
   ( Attrs
 
-  , SomeAttr(..)
   , Attr(..)
   , nullAttrs
   , sizeAttrs

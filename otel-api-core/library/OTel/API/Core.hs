@@ -4,6 +4,8 @@ module OTel.API.Core
     module OTel.API.Core.Attributes
   , module OTel.API.Core.Trace
 
+  , KV(..)
+  , Key(..)
   , InstrumentationScope(..)
   , InstrumentationScopeName(..)
   , Version(..)
