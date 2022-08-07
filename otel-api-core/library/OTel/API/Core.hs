@@ -6,17 +6,21 @@ module OTel.API.Core
 
   , KV(..)
   , Key(..)
-  , InstrumentationScope(..)
-  , InstrumentationScopeName(..)
-  , Version(..)
-  , SchemaURL
-  , schemaURLFromText
-  , schemaURLToText
 
   , Timestamp
   , timestampFromNanoseconds
   , timestampToNanoseconds
   , TimestampSource(..)
+
+  , InstrumentationScope
+  , defaultInstrumentationScope
+  , InstrumentationScopeName(..)
+
+  , Version(..)
+
+  , SchemaURL
+  , schemaURLFromText
+  , schemaURLToText
   ) where
 
 import OTel.API.Core.Attributes
@@ -25,5 +29,5 @@ import OTel.API.Core.Trace
 
 -- $synopsis
 --
--- @hotel-api-common@ STUB
+-- @otel-api-common@ STUB
 --

@@ -10,32 +10,18 @@ module OTel.API.Core.Trace
       )
   , emptySpanContext
   , spanContextIsValid
-
   , TraceId
+  , emptyTraceId
   , SpanId
+  , emptySpanId
   , TraceFlags
   , TraceState
 
-  , SpanSpec(..)
+  , SpanEvents
+  , spanEventsFromList
+  , spanEventsToList
 
-  , NewSpanSpec
-      ( newSpanSpecParentSource
-      , newSpanSpecStart
-      , newSpanSpecKind
-      , newSpanSpecAttributes
-      , newSpanSpecLinks
-      )
-  , defaultNewSpanSpec
-  , buildSpanUpdater
-  , recordException
-
-  , UpdateSpanSpec
-      ( updateSpanSpecName
-      , updateSpanSpecStatus
-      , updateSpanSpecAttributes
-      , updateSpanSpecEvents
-      )
-  , defaultUpdateSpanSpec
+  , SpanEvent(..)
 
   , SpanEventSpecs
   , singletonSpanEventSpecs
@@ -45,12 +31,76 @@ module OTel.API.Core.Trace
   , SpanEventSpec
       ( spanEventSpecName
       , spanEventSpecTimestamp
-      , spanEventSpecAttributes
+      , spanEventSpecAttrs
       )
   , defaultSpanEventSpec
 
+  , SpanEventName(..)
+
+  , SpanLinks
+  , spanLinksFromList
+  , spanLinksToList
+
+  , SpanLinkSpecs
+  , singletonSpanLinkSpecs
+  , spanLinkSpecsFromList
+  , spanLinkSpecsToList
+
+  , SpanLink(..)
+
+  , SpanLinkName(..)
+
+  , SpanLinkSpec
+      ( spanLinkSpecSpanContext
+      , spanLinkSpecAttrs
+      )
+  , defaultSpanLinkSpec
+
+  , SpanSpec
+      ( spanSpecParent
+      , spanSpecName
+      , spanSpecStart
+      , spanSpecKind
+      , spanSpecAttrs
+      , spanSpecLinks
+      )
+  , buildSpanSpec
+
+  , NewSpanSpec
+      ( newSpanSpecName
+      , newSpanSpecParentSource
+      , newSpanSpecStart
+      , newSpanSpecKind
+      , newSpanSpecAttrs
+      , newSpanSpecLinks
+      )
+  , defaultNewSpanSpec
+
+  , UpdateSpanSpec
+      ( updateSpanSpecName
+      , updateSpanSpecStatus
+      , updateSpanSpecAttrs
+      , updateSpanSpecEvents
+      )
+  , defaultUpdateSpanSpec
+  , buildSpanUpdater
+  , recordException
+
   , SpanName(..)
-  , Span(..)
+
+  , Span
+      ( spanParent
+      , spanContext
+      , spanName
+      , spanStatus
+      , spanStart
+      , spanKind
+      , spanAttrs
+      , spanLinks
+      , spanEvents
+      , spanIsRecording
+      )
+  , emptySpan
 
   , EndedSpan
       ( endedSpanParent
@@ -60,7 +110,7 @@ module OTel.API.Core.Trace
       , endedSpanStart
       , endedSpanEnd
       , endedSpanKind
-      , endedSpanAttributes
+      , endedSpanAttrs
       , endedSpanLinks
       , endedSpanEvents
       )
@@ -72,34 +122,6 @@ module OTel.API.Core.Trace
   , SpanKind(..)
 
   , SpanStatus(..)
-
-  , SpanEvents
-  , spanEventsFromList
-  , spanEventsToList
-
-  , SpanEvent(..)
-  , SpanEventName(..)
-
-  , SpanLinks
-  , spanLinksFromList
-  , spanLinksToList
-
-  , SpanLink
-      ( spanLinkSpanContext
-      , spanLinkAttributes
-      )
-  , SpanLinkName(..)
-
-  , SpanLinkSpecs(..)
-  , singletonSpanLinkSpecs
-  , spanLinkSpecsFromList
-  , spanLinkSpecsToList
-
-  , SpanLinkSpec
-      ( spanLinkSpecSpanContext
-      , spanLinkSpecAttributes
-      )
-  , defaultSpanLinkSpec
   ) where
 
 import OTel.API.Core.Internal

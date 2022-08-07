@@ -1,19 +1,17 @@
 module OTel.API.Trace
   ( -- * Synopsis
     -- $synopsis
-    Core.trace
-  , Core.MonadTracing(..)
-  , Core.MonadTraceContext(..)
+    module OTel.API.Trace.Core
 
-  , TracingT
-  , runTracingT
-  , mapTracingT
+  , Internal.TracingT
+  , Internal.runTracingT
+  , Internal.mapTracingT
   ) where
 
-import qualified OTel.API.Trace.Core as Core
-import OTel.API.Trace.Internal
+import OTel.API.Trace.Core
+import qualified OTel.API.Trace.Internal as Internal
 
 -- $synopsis
 --
--- @hotel-api-trace@ STUB
+-- @otel-api-trace@ STUB
 --

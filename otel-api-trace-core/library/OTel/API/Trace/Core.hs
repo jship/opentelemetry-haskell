@@ -1,15 +1,11 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DefaultSignatures #-}
-{-# LANGUAGE DerivingVia #-}
-{-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE StrictData #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE GADTs #-}
 module OTel.API.Trace.Core
   ( -- * Synopsis
     -- $synopsis
     trace
+  , trace_
   , MonadTracing(..)
   , MonadTraceContext(..)
   , MutableSpan
@@ -47,6 +43,13 @@ trace
   -> (MutableSpan -> m a)
   -> m a
 trace = traceCS callStack
+
+trace_
+  :: (MonadTracing m, HasCallStack)
+  => NewSpanSpec
+  -> m a
+  -> m a
+trace_ newSpanSpec = traceCS callStack newSpanSpec . const
 
 class (Monad m) => MonadTracing m where
   traceCS :: CallStack -> NewSpanSpec -> (MutableSpan -> m a) -> m a
@@ -114,5 +117,5 @@ instance (MonadTraceContext m) => MonadTraceContext (ResourceT m)
 
 -- $synopsis
 --
--- @hotel-api-trace@ STUB
+-- @otel-api-trace-core@ STUB
 --
