@@ -4,6 +4,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE ImplicitParams #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -127,11 +128,11 @@ class KV (kv :: Type) where
   type KVConstraints kv :: Type -> Type -> Constraint
   (.@) :: KVConstraints kv from to => Key to -> from -> kv
 
-instance KV Attrs where
-  type KVConstraints Attrs = ToAttrVal
+instance KV (Attrs af) where
+  type KVConstraints (Attrs af) = ToAttrVal
   (.@) = go
     where
-    go :: forall to from. (ToAttrVal from to) => Key to -> from -> Attrs
+    go :: forall to from. (ToAttrVal from to) => Key to -> from -> (Attrs af)
     go k v =
       Attrs $ HashMap.singleton (unKey k) $ SomeAttr Attr
         { attrType = attrTypeVal $ Proxy @to
@@ -214,31 +215,31 @@ schemaURLFromText = Right . SchemaURL
 schemaURLToText :: SchemaURL -> Text
 schemaURLToText = unSchemaURL
 
-newtype Attrs = Attrs
+newtype Attrs (a :: AttrsFor) = Attrs
   { unAttrs :: HashMap Text SomeAttr
   } deriving (Eq, Show) via (HashMap Text SomeAttr)
 
-instance Semigroup Attrs where
+instance Semigroup (Attrs af) where
   Attrs x <> Attrs y = Attrs $ y <> x
 
-instance Monoid Attrs where
+instance Monoid (Attrs af) where
   mempty = Attrs $ HashMap.empty
   mappend = (<>)
 
-nullAttrs :: Attrs -> Bool
+nullAttrs :: Attrs af -> Bool
 nullAttrs = HashMap.null . unAttrs
 
-sizeAttrs :: Attrs -> Int
+sizeAttrs :: Attrs af -> Int
 sizeAttrs = HashMap.size . unAttrs
 
-memberAttrs :: Key a -> Attrs -> Bool
+memberAttrs :: Key a -> Attrs af -> Bool
 memberAttrs key = HashMap.member (unKey key) . unAttrs
 
 lookupAttrs
-  :: forall a
+  :: forall a af
    . (KnownAttrType a)
   => Key a
-  -> Attrs
+  -> Attrs af
   -> Maybe (Attr a)
 lookupAttrs key attrs =
   case HashMap.lookup (unKey key) $ unAttrs attrs of
@@ -256,15 +257,40 @@ lookupAttrs key attrs =
         (_, _) -> Nothing
 
 foldMapWithKeyAttrs
-  :: forall m
+  :: forall m af
    . (Monoid m)
   => (forall a. Key a -> Attr a -> m)
-  -> Attrs
+  -> Attrs af
   -> m
 foldMapWithKeyAttrs f attrs =
   flip HashMap.foldMapWithKey (unAttrs attrs) \keyText someAttr ->
     case someAttr of
       SomeAttr attr -> f (Key keyText) attr
+
+data AttrsFor
+  = AttrsForTracing
+
+type TracingAttrs = Attrs 'AttrsForTracing
+
+class HasAttrsLimits (af :: AttrsFor) where
+  attrsLimits :: Proxy af -> AttrsLimits af
+
+instance HasAttrsLimits 'AttrsForTracing where
+  attrsLimits _ = defaultAttrsLimits
+
+--type HasAttrsLimits = (?attrLimits :: AttrsLimits)
+
+defaultAttrsLimits :: AttrsLimits af
+defaultAttrsLimits =
+  AttrsLimits
+    { attrsLimitsCount = Just 128
+    , attrsLimitsValueLength = Nothing
+    }
+
+data AttrsLimits (af :: AttrsFor) = AttrsLimits
+  { attrsLimitsCount :: Maybe Int
+  , attrsLimitsValueLength :: Maybe Int
+  }
 
 data SomeAttr where
   SomeAttr :: Attr a -> SomeAttr
@@ -658,7 +684,7 @@ spanEventsToList = Foldable.toList . unSpanEvents
 data SpanEvent = SpanEvent
   { spanEventName :: SpanEventName
   , spanEventTimestamp :: Timestamp
-  , spanEventAttributes :: Attrs
+  , spanEventAttributes :: TracingAttrs
   } deriving stock (Eq, Show)
 
 newtype SpanEventSpecs = SpanEventSpecs
@@ -677,7 +703,7 @@ spanEventSpecsToList = Foldable.toList . unSpanEventSpecs
 data SpanEventSpec = SpanEventSpec
   { spanEventSpecName :: SpanEventName
   , spanEventSpecTimestamp :: TimestampSource
-  , spanEventSpecAttributes :: Attrs
+  , spanEventSpecAttributes :: TracingAttrs
   } deriving stock (Eq, Show)
 
 defaultSpanEventSpec :: SpanEventSpec
@@ -726,7 +752,7 @@ spanLinkSpecsToList = Foldable.toList . unSpanLinkSpecs
 
 data SpanLink = SpanLink
   { spanLinkSpanContext :: SpanContext
-  , spanLinkAttributes :: Attrs
+  , spanLinkAttributes :: TracingAttrs
   } deriving stock (Eq, Show)
 
 newtype SpanLinkName = SpanLinkName
@@ -738,7 +764,7 @@ instance IsString SpanLinkName where
 
 data SpanLinkSpec = SpanLinkSpec
   { spanLinkSpecSpanContext :: SpanContext
-  , spanLinkSpecAttributes :: Attrs
+  , spanLinkSpecAttributes :: TracingAttrs
   } deriving stock (Eq, Show)
 
 defaultSpanLinkSpec :: SpanLinkSpec
@@ -752,7 +778,7 @@ data SpanSpec = SpanSpec
   { spanSpecParent :: SpanParent
   , spanSpecStart :: Timestamp
   , spanSpecKind :: SpanKind
-  , spanSpecAttributes :: Attrs
+  , spanSpecAttributes :: TracingAttrs
   , spanSpecLinks :: SpanLinks
   } deriving stock (Eq, Show)
 
@@ -761,7 +787,7 @@ data NewSpanSpec = NewSpanSpec
   , newSpanSpecParentSource :: SpanParentSource
   , newSpanSpecStart :: TimestampSource
   , newSpanSpecKind :: SpanKind
-  , newSpanSpecAttributes :: Attrs
+  , newSpanSpecAttributes :: TracingAttrs
   , newSpanSpecLinks :: SpanLinks
   } deriving stock (Eq, Show)
 
@@ -785,7 +811,7 @@ defaultNewSpanSpec =
 data UpdateSpanSpec = UpdateSpanSpec
   { updateSpanSpecName :: Maybe SpanName
   , updateSpanSpecStatus :: Maybe SpanStatus
-  , updateSpanSpecAttributes :: Maybe Attrs
+  , updateSpanSpecAttributes :: Maybe (TracingAttrs)
   , updateSpanSpecEvents :: Maybe SpanEventSpecs
   }
 
@@ -846,7 +872,7 @@ buildSpanUpdater getTimestamp updateSpanSpec = do
 recordException
   :: SomeException
   -> TimestampSource
-  -> Attrs
+  -> TracingAttrs
   -> SpanEventSpec
 recordException (SomeException e) timestamp attributes =
   SpanEventSpec
@@ -870,7 +896,7 @@ data Span = Span
   , spanStatus :: SpanStatus
   , spanStart :: Timestamp
   , spanKind :: SpanKind
-  , spanAttributes :: Attrs
+  , spanAttributes :: TracingAttrs
   , spanLinks :: SpanLinks
   , spanEvents :: SpanEvents
   , spanIsRecording :: Bool
@@ -884,7 +910,7 @@ data EndedSpan = EndedSpan
   , endedSpanStart :: Timestamp
   , endedSpanEnd :: Timestamp
   , endedSpanKind :: SpanKind
-  , endedSpanAttributes :: Attrs
+  , endedSpanAttributes :: TracingAttrs
   , endedSpanLinks :: SpanLinks
   , endedSpanEvents :: SpanEvents
   } deriving stock (Eq, Show)
