@@ -45,10 +45,9 @@ import OTel.API.Context
   )
 import OTel.API.Core
   ( NewSpanSpec(..), Span(spanContext, spanIsRecording), SpanParent(..), SpanParentSource(..)
-  , SpanSpec(..), TimestampSource(..), Tracer(..), UpdateSpanSpec(updateSpanSpecEvents)
-  , AttrsBuilder, EndedSpan, SpanAttrsLimits, SpanEventAttrsLimits, SpanLinkAttrsLimits, Timestamp
-  , buildSpanSpec, buildSpanUpdater, defaultUpdateSpanSpec, recordException, spanEventSpecsFromList
-  , toEndedSpan
+  , SpanSpec(..), TimestampSource(..), Tracer(..), UpdateSpanSpec(updateSpanSpecEvents), EndedSpan
+  , SpanAttrsLimits, SpanEventAttrsLimits, SpanLinkAttrsLimits, Timestamp, buildSpanSpec
+  , buildSpanUpdater, defaultUpdateSpanSpec, recordException, spanEventSpecsFromList, toEndedSpan
   )
 import OTel.API.Trace.Core (MonadTraceContext(..), MonadTracing(..))
 import OTel.API.Trace.Core.Internal (MutableSpan(..))
@@ -58,7 +57,7 @@ import qualified Control.Exception.Safe as Safe
 type TracingT :: (Type -> Type) -> Type -> Type
 
 newtype TracingT m a = TracingT
-  { unTracingT :: TracerOps -> ContextT (Span AttrsBuilder) m a
+  { unTracingT :: TracerOps -> ContextT Span m a
   } deriving
       ( Applicative, Functor, Monad, MonadFail, MonadFix, MonadIO -- @base@
       , MonadAccum w, MonadCont, MonadError e, MonadSelect r, MonadState s, MonadWriter w -- @mtl@
@@ -68,10 +67,10 @@ newtype TracingT m a = TracingT
       , MonadBaseControl b -- @monad-control@
       , MonadLogger -- @monad-logger@
       , MonadResource -- @resourcet@
-      ) via (ReaderT TracerOps (ContextT (Span AttrsBuilder) m))
+      ) via (ReaderT TracerOps (ContextT Span m))
     deriving
       ( Semigroup, Monoid -- @base@
-      ) via (Ap (ReaderT TracerOps (ContextT (Span AttrsBuilder) m)) a)
+      ) via (Ap (ReaderT TracerOps (ContextT Span m)) a)
 
 instance (MonadReader r m) => MonadReader r (TracingT m) where
   ask = lift ask
@@ -105,10 +104,7 @@ instance (MonadIO m, MonadMask m) => MonadTracing (TracingT m) where
         result <$ processSpan tracerOps spanKey
         `Safe.withException` handler tracerOps spanKey
     where
-    processSpan
-      :: TracerOps
-      -> ContextKey (Span AttrsBuilder)
-      -> ContextT (Span AttrsBuilder) m ()
+    processSpan :: TracerOps -> ContextKey Span -> ContextT Span m ()
     processSpan tracerOps spanKey = do
       span <- fmap contextSnapshotValue $ getContext spanKey
       timestamp <- liftIO now
@@ -130,11 +126,7 @@ instance (MonadIO m, MonadMask m) => MonadTracing (TracingT m) where
         , tracerOpsSpanLinkAttrsLimits = spanLinkAttrsLimits
         } = tracerOps
 
-    handler
-      :: TracerOps
-      -> ContextKey (Span AttrsBuilder)
-      -> SomeException
-      -> ContextT (Span AttrsBuilder) m ()
+    handler :: TracerOps -> ContextKey Span -> SomeException -> ContextT Span m ()
     handler tracerOps spanKey someEx = do
       -- TODO: Set status to error? Spec docs make it sound like application
       -- authors set the status, and the API shouldn't set the status.
@@ -154,16 +146,13 @@ instance (MonadIO m, MonadMask m) => MonadTracing (TracingT m) where
       where
       TracerOps { tracerOpsNow = now } = tracerOps
 
-    toSpanSpec
-      :: TracerOps
-      -> NewSpanSpec
-      -> ContextT (Span AttrsBuilder) m (SpanSpec AttrsBuilder)
+    toSpanSpec :: TracerOps -> NewSpanSpec -> ContextT Span m SpanSpec
     toSpanSpec tracerOps =
       buildSpanSpec (liftIO now) spanParentFromSource
       where
       spanParentFromSource
         :: SpanParentSource
-        -> ContextT (Span AttrsBuilder) m SpanParent
+        -> ContextT Span m SpanParent
       spanParentFromSource = \case
         SpanParentSourceExplicit spanParent -> pure spanParent
         SpanParentSourceImplicit -> do
@@ -185,7 +174,7 @@ instance (MonadIO m) => MonadTraceContext (TracingT m) where
       where
       update
         :: TracerOps
-        -> ContextT (Span AttrsBuilder) m (ContextSnapshot (Span AttrsBuilder))
+        -> ContextT Span m (ContextSnapshot Span)
       update tracerOps =
         updateContext (spanKey mutableSpan)
           =<< buildSpanUpdater (liftIO now) updateSpanSpec
@@ -223,7 +212,7 @@ mapTracingT f action =
 
 data TracerOps = TracerOps
   { tracerOpsNow :: IO Timestamp
-  , tracerOpsStartSpan :: SpanSpec AttrsBuilder -> IO (Span AttrsBuilder)
+  , tracerOpsStartSpan :: SpanSpec -> IO Span
   , tracerOpsProcessSpan :: EndedSpan -> IO ()
   , tracerOpsSpanAttrsLimits :: SpanAttrsLimits
   , tracerOpsSpanEventAttrsLimits :: SpanEventAttrsLimits

@@ -8,19 +8,11 @@ module OTel.API.Core.Attributes
 
   , AttrsBuilder
 
-  , SpanAttrs
-  , SpanAttrsBuilder
-  , SpanAttrsLimits
-
-  , SpanEventAttrs
-  , SpanEventAttrsBuilder
-  , SpanEventAttrsLimits
-
-  , SpanLinkAttrs
-  , SpanLinkAttrsBuilder
-  , SpanLinkAttrsLimits
-
   , AttrsFor(..)
+
+  , SpanAttrsLimits
+  , SpanEventAttrsLimits
+  , SpanLinkAttrsLimits
 
   , AttrsLimits
   , attrsLimitsCount
