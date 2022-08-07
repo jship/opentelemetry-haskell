@@ -44,10 +44,11 @@ import OTel.API.Context
   , updateContext
   )
 import OTel.API.Core
-  ( AttrsFor(..), AttrsLimits(..), NewSpanSpec(..), Span(spanContext, spanIsRecording)
-  , SpanParent(..), SpanParentSource(..), SpanSpec(..), TimestampSource(..), Tracer(..)
-  , UpdateSpanSpec(updateSpanSpecEvents), AttrsBuilder, EndedSpan, Timestamp, buildSpanSpec
-  , buildSpanUpdater, defaultUpdateSpanSpec, recordException, spanEventSpecsFromList, toEndedSpan
+  ( NewSpanSpec(..), Span(spanContext, spanIsRecording), SpanParent(..), SpanParentSource(..)
+  , SpanSpec(..), TimestampSource(..), Tracer(..), UpdateSpanSpec(updateSpanSpecEvents)
+  , AttrsBuilder, EndedSpan, SpanAttrsLimits, SpanEventAttrsLimits, SpanLinkAttrsLimits, Timestamp
+  , buildSpanSpec, buildSpanUpdater, defaultUpdateSpanSpec, recordException, spanEventSpecsFromList
+  , toEndedSpan
   )
 import OTel.API.Trace.Core (MonadTraceContext(..), MonadTracing(..))
 import OTel.API.Trace.Core.Internal (MutableSpan(..))
@@ -224,9 +225,9 @@ data TracerOps = TracerOps
   { tracerOpsNow :: IO Timestamp
   , tracerOpsStartSpan :: SpanSpec AttrsBuilder -> IO (Span AttrsBuilder)
   , tracerOpsProcessSpan :: EndedSpan -> IO ()
-  , tracerOpsSpanAttrsLimits :: AttrsLimits 'AttrsForSpan
-  , tracerOpsSpanEventAttrsLimits :: AttrsLimits 'AttrsForSpanEvent
-  , tracerOpsSpanLinkAttrsLimits :: AttrsLimits 'AttrsForSpanLink
+  , tracerOpsSpanAttrsLimits :: SpanAttrsLimits
+  , tracerOpsSpanEventAttrsLimits :: SpanEventAttrsLimits
+  , tracerOpsSpanLinkAttrsLimits :: SpanLinkAttrsLimits
   }
 
 -- $disclaimer

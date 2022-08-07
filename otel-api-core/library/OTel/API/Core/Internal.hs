@@ -37,9 +37,7 @@ module OTel.API.Core.Internal
 
     -- * Attributes
   , Attrs(..)
-  , attrsToBuilder
   , nullAttrs
-  , emptyAttrs
   , sizeAttrs
   , memberAttrs
   , lookupAttrs
@@ -48,10 +46,13 @@ module OTel.API.Core.Internal
   , runAttrsBuilder
   , SpanAttrs
   , SpanAttrsBuilder
+  , SpanAttrsLimits
   , SpanEventAttrs
   , SpanEventAttrsBuilder
+  , SpanEventAttrsLimits
   , SpanLinkAttrs
   , SpanLinkAttrsBuilder
+  , SpanLinkAttrsLimits
   , AttrsFor(..)
   , AttrsLimits(..)
   , defaultAttrsLimits
@@ -237,14 +238,8 @@ newtype Attrs (af :: AttrsFor) = Attrs
   { unAttrs :: HashMap Text SomeAttr
   } deriving stock (Eq, Show)
 
-attrsToBuilder :: Attrs af -> AttrsBuilder af
-attrsToBuilder attrs = AttrsBuilder \_attrsLimits -> attrs
-
 nullAttrs :: Attrs af -> Bool
 nullAttrs = HashMap.null . unAttrs
-
-emptyAttrs :: Attrs af
-emptyAttrs = Attrs $ HashMap.empty
 
 sizeAttrs :: Attrs af -> Int
 sizeAttrs = HashMap.size . unAttrs
@@ -323,12 +318,15 @@ runAttrsBuilder = unAttrsBuilder
 
 type SpanAttrs = Attrs 'AttrsForSpan
 type SpanAttrsBuilder = AttrsBuilder 'AttrsForSpan
+type SpanAttrsLimits = AttrsLimits 'AttrsForSpan
 
 type SpanEventAttrs = Attrs 'AttrsForSpanEvent
 type SpanEventAttrsBuilder = AttrsBuilder 'AttrsForSpanEvent
+type SpanEventAttrsLimits = AttrsLimits 'AttrsForSpanEvent
 
 type SpanLinkAttrs = Attrs 'AttrsForSpanLink
 type SpanLinkAttrsBuilder = AttrsBuilder 'AttrsForSpanLink
+type SpanLinkAttrsLimits = AttrsLimits 'AttrsForSpanLink
 
 data AttrsFor
   = AttrsForSpan
@@ -673,9 +671,9 @@ data Tracer = Tracer
   , tracerStartSpan :: SpanSpec AttrsBuilder -> IO (Span AttrsBuilder)
   , tracerProcessSpan :: EndedSpan -> IO ()
   , tracerContextBackend :: ContextBackend (Span AttrsBuilder)
-  , tracerSpanAttrsLimits :: AttrsLimits 'AttrsForSpan
-  , tracerSpanEventAttrsLimits :: AttrsLimits 'AttrsForSpanEvent
-  , tracerSpanLinkAttrsLimits :: AttrsLimits 'AttrsForSpanLink
+  , tracerSpanAttrsLimits :: SpanAttrsLimits
+  , tracerSpanEventAttrsLimits :: SpanEventAttrsLimits
+  , tracerSpanLinkAttrsLimits :: SpanLinkAttrsLimits
   }
 
 data SpanContext = SpanContext
@@ -745,7 +743,7 @@ spanEventsToList :: SpanEvents attrs -> [SpanEvent attrs]
 spanEventsToList = Foldable.toList . unSpanEvents
 
 freezeAllSpanEventAttrs
-  :: AttrsLimits 'AttrsForSpanEvent
+  :: SpanEventAttrsLimits
   -> SpanEvents AttrsBuilder
   -> SpanEvents Attrs
 freezeAllSpanEventAttrs attrsLimits spanEvent =
@@ -763,7 +761,7 @@ deriving stock instance (Eq (attrs 'AttrsForSpanEvent)) => Eq (SpanEvent attrs)
 deriving stock instance (Show (attrs 'AttrsForSpanEvent)) => Show (SpanEvent attrs)
 
 freezeSpanEventAttrs
-  :: AttrsLimits 'AttrsForSpanEvent
+  :: SpanEventAttrsLimits
   -> SpanEvent AttrsBuilder
   -> SpanEvent Attrs
 freezeSpanEventAttrs attrsLimits spanEvent =
@@ -829,7 +827,7 @@ spanLinksToList :: SpanLinks attrs -> [SpanLink attrs]
 spanLinksToList = Foldable.toList . unSpanLinks
 
 freezeAllSpanLinkAttrs
-  :: AttrsLimits 'AttrsForSpanLink
+  :: SpanLinkAttrsLimits
   -> SpanLinks AttrsBuilder
   -> SpanLinks Attrs
 freezeAllSpanLinkAttrs attrsLimits spanLink =
@@ -859,7 +857,7 @@ deriving stock instance (Eq (attrs 'AttrsForSpanLink)) => Eq (SpanLink attrs)
 deriving stock instance (Show (attrs 'AttrsForSpanLink)) => Show (SpanLink attrs)
 
 freezeSpanLinkAttrs
-  :: AttrsLimits 'AttrsForSpanLink
+  :: SpanLinkAttrsLimits
   -> SpanLink AttrsBuilder
   -> SpanLink Attrs
 freezeSpanLinkAttrs attrsLimits spanLink =
@@ -1091,9 +1089,9 @@ data EndedSpan = EndedSpan
 
 toEndedSpan
   :: Timestamp
-  -> AttrsLimits 'AttrsForSpanLink
-  -> AttrsLimits 'AttrsForSpanEvent
-  -> AttrsLimits 'AttrsForSpan
+  -> SpanLinkAttrsLimits
+  -> SpanEventAttrsLimits
+  -> SpanAttrsLimits
   -> Span AttrsBuilder
   -> EndedSpan
 toEndedSpan endedSpanEnd spanLinkAttrsLimits spanEventAttrsLimits spanAttrsLimits span =

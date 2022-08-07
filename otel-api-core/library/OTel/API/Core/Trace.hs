@@ -2,13 +2,12 @@ module OTel.API.Core.Trace
   ( Tracer(..)
 
   , SpanContext
-      ( spanContextTraceId
-      , spanContextSpanId
-      , spanContextTraceFlags
-      , spanContextTraceState
-      , spanContextIsRemote
-      )
   , emptySpanContext
+  , spanContextTraceId
+  , spanContextSpanId
+  , spanContextTraceFlags
+  , spanContextTraceState
+  , spanContextIsRemote
   , spanContextIsValid
   , TraceId
   , emptyTraceId
@@ -29,11 +28,10 @@ module OTel.API.Core.Trace
   , spanEventSpecsToList
 
   , SpanEventSpec
-      ( spanEventSpecName
-      , spanEventSpecTimestamp
-      , spanEventSpecAttrs
-      )
   , defaultSpanEventSpec
+  , spanEventSpecName
+  , spanEventSpecTimestamp
+  , spanEventSpecAttrs
 
   , SpanEventName(..)
 
@@ -51,70 +49,64 @@ module OTel.API.Core.Trace
   , SpanLinkName(..)
 
   , SpanLinkSpec
-      ( spanLinkSpecSpanContext
-      , spanLinkSpecAttrs
-      )
   , defaultSpanLinkSpec
+  , spanLinkSpecSpanContext
+  , spanLinkSpecAttrs
 
   , SpanSpec
-      ( spanSpecParent
-      , spanSpecName
-      , spanSpecStart
-      , spanSpecKind
-      , spanSpecAttrs
-      , spanSpecLinks
-      )
   , buildSpanSpec
+  , spanSpecParent
+  , spanSpecName
+  , spanSpecStart
+  , spanSpecKind
+  , spanSpecAttrs
+  , spanSpecLinks
 
   , NewSpanSpec
-      ( newSpanSpecName
-      , newSpanSpecParentSource
-      , newSpanSpecStart
-      , newSpanSpecKind
-      , newSpanSpecAttrs
-      , newSpanSpecLinks
-      )
   , defaultNewSpanSpec
+  , newSpanSpecName
+  , newSpanSpecParentSource
+  , newSpanSpecStart
+  , newSpanSpecKind
+  , newSpanSpecAttrs
+  , newSpanSpecLinks
 
   , UpdateSpanSpec
-      ( updateSpanSpecName
-      , updateSpanSpecStatus
-      , updateSpanSpecAttrs
-      , updateSpanSpecEvents
-      )
   , defaultUpdateSpanSpec
+  , updateSpanSpecName
+  , updateSpanSpecStatus
+  , updateSpanSpecAttrs
+  , updateSpanSpecEvents
   , buildSpanUpdater
   , recordException
 
   , SpanName(..)
 
   , Span
-      ( spanParent
-      , spanContext
-      , spanName
-      , spanStatus
-      , spanStart
-      , spanKind
-      , spanAttrs
-      , spanLinks
-      , spanEvents
-      , spanIsRecording
-      )
   , emptySpan
+  , spanParent
+  , spanContext
+  , spanName
+  , spanStatus
+  , spanStart
+  , spanKind
+  , spanAttrs
+  , spanLinks
+  , spanEvents
+  , spanIsRecording
 
   , EndedSpan
-      ( endedSpanParent
-      , endedSpanContext
-      , endedSpanName
-      , endedSpanStatus
-      , endedSpanStart
-      , endedSpanEnd
-      , endedSpanKind
-      , endedSpanAttrs
-      , endedSpanLinks
-      , endedSpanEvents
-      )
   , toEndedSpan
+  , endedSpanParent
+  , endedSpanContext
+  , endedSpanName
+  , endedSpanStatus
+  , endedSpanStart
+  , endedSpanEnd
+  , endedSpanKind
+  , endedSpanAttrs
+  , endedSpanLinks
+  , endedSpanEvents
 
   , SpanParentSource(..)
   , SpanParent(..)

@@ -14,6 +14,9 @@ module OTel.API.Core
 
   , InstrumentationScope
   , defaultInstrumentationScope
+  , instrumentationScopeName
+  , instrumentationScopeVersion
+  , instrumentationScopeSchemaURL
   , InstrumentationScopeName(..)
 
   , Version(..)

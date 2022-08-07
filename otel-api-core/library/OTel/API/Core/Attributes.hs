@@ -1,31 +1,30 @@
 module OTel.API.Core.Attributes
   ( Attrs
-  , attrsToBuilder
   , nullAttrs
-  , emptyAttrs
   , sizeAttrs
   , memberAttrs
   , lookupAttrs
   , foldMapWithKeyAttrs
 
   , AttrsBuilder
-  , runAttrsBuilder
 
   , SpanAttrs
   , SpanAttrsBuilder
+  , SpanAttrsLimits
 
   , SpanEventAttrs
   , SpanEventAttrsBuilder
+  , SpanEventAttrsLimits
 
   , SpanLinkAttrs
   , SpanLinkAttrsBuilder
+  , SpanLinkAttrsLimits
 
   , AttrsFor(..)
 
   , AttrsLimits
-      ( attrsLimitsCount
-      , attrsLimitsValueLength
-      )
+  , attrsLimitsCount
+  , attrsLimitsValueLength
   , defaultAttrsLimits
 
   , SomeAttr(..)
