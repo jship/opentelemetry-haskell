@@ -46,8 +46,8 @@ import OTel.API.Context
 import OTel.API.Core
   ( AttrsFor(..), AttrsLimits(..), NewSpanSpec(..), Span(spanContext, spanIsRecording)
   , SpanParent(..), SpanParentSource(..), SpanSpec(..), TimestampSource(..), Tracer(..)
-  , UpdateSpanSpec(updateSpanSpecEvents), EndedSpan, Timestamp, buildSpanSpec, buildSpanUpdater
-  , defaultUpdateSpanSpec, recordException, spanEventSpecsFromList, toEndedSpan
+  , UpdateSpanSpec(updateSpanSpecEvents), AttrsBuilder, EndedSpan, Timestamp, buildSpanSpec
+  , buildSpanUpdater, defaultUpdateSpanSpec, recordException, spanEventSpecsFromList, toEndedSpan
   )
 import OTel.API.Trace.Core (MonadTraceContext(..), MonadTracing(..))
 import OTel.API.Trace.Core.Internal (MutableSpan(..))
@@ -57,7 +57,7 @@ import qualified Control.Exception.Safe as Safe
 type TracingT :: (Type -> Type) -> Type -> Type
 
 newtype TracingT m a = TracingT
-  { unTracingT :: TracerOps -> ContextT Span m a
+  { unTracingT :: TracerOps -> ContextT (Span AttrsBuilder) m a
   } deriving
       ( Applicative, Functor, Monad, MonadFail, MonadFix, MonadIO -- @base@
       , MonadAccum w, MonadCont, MonadError e, MonadSelect r, MonadState s, MonadWriter w -- @mtl@
@@ -67,10 +67,10 @@ newtype TracingT m a = TracingT
       , MonadBaseControl b -- @monad-control@
       , MonadLogger -- @monad-logger@
       , MonadResource -- @resourcet@
-      ) via (ReaderT TracerOps (ContextT Span m))
+      ) via (ReaderT TracerOps (ContextT (Span AttrsBuilder) m))
     deriving
       ( Semigroup, Monoid -- @base@
-      ) via (Ap (ReaderT TracerOps (ContextT Span m)) a)
+      ) via (Ap (ReaderT TracerOps (ContextT (Span AttrsBuilder) m)) a)
 
 instance (MonadReader r m) => MonadReader r (TracingT m) where
   ask = lift ask
@@ -104,46 +104,65 @@ instance (MonadIO m, MonadMask m) => MonadTracing (TracingT m) where
         result <$ processSpan tracerOps spanKey
         `Safe.withException` handler tracerOps spanKey
     where
-    processSpan :: TracerOps -> ContextKey Span -> ContextT Span m ()
+    processSpan
+      :: TracerOps
+      -> ContextKey (Span AttrsBuilder)
+      -> ContextT (Span AttrsBuilder) m ()
     processSpan tracerOps spanKey = do
       span <- fmap contextSnapshotValue $ getContext spanKey
-      timestamp <- liftIO $ tracerOpsNow tracerOps
-      liftIO $ tracerOpsProcessSpan tracerOps $ toEndedSpan timestamp span
+      timestamp <- liftIO now
+      liftIO
+        $ process
+        $ toEndedSpan
+            timestamp
+            spanLinkAttrsLimits
+            spanEventAttrsLimits
+            spanAttrsLimits
+            span
       () <$ updateContext spanKey \s -> s { spanIsRecording = False }
+      where
+      TracerOps
+        { tracerOpsNow = now
+        , tracerOpsProcessSpan = process
+        , tracerOpsSpanAttrsLimits = spanAttrsLimits
+        , tracerOpsSpanEventAttrsLimits = spanEventAttrsLimits
+        , tracerOpsSpanLinkAttrsLimits = spanLinkAttrsLimits
+        } = tracerOps
 
-    handler :: TracerOps -> ContextKey Span -> SomeException -> ContextT Span m ()
+    handler
+      :: TracerOps
+      -> ContextKey (Span AttrsBuilder)
+      -> SomeException
+      -> ContextT (Span AttrsBuilder) m ()
     handler tracerOps spanKey someEx = do
       -- TODO: Set status to error? Spec docs make it sound like application
       -- authors set the status, and the API shouldn't set the status.
       -- https://opentelemetry.io/docs/reference/specification/trace/api/#set-status
       -- Probably would be convenient if this was a config option.
       _ <- updateContext spanKey
-             =<< buildSpanUpdater
-                   (liftIO now)
-                   spanEventAttrsLimits
-                   spanAttrsLimits
-                   defaultUpdateSpanSpec
-                     { updateSpanSpecEvents =
-                         Just $ spanEventSpecsFromList
-                           [ recordException someEx TimestampSourceNow mempty
-                           ]
-                     }
+             =<< buildSpanUpdater (liftIO now) defaultUpdateSpanSpec
+                   { updateSpanSpecEvents =
+                       Just $ spanEventSpecsFromList
+                         [ recordException someEx TimestampSourceNow mempty
+                         ]
+                   }
       -- N.B. It is important that we finish the span after recording the
       -- exception and not the other way around, because the span is no longer
       -- recording after it is ended.
       processSpan tracerOps spanKey
       where
-      TracerOps
-        { tracerOpsNow = now
-        , tracerOpsSpanAttrsLimits = spanAttrsLimits
-        , tracerOpsSpanEventAttrsLimits = spanEventAttrsLimits
-        } = tracerOps
+      TracerOps { tracerOpsNow = now } = tracerOps
 
-    toSpanSpec :: TracerOps -> NewSpanSpec -> ContextT Span m SpanSpec
+    toSpanSpec
+      :: TracerOps
+      -> NewSpanSpec
+      -> ContextT (Span AttrsBuilder) m (SpanSpec AttrsBuilder)
     toSpanSpec tracerOps =
-      buildSpanSpec (liftIO now) spanParentFromSource spanLinkAttrsLimits
+      buildSpanSpec (liftIO now) spanParentFromSource
       where
-      spanParentFromSource :: SpanParentSource -> ContextT Span m SpanParent
+      spanParentFromSource
+        :: SpanParentSource
+        -> ContextT (Span AttrsBuilder) m SpanParent
       spanParentFromSource = \case
         SpanParentSourceExplicit spanParent -> pure spanParent
         SpanParentSourceImplicit -> do
@@ -153,10 +172,7 @@ instance (MonadIO m, MonadMask m) => MonadTracing (TracingT m) where
               ContextSnapshot { contextSnapshotValue } <- getContext ctxKey
               pure $ SpanParentChildOf $ spanContext contextSnapshotValue
 
-      TracerOps
-        { tracerOpsNow = now
-        , tracerOpsSpanLinkAttrsLimits = spanLinkAttrsLimits
-        } = tracerOps
+      TracerOps { tracerOpsNow = now } = tracerOps
 
 instance (MonadIO m) => MonadTraceContext (TracingT m) where
   getSpanContext mutableSpan =
@@ -164,22 +180,16 @@ instance (MonadIO m) => MonadTraceContext (TracingT m) where
       fmap (fmap spanContext) $ getContext $ spanKey mutableSpan
 
   updateSpan mutableSpan updateSpanSpec =
-    TracingT go
+    TracingT update
       where
-      go :: TracerOps -> ContextT Span m (ContextSnapshot Span)
-      go tracerOps =
+      update
+        :: TracerOps
+        -> ContextT (Span AttrsBuilder) m (ContextSnapshot (Span AttrsBuilder))
+      update tracerOps =
         updateContext (spanKey mutableSpan)
-          =<< buildSpanUpdater
-               (liftIO now)
-               spanEventAttrsLimits
-               spanAttrsLimits
-               updateSpanSpec
+          =<< buildSpanUpdater (liftIO now) updateSpanSpec
         where
-        TracerOps
-          { tracerOpsNow = now
-          , tracerOpsSpanAttrsLimits = spanAttrsLimits
-          , tracerOpsSpanEventAttrsLimits = spanEventAttrsLimits
-          } = tracerOps
+        TracerOps { tracerOpsNow = now } = tracerOps
 
 runTracingT
   :: forall m a
@@ -212,7 +222,7 @@ mapTracingT f action =
 
 data TracerOps = TracerOps
   { tracerOpsNow :: IO Timestamp
-  , tracerOpsStartSpan :: SpanSpec -> IO Span
+  , tracerOpsStartSpan :: SpanSpec AttrsBuilder -> IO (Span AttrsBuilder)
   , tracerOpsProcessSpan :: EndedSpan -> IO ()
   , tracerOpsSpanAttrsLimits :: AttrsLimits 'AttrsForSpan
   , tracerOpsSpanEventAttrsLimits :: AttrsLimits 'AttrsForSpanEvent

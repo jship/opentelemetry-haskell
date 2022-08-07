@@ -24,8 +24,8 @@ import Control.Monad.Trans.Reader (ReaderT(..))
 import Control.Monad.Trans.Resource (ResourceT)
 import Control.Monad.Trans.Select (SelectT)
 import GHC.Stack (CallStack, HasCallStack, callStack)
-import OTel.API.Core (Span(..), NewSpanSpec, SpanContext, UpdateSpanSpec)
 import OTel.API.Context (ContextSnapshot)
+import OTel.API.Core (Span(..), AttrsBuilder, NewSpanSpec, SpanContext, UpdateSpanSpec)
 import OTel.API.Trace.Core.Internal (MutableSpan(..))
 import Prelude
 import qualified Control.Monad.Trans.RWS.CPS as RWS.CPS
@@ -82,7 +82,7 @@ instance (MonadTracing m, MonadUnliftIO m) => MonadTracing (ResourceT m) where
 
 class (Monad m) => MonadTraceContext m where
   getSpanContext :: MutableSpan -> m (ContextSnapshot SpanContext)
-  updateSpan :: MutableSpan -> UpdateSpanSpec -> m (ContextSnapshot Span)
+  updateSpan :: MutableSpan -> UpdateSpanSpec -> m (ContextSnapshot (Span AttrsBuilder))
 
   default getSpanContext
     :: (MonadTrans t, MonadTraceContext n, m ~ t n)
@@ -94,7 +94,7 @@ class (Monad m) => MonadTraceContext m where
     :: (MonadTrans t, MonadTraceContext n, m ~ t n)
     => MutableSpan
     -> UpdateSpanSpec
-    -> m (ContextSnapshot Span)
+    -> m (ContextSnapshot (Span AttrsBuilder))
   updateSpan ctxKey = lift . updateSpan ctxKey
 
 instance (MonadTraceContext m, Monoid w) => MonadTraceContext (AccumT w m)
