@@ -140,6 +140,7 @@ class KV (kv :: Type) where
   type KVConstraints kv :: Type -> Type -> Constraint
   (.@) :: KVConstraints kv from to => Key to -> from -> kv
 
+-- TODO: Enforce 'attrsLimitsValueLength' here!
 instance KV (AttrsBuilder af) where
   type KVConstraints (AttrsBuilder af) = ToAttrVal
   (.@) = go

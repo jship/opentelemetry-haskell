@@ -33,6 +33,6 @@ library:
   - dlist
   - otel-api-context
   - text
-  - vector
   - unordered-containers
+  - vector
   source-dirs: library

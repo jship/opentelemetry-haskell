@@ -1,5 +1,7 @@
 module OTel.API.Core.Attributes
-  ( Attrs
+  ( module OTel.API.Core.Attributes.Trace
+
+  , Attrs
   , nullAttrs
   , sizeAttrs
   , memberAttrs
@@ -30,4 +32,5 @@ module OTel.API.Core.Attributes
   , ToAttrVal(..)
   ) where
 
+import OTel.API.Core.Attributes.Trace
 import OTel.API.Core.Internal

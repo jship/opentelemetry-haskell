@@ -31,6 +31,7 @@ library
   exposed-modules:
       OTel.API.Core
       OTel.API.Core.Attributes
+      OTel.API.Core.Attributes.Trace
       OTel.API.Core.Internal
       OTel.API.Core.Trace
   other-modules:

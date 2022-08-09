@@ -1,0 +1,117 @@
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
+module {{module | trim}} where
+
+import Data.Int (Int64)
+import Data.Text (Text)
+import OTel.API.Core.Internal (Key(..), SchemaURL(..), ToAttrVal(..), AttrVals)
+import Prelude (Bool, Double)
+{%- macro to_haskell_type(type) -%}
+  {%- if type == "string" -%}
+    Text
+  {%- elif type == "string[]" -%}
+    (AttrVals Text)
+  {%- elif type == "boolean" -%}
+    Bool
+  {%- elif type == "boolean[]" -%}
+    (AttrVals Bool)
+  {%- elif type == "int" -%}
+    Int64
+  {%- elif type == "int[]" -%}
+    (AttrVals Int64)
+  {%- elif type == "double" -%}
+    Double
+  {%- elif type == "double[]" -%}
+    (AttrVals Double)
+  {%- else -%}
+    {{type}}
+  {%- endif -%}
+{%- endmacro %}
+{%- macro print_value(type, value) -%}
+  {{ "\"" if type == "String"}}{{value}}{{ "\"" if type == "String"}}
+{%- endmacro %}
+
+-- | The URL of the OpenTelemetry schema for these keys and values.
+pattern SCHEMA_URL :: SchemaURL
+pattern SCHEMA_URL <- SchemaURL "{{schemaUrl}}" where
+  SCHEMA_URL = SchemaURL "{{schemaUrl}}"
+
+{%- for attribute in attributes if attribute.is_local and not attribute.ref %}
+
+{-|
+{{attribute.brief | regex_replace(pattern="\/", replace="\/") | render_markdown(code="@{0}@", paragraph="{0}", link="<{0}>")}}
+  {%- if attribute.note %}
+
+[Notes]: {{attribute.note | regex_replace(pattern="\/", replace="\/") | render_markdown(code="@{0}@", paragraph="{0}", list="{0}", link="<{0}>")}}
+  {%- endif %}
+  {%- if attribute.deprecated %}
+
+/Deprecated:/ {{attribute.deprecated | to_doc_brief}}.
+  {%- endif %}
+-}
+pattern {{attribute.fqn | to_const_name}} :: Key {{to_haskell_type(attribute.attr_type | string)}}
+pattern {{attribute.fqn | to_const_name}} <- Key "{{attribute.fqn}}" where
+  {{attribute.fqn | to_const_name}} = Key "{{attribute.fqn}}"
+  {%- if attribute.deprecated %}
+{-# DEPRECATED {{attribute.fqn | to_const_name}} "{{attribute.deprecated | to_doc_brief}}" #-}
+  {%- endif %}
+{%- endfor %}
+
+
+{%- for attribute in attributes if attribute.is_local and not attribute.ref %}
+{%- if attribute.is_enum %}
+{%- set enum_name = attribute.fqn | to_camelcase(True) %}
+data {{enum_name}}
+  {%- for member in attribute.attr_type.members %}
+  {%- set val_name = member.member_id | to_camelcase(True) %}
+    {%- if loop.index is eq 1 %}
+  = {{enum_name}}{{val_name}} -- ^ {% filter escape %}{{member.brief | to_doc_brief}}.{% endfilter %}
+    {%- else %}
+  | {{enum_name}}{{val_name}} -- ^ {% filter escape %}{{member.brief | to_doc_brief}}.{% endfilter %}
+    {%- endif %}
+  {%- endfor %}
+
+instance ToAttrVal {{enum_name}} Text where
+  toAttrVal = \case
+  {%- for member in attribute.attr_type.members %}
+  {%- set val_name = member.member_id | to_camelcase(True) %}
+    {{enum_name}}{{val_name}} -> "{{member.member_id}}"
+  {%- endfor %}
+{% endif %}
+{%- endfor %}
+
+{%- if what == "SemConvAttrs" %}
+{-|
+The name of an event describing an exception.
+
+Typically an event with that name should not be manually created. Instead
+'OTel.API.Core.Trace.recordException' should be used.
+-}
+data ExceptionEventName = ExceptionEventName;
+
+instance ToAttrVal ExceptionEventName Text where
+  toAttrVal ExceptionEventName = "exception"
+
+{-|
+The name of the keyspace being accessed.
+
+/Deprecated:/ This item has been removed as of 1.8.0 of the semantic conventions. Please use 'DB_NAME' instead.
+-}
+pattern DB_CASSANDRA_KEYSPACE :: Key Text
+pattern DB_CASSANDRA_KEYSPACE <- Key "db.cassandra.keyspace" where
+  DB_CASSANDRA_KEYSPACE = Key "db.cassandra.keyspace"
+{-# DEPRECATED DB_CASSANDRA_KEYSPACE "This item has been removed as of 1.8.0 of the semantic conventions. Please use DB_NAME instead." #-}
+
+{-|
+The [HBase namespace](https://hbase.apache.org/book.html#_namespace) being accessed.
+
+/Deprecated:/ This item has been removed as of 1.8.0 of the semantic conventions. Please use 'DB_NAME' instead.
+-}
+pattern DB_HBASE_NAMESPACE :: Key Text
+pattern DB_HBASE_NAMESPACE <- Key "db.hbase.namespace" where
+  DB_HBASE_NAMESPACE = Key "db.hbase.namespace"
+{-# DEPRECATED DB_HBASE_NAMESPACE "This item has been removed as of 1.8.0 of the semantic conventions. Please use DB_NAME instead." #-}
+
+{% endif %}
