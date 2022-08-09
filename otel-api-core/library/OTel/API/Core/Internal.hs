@@ -748,10 +748,8 @@ freezeSpanEventAttrs
   -> SpanEvent AttrsBuilder
   -> SpanEvent Attrs
 freezeSpanEventAttrs attrsLimits spanEvent =
-  SpanEvent
-    { spanEventName = spanEventName spanEvent
-    , spanEventTimestamp = spanEventTimestamp spanEvent
-    , spanEventAttrs = runAttrsBuilder (spanEventAttrs spanEvent) attrsLimits
+  spanEvent
+    { spanEventAttrs = runAttrsBuilder (spanEventAttrs spanEvent) attrsLimits
     }
 
 newtype SpanEventSpecs = SpanEventSpecs
@@ -844,9 +842,8 @@ freezeSpanLinkAttrs
   -> SpanLink AttrsBuilder
   -> SpanLink Attrs
 freezeSpanLinkAttrs attrsLimits spanLink =
-  SpanLink
-    { spanLinkSpanContext = spanLinkSpanContext spanLink
-    , spanLinkAttrs = runAttrsBuilder (spanLinkAttrs spanLink) attrsLimits
+  spanLink
+    { spanLinkAttrs = runAttrsBuilder (spanLinkAttrs spanLink) attrsLimits
     }
 
 newtype SpanLinkName = SpanLinkName
