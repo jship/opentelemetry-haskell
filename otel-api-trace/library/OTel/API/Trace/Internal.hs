@@ -5,6 +5,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -40,20 +41,24 @@ import Control.Monad.Trans.Resource (MonadResource)
 import Control.Monad.Writer.Class (MonadWriter)
 import Data.Kind (Type)
 import Data.Monoid (Ap(..))
+import GHC.Stack (SrcLoc(..))
 import OTel.API.Context
   ( ContextSnapshot(..), ContextT(..), ContextKey, attachContext, getAttachedContextKey, getContext
   , updateContext
   )
 import OTel.API.Core
-  ( NewSpanSpec(..), Span(spanContext, spanIsRecording), SpanParent(..), SpanParentSource(..)
-  , SpanSpec(..), TimestampSource(..), Tracer(..), EndedSpan, SpanAttrsLimits, SpanEventAttrsLimits
-  , SpanLinkAttrsLimits, Timestamp, buildSpanSpec, recordException, toEndedSpan
+  ( AttrsFor(AttrsForSpan), KV(..), NewSpanSpec(..), Span(spanContext, spanIsRecording)
+  , SpanParent(..), SpanParentSource(..), SpanSpec(..), TimestampSource(..), Tracer(..)
+  , AttrsBuilder, EndedSpan, SpanAttrsLimits, SpanEventAttrsLimits, SpanLinkAttrsLimits, Timestamp
+  , buildSpanSpec, recordException, toEndedSpan, pattern CODE_FILEPATH, pattern CODE_FUNCTION
+  , pattern CODE_LINENO, pattern CODE_NAMESPACE
   )
 import OTel.API.Core.Internal (buildSpanUpdater)
 import OTel.API.Trace.Core (MonadTraceContext(..), MonadTracing(..))
 import OTel.API.Trace.Core.Internal (MutableSpan(..))
 import Prelude hiding (span)
 import qualified Control.Exception.Safe as Safe
+import qualified GHC.Stack as Stack
 
 type TracingT :: (Type -> Type) -> Type -> Type
 
@@ -95,8 +100,7 @@ instance MonadTransControl TracingT where
   restoreT = lift
 
 instance (MonadIO m, MonadMask m) => MonadTracing (TracingT m) where
-  -- TODO: Record callstack in attributes
-  traceCS _cs newSpanSpec action =
+  traceCS cs newSpanSpec action =
     TracingT \tracerOps -> do
       spanSpec <- toSpanSpec tracerOps newSpanSpec
       span <- liftIO $ tracerOpsStartSpan tracerOps spanSpec
@@ -143,8 +147,8 @@ instance (MonadIO m, MonadMask m) => MonadTracing (TracingT m) where
       TracerOps { tracerOpsNow = now } = tracerOps
 
     toSpanSpec :: TracerOps -> NewSpanSpec -> ContextT Span m SpanSpec
-    toSpanSpec tracerOps =
-      buildSpanSpec (liftIO now) spanParentFromSource
+    toSpanSpec tracerOps spec =
+      buildSpanSpec (liftIO now) spanParentFromSource spec { newSpanSpecAttrs }
       where
       spanParentFromSource
         :: SpanParentSource
@@ -157,6 +161,16 @@ instance (MonadIO m, MonadMask m) => MonadTracing (TracingT m) where
             Just ctxKey -> do
               ContextSnapshot { contextSnapshotValue } <- getContext ctxKey
               pure $ SpanParentChildOf $ spanContext contextSnapshotValue
+
+      newSpanSpecAttrs :: AttrsBuilder 'AttrsForSpan
+      newSpanSpecAttrs =
+        case Stack.getCallStack cs of
+          ((function, srcLoc) : _) ->
+            CODE_FUNCTION .@ function
+              <> CODE_NAMESPACE .@ srcLocModule srcLoc
+              <> CODE_FILEPATH .@ srcLocFile srcLoc
+              <> CODE_LINENO .@ srcLocStartLine srcLoc
+          _ -> mempty
 
       TracerOps { tracerOpsNow = now } = tracerOps
 
