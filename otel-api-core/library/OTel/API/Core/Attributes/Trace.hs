@@ -6,7 +6,7 @@ module OTel.API.Core.Attributes.Trace where
 
 import Data.Int (Int64)
 import Data.Text (Text)
-import OTel.API.Core.Internal (Key(..), SchemaURL(..), ToAttrVal(..), AttrVals)
+import OTel.API.Core.Internal (Key(..), SchemaURL(..), SpanEventName(..), ToAttrVal(..), AttrVals)
 import Prelude (Bool, Double)
 
 -- | The URL of the OpenTelemetry schema for these keys and values.
@@ -1445,10 +1445,10 @@ The name of an event describing an exception.
 Typically an event with that name should not be manually created. Instead
 'OTel.API.Core.Trace.recordException' should be used.
 -}
-data ExceptionEventName = ExceptionEventName;
-
-instance ToAttrVal ExceptionEventName Text where
-  toAttrVal ExceptionEventName = "exception"
+-- | The URL of the OpenTelemetry schema for these keys and values.
+pattern EXCEPTION_EVENT_NAME :: SpanEventName
+pattern EXCEPTION_EVENT_NAME <- SpanEventName "exception" where
+  EXCEPTION_EVENT_NAME = SpanEventName "exception"
 
 {-|
 The name of the keyspace being accessed.

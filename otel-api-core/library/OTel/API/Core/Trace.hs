@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 module OTel.API.Core.Trace
   ( Tracer(..)
 
@@ -77,8 +78,9 @@ module OTel.API.Core.Trace
   , updateSpanSpecStatus
   , updateSpanSpecAttrs
   , updateSpanSpecEvents
-  , buildSpanUpdater
+
   , recordException
+  , exceptionEvent
 
   , SpanName(..)
 
@@ -116,4 +118,40 @@ module OTel.API.Core.Trace
   , SpanStatus(..)
   ) where
 
+import Control.Exception (SomeException(..))
+import OTel.API.Core.Attributes.Trace
 import OTel.API.Core.Internal
+import Prelude hiding (span)
+import qualified Control.Exception as Exception
+import qualified Data.Typeable as Typeable
+
+recordException
+  :: SomeException
+  -> Bool
+  -> TimestampSource
+  -> AttrsBuilder 'AttrsForSpanEvent
+  -> UpdateSpanSpec
+recordException someEx escaped timestamp attributes =
+  defaultUpdateSpanSpec
+    { updateSpanSpecEvents =
+        Just $ spanEventSpecsFromList
+          [ exceptionEvent someEx escaped timestamp attributes
+          ]
+    }
+
+exceptionEvent
+  :: SomeException
+  -> Bool
+  -> TimestampSource
+  -> AttrsBuilder 'AttrsForSpanEvent
+  -> SpanEventSpec
+exceptionEvent (SomeException e) escaped timestamp attributes =
+  SpanEventSpec
+    { spanEventSpecName = EXCEPTION_EVENT_NAME
+    , spanEventSpecTimestamp = timestamp
+    , spanEventSpecAttrs =
+        attributes
+          <> EXCEPTION_TYPE .@ show (Typeable.typeOf e)
+          <> EXCEPTION_MESSAGE .@ Exception.displayException e
+          <> EXCEPTION_ESCAPED .@ escaped
+    }

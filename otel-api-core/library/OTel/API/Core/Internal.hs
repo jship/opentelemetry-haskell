@@ -100,7 +100,6 @@ module OTel.API.Core.Internal
   , UpdateSpanSpec(..)
   , defaultUpdateSpanSpec
   , buildSpanUpdater
-  , recordException
   , SpanName(..)
   , Span(..)
   , emptySpan
@@ -112,7 +111,6 @@ module OTel.API.Core.Internal
   , SpanStatus(.., Unset, OK, Error)
   ) where
 
-import Control.Exception (SomeException(..))
 import Data.DList (DList)
 import Data.HashMap.Strict (HashMap)
 import Data.Int (Int16, Int32, Int64, Int8)
@@ -126,7 +124,6 @@ import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.Float (float2Double)
 import OTel.API.Context (ContextBackend)
 import Prelude hiding (span)
-import qualified Control.Exception as Exception
 import qualified Data.DList as DList
 import qualified Data.Foldable as Foldable
 import qualified Data.HashMap.Strict as HashMap
@@ -136,6 +133,7 @@ import qualified Data.Text.Lazy as Text.Lazy
 import qualified Data.Traversable as Traversable
 import qualified Data.Vector as Vector
 
+-- TODO: This may not need to be a typeclass if we only have one instance.
 class KV (kv :: Type) where
   type KVConstraints kv :: Type -> Type -> Constraint
   (.@) :: KVConstraints kv from to => Key to -> from -> kv
@@ -1012,21 +1010,6 @@ buildSpanUpdater getTimestamp updateSpanSpec = do
     , updateSpanSpecAttrs
     , updateSpanSpecEvents
     } = updateSpanSpec
-
--- TODO: See https://opentelemetry.io/docs/reference/specification/trace/semantic_conventions/exceptions/
--- TODO: Should there be a convenience wrapper that produces a UpdateSpanSpec?
-recordException
-  :: SomeException
-  -> TimestampSource
-  -> AttrsBuilder 'AttrsForSpanEvent
-  -> SpanEventSpec
-recordException (SomeException e) timestamp attributes =
-  SpanEventSpec
-    { spanEventSpecName = "exception"
-    , spanEventSpecTimestamp = timestamp
-    , spanEventSpecAttrs =
-        "exception.message" .@ Exception.displayException e <> attributes
-    }
 
 newtype SpanName = SpanName
   { unSpanName :: Text

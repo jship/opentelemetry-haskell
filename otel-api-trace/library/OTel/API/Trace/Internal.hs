@@ -20,6 +20,7 @@ module OTel.API.Trace.Internal
   ) where
 
 import Control.Exception.Safe (MonadCatch, MonadMask, MonadThrow, SomeException)
+import Control.Monad ((<=<))
 import Control.Monad.Accum (MonadAccum)
 import Control.Monad.Base (MonadBase)
 import Control.Monad.Cont (MonadCont)
@@ -45,10 +46,10 @@ import OTel.API.Context
   )
 import OTel.API.Core
   ( NewSpanSpec(..), Span(spanContext, spanIsRecording), SpanParent(..), SpanParentSource(..)
-  , SpanSpec(..), TimestampSource(..), Tracer(..), UpdateSpanSpec(updateSpanSpecEvents), EndedSpan
-  , SpanAttrsLimits, SpanEventAttrsLimits, SpanLinkAttrsLimits, Timestamp, buildSpanSpec
-  , buildSpanUpdater, defaultUpdateSpanSpec, recordException, spanEventSpecsFromList, toEndedSpan
+  , SpanSpec(..), TimestampSource(..), Tracer(..), EndedSpan, SpanAttrsLimits, SpanEventAttrsLimits
+  , SpanLinkAttrsLimits, Timestamp, buildSpanSpec, recordException, toEndedSpan
   )
+import OTel.API.Core.Internal (buildSpanUpdater)
 import OTel.API.Trace.Core (MonadTraceContext(..), MonadTracing(..))
 import OTel.API.Trace.Core.Internal (MutableSpan(..))
 import Prelude hiding (span)
@@ -132,13 +133,8 @@ instance (MonadIO m, MonadMask m) => MonadTracing (TracingT m) where
       -- authors set the status, and the API shouldn't set the status.
       -- https://opentelemetry.io/docs/reference/specification/trace/api/#set-status
       -- Probably would be convenient if this was a config option.
-      _ <- updateContext spanKey
-             =<< buildSpanUpdater (liftIO now) defaultUpdateSpanSpec
-                   { updateSpanSpecEvents =
-                       Just $ spanEventSpecsFromList
-                         [ recordException someEx TimestampSourceNow mempty
-                         ]
-                   }
+      _ <- updateContext spanKey <=< buildSpanUpdater (liftIO now) $
+        recordException someEx True TimestampSourceNow mempty
       -- N.B. It is important that we finish the span after recording the
       -- exception and not the other way around, because the span is no longer
       -- recording after it is ended.
