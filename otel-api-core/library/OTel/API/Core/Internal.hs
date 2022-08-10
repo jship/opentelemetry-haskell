@@ -140,17 +140,26 @@ class KV (kv :: Type) where
   type KVConstraints kv :: Type -> Type -> Constraint
   (.@) :: KVConstraints kv from to => Key to -> from -> kv
 
--- TODO: Enforce 'attrsLimitsValueLength' here!
 instance KV (AttrsBuilder af) where
   type KVConstraints (AttrsBuilder af) = ToAttrVal
   (.@) = go
     where
     go :: forall to from. (ToAttrVal from to) => Key to -> from -> (AttrsBuilder af)
     go k v =
-      AttrsBuilder \_attrsLimits -> Attrs $ HashMap.singleton (unKey k) $ SomeAttr Attr
-        { attrType = attrTypeVal $ Proxy @to
-        , attrVal = toAttrVal @from @to v
-        }
+      AttrsBuilder \attrsLimits ->
+        Attrs $ HashMap.singleton (unKey k) $ SomeAttr Attr
+          { attrType
+          , attrVal =
+              case attrType of
+                AttrTypeText -> truncateText attrsLimits val
+                AttrTypeTextArray -> fmap (truncateText attrsLimits) val
+                _ -> val
+          }
+      where
+      attrType = attrTypeVal $ Proxy @to
+      val = toAttrVal @from @to v
+      truncateText attrsLimits = Text.take (textLengthLimit attrsLimits)
+      textLengthLimit = Maybe.fromMaybe (maxBound :: Int) . attrsLimitsValueLength
 
 newtype Key a = Key
   { unKey :: Text
