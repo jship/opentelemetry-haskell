@@ -163,8 +163,20 @@ newTracerProvider ctxBackendTrace tracerProviderSpec = do
           case spanParent of
             SpanParentRoot ->
               liftA2 (,) genTraceId genSpanId
+                `catchAny` \(SomeException ex) -> do
+                  logError $ "Falling back to default trace/span ID gen due to exception" :#
+                    [ "exception" .= displayException ex ]
+                  traceId <- idGeneratorSpecGenTraceId defaultIdGeneratorSpec
+                  spanId <- idGeneratorSpecGenSpanId defaultIdGeneratorSpec
+                  pure (traceId, spanId)
             SpanParentChildOf spanParentContext ->
               liftA2 (,) (pure $ spanContextTraceId spanParentContext) genSpanId
+                `catchAny` \(SomeException ex) -> do
+                  logError $ "Falling back to default span ID gen due to exception" :#
+                    [ "exception" .= displayException ex ]
+                  spanId <- idGeneratorSpecGenSpanId defaultIdGeneratorSpec
+                  pure (spanContextTraceId spanParentContext, spanId)
+
       pure emptySpanContext
         { spanContextTraceId
         , spanContextSpanId
