@@ -1,13 +1,13 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.4.
+-- This file has been generated from package.yaml by hpack version 0.34.6.
 --
 -- see: https://github.com/sol/hpack
 
-name:           otel-api-trace-core
+name:           otel-sdk-trace
 version:        0.0.0
 synopsis:       STUB
-description:    @otel-api-trace-core@ STUB
+description:    @otel-sdk-trace@ STUB
 category:       System
 homepage:       https://github.com/jship/opentelemetry-haskell#readme
 bug-reports:    https://github.com/jship/opentelemetry-haskell/issues
@@ -29,9 +29,10 @@ source-repository head
 
 library
   exposed-modules:
-      OTel.API.Trace.Core
+      OTel.SDK.Trace
+      OTel.SDK.Trace.Internal
   other-modules:
-      Paths_otel_api_trace_core
+      Paths_otel_sdk_trace
   hs-source-dirs:
       library
   default-extensions:
@@ -39,11 +40,12 @@ library
   ghc-options: -Wall -fwarn-tabs -Wincomplete-uni-patterns -Wredundant-constraints
   build-depends:
       base >=4.11.1.0 && <5
-    , monad-control
     , monad-logger
+    , mtl >=2.3
     , otel-api-context
     , otel-api-core
-    , resourcet
-    , transformers
+    , otel-api-trace
+    , safe-exceptions
+    , transformers-base
     , unliftio-core
   default-language: Haskell2010

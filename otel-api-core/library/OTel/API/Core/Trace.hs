@@ -1,6 +1,9 @@
 {-# LANGUAGE DataKinds #-}
 module OTel.API.Core.Trace
-  ( Tracer(..)
+  ( TracerProvider
+  , getTracer
+
+  , Tracer
 
   , SpanContext
   , emptySpanContext
@@ -84,6 +87,7 @@ module OTel.API.Core.Trace
 
   , SpanName(..)
 
+  , MutableSpan
   , Span
   , emptySpan
   , spanParent

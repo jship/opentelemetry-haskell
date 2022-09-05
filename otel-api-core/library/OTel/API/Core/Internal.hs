@@ -5,7 +5,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
@@ -57,6 +56,8 @@ module OTel.API.Core.Internal
   , ToAttrVal(..)
 
     -- * Tracing
+  , TracerProvider(..)
+  , getTracer
   , Tracer(..)
   , SpanContext(..)
   , emptySpanContext
@@ -101,6 +102,7 @@ module OTel.API.Core.Internal
   , defaultUpdateSpanSpec
   , buildSpanUpdater
   , SpanName(..)
+  , MutableSpan(..)
   , Span(..)
   , emptySpan
   , EndedSpan(..)
@@ -111,6 +113,7 @@ module OTel.API.Core.Internal
   , SpanStatus(.., Unset, OK, Error)
   ) where
 
+import Control.Monad.IO.Class (MonadIO(liftIO))
 import Data.DList (DList)
 import Data.HashMap.Strict (HashMap)
 import Data.Int (Int16, Int32, Int64, Int8)
@@ -122,7 +125,7 @@ import Data.Text (Text)
 import Data.Vector (Vector)
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.Float (float2Double)
-import OTel.API.Context (ContextBackend)
+import OTel.API.Context (ContextBackend, ContextKey)
 import Prelude hiding (span)
 import qualified Data.DList as DList
 import qualified Data.Foldable as Foldable
@@ -651,15 +654,26 @@ instance ToAttrVal (Seq Word32) (AttrVals Int64) where
 instance ToAttrVal (Vector Word32) (AttrVals Int64) where
   toAttrVal = AttrVals . fmap (toAttrVal @Word32 @Int64)
 
---data TracerProvider = TracerProvider
---  { tracerProviderGetTracer :: IO Tracer
---  , tracerProviderShutdown :: IO ()
---  }
+data TracerProvider = TracerProvider
+  { tracerProviderGetTracer :: InstrumentationScope -> IO Tracer
+  , tracerProviderShutdown :: IO ()
+  , tracerProviderForceFlush :: IO ()
+  }
+
+getTracer
+  :: forall m
+   . (MonadIO m)
+  => TracerProvider
+  -> InstrumentationScope
+  -> m Tracer
+getTracer tracerProvider = liftIO . tracerProviderGetTracer tracerProvider
 
 data Tracer = Tracer
-  { tracerNow :: IO Timestamp
+  { tracerInstrumentationScope :: InstrumentationScope
+  , tracerNow :: IO Timestamp
   , tracerStartSpan :: SpanSpec -> IO Span
-  , tracerProcessSpan :: EndedSpan -> IO ()
+  , tracerOnSpanStart :: MutableSpan -> IO ()
+  , tracerOnSpanEnd :: EndedSpan -> IO ()
   , tracerContextBackend :: ContextBackend Span
   , tracerSpanAttrsLimits :: SpanAttrsLimits
   , tracerSpanEventAttrsLimits :: SpanEventAttrsLimits
@@ -1017,6 +1031,10 @@ newtype SpanName = SpanName
 
 instance IsString SpanName where
   fromString = SpanName . Text.pack
+
+newtype MutableSpan = MutableSpan
+  { mutableSpanSpanKey :: ContextKey Span
+  }
 
 data Span = Span
   { spanParent :: SpanParent

@@ -25,8 +25,8 @@ import Control.Monad.Trans.Resource (ResourceT)
 import Control.Monad.Trans.Select (SelectT)
 import GHC.Stack (CallStack, HasCallStack, callStack)
 import OTel.API.Context (ContextSnapshot)
-import OTel.API.Core (Span(..), NewSpanSpec, SpanContext, UpdateSpanSpec)
-import OTel.API.Trace.Core.Internal (MutableSpan(..))
+import OTel.API.Core (Span, NewSpanSpec, SpanContext, UpdateSpanSpec)
+import OTel.API.Core.Internal (MutableSpan(..))
 import Prelude
 import qualified Control.Monad.Trans.RWS.CPS as RWS.CPS
 import qualified Control.Monad.Trans.RWS.Lazy as RWS.Lazy
