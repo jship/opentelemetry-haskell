@@ -40,7 +40,7 @@ import OTel.API.Context
 import OTel.API.Core
   ( EndedSpan(..), InstrumentationScope(..), InstrumentationScopeName(..)
   , Version(..), SpanSpec(..), SpanStatus(..), Span, SpanAttrsLimits
-  , SpanEventAttrsLimits, SpanLinkAttrsLimits, Timestamp, UpdateSpanSpec, schemaURLToText, OpentracingRefType (OpentracingRefTypeChildOf)
+  , SpanEventAttrsLimits, SpanLinkAttrsLimits, Timestamp, UpdateSpanSpec, schemaURLToText
   )
 import OTel.API.Core.Internal
   ( InstrumentationScope(InstrumentationScope), MutableSpan(..), Span(..), Tracer(..)
@@ -49,8 +49,6 @@ import OTel.API.Core.Internal
 import Prelude
 import System.Timeout (timeout)
 import qualified Control.Exception.Safe as Exception
-import Data.IORef (IORef, readIORef, writeIORef)
-import Control.Concurrent (MVar)
 
 data TracerProviderSpec = TracerProviderSpec
   { tracerProviderSpecInstrumentationScope :: InstrumentationScope
@@ -121,13 +119,13 @@ newTracerProvider ctxBackendTrace tracerProviderSpec = do
           }
     , tracerProviderShutdown =
         spanProcessorShutdown spanProcessor
-          & mkTimeoutSafe (mkLoggingMeta "shutdown")
-          & flip runTimeoutSafe 30000000 -- TODO: Make configurable?
+          & mkTimeoutSafeT (mkLoggingMeta "shutdown")
+          & flip runTimeoutSafeT 30000000 -- TODO: Make configurable?
           & flip runLoggingT logger
     , tracerProviderForceFlush =
         spanProcessorForceFlush spanProcessor
-          & mkTimeoutSafe (mkLoggingMeta "forceFlush")
-          & flip runTimeoutSafe 30000000 -- TODO: Make configurable?
+          & mkTimeoutSafeT (mkLoggingMeta "forceFlush")
+          & flip runTimeoutSafeT 30000000 -- TODO: Make configurable?
           & flip runLoggingT logger
     }
   where
@@ -208,27 +206,27 @@ buildSpanProcessor spanProcessorSpec = spanProcessor
       { spanProcessorOnSpanStart = \updateSpan getSpan -> do
           let loggingMeta = mkLoggingMeta "onSpanStart"
           spanProcessorSpecOnSpanStart spanProcessorSpec updateSpan getSpan
-            & mkExceptionSafe loggingMeta
-            & runExceptionSafe
+            & mkExceptionSafeT loggingMeta
+            & runExceptionSafeT
       , spanProcessorOnSpanEnd = \endedSpan -> do
           let loggingMeta = mkLoggingMeta "onSpanEnd"
           spanProcessorSpecOnSpanEnd spanProcessorSpec endedSpan
-            & mkExceptionSafe loggingMeta
-            & runExceptionSafe
+            & mkExceptionSafeT loggingMeta
+            & runExceptionSafeT
       , spanProcessorShutdown = do
           let loggingMeta = mkLoggingMeta "shutdown"
           spanProcessorSpecShutdown spanProcessorSpec
-            & mkExceptionSafe loggingMeta
-            & mkTimeoutSafe loggingMeta
-            & flip runTimeoutSafe 30000000 -- TODO: Make configurable?
-            & runExceptionSafe
+            & mkExceptionSafeT loggingMeta
+            & mkTimeoutSafeT loggingMeta
+            & flip runTimeoutSafeT 30000000 -- TODO: Make configurable?
+            & runExceptionSafeT
       , spanProcessorForceFlush = do
           let loggingMeta = mkLoggingMeta "forceFlush"
           spanProcessorSpecForceFlush spanProcessorSpec
-            & mkExceptionSafe loggingMeta
-            & mkTimeoutSafe loggingMeta
-            & flip runTimeoutSafe 30000000 -- TODO: Make configurable?
-            & runExceptionSafe
+            & mkExceptionSafeT loggingMeta
+            & mkTimeoutSafeT loggingMeta
+            & flip runTimeoutSafeT 30000000 -- TODO: Make configurable?
+            & runExceptionSafeT
       }
 
   mkLoggingMeta :: Text -> [SeriesElem]
@@ -263,9 +261,9 @@ data SpanProcessorSpec = SpanProcessorSpec
       :: Int
   }
 
-type ExceptionSafe :: (Type -> Type) -> Type -> Type
-newtype ExceptionSafe m a = ExceptionSafe
-  { runExceptionSafe :: m a
+type ExceptionSafeT :: (Type -> Type) -> Type -> Type
+newtype ExceptionSafeT m a = ExceptionSafeT
+  { runExceptionSafeT :: m a
   } deriving
       ( Applicative, Functor, Monad, MonadIO -- @base@
       , MonadUnliftIO -- @unliftio-core@
@@ -275,21 +273,21 @@ newtype ExceptionSafe m a = ExceptionSafe
       ( Semigroup, Monoid -- @base@
       ) via (Ap m a)
 
-mkExceptionSafe
+mkExceptionSafeT
   :: forall m
    . (MonadCatch m, MonadLogger m)
   => [SeriesElem]
   -> m ()
-  -> ExceptionSafe m ()
-mkExceptionSafe pairs action =
-  ExceptionSafe do
+  -> ExceptionSafeT m ()
+mkExceptionSafeT pairs action =
+  ExceptionSafeT do
     action `catchAny` \ex -> do
       logError $ "Ignoring exception" :#
         ("exception" .= displayException ex) : pairs
 
-type TimeoutSafe :: (Type -> Type) -> Type -> Type
-newtype TimeoutSafe m a = TimeoutSafe
-  { runTimeoutSafe :: Int -> m a
+type TimeoutSafeT :: (Type -> Type) -> Type -> Type
+newtype TimeoutSafeT m a = TimeoutSafeT
+  { runTimeoutSafeT :: Int -> m a
   } deriving
       ( Applicative, Functor, Monad, MonadIO -- @base@
       , MonadUnliftIO -- @unliftio-core@
@@ -299,14 +297,14 @@ newtype TimeoutSafe m a = TimeoutSafe
       ( Semigroup, Monoid -- @base@
       ) via (Ap (ReaderT Int m) a)
 
-mkTimeoutSafe
+mkTimeoutSafeT
   :: forall m
    . (MonadLogger m, MonadUnliftIO m)
   => [SeriesElem] -- ^ Metadata to log if action times out
   -> m ()
-  -> TimeoutSafe m ()
-mkTimeoutSafe pairs action =
-  TimeoutSafe \microseconds -> do
+  -> TimeoutSafeT m ()
+mkTimeoutSafeT pairs action =
+  TimeoutSafeT \microseconds -> do
     mResult <- withRunInIO \runInIO -> do
       timeout microseconds $ runInIO action
     case mResult of
@@ -315,32 +313,32 @@ mkTimeoutSafe pairs action =
         logError $ "Action did not complete within timeout" :#
           ("timeoutMicroseconds" .= microseconds) : pairs
 
-type Once :: (Type -> Type) -> Type -> Type
-newtype Once m a = Once
-  { runOnce :: IORef Bool -> m a
-  } deriving
-      ( Applicative, Functor, Monad, MonadIO -- @base@
-      , MonadUnliftIO -- @unliftio-core@
-      , MonadLogger -- @monad-logger@
-      ) via (ReaderT (IORef Bool) m)
-    deriving
-      ( Semigroup, Monoid -- @base@
-      ) via (Ap (ReaderT (IORef Bool) m) a)
-
-mkOnce
-  :: forall m
-   . (MonadCatch m, MonadLogger m, MonadIO m)
-  => m ()
-  -> Once m ()
-mkOnce action =
-  Once \ref -> do
-    liftIO (readIORef ref) >>= \case
-      False -> do
-        wrappedAction
-        liftIO $ writeIORef ref True
-      True -> pure ()
-  where
-  wrappedAction = runExceptionSafe $ mkExceptionSafe [] action
+--type Once :: (Type -> Type) -> Type -> Type
+--newtype Once m a = Once
+--  { runOnce :: IORef Bool -> m a
+--  } deriving
+--      ( Applicative, Functor, Monad, MonadIO -- @base@
+--      , MonadUnliftIO -- @unliftio-core@
+--      , MonadLogger -- @monad-logger@
+--      ) via (ReaderT (IORef Bool) m)
+--    deriving
+--      ( Semigroup, Monoid -- @base@
+--      ) via (Ap (ReaderT (IORef Bool) m) a)
+--
+--mkOnce
+--  :: forall m
+--   . (MonadCatch m, MonadLogger m, MonadIO m)
+--  => m ()
+--  -> Once m ()
+--mkOnce action =
+--  Once \ref -> do
+--    liftIO (readIORef ref) >>= \case
+--      False -> do
+--        wrappedAction
+--        liftIO $ writeIORef ref True
+--      True -> pure ()
+--  where
+--  wrappedAction = runExceptionSafeT $ mkExceptionSafeT [] action
 
 --runExactlyOnce :: forall m a. (MonadIO m) => m a -> m a
 --runExactlyOnce action = do
