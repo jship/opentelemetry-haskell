@@ -671,9 +671,8 @@ getTracer tracerProvider = liftIO . tracerProviderGetTracer tracerProvider
 data Tracer = Tracer
   { tracerInstrumentationScope :: InstrumentationScope
   , tracerNow :: IO Timestamp
-  , tracerStartSpan :: SpanSpec -> IO Span
-  , tracerOnSpanStart :: MutableSpan -> IO ()
-  , tracerOnSpanEnd :: EndedSpan -> IO ()
+  , tracerStartSpan :: SpanSpec -> IO MutableSpan
+  , tracerProcessSpan :: EndedSpan -> IO ()
   , tracerContextBackend :: ContextBackend Span
   , tracerSpanAttrsLimits :: SpanAttrsLimits
   , tracerSpanEventAttrsLimits :: SpanEventAttrsLimits

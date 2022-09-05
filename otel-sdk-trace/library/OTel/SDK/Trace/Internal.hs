@@ -39,12 +39,16 @@ import Data.Text (Text)
 import OTel.API.Context
   ( ContextT(runContextT), ContextBackend, getContext, updateContext, withContextBackend
   )
+import OTel.API.Context.Internal (newContextKey)
 import OTel.API.Core
-  ( EndedSpan(..), SpanSpec(..), SpanStatus(..), SpanAttrsLimits, SpanContext, SpanEventAttrsLimits
-  , SpanLinkAttrsLimits, Timestamp, UpdateSpanSpec
+  ( EndedSpan(..), SpanParent(..), SpanSpec(..), SpanStatus(..), SpanAttrsLimits, SpanContext
+  , SpanEventAttrsLimits, SpanLinkAttrsLimits, Timestamp, UpdateSpanSpec, emptySpanContext
+  , emptySpanId, emptyTraceId, spanContextIsRemote, spanContextSpanId, spanContextTraceFlags
+  , spanContextTraceId, spanContextTraceState
   )
 import OTel.API.Core.Internal
-  ( MutableSpan(..), Span(..), Tracer(..), TracerProvider(..), buildSpanUpdater
+  ( MutableSpan(..), Span(..), TraceFlags(..), TraceState(..), Tracer(..), TracerProvider(..)
+  , buildSpanUpdater
   )
 import Prelude
 import System.Timeout (timeout)
@@ -95,41 +99,62 @@ newTracerProvider ctxBackendTrace tracerProviderSpec = do
     pure Tracer
       { tracerInstrumentationScope = scope
       , tracerNow = now
-      , tracerStartSpan = startSpan
-      , tracerOnSpanStart = onSpanStartWith spanProcessor
-      , tracerOnSpanEnd = spanProcessorOnSpanEnd spanProcessor
+      , tracerStartSpan = startSpan spanProcessor
+      , tracerProcessSpan = spanProcessorOnSpanEnd spanProcessor
       , tracerContextBackend = ctxBackendTrace
       , tracerSpanAttrsLimits = spanAttrsLimits
       , tracerSpanEventAttrsLimits = spanEventAttrsLimits
       , tracerSpanLinkAttrsLimits = spanLinkAttrsLimits
       }
 
-  startSpan spanSpec = do
-    pure Span
-      { spanParent = spanSpecParent spanSpec
-      , spanContext = undefined -- TODO: Implement!
-      , spanName = spanSpecName spanSpec
-      , spanStatus = SpanStatusUnset
-      , spanStart = spanSpecStart spanSpec
-      , spanKind = spanSpecKind spanSpec
-      , spanAttrs = spanSpecAttrs spanSpec
-      , spanLinks = spanSpecLinks spanSpec
-      , spanEvents = mempty
-      , spanIsRecording = False -- TODO: Implement!
-      }
+  startSpan spanProcessor spanSpec = do
+    let spanParent = spanSpecParent spanSpec
+    freshSpanContext <- newSpanContext spanParent
+    mutableSpan@MutableSpan { mutableSpanSpanKey = spanKey } <- do
+      fmap MutableSpan $ newContextKey Span
+        { spanParent
+        , spanContext = freshSpanContext
+        , spanName = spanSpecName spanSpec
+        , spanStatus = SpanStatusUnset
+        , spanStart = spanSpecStart spanSpec
+        , spanKind = spanSpecKind spanSpec
+        , spanAttrs = spanSpecAttrs spanSpec
+        , spanLinks = spanSpecLinks spanSpec
+        , spanEvents = mempty
+        , spanIsRecording = True -- TODO: Implement!
+        }
 
-  onSpanStartWith spanProcessor = \case
-    MutableSpan { mutableSpanSpanKey = spanKey } -> do
-      parentSpanContext <- fmap spanContext getSpan
-      -- TODO: Fetch baggage from context and pass along too
-      spanProcessorOnSpanStart spanProcessor parentSpanContext updateSpan getSpan
-      where
-      getSpan :: IO Span
-      getSpan = runContextT (getContext spanKey) ctxBackendTrace
+    let getSpan = runContextT (getContext spanKey) ctxBackendTrace
+    let updateSpan updatedSpan =
+          void $ flip runContextT ctxBackendTrace do
+            updateContext spanKey <=< buildSpanUpdater (liftIO now) $ updatedSpan
 
-      updateSpan :: UpdateSpanSpec -> IO ()
-      updateSpan updatedSpan = flip runContextT ctxBackendTrace do
-        void $ updateContext spanKey <=< buildSpanUpdater (liftIO now) $ updatedSpan
+    parentSpanContext <- fmap spanContext getSpan
+    -- TODO: Fetch baggage from context and pass along too
+    spanProcessorOnSpanStart
+      spanProcessor
+      parentSpanContext
+      updateSpan
+      getSpan
+    pure mutableSpan
+    where
+    newSpanContext = \case
+      SpanParentRoot ->
+        pure emptySpanContext
+          { spanContextTraceId = emptyTraceId -- TODO: Populate correctly
+          , spanContextSpanId = emptySpanId -- TODO: Populate correctly
+          , spanContextTraceFlags = TraceFlags 0 -- TODO: Populate correctly
+          , spanContextTraceState = TraceState [] -- TODO: Populate correctly
+          , spanContextIsRemote = False -- TODO: Populate correctly
+          }
+      SpanParentChildOf _parentSpanContext ->
+        pure emptySpanContext
+          { spanContextTraceId = emptyTraceId -- TODO: Populate correctly
+          , spanContextSpanId = emptySpanId -- TODO: Populate correctly
+          , spanContextTraceFlags = TraceFlags 0 -- TODO: Populate correctly
+          , spanContextTraceState = TraceState [] -- TODO: Populate correctly
+          , spanContextIsRemote = False -- TODO: Populate correctly
+          }
 
   TracerProviderSpec
     { tracerProviderSpecNow = now

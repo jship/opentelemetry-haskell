@@ -39,9 +39,8 @@ import Control.Monad.Writer.Class (MonadWriter)
 import Data.Kind (Type)
 import Data.Monoid (Ap(..))
 import GHC.Stack (SrcLoc(..))
-import OTel.API.Context
-  ( ContextT(..), ContextKey, attachContext, getAttachedContextKey, getContext, updateContext
-  )
+import OTel.API.Context (ContextT(..), ContextKey, getAttachedContextKey, getContext, updateContext)
+import OTel.API.Context.Internal (unsafeAttachContext)
 import OTel.API.Core
   ( AttrsFor(AttrsForSpan), KV(..), NewSpanSpec(..), Span(spanContext, spanIsRecording)
   , SpanParent(..), SpanParentSource(..), SpanSpec(..), TimestampSource(..), AttrsBuilder
@@ -95,10 +94,10 @@ instance (MonadIO m, MonadMask m) => MonadTracing (TracingT m) where
     TracingT \tracer -> do
       flip runContextT (tracerContextBackend tracer) do
         spanSpec <- toSpanSpec tracer newSpanSpec
-        span <- liftIO $ tracerStartSpan tracer spanSpec
-        attachContext span \spanKey -> do
-          result <- lift do
-            runTracingT (action MutableSpan { mutableSpanSpanKey = spanKey }) tracer
+        mutableSpan@MutableSpan { mutableSpanSpanKey = spanKey } <- do
+          liftIO $ tracerStartSpan tracer spanSpec
+        unsafeAttachContext spanKey do
+          result <- lift $ runTracingT (action mutableSpan) tracer
           result <$ processSpan tracer spanKey
           `Safe.withException` handler tracer spanKey
     where
@@ -107,7 +106,7 @@ instance (MonadIO m, MonadMask m) => MonadTracing (TracingT m) where
       span <- getContext spanKey
       timestamp <- liftIO now
       liftIO
-        $ onSpanEnd
+        $ tracerProcessSpan
         $ toEndedSpan
             timestamp
             spanLinkAttrsLimits
@@ -118,8 +117,7 @@ instance (MonadIO m, MonadMask m) => MonadTracing (TracingT m) where
       where
       Tracer
         { tracerNow = now
-        , tracerOnSpanStart = onSpanStart
-        , tracerOnSpanEnd = onSpanEnd
+        , tracerProcessSpan
         , tracerSpanAttrsLimits = spanAttrsLimits
         , tracerSpanEventAttrsLimits = spanEventAttrsLimits
         , tracerSpanLinkAttrsLimits = spanLinkAttrsLimits
