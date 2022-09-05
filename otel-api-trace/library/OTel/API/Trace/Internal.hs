@@ -113,7 +113,7 @@ instance (MonadIO m, MonadMask m) => MonadTracing (TracingT m) where
       span <- fmap contextSnapshotValue $ getContext spanKey
       timestamp <- liftIO now
       liftIO
-        $ process
+        $ onSpanEnd
         $ toEndedSpan
             timestamp
             spanLinkAttrsLimits
@@ -124,7 +124,8 @@ instance (MonadIO m, MonadMask m) => MonadTracing (TracingT m) where
       where
       TracerOps
         { tracerOpsNow = now
-        , tracerOpsProcessSpan = process
+        , tracerOpsOnSpanStart = onSpanStart
+        , tracerOpsOnSpanEnd = onSpanEnd
         , tracerOpsSpanAttrsLimits = spanAttrsLimits
         , tracerOpsSpanEventAttrsLimits = spanEventAttrsLimits
         , tracerOpsSpanLinkAttrsLimits = spanLinkAttrsLimits
@@ -202,7 +203,8 @@ runTracingT action tracer =
     TracerOps
       { tracerOpsNow = tracerNow tracer
       , tracerOpsStartSpan = tracerStartSpan tracer
-      , tracerOpsProcessSpan = tracerOnSpanEnd tracer
+      , tracerOpsOnSpanStart = tracerOnSpanStart tracer
+      , tracerOpsOnSpanEnd = tracerOnSpanEnd tracer
       , tracerOpsSpanAttrsLimits = tracerSpanAttrsLimits tracer
       , tracerOpsSpanEventAttrsLimits = tracerSpanEventAttrsLimits tracer
       , tracerOpsSpanLinkAttrsLimits = tracerSpanLinkAttrsLimits tracer
@@ -222,7 +224,8 @@ mapTracingT f action =
 data TracerOps = TracerOps
   { tracerOpsNow :: IO Timestamp
   , tracerOpsStartSpan :: SpanSpec -> IO Span
-  , tracerOpsProcessSpan :: EndedSpan -> IO ()
+  , tracerOpsOnSpanStart :: MutableSpan -> IO ()
+  , tracerOpsOnSpanEnd :: EndedSpan -> IO ()
   , tracerOpsSpanAttrsLimits :: SpanAttrsLimits
   , tracerOpsSpanEventAttrsLimits :: SpanEventAttrsLimits
   , tracerOpsSpanLinkAttrsLimits :: SpanLinkAttrsLimits

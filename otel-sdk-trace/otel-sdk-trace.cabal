@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.6.
+-- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
 
@@ -39,13 +39,15 @@ library
       NoImplicitPrelude
   ghc-options: -Wall -fwarn-tabs -Wincomplete-uni-patterns -Wredundant-constraints
   build-depends:
-      base >=4.11.1.0 && <5
+      aeson
+    , base >=4.11.1.0 && <5
     , monad-logger-aeson
     , mtl >=2.3
     , otel-api-context
     , otel-api-core
     , otel-api-trace
     , safe-exceptions
+    , stm
     , text
     , transformers-base
     , unliftio-core

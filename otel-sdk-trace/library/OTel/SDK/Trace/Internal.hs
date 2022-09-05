@@ -1,8 +1,10 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE UndecidableInstances #-}
 module OTel.SDK.Trace.Internal
@@ -20,16 +22,17 @@ module OTel.SDK.Trace.Internal
   , SpanProcessorSpec(..)
   ) where
 
+import Control.Concurrent.STM (STM, TVar, atomically, newTVarIO, readTVar, writeTVar)
 import Control.Exception (Exception(..))
-import Control.Exception.Safe (MonadCatch, MonadMask, catchAny)
-import Control.Monad ((<=<), void)
+import Control.Exception.Safe (MonadCatch, MonadMask, MonadThrow, catchAny)
+import Control.Monad ((<=<), join, void)
 import Control.Monad.IO.Class (MonadIO(liftIO))
 import Control.Monad.IO.Unlift (MonadUnliftIO(..))
 import Control.Monad.Logger.Aeson
-  ( LoggingT(..), Message(..), MonadLoggerIO(askLoggerIO), (.=), MonadLogger, SeriesElem, logError
+  ( LoggingT(..), Message(..), MonadLoggerIO(askLoggerIO), (.=), Loc, LogLevel, LogSource, LogStr
+  , MonadLogger, SeriesElem, logError
   )
-import Control.Monad.Reader (ReaderT(..))
-import Data.Function ((&))
+import Data.Aeson (object)
 import Data.Kind (Type)
 import Data.Monoid (Ap(..))
 import Data.Text (Text)
@@ -38,22 +41,19 @@ import OTel.API.Context
   , updateContext, withContextBackend
   )
 import OTel.API.Core
-  ( EndedSpan(..), InstrumentationScope(..), InstrumentationScopeName(..)
-  , Version(..), SpanSpec(..), SpanStatus(..), Span, SpanAttrsLimits
-  , SpanEventAttrsLimits, SpanLinkAttrsLimits, Timestamp, UpdateSpanSpec, schemaURLToText
+  ( EndedSpan(..), SpanSpec(..), SpanStatus(..), SpanAttrsLimits, SpanContext, SpanEventAttrsLimits
+  , SpanLinkAttrsLimits, Timestamp, UpdateSpanSpec
   )
 import OTel.API.Core.Internal
-  ( InstrumentationScope(InstrumentationScope), MutableSpan(..), Span(..), Tracer(..)
-  , TracerProvider(..), buildSpanUpdater
+  ( MutableSpan(..), Span(..), Tracer(..), TracerProvider(..), buildSpanUpdater
   )
 import Prelude
 import System.Timeout (timeout)
 import qualified Control.Exception.Safe as Exception
 
 data TracerProviderSpec = TracerProviderSpec
-  { tracerProviderSpecInstrumentationScope :: InstrumentationScope
-  , tracerProviderSpecNow :: IO Timestamp
-  , tracerProviderSpecSpanProcessor :: [SpanProcessorSpec]
+  { tracerProviderSpecNow :: IO Timestamp
+  , tracerProviderSpecSpanProcessors :: [SpanProcessorSpec]
   , tracerProviderSpecSpanAttrsLimits :: SpanAttrsLimits
   , tracerProviderSpecSpanEventAttrsLimits :: SpanEventAttrsLimits
   , tracerProviderSpecSpanLinkAttrsLimits :: SpanLinkAttrsLimits
@@ -71,7 +71,6 @@ withTracerProvider spanProcessor f = do
       (newTracerProvider ctxBackendTrace spanProcessor)
       shutdownTracerProvider
       f
-
 newTracerProvider
   :: forall m
    . (MonadLoggerIO m)
@@ -80,77 +79,62 @@ newTracerProvider
   -> m TracerProvider
 newTracerProvider ctxBackendTrace tracerProviderSpec = do
   logger <- askLoggerIO
+  shutdownRef <- liftIO $ newTVarIO False
+  spanProcessor <- liftIO $ foldMap (buildSpanProcessor logger) spanProcessorSpecs
   pure TracerProvider
-    { tracerProviderGetTracer = \instrumentationScope ->
-        pure Tracer
-          { tracerInstrumentationScope = instrumentationScope
-          , tracerNow = now
-          , tracerStartSpan = \spanSpec -> do
-              pure Span
-                { spanParent = spanSpecParent spanSpec
-                , spanContext = undefined -- TODO: Implement!
-                , spanName = spanSpecName spanSpec
-                , spanStatus = SpanStatusUnset
-                , spanStart = spanSpecStart spanSpec
-                , spanKind = spanSpecKind spanSpec
-                , spanAttrs = spanSpecAttrs spanSpec
-                , spanLinks = spanSpecLinks spanSpec
-                , spanEvents = mempty
-                , spanIsRecording = False
-                }
-          , tracerOnSpanStart = \case
-              MutableSpan { mutableSpanSpanKey = spanKey } -> do
-                spanProcessorOnSpanStart spanProcessor updateSpan getSpan
-                  & flip runLoggingT logger
-                where
-                getSpan :: LoggingT IO Span
-                getSpan = flip runContextT ctxBackendTrace do
-                  fmap contextSnapshotValue $ getContext spanKey
-                updateSpan :: UpdateSpanSpec -> LoggingT IO ()
-                updateSpan updatedSpan = flip runContextT ctxBackendTrace do
-                  void $ updateContext spanKey <=< buildSpanUpdater (liftIO now) $ updatedSpan
-          , tracerOnSpanEnd = \endedSpan ->
-              spanProcessorOnSpanEnd spanProcessor endedSpan
-                & flip runLoggingT logger
-          , tracerContextBackend = ctxBackendTrace
-          , tracerSpanAttrsLimits = spanAttrsLimits
-          , tracerSpanEventAttrsLimits = spanEventAttrsLimits
-          , tracerSpanLinkAttrsLimits = spanLinkAttrsLimits
-          }
-    , tracerProviderShutdown =
-        spanProcessorShutdown spanProcessor
-          & mkTimeoutSafeT (mkLoggingMeta "shutdown")
-          & flip runTimeoutSafeT 30000000 -- TODO: Make configurable?
-          & flip runLoggingT logger
-    , tracerProviderForceFlush =
-        spanProcessorForceFlush spanProcessor
-          & mkTimeoutSafeT (mkLoggingMeta "forceFlush")
-          & flip runTimeoutSafeT 30000000 -- TODO: Make configurable?
-          & flip runLoggingT logger
+    { tracerProviderGetTracer = getTracerWith spanProcessor
+    , tracerProviderShutdown = do
+        unlessShutdown shutdownRef do
+          writeTVar shutdownRef True
+          pure $ spanProcessorShutdown spanProcessor
+    , tracerProviderForceFlush = do
+        unlessShutdown shutdownRef do
+          pure $ spanProcessorForceFlush spanProcessor
     }
   where
-  mkLoggingMeta :: Text -> [SeriesElem]
-  mkLoggingMeta method =
-    [ "instrumentationScopeName" .=
-        unInstrumentationScopeName instrumentationScopeName
-    , "instrumentationScopeVersion" .=
-        fmap unVersion instrumentationScopeVersion
-    , "instrumentationScopeSchemaURL" .=
-        fmap schemaURLToText instrumentationScopeSchemaURL
-    , "tracerProviderMethod" .= method
-    ]
+  getTracerWith spanProcessor scope =
+    pure Tracer
+      { tracerInstrumentationScope = scope
+      , tracerNow = now
+      , tracerStartSpan = startSpan
+      , tracerOnSpanStart = onSpanStartWith spanProcessor
+      , tracerOnSpanEnd = spanProcessorOnSpanEnd spanProcessor
+      , tracerContextBackend = ctxBackendTrace
+      , tracerSpanAttrsLimits = spanAttrsLimits
+      , tracerSpanEventAttrsLimits = spanEventAttrsLimits
+      , tracerSpanLinkAttrsLimits = spanLinkAttrsLimits
+      }
 
-  spanProcessor = foldMap buildSpanProcessor spanProcessorSpecs
+  startSpan spanSpec = do
+    pure Span
+      { spanParent = spanSpecParent spanSpec
+      , spanContext = undefined -- TODO: Implement!
+      , spanName = spanSpecName spanSpec
+      , spanStatus = SpanStatusUnset
+      , spanStart = spanSpecStart spanSpec
+      , spanKind = spanSpecKind spanSpec
+      , spanAttrs = spanSpecAttrs spanSpec
+      , spanLinks = spanSpecLinks spanSpec
+      , spanEvents = mempty
+      , spanIsRecording = False -- TODO: Implement!
+      }
+
+  onSpanStartWith spanProcessor = \case
+    MutableSpan { mutableSpanSpanKey = spanKey } -> do
+      parentSpanContext <- fmap spanContext getSpan
+      -- TODO: Fetch baggage from context and pass along too
+      spanProcessorOnSpanStart spanProcessor parentSpanContext updateSpan getSpan
+      where
+      getSpan :: IO Span
+      getSpan = flip runContextT ctxBackendTrace do
+        fmap contextSnapshotValue $ getContext spanKey
+      updateSpan :: UpdateSpanSpec -> IO ()
+      updateSpan updatedSpan = flip runContextT ctxBackendTrace do
+        void $ updateContext spanKey <=< buildSpanUpdater (liftIO now) $ updatedSpan
 
   TracerProviderSpec
-    { tracerProviderSpecInstrumentationScope =
-        InstrumentationScope
-          { instrumentationScopeName
-          , instrumentationScopeVersion
-          , instrumentationScopeSchemaURL
-          }
-    , tracerProviderSpecNow = now
-    , tracerProviderSpecSpanProcessor = spanProcessorSpecs
+    { tracerProviderSpecNow = now
+    , tracerProviderSpecSpanProcessors = spanProcessorSpecs
     , tracerProviderSpecSpanAttrsLimits = spanAttrsLimits
     , tracerProviderSpecSpanEventAttrsLimits = spanEventAttrsLimits
     , tracerProviderSpecSpanLinkAttrsLimits = spanLinkAttrsLimits
@@ -164,76 +148,96 @@ forceFlushTracerProvider = liftIO . tracerProviderForceFlush
 
 data SpanProcessor = SpanProcessor
   { spanProcessorOnSpanStart
-      :: (UpdateSpanSpec -> LoggingT IO ())
-      -> LoggingT IO Span
-      -> LoggingT IO ()
+      :: SpanContext -- Parent span context pulled from the context
+      -> (UpdateSpanSpec -> IO ())
+      -> IO Span
+      -> IO ()
   , spanProcessorOnSpanEnd
       :: EndedSpan
-      -> LoggingT IO ()
+      -> IO ()
   , spanProcessorShutdown
-      :: LoggingT IO ()
+      :: IO ()
   , spanProcessorForceFlush
-      :: LoggingT IO ()
+      :: IO ()
   }
 
 instance Semigroup SpanProcessor where
   sp1 <> sp2 =
     SpanProcessor
       { spanProcessorOnSpanStart =
-          spanProcessorOnSpanStart sp1 *> spanProcessorOnSpanStart sp2
+          spanProcessorOnSpanStart sp1 <> spanProcessorOnSpanStart sp2
       , spanProcessorOnSpanEnd =
-          spanProcessorOnSpanEnd sp1 *> spanProcessorOnSpanEnd sp2
+          spanProcessorOnSpanEnd sp1 <> spanProcessorOnSpanEnd sp2
       , spanProcessorShutdown =
-          spanProcessorShutdown sp1 *> spanProcessorShutdown sp2
+          spanProcessorShutdown sp1 <> spanProcessorShutdown sp2
       , spanProcessorForceFlush =
-          spanProcessorForceFlush sp1 *> spanProcessorForceFlush sp2
+          spanProcessorForceFlush sp1 <> spanProcessorForceFlush sp2
       }
 
 instance Monoid SpanProcessor where
   mempty =
     SpanProcessor
-      { spanProcessorOnSpanStart = const $ const $ pure mempty
-      , spanProcessorOnSpanEnd = const $ pure mempty
-      , spanProcessorShutdown = pure mempty
-      , spanProcessorForceFlush = pure mempty
+      { spanProcessorOnSpanStart = mempty
+      , spanProcessorOnSpanEnd = mempty
+      , spanProcessorShutdown = mempty
+      , spanProcessorForceFlush = mempty
       }
 
-buildSpanProcessor :: SpanProcessorSpec -> SpanProcessor
-buildSpanProcessor spanProcessorSpec = spanProcessor
+buildSpanProcessor
+  :: (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
+  -> SpanProcessorSpec
+  -> IO SpanProcessor
+buildSpanProcessor logger spanProcessorSpec = do
+  shutdownRef <- liftIO $ newTVarIO False
+  pure $ spanProcessor shutdownRef
   where
-  spanProcessor =
+  spanProcessor shutdownRef =
     SpanProcessor
-      { spanProcessorOnSpanStart = \updateSpan getSpan -> do
-          let loggingMeta = mkLoggingMeta "onSpanStart"
-          spanProcessorSpecOnSpanStart spanProcessorSpec updateSpan getSpan
-            & mkExceptionSafeT loggingMeta
-            & runExceptionSafeT
+      { spanProcessorOnSpanStart = \parentSpanContext updateSpan getSpan -> do
+          unlessShutdown shutdownRef $ pure do
+            runSpanProcessorM defaultTimeout loggingMeta'onSpanStart logger do
+              spanProcessorSpecOnSpanStart parentSpanContext updateSpan getSpan
       , spanProcessorOnSpanEnd = \endedSpan -> do
-          let loggingMeta = mkLoggingMeta "onSpanEnd"
-          spanProcessorSpecOnSpanEnd spanProcessorSpec endedSpan
-            & mkExceptionSafeT loggingMeta
-            & runExceptionSafeT
+          unlessShutdown shutdownRef $ pure do
+            runSpanProcessorM defaultTimeout loggingMeta'onSpanEnd logger do
+              spanProcessorSpecOnSpanEnd endedSpan
       , spanProcessorShutdown = do
-          let loggingMeta = mkLoggingMeta "shutdown"
-          spanProcessorSpecShutdown spanProcessorSpec
-            & mkExceptionSafeT loggingMeta
-            & mkTimeoutSafeT loggingMeta
-            & flip runTimeoutSafeT 30000000 -- TODO: Make configurable?
-            & runExceptionSafeT
+          unlessShutdown shutdownRef do
+            writeTVar shutdownRef True
+            pure do
+              runSpanProcessorM spanProcessorSpecShutdownTimeout loggingMeta'shutdown logger do
+                spanProcessorSpecShutdown
       , spanProcessorForceFlush = do
-          let loggingMeta = mkLoggingMeta "forceFlush"
-          spanProcessorSpecForceFlush spanProcessorSpec
-            & mkExceptionSafeT loggingMeta
-            & mkTimeoutSafeT loggingMeta
-            & flip runTimeoutSafeT 30000000 -- TODO: Make configurable?
-            & runExceptionSafeT
+          unlessShutdown shutdownRef $ pure do
+            runSpanProcessorM spanProcessorSpecForceFlushTimeout loggingMeta'forceFlush logger do
+              spanProcessorSpecForceFlush
       }
+
+  defaultTimeout :: Int
+  defaultTimeout = 10000000
+
+  loggingMeta'onSpanStart = mkLoggingMeta "onSpanStart"
+  loggingMeta'onSpanEnd = mkLoggingMeta "onSpanEnd"
+  loggingMeta'shutdown = mkLoggingMeta "shutdown"
+  loggingMeta'forceFlush = mkLoggingMeta "forceFlush"
 
   mkLoggingMeta :: Text -> [SeriesElem]
   mkLoggingMeta method =
-    [ "spanProcessorName" .= spanProcessorSpecName spanProcessorSpec
-    , "spanProcessorMethod" .= method
+    [ "spanProcessor" .= object
+        [ "name" .= spanProcessorSpecName
+        , "method" .= method
+        ]
     ]
+
+  SpanProcessorSpec
+    { spanProcessorSpecName
+    , spanProcessorSpecOnSpanStart
+    , spanProcessorSpecOnSpanEnd
+    , spanProcessorSpecShutdown
+    , spanProcessorSpecShutdownTimeout
+    , spanProcessorSpecForceFlush
+    , spanProcessorSpecForceFlushTimeout
+    } = spanProcessorSpec
 
 simpleSpanProcessor :: SpanProcessor
 simpleSpanProcessor = mempty -- TODO: Implement!
@@ -241,109 +245,64 @@ simpleSpanProcessor = mempty -- TODO: Implement!
 batchedSpanProcessor :: SpanProcessor
 batchedSpanProcessor = mempty -- TODO: Implement!
 
-data SpanProcessorSpec = SpanProcessorSpec
-  { spanProcessorSpecName
-      :: Text
-  , spanProcessorSpecOnSpanStart
-      :: (UpdateSpanSpec -> LoggingT IO ())
-      -> LoggingT IO Span
-      -> LoggingT IO ()
-  , spanProcessorSpecOnSpanEnd
-      :: EndedSpan
-      -> LoggingT IO ()
-  , spanProcessorSpecShutdown
-      :: LoggingT IO ()
-  , spanProcessorSpecShutdownTimeout
-      :: Int
-  , spanProcessorSpecForceFlush
-      :: LoggingT IO ()
-  , spanProcessorSpecForceFlushTimeout
-      :: Int
-  }
-
-type ExceptionSafeT :: (Type -> Type) -> Type -> Type
-newtype ExceptionSafeT m a = ExceptionSafeT
-  { runExceptionSafeT :: m a
+type SpanProcessorM :: Type -> Type
+newtype SpanProcessorM a = SpanProcessorM
+  { unSpanProcessorM :: LoggingT IO a
   } deriving
       ( Applicative, Functor, Monad, MonadIO -- @base@
+      , MonadCatch, MonadMask, MonadThrow -- @exceptions@
       , MonadUnliftIO -- @unliftio-core@
       , MonadLogger -- @monad-logger@
-      ) via m
+      ) via (LoggingT IO)
     deriving
       ( Semigroup, Monoid -- @base@
-      ) via (Ap m a)
+      ) via (Ap (LoggingT IO) a)
 
-mkExceptionSafeT
-  :: forall m
-   . (MonadCatch m, MonadLogger m)
-  => [SeriesElem]
-  -> m ()
-  -> ExceptionSafeT m ()
-mkExceptionSafeT pairs action =
-  ExceptionSafeT do
-    action `catchAny` \ex -> do
-      logError $ "Ignoring exception" :#
-        ("exception" .= displayException ex) : pairs
-
-type TimeoutSafeT :: (Type -> Type) -> Type -> Type
-newtype TimeoutSafeT m a = TimeoutSafeT
-  { runTimeoutSafeT :: Int -> m a
-  } deriving
-      ( Applicative, Functor, Monad, MonadIO -- @base@
-      , MonadUnliftIO -- @unliftio-core@
-      , MonadLogger -- @monad-logger@
-      ) via (ReaderT Int m)
-    deriving
-      ( Semigroup, Monoid -- @base@
-      ) via (Ap (ReaderT Int m) a)
-
-mkTimeoutSafeT
-  :: forall m
-   . (MonadLogger m, MonadUnliftIO m)
-  => [SeriesElem] -- ^ Metadata to log if action times out
-  -> m ()
-  -> TimeoutSafeT m ()
-mkTimeoutSafeT pairs action =
-  TimeoutSafeT \microseconds -> do
+runSpanProcessorM
+  :: Int
+  -> [SeriesElem]
+  -> (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
+  -> SpanProcessorM ()
+  -> IO ()
+runSpanProcessorM timeoutMicros pairs logger action = do
+  flip runLoggingT logger do
     mResult <- withRunInIO \runInIO -> do
-      timeout microseconds $ runInIO action
+      timeout timeoutMicros $ runInIO do
+        unSpanProcessorM action `catchAny` \ex -> do
+          logError $ "Ignoring exception" :#
+            ("exception" .= displayException ex) : pairs
     case mResult of
       Just () -> pure ()
       Nothing -> do
         logError $ "Action did not complete within timeout" :#
-          ("timeoutMicroseconds" .= microseconds) : pairs
+          ("timeoutMicros" .= timeoutMicros) : pairs
 
---type Once :: (Type -> Type) -> Type -> Type
---newtype Once m a = Once
---  { runOnce :: IORef Bool -> m a
---  } deriving
---      ( Applicative, Functor, Monad, MonadIO -- @base@
---      , MonadUnliftIO -- @unliftio-core@
---      , MonadLogger -- @monad-logger@
---      ) via (ReaderT (IORef Bool) m)
---    deriving
---      ( Semigroup, Monoid -- @base@
---      ) via (Ap (ReaderT (IORef Bool) m) a)
---
---mkOnce
---  :: forall m
---   . (MonadCatch m, MonadLogger m, MonadIO m)
---  => m ()
---  -> Once m ()
---mkOnce action =
---  Once \ref -> do
---    liftIO (readIORef ref) >>= \case
---      False -> do
---        wrappedAction
---        liftIO $ writeIORef ref True
---      True -> pure ()
---  where
---  wrappedAction = runExceptionSafeT $ mkExceptionSafeT [] action
+data SpanProcessorSpec = SpanProcessorSpec
+  { spanProcessorSpecName
+      :: Text
+  , spanProcessorSpecOnSpanStart
+      :: SpanContext -- Parent span context pulled from the context
+      -> (UpdateSpanSpec -> IO ())
+      -> IO Span
+      -> SpanProcessorM ()
+  , spanProcessorSpecOnSpanEnd
+      :: EndedSpan
+      -> SpanProcessorM ()
+  , spanProcessorSpecShutdown
+      :: SpanProcessorM ()
+  , spanProcessorSpecShutdownTimeout
+      :: Int
+  , spanProcessorSpecForceFlush
+      :: SpanProcessorM ()
+  , spanProcessorSpecForceFlushTimeout
+      :: Int
+  }
 
---runExactlyOnce :: forall m a. (MonadIO m) => m a -> m a
---runExactlyOnce action = do
---  ref <- liftIO $ newIORef Nothing
---  action
+unlessShutdown :: (Monoid a) => TVar Bool -> STM (IO a) -> IO a
+unlessShutdown shutdownRef action =
+  join $ atomically $ readTVar shutdownRef >>= \case
+    True -> pure mempty
+    False -> action
 
 -- $disclaimer
 --
