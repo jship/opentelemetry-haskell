@@ -89,12 +89,12 @@ module OTel.API.Core.Trace
 
   , MutableSpan
   , Span
-  , emptySpan
   , spanParent
   , spanContext
   , spanName
   , spanStatus
   , spanStart
+  , spanEnd
   , spanKind
   , spanAttrs
   , spanLinks

@@ -42,7 +42,7 @@ import GHC.Stack (SrcLoc(..))
 import OTel.API.Context (ContextT(..), ContextKey, getAttachedContextKey, getContext, updateContext)
 import OTel.API.Context.Internal (unsafeAttachContext)
 import OTel.API.Core
-  ( AttrsFor(AttrsForSpan), KV(..), NewSpanSpec(..), Span(spanContext, spanIsRecording)
+  ( AttrsFor(AttrsForSpan), KV(..), NewSpanSpec(..), Span(spanContext, spanIsRecording, spanEnd)
   , SpanParent(..), SpanParentSource(..), SpanSpec(..), TimestampSource(..), AttrsBuilder
   , buildSpanSpec, recordException, toEndedSpan, pattern CODE_FILEPATH, pattern CODE_FUNCTION
   , pattern CODE_LINENO, pattern CODE_NAMESPACE
@@ -113,7 +113,8 @@ instance (MonadIO m, MonadMask m) => MonadTracing (TracingT m) where
             spanEventAttrsLimits
             spanAttrsLimits
             span
-      void $ updateContext spanKey \s -> s { spanIsRecording = False }
+      void $ updateContext spanKey \s ->
+        s { spanIsRecording = False, spanEnd = Just timestamp }
       where
       Tracer
         { tracerNow = now

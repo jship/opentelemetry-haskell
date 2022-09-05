@@ -104,7 +104,6 @@ module OTel.API.Core.Internal
   , SpanName(..)
   , MutableSpan(..)
   , Span(..)
-  , emptySpan
   , EndedSpan(..)
   , toEndedSpan
   , SpanParentSource(.., Implicit, Explicit)
@@ -287,6 +286,7 @@ newtype AttrsBuilder (af :: AttrsFor) = AttrsBuilder
   { runAttrsBuilder :: AttrsLimits af -> Attrs af
   }
 
+-- TODO: Store count of dropped attributes
 instance Semigroup (AttrsBuilder af) where
   bx <> by =
     AttrsBuilder \attrsLimits ->
@@ -1041,27 +1041,13 @@ data Span = Span
   , spanName :: SpanName
   , spanStatus :: SpanStatus
   , spanStart :: Timestamp
+  , spanEnd :: Maybe Timestamp
   , spanKind :: SpanKind
   , spanAttrs :: AttrsBuilder 'AttrsForSpan
   , spanLinks :: SpanLinks AttrsBuilder
   , spanEvents :: SpanEvents AttrsBuilder
   , spanIsRecording :: Bool
   }
-
-emptySpan :: SpanParent -> Timestamp -> Span
-emptySpan spanParent spanStart =
-  Span
-    { spanParent
-    , spanContext = emptySpanContext
-    , spanName = ""
-    , spanStatus = SpanStatusUnset
-    , spanStart
-    , spanKind = SpanKindInternal
-    , spanAttrs = mempty
-    , spanLinks = mempty
-    , spanEvents = mempty
-    , spanIsRecording = False
-    }
 
 data EndedSpan = EndedSpan
   { endedSpanParent :: SpanParent
@@ -1083,14 +1069,17 @@ toEndedSpan
   -> SpanAttrsLimits
   -> Span
   -> EndedSpan
-toEndedSpan endedSpanEnd spanLinkAttrsLimits spanEventAttrsLimits spanAttrsLimits span =
+toEndedSpan defaultSpanEnd spanLinkAttrsLimits spanEventAttrsLimits spanAttrsLimits span =
   EndedSpan
     { endedSpanParent = spanParent span
     , endedSpanContext = spanContext span
     , endedSpanName = spanName span
     , endedSpanStatus = spanStatus span
     , endedSpanStart = spanStart span
-    , endedSpanEnd
+    , endedSpanEnd =
+        case spanEnd span of
+          Nothing -> defaultSpanEnd
+          Just endedAt -> endedAt
     , endedSpanKind = spanKind span
     , endedSpanAttrs =
         runAttrsBuilder (spanAttrs span) spanAttrsLimits

@@ -117,6 +117,7 @@ newTracerProvider ctxBackendTrace tracerProviderSpec = do
         , spanName = spanSpecName spanSpec
         , spanStatus = SpanStatusUnset
         , spanStart = spanSpecStart spanSpec
+        , spanEnd = Nothing
         , spanKind = spanSpecKind spanSpec
         , spanAttrs = spanSpecAttrs spanSpec
         , spanLinks = spanSpecLinks spanSpec
