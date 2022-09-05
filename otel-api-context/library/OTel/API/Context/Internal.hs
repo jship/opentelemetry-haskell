@@ -22,16 +22,11 @@ module OTel.API.Context.Internal
   , withContextBackend
 
   , ContextKey(..)
-  , ContextSnapshot(..)
-  , ContextStatus(..)
 
     -- ** Extremely internal things below
-  , ContextRef(..)
-  , newContextRef
-  , updateContextRef
-  , markAsDetached
-  , updateContextRefStatus
-  , updateContextRefValue
+  , newContextKey
+  , updateContextAtKey
+  , unsafeAttachContext
   ) where
 
 import Context (Store)
@@ -58,7 +53,6 @@ import Data.Kind (Type)
 import Data.Monoid (Ap(..))
 import Prelude
 import qualified Context
-import qualified Control.Monad.Catch as Catch
 import qualified Data.IORef as IORef
 
 type ContextT :: Type -> (Type -> Type) -> Type -> Type
@@ -102,16 +96,16 @@ updateContext
    . (MonadIO m)
   => ContextKey ctx
   -> (ctx -> ctx)
-  -> ContextT ctx m (ContextSnapshot ctx)
+  -> ContextT ctx m ctx
 updateContext ctxKey updater =
-  ContextT \_contextBackend ->
-    liftIO $ updateContextRefValue (contextKeyRef ctxKey) updater
+  ContextT \_ctxBackend ->
+    liftIO $ updateContextAtKey ctxKey updater
 
 getContext
   :: forall m ctx
    . (MonadIO m)
   => ContextKey ctx
-  -> ContextT ctx m (ContextSnapshot ctx)
+  -> ContextT ctx m ctx
 getContext ctxKey = updateContext ctxKey id
 
 attachContext
@@ -121,22 +115,32 @@ attachContext
   -> (ContextKey ctx -> ContextT ctx m a)
   -> ContextT ctx m a
 attachContext ctx f =
-  ContextT \contextBackend -> do
-    ctxRef <- liftIO $ newContextRef ContextStatusAttached ctx
-    Context.use (contextBackendStore contextBackend) ctxRef do
-      runContextT (f ContextKey { contextKeyRef = ctxRef }) contextBackend
-      `Catch.finally` liftIO (markAsDetached ctxRef)
+  ContextT \ctxBackend -> do
+    ctxKey <- liftIO $ newContextKey ctx
+    Context.use (ctxBackendStore ctxBackend) ctxKey do
+      runContextT (f ctxKey) ctxBackend
+
+unsafeAttachContext
+  :: forall m ctx a
+   . (MonadIO m, MonadMask m)
+  => ContextKey ctx
+  -> ContextT ctx m a
+  -> ContextT ctx m a
+unsafeAttachContext ctxKey action =
+  ContextT \ctxBackend -> do
+    Context.use (ctxBackendStore ctxBackend) ctxKey do
+      runContextT action ctxBackend
 
 getAttachedContextKey
   :: forall m ctx
    . (MonadIO m)
   => ContextT ctx m (Maybe (ContextKey ctx))
 getAttachedContextKey =
-  ContextT \contextBackend -> do
-    Context.minesMay (contextBackendStore contextBackend) ContextKey
+  ContextT \ctxBackend -> do
+    Context.mineMay $ ctxBackendStore ctxBackend
 
 newtype ContextBackend ctx = ContextBackend
-  { contextBackendStore :: Store (ContextRef ctx)
+  { ctxBackendStore :: Store (ContextKey ctx)
   }
 
 withContextBackend
@@ -145,66 +149,21 @@ withContextBackend
   => (ContextBackend ctx -> m a)
   -> m a
 withContextBackend action = do
-  Context.withStore Context.noPropagation Nothing \contextBackendStore ->
-    action ContextBackend { contextBackendStore }
+  Context.withStore Context.noPropagation Nothing \ctxBackendStore ->
+    action ContextBackend { ctxBackendStore }
 
 newtype ContextKey ctx = ContextKey
-  { contextKeyRef :: ContextRef ctx
+  { contextKeyRef :: IORef ctx
   }
 
-data ContextSnapshot ctx = ContextSnapshot
-  { contextSnapshotStatus :: ContextStatus
-  , contextSnapshotValue :: ctx
-  } deriving stock (Eq, Functor, Show)
+newContextKey :: ctx -> IO (ContextKey ctx)
+newContextKey = fmap ContextKey . IORef.newIORef
 
-data ContextStatus
-  = ContextStatusDetached
-  | ContextStatusAttached
-  deriving stock (Eq, Show)
-
-newtype ContextRef ctx = ContextRef
-  { unContextRef :: IORef (ContextSnapshot ctx)
-  }
-
-newContextRef :: ContextStatus -> ctx -> IO (ContextRef ctx)
-newContextRef contextSnapshotStatus contextSnapshotValue = do
-  fmap ContextRef $ IORef.newIORef ContextSnapshot
-    { contextSnapshotStatus
-    , contextSnapshotValue
-    }
-
-updateContextRef
-  :: ContextRef ctx
-  -> (ContextSnapshot ctx -> ContextSnapshot ctx)
-  -> IO (ContextSnapshot ctx)
-updateContextRef ctxRef updater = do
-  IORef.atomicModifyIORef' (unContextRef ctxRef) \ctxSnapshot ->
-    let ctxSnapshot' = updater ctxSnapshot
-     in (ctxSnapshot', ctxSnapshot')
-
-markAsDetached :: ContextRef ctx -> IO ()
-markAsDetached ctxRef =
-  () <$ updateContextRefStatus ctxRef (const ContextStatusDetached)
-
-updateContextRefStatus
-  :: ContextRef ctx
-  -> (ContextStatus -> ContextStatus)
-  -> IO (ContextSnapshot ctx )
-updateContextRefStatus ctxRef updater =
-  updateContextRef ctxRef \ctxSnapshot ->
-    ctxSnapshot
-      { contextSnapshotStatus = updater $ contextSnapshotStatus ctxSnapshot
-      }
-
-updateContextRefValue
-  :: ContextRef ctx
-  -> (ctx -> ctx)
-  -> IO (ContextSnapshot ctx)
-updateContextRefValue ctxRef updater =
-  updateContextRef ctxRef \ctxSnapshot ->
-    ctxSnapshot
-      { contextSnapshotValue = updater $ contextSnapshotValue ctxSnapshot
-      }
+updateContextAtKey :: ContextKey ctx -> (ctx -> ctx) -> IO ctx
+updateContextAtKey ctxKey updater = do
+  IORef.atomicModifyIORef' (contextKeyRef ctxKey) \ctx ->
+    let ctx' = updater ctx
+     in (ctx', ctx')
 
 -- $disclaimer
 --

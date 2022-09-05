@@ -43,7 +43,7 @@ import Data.Kind (Type)
 import Data.Monoid (Ap(..))
 import GHC.Stack (SrcLoc(..))
 import OTel.API.Context
-  ( ContextSnapshot(..), ContextT(..), ContextKey, attachContext, getAttachedContextKey, getContext
+  ( ContextT(..), ContextKey, attachContext, getAttachedContextKey, getContext
   , updateContext
   )
 import OTel.API.Core
@@ -110,7 +110,7 @@ instance (MonadIO m, MonadMask m) => MonadTracing (TracingT m) where
     where
     processSpan :: TracerOps -> ContextKey Span -> ContextT Span m ()
     processSpan tracerOps spanKey = do
-      span <- fmap contextSnapshotValue $ getContext spanKey
+      span <- getContext spanKey
       timestamp <- liftIO now
       liftIO
         $ onSpanEnd
@@ -159,8 +159,8 @@ instance (MonadIO m, MonadMask m) => MonadTracing (TracingT m) where
           getAttachedContextKey >>= \case
             Nothing -> pure SpanParentRoot
             Just ctxKey -> do
-              ContextSnapshot { contextSnapshotValue } <- getContext ctxKey
-              pure $ SpanParentChildOf $ spanContext contextSnapshotValue
+              parentSpanContext <- fmap spanContext $ getContext ctxKey
+              pure $ SpanParentChildOf parentSpanContext
 
       newSpanSpecAttrs :: AttrsBuilder 'AttrsForSpan
       newSpanSpecAttrs =
@@ -177,14 +177,14 @@ instance (MonadIO m, MonadMask m) => MonadTracing (TracingT m) where
 instance (MonadIO m) => MonadTraceContext (TracingT m) where
   getSpanContext mutableSpan =
     TracingT \_tracerOps ->
-      fmap (fmap spanContext) $ getContext $ mutableSpanSpanKey mutableSpan
+      fmap spanContext $ getContext $ mutableSpanSpanKey mutableSpan
 
   updateSpan mutableSpan updateSpanSpec =
     TracingT update
       where
       update
         :: TracerOps
-        -> ContextT Span m (ContextSnapshot Span)
+        -> ContextT Span m Span
       update tracerOps =
         updateContext (mutableSpanSpanKey mutableSpan)
           =<< buildSpanUpdater (liftIO now) updateSpanSpec

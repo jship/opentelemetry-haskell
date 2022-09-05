@@ -17,8 +17,6 @@ module OTel.API.Context
 
     -- * Supporting types
   , ContextKey
-  , ContextSnapshot(..)
-  , ContextStatus(..)
   ) where
 
 import OTel.API.Context.Internal

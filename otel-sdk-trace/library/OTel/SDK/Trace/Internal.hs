@@ -37,8 +37,7 @@ import Data.Kind (Type)
 import Data.Monoid (Ap(..))
 import Data.Text (Text)
 import OTel.API.Context
-  ( ContextSnapshot(contextSnapshotValue), ContextT(runContextT), ContextBackend, getContext
-  , updateContext, withContextBackend
+  ( ContextT(runContextT), ContextBackend, getContext, updateContext, withContextBackend
   )
 import OTel.API.Core
   ( EndedSpan(..), SpanSpec(..), SpanStatus(..), SpanAttrsLimits, SpanContext, SpanEventAttrsLimits
@@ -126,8 +125,8 @@ newTracerProvider ctxBackendTrace tracerProviderSpec = do
       spanProcessorOnSpanStart spanProcessor parentSpanContext updateSpan getSpan
       where
       getSpan :: IO Span
-      getSpan = flip runContextT ctxBackendTrace do
-        fmap contextSnapshotValue $ getContext spanKey
+      getSpan = runContextT (getContext spanKey) ctxBackendTrace
+
       updateSpan :: UpdateSpanSpec -> IO ()
       updateSpan updatedSpan = flip runContextT ctxBackendTrace do
         void $ updateContext spanKey <=< buildSpanUpdater (liftIO now) $ updatedSpan
