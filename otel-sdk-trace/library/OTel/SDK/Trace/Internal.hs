@@ -2,6 +2,7 @@
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
@@ -16,8 +17,9 @@ module OTel.SDK.Trace.Internal
 import Control.Applicative (Applicative(..))
 import Control.Concurrent (MVar, newMVar, withMVar)
 import Control.Concurrent.STM (STM, TVar, atomically, newTVarIO, readTVar, writeTVar)
-import Control.Exception (Exception(..))
-import Control.Exception.Safe (MonadCatch, MonadMask, MonadThrow, catchAny)
+import Control.Exception.Safe
+  ( Exception(..), SomeException(..), MonadCatch, MonadMask, MonadThrow, catchAny
+  )
 import Control.Monad ((<=<), join, void)
 import Control.Monad.IO.Class (MonadIO(liftIO))
 import Control.Monad.IO.Unlift (MonadUnliftIO(..))
@@ -55,7 +57,7 @@ import qualified Control.Exception.Safe as Exception
 data TracerProviderSpec = TracerProviderSpec
   { tracerProviderSpecNow :: IO Timestamp
   , tracerProviderSpecSeed :: Seed
-  , tracerProviderSpecIdGenerator :: IdGenerator
+  , tracerProviderSpecIdGenerator :: IdGeneratorSpec
   , tracerProviderSpecSpanProcessors :: [SpanProcessorSpec]
   , tracerProviderSpecSpanAttrsLimits :: SpanAttrsLimits
   , tracerProviderSpecSpanEventAttrsLimits :: SpanEventAttrsLimits
@@ -68,7 +70,7 @@ defaultTracerProviderSpec =
     { tracerProviderSpecNow =
         fmap (timestampFromNanoseconds . toNanoSecs) $ getTime Realtime
     , tracerProviderSpecSeed = defaultSystemSeed
-    , tracerProviderSpecIdGenerator = defaultIdGenerator
+    , tracerProviderSpecIdGenerator = defaultIdGeneratorSpec
     , tracerProviderSpecSpanProcessors = mempty
     , tracerProviderSpecSpanAttrsLimits = defaultAttrsLimits
     , tracerProviderSpecSpanEventAttrsLimits = defaultAttrsLimits
@@ -175,9 +177,9 @@ newTracerProvider ctxBackendTrace tracerProviderSpec = do
     { tracerProviderSpecNow = now
     , tracerProviderSpecSeed = seed
     , tracerProviderSpecIdGenerator =
-        IdGenerator
-          { idGeneratorGenTraceId = genTraceId
-          , idGeneratorGenSpanId = genSpanId
+        IdGeneratorSpec
+          { idGeneratorSpecGenTraceId = genTraceId
+          , idGeneratorSpecGenSpanId = genSpanId
           }
     , tracerProviderSpecSpanProcessors = spanProcessorSpecs
     , tracerProviderSpecSpanAttrsLimits = spanAttrsLimits
@@ -240,21 +242,21 @@ buildSpanProcessor logger spanProcessorSpec = do
     SpanProcessor
       { spanProcessorOnSpanStart = \parentSpanContext updateSpan getSpan -> do
           unlessShutdown shutdownRef $ pure do
-            runSpanProcessorM defaultTimeout loggingMeta'onSpanStart logger do
+            runSpanProcessorM defaultTimeout loggingMeta'onSpanStart logger onTimeout onSyncEx do
               spanProcessorSpecOnSpanStart parentSpanContext updateSpan getSpan
       , spanProcessorOnSpanEnd = \endedSpan -> do
           unlessShutdown shutdownRef $ pure do
-            runSpanProcessorM defaultTimeout loggingMeta'onSpanEnd logger do
+            runSpanProcessorM defaultTimeout loggingMeta'onSpanEnd logger onTimeout onSyncEx do
               spanProcessorSpecOnSpanEnd endedSpan
       , spanProcessorShutdown = do
           unlessShutdown shutdownRef do
             writeTVar shutdownRef True
             pure do
-              runSpanProcessorM spanProcessorSpecShutdownTimeout loggingMeta'shutdown logger do
+              runSpanProcessorM spanProcessorSpecShutdownTimeout loggingMeta'shutdown logger onTimeout onSyncEx do
                 spanProcessorSpecShutdown
       , spanProcessorForceFlush = do
           unlessShutdown shutdownRef $ pure do
-            runSpanProcessorM spanProcessorSpecForceFlushTimeout loggingMeta'forceFlush logger do
+            runSpanProcessorM spanProcessorSpecForceFlushTimeout loggingMeta'forceFlush logger onTimeout onSyncEx do
               spanProcessorSpecForceFlush
       }
 
@@ -282,6 +284,8 @@ buildSpanProcessor logger spanProcessorSpec = do
     , spanProcessorSpecShutdownTimeout
     , spanProcessorSpecForceFlush
     , spanProcessorSpecForceFlushTimeout
+    , spanProcessorSpecOnTimeout = onTimeout
+    , spanProcessorSpecOnSynchronousException = onSyncEx
     } = spanProcessorSpec
 
 simpleSpanProcessor :: SpanProcessor
@@ -307,20 +311,19 @@ runSpanProcessorM
   :: Int
   -> [SeriesElem]
   -> (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
+  -> ([SeriesElem] -> OnTimeout ())
+  -> ([SeriesElem] -> OnSynchronousException ())
   -> SpanProcessorM ()
   -> IO ()
-runSpanProcessorM timeoutMicros pairs logger action = do
+runSpanProcessorM timeoutMicros pairs logger onTimeout onSyncEx action = do
   flip runLoggingT logger do
     mResult <- withRunInIO \runInIO -> do
       timeout timeoutMicros $ runInIO do
-        unSpanProcessorM action `catchAny` \ex -> do
-          logError $ "Ignoring exception" :#
-            ("exception" .= displayException ex) : pairs
+        unSpanProcessorM action `catchAny` \someEx -> do
+          runOnSynchronousException (onSyncEx pairs) someEx
     case mResult of
       Just () -> pure ()
-      Nothing -> do
-        logError $ "Action did not complete within timeout" :#
-          ("timeoutMicros" .= timeoutMicros) : pairs
+      Nothing -> runOnTimeout (onTimeout pairs) timeoutMicros
 
 data SpanProcessorSpec = SpanProcessorSpec
   { spanProcessorSpecName
@@ -341,7 +344,31 @@ data SpanProcessorSpec = SpanProcessorSpec
       :: SpanProcessorM ()
   , spanProcessorSpecForceFlushTimeout
       :: Int
+  , spanProcessorSpecOnTimeout
+      :: [SeriesElem] -> OnTimeout ()
+  , spanProcessorSpecOnSynchronousException
+      :: [SeriesElem] -> OnSynchronousException ()
   }
+
+defaultSpanProcessorSpec :: SpanProcessorSpec
+defaultSpanProcessorSpec =
+  SpanProcessorSpec
+    { spanProcessorSpecName = "default"
+    , spanProcessorSpecOnSpanStart = mempty
+    , spanProcessorSpecOnSpanEnd = mempty
+    , spanProcessorSpecShutdown = mempty
+    , spanProcessorSpecShutdownTimeout = 30_000_000
+    , spanProcessorSpecForceFlush = mempty
+    , spanProcessorSpecForceFlushTimeout = 30_000_000
+    , spanProcessorSpecOnTimeout = \pairs -> do
+        timeoutMicros <- askTimeoutMicros
+        logError $ "Action did not complete within timeout" :#
+          "timeoutMicros" .= timeoutMicros : pairs
+    , spanProcessorSpecOnSynchronousException = \pairs -> do
+        SomeException ex <- askException
+        logError $ "Ignoring exception" :#
+          "exception" .= displayException ex : pairs
+    }
 
 type IdGeneratorM :: Type -> Type
 newtype IdGeneratorM a = IdGeneratorM
@@ -366,16 +393,16 @@ runIdGeneratorM prngRef logger action = do
     flip runLoggingT logger do
       unIdGeneratorM action prng
 
-data IdGenerator = IdGenerator
-  { idGeneratorGenTraceId :: IdGeneratorM TraceId
-  , idGeneratorGenSpanId :: IdGeneratorM SpanId
+data IdGeneratorSpec = IdGeneratorSpec
+  { idGeneratorSpecGenTraceId :: IdGeneratorM TraceId
+  , idGeneratorSpecGenSpanId :: IdGeneratorM SpanId
   }
 
-defaultIdGenerator :: IdGenerator
-defaultIdGenerator =
-  IdGenerator
-    { idGeneratorGenTraceId = liftA2 traceIdFromWords genUniform genUniform
-    , idGeneratorGenSpanId = fmap spanIdFromWords genUniform
+defaultIdGeneratorSpec :: IdGeneratorSpec
+defaultIdGeneratorSpec =
+  IdGeneratorSpec
+    { idGeneratorSpecGenTraceId = liftA2 traceIdFromWords genUniform genUniform
+    , idGeneratorSpecGenSpanId = fmap spanIdFromWords genUniform
     }
 
 newtype PRNG = PRNG
@@ -391,6 +418,36 @@ newPRNGRef seed = do
   liftIO do
     prng <- fmap PRNG $ initialize $ fromSeed seed
     newMVar prng
+
+newtype OnSynchronousException a = OnSynchronousException
+  { runOnSynchronousException :: SomeException -> LoggingT IO a
+  } deriving
+      ( Applicative, Functor, Monad, MonadIO -- @base@
+      , MonadCatch, MonadMask, MonadThrow -- @exceptions@
+      , MonadUnliftIO -- @unliftio-core@
+      , MonadLogger -- @monad-logger@
+      ) via (ReaderT SomeException (LoggingT IO))
+    deriving
+      ( Semigroup, Monoid -- @base@
+      ) via (Ap (ReaderT SomeException (LoggingT IO)) a)
+
+askException :: OnSynchronousException SomeException
+askException = OnSynchronousException \someEx -> pure someEx
+
+newtype OnTimeout a = OnTimeout
+  { runOnTimeout :: Int -> LoggingT IO a
+  } deriving
+      ( Applicative, Functor, Monad, MonadIO -- @base@
+      , MonadCatch, MonadMask, MonadThrow -- @exceptions@
+      , MonadUnliftIO -- @unliftio-core@
+      , MonadLogger -- @monad-logger@
+      ) via (ReaderT Int (LoggingT IO))
+    deriving
+      ( Semigroup, Monoid -- @base@
+      ) via (Ap (ReaderT Int (LoggingT IO)) a)
+
+askTimeoutMicros :: OnTimeout Int
+askTimeoutMicros = OnTimeout \timeoutMicros -> pure timeoutMicros
 
 unlessShutdown :: (Monoid a) => TVar Bool -> STM (IO a) -> IO a
 unlessShutdown shutdownRef action =
