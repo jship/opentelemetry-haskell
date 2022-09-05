@@ -10,18 +10,11 @@
 module OTel.SDK.Trace.Internal
   ( -- * Disclaimer
     -- $disclaimer
-    withTracerProvider
-  , newTracerProvider
-  , shutdownTracerProvider
-  , forceFlushTracerProvider
-
-  , SpanProcessor(..)
-  , buildSpanProcessor
-  , simpleSpanProcessor
-  , batchedSpanProcessor
-  , SpanProcessorSpec(..)
+    module OTel.SDK.Trace.Internal -- TODO: Explicit exports
   ) where
 
+import Control.Applicative (Applicative(..))
+import Control.Concurrent (MVar, newMVar, withMVar)
 import Control.Concurrent.STM (STM, TVar, atomically, newTVarIO, readTVar, writeTVar)
 import Control.Exception (Exception(..))
 import Control.Exception.Safe (MonadCatch, MonadMask, MonadThrow, catchAny)
@@ -32,6 +25,7 @@ import Control.Monad.Logger.Aeson
   ( LoggingT(..), Message(..), MonadLoggerIO(askLoggerIO), (.=), Loc, LogLevel, LogSource, LogStr
   , MonadLogger, SeriesElem, logError
   )
+import Control.Monad.Reader (ReaderT(..))
 import Data.Aeson (object)
 import Data.Kind (Type)
 import Data.Monoid (Ap(..))
@@ -42,25 +36,44 @@ import OTel.API.Context
 import OTel.API.Context.Internal (newContextKey)
 import OTel.API.Core
   ( EndedSpan(..), SpanParent(..), SpanSpec(..), SpanStatus(..), SpanAttrsLimits, SpanContext
-  , SpanEventAttrsLimits, SpanLinkAttrsLimits, Timestamp, UpdateSpanSpec, emptySpanContext
-  , emptySpanId, emptyTraceId, spanContextIsRemote, spanContextSpanId, spanContextTraceFlags
-  , spanContextTraceId, spanContextTraceState
+  , SpanEventAttrsLimits, SpanId, SpanLinkAttrsLimits, Timestamp, TraceId, UpdateSpanSpec
+  , defaultAttrsLimits, emptySpanContext, spanContextIsRemote, spanContextSpanId
+  , spanContextTraceFlags, spanContextTraceId, spanContextTraceState, spanIdFromWords
+  , timestampFromNanoseconds, traceIdFromWords
   )
 import OTel.API.Core.Internal
   ( MutableSpan(..), Span(..), TraceFlags(..), TraceState(..), Tracer(..), TracerProvider(..)
   , buildSpanUpdater
   )
 import Prelude
+import System.Clock (Clock(Realtime), getTime, toNanoSecs)
+import System.IO.Unsafe (unsafePerformIO)
+import System.Random.MWC (Variate(..), GenIO, Seed, createSystemSeed, fromSeed, initialize, uniform)
 import System.Timeout (timeout)
 import qualified Control.Exception.Safe as Exception
 
 data TracerProviderSpec = TracerProviderSpec
   { tracerProviderSpecNow :: IO Timestamp
+  , tracerProviderSpecSeed :: Seed
+  , tracerProviderSpecIdGenerator :: IdGenerator
   , tracerProviderSpecSpanProcessors :: [SpanProcessorSpec]
   , tracerProviderSpecSpanAttrsLimits :: SpanAttrsLimits
   , tracerProviderSpecSpanEventAttrsLimits :: SpanEventAttrsLimits
   , tracerProviderSpecSpanLinkAttrsLimits :: SpanLinkAttrsLimits
   }
+
+defaultTracerProviderSpec :: TracerProviderSpec
+defaultTracerProviderSpec =
+  TracerProviderSpec
+    { tracerProviderSpecNow =
+        fmap (timestampFromNanoseconds . toNanoSecs) $ getTime Realtime
+    , tracerProviderSpecSeed = defaultSystemSeed
+    , tracerProviderSpecIdGenerator = defaultIdGenerator
+    , tracerProviderSpecSpanProcessors = mempty
+    , tracerProviderSpecSpanAttrsLimits = defaultAttrsLimits
+    , tracerProviderSpecSpanEventAttrsLimits = defaultAttrsLimits
+    , tracerProviderSpecSpanLinkAttrsLimits = defaultAttrsLimits
+    }
 
 withTracerProvider
   :: forall m a
@@ -74,6 +87,7 @@ withTracerProvider spanProcessor f = do
       (newTracerProvider ctxBackendTrace spanProcessor)
       shutdownTracerProvider
       f
+
 newTracerProvider
   :: forall m
    . (MonadLoggerIO m)
@@ -83,9 +97,10 @@ newTracerProvider
 newTracerProvider ctxBackendTrace tracerProviderSpec = do
   logger <- askLoggerIO
   shutdownRef <- liftIO $ newTVarIO False
+  prngRef <- newPRNGRef seed
   spanProcessor <- liftIO $ foldMap (buildSpanProcessor logger) spanProcessorSpecs
   pure TracerProvider
-    { tracerProviderGetTracer = getTracerWith spanProcessor
+    { tracerProviderGetTracer = getTracerWith prngRef logger spanProcessor
     , tracerProviderShutdown = do
         unlessShutdown shutdownRef do
           writeTVar shutdownRef True
@@ -95,11 +110,11 @@ newTracerProvider ctxBackendTrace tracerProviderSpec = do
           pure $ spanProcessorForceFlush spanProcessor
     }
   where
-  getTracerWith spanProcessor scope =
+  getTracerWith prngRef logger spanProcessor scope =
     pure Tracer
       { tracerInstrumentationScope = scope
       , tracerNow = now
-      , tracerStartSpan = startSpan spanProcessor
+      , tracerStartSpan = startSpan prngRef logger spanProcessor
       , tracerProcessSpan = spanProcessorOnSpanEnd spanProcessor
       , tracerContextBackend = ctxBackendTrace
       , tracerSpanAttrsLimits = spanAttrsLimits
@@ -107,7 +122,7 @@ newTracerProvider ctxBackendTrace tracerProviderSpec = do
       , tracerSpanLinkAttrsLimits = spanLinkAttrsLimits
       }
 
-  startSpan spanProcessor spanSpec = do
+  startSpan prngRef logger spanProcessor spanSpec = do
     let spanParent = spanSpecParent spanSpec
     freshSpanContext <- newSpanContext spanParent
     mutableSpan@MutableSpan { mutableSpanSpanKey = spanKey } <- do
@@ -130,6 +145,7 @@ newTracerProvider ctxBackendTrace tracerProviderSpec = do
           void $ flip runContextT ctxBackendTrace do
             updateContext spanKey <=< buildSpanUpdater (liftIO now) $ updatedSpan
 
+    -- TODO: Double-check this - might not be right
     parentSpanContext <- fmap spanContext getSpan
     -- TODO: Fetch baggage from context and pass along too
     spanProcessorOnSpanStart
@@ -139,26 +155,30 @@ newTracerProvider ctxBackendTrace tracerProviderSpec = do
       getSpan
     pure mutableSpan
     where
-    newSpanContext = \case
-      SpanParentRoot ->
-        pure emptySpanContext
-          { spanContextTraceId = emptyTraceId -- TODO: Populate correctly
-          , spanContextSpanId = emptySpanId -- TODO: Populate correctly
-          , spanContextTraceFlags = TraceFlags 0 -- TODO: Populate correctly
-          , spanContextTraceState = TraceState [] -- TODO: Populate correctly
-          , spanContextIsRemote = False -- TODO: Populate correctly
-          }
-      SpanParentChildOf _parentSpanContext ->
-        pure emptySpanContext
-          { spanContextTraceId = emptyTraceId -- TODO: Populate correctly
-          , spanContextSpanId = emptySpanId -- TODO: Populate correctly
-          , spanContextTraceFlags = TraceFlags 0 -- TODO: Populate correctly
-          , spanContextTraceState = TraceState [] -- TODO: Populate correctly
-          , spanContextIsRemote = False -- TODO: Populate correctly
-          }
+    newSpanContext spanParent = do
+      (spanContextTraceId, spanContextSpanId) <- do
+        runIdGeneratorM prngRef logger
+          case spanParent of
+            SpanParentRoot ->
+              liftA2 (,) genTraceId genSpanId
+            SpanParentChildOf spanParentContext ->
+              liftA2 (,) (pure $ spanContextTraceId spanParentContext) genSpanId
+      pure emptySpanContext
+        { spanContextTraceId
+        , spanContextSpanId
+        , spanContextTraceFlags = TraceFlags 0 -- TODO: Populate correctly
+        , spanContextTraceState = TraceState [] -- TODO: Populate correctly
+        , spanContextIsRemote = False -- TODO: Populate correctly
+        }
 
   TracerProviderSpec
     { tracerProviderSpecNow = now
+    , tracerProviderSpecSeed = seed
+    , tracerProviderSpecIdGenerator =
+        IdGenerator
+          { idGeneratorGenTraceId = genTraceId
+          , idGeneratorGenSpanId = genSpanId
+          }
     , tracerProviderSpecSpanProcessors = spanProcessorSpecs
     , tracerProviderSpecSpanAttrsLimits = spanAttrsLimits
     , tracerProviderSpecSpanEventAttrsLimits = spanEventAttrsLimits
@@ -323,11 +343,64 @@ data SpanProcessorSpec = SpanProcessorSpec
       :: Int
   }
 
+type IdGeneratorM :: Type -> Type
+newtype IdGeneratorM a = IdGeneratorM
+  { unIdGeneratorM :: PRNG -> LoggingT IO a
+  } deriving
+      ( Applicative, Functor, Monad, MonadIO -- @base@
+      , MonadCatch, MonadMask, MonadThrow -- @exceptions@
+      , MonadUnliftIO -- @unliftio-core@
+      , MonadLogger -- @monad-logger@
+      ) via (ReaderT PRNG (LoggingT IO))
+    deriving
+      ( Semigroup, Monoid -- @base@
+      ) via (Ap (ReaderT PRNG (LoggingT IO)) a)
+
+runIdGeneratorM
+  :: MVar PRNG
+  -> (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
+  -> IdGeneratorM a
+  -> IO a
+runIdGeneratorM prngRef logger action = do
+  withMVar prngRef \prng -> do
+    flip runLoggingT logger do
+      unIdGeneratorM action prng
+
+data IdGenerator = IdGenerator
+  { idGeneratorGenTraceId :: IdGeneratorM TraceId
+  , idGeneratorGenSpanId :: IdGeneratorM SpanId
+  }
+
+defaultIdGenerator :: IdGenerator
+defaultIdGenerator =
+  IdGenerator
+    { idGeneratorGenTraceId = liftA2 traceIdFromWords genUniform genUniform
+    , idGeneratorGenSpanId = fmap spanIdFromWords genUniform
+    }
+
+newtype PRNG = PRNG
+  { unPRNG :: GenIO
+  }
+
+genUniform :: forall a. (Variate a) => IdGeneratorM a
+genUniform =
+  IdGeneratorM \PRNG { unPRNG = gen } -> liftIO $ uniform gen
+
+newPRNGRef :: (MonadIO m) => Seed -> m (MVar PRNG)
+newPRNGRef seed = do
+  liftIO do
+    prng <- fmap PRNG $ initialize $ fromSeed seed
+    newMVar prng
+
 unlessShutdown :: (Monoid a) => TVar Bool -> STM (IO a) -> IO a
 unlessShutdown shutdownRef action =
   join $ atomically $ readTVar shutdownRef >>= \case
     True -> pure mempty
     False -> action
+
+defaultSystemSeed :: Seed
+defaultSystemSeed = unsafePerformIO createSystemSeed
+{-# NOINLINE defaultSystemSeed #-}
 
 -- $disclaimer
 --

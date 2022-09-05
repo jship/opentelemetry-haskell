@@ -30,8 +30,10 @@ library:
   dependencies:
   - aeson
   - base >=4.11.1.0 && <5
+  - clock
   - monad-logger-aeson
   - mtl >=2.3
+  - mwc-random
   - otel-api-core
   - otel-api-context
   - otel-api-trace

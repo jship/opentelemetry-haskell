@@ -15,8 +15,10 @@ module OTel.API.Core.Trace
   , spanContextIsValid
   , TraceId
   , emptyTraceId
+  , traceIdFromWords
   , SpanId
   , emptySpanId
+  , spanIdFromWords
   , TraceFlags
   , TraceState
 

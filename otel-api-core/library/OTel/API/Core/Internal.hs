@@ -64,8 +64,10 @@ module OTel.API.Core.Internal
   , spanContextIsValid
   , TraceId(..)
   , emptyTraceId
+  , traceIdFromWords
   , SpanId(..)
   , emptySpanId
+  , spanIdFromWords
   , TraceFlags(..)
   , TraceState(..)
   , SpanEvents(..)
@@ -713,6 +715,9 @@ data TraceId = TraceId
 emptyTraceId :: TraceId
 emptyTraceId = TraceId { traceIdHi = 0, traceIdLo = 0 }
 
+traceIdFromWords :: Word64 -> Word64 -> TraceId
+traceIdFromWords = TraceId
+
 -- TODO: Get hex string
 -- TODO: Get byte array
 data SpanId = SpanId
@@ -721,6 +726,9 @@ data SpanId = SpanId
 
 emptySpanId :: SpanId
 emptySpanId = SpanId { spanIdLo = 0 }
+
+spanIdFromWords :: Word64 -> SpanId
+spanIdFromWords = SpanId
 
 newtype TraceFlags = TraceFlags
   { unTraceFlags :: Word8
