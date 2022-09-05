@@ -14,14 +14,11 @@ module OTel.API.Trace.Internal
   ( -- * Disclaimer
     -- $disclaimer
     TracingT(..)
-  , runTracingT
   , mapTracingT
-
-  , TracerOps(..)
   ) where
 
 import Control.Exception.Safe (MonadCatch, MonadMask, MonadThrow, SomeException)
-import Control.Monad ((<=<))
+import Control.Monad ((<=<), void)
 import Control.Monad.Accum (MonadAccum)
 import Control.Monad.Base (MonadBase)
 import Control.Monad.Cont (MonadCont)
@@ -43,15 +40,13 @@ import Data.Kind (Type)
 import Data.Monoid (Ap(..))
 import GHC.Stack (SrcLoc(..))
 import OTel.API.Context
-  ( ContextT(..), ContextKey, attachContext, getAttachedContextKey, getContext
-  , updateContext
+  ( ContextT(..), ContextKey, attachContext, getAttachedContextKey, getContext, updateContext
   )
 import OTel.API.Core
   ( AttrsFor(AttrsForSpan), KV(..), NewSpanSpec(..), Span(spanContext, spanIsRecording)
-  , SpanParent(..), SpanParentSource(..), SpanSpec(..), TimestampSource(..), AttrsBuilder, EndedSpan
-  , SpanAttrsLimits, SpanEventAttrsLimits, SpanLinkAttrsLimits, Timestamp, buildSpanSpec
-  , recordException, toEndedSpan, pattern CODE_FILEPATH, pattern CODE_FUNCTION, pattern CODE_LINENO
-  , pattern CODE_NAMESPACE
+  , SpanParent(..), SpanParentSource(..), SpanSpec(..), TimestampSource(..), AttrsBuilder
+  , buildSpanSpec, recordException, toEndedSpan, pattern CODE_FILEPATH, pattern CODE_FUNCTION
+  , pattern CODE_LINENO, pattern CODE_NAMESPACE
   )
 import OTel.API.Core.Internal (MutableSpan(..), Tracer(..), buildSpanUpdater)
 import OTel.API.Trace.Core (MonadTraceContext(..), MonadTracing(..))
@@ -60,9 +55,8 @@ import qualified Control.Exception.Safe as Safe
 import qualified GHC.Stack as Stack
 
 type TracingT :: (Type -> Type) -> Type -> Type
-
 newtype TracingT m a = TracingT
-  { unTracingT :: TracerOps -> ContextT Span m a
+  { runTracingT :: Tracer -> m a
   } deriving
       ( Applicative, Functor, Monad, MonadFail, MonadFix, MonadIO -- @base@
       , MonadAccum w, MonadCont, MonadError e, MonadSelect r, MonadState s, MonadWriter w -- @mtl@
@@ -72,10 +66,10 @@ newtype TracingT m a = TracingT
       , MonadBaseControl b -- @monad-control@
       , MonadLogger -- @monad-logger@
       , MonadResource -- @resourcet@
-      ) via (ReaderT TracerOps (ContextT Span m))
+      ) via (ReaderT Tracer m)
     deriving
       ( Semigroup, Monoid -- @base@
-      ) via (Ap (ReaderT TracerOps (ContextT Span m)) a)
+      ) via (Ap (ReaderT Tracer m) a)
 
 instance (MonadReader r m) => MonadReader r (TracingT m) where
   ask = lift ask
@@ -86,30 +80,30 @@ instance (MonadRWS r w s m) => MonadRWS r w s (TracingT m)
 
 instance MonadTrans TracingT where
   lift action =
-    TracingT \_tracerOps ->
-      ContextT \_ctxBackend ->
-        action
+    TracingT \_tracer ->
+      action
 
 instance MonadTransControl TracingT where
   type StT TracingT a = a
   liftWith action =
-    TracingT \tracerOps ->
-      ContextT \ctxBackend ->
-        action $ \t -> runContextT (unTracingT t tracerOps) ctxBackend
+    TracingT \tracer ->
+      action $ \t -> runTracingT t tracer
   restoreT = lift
 
 instance (MonadIO m, MonadMask m) => MonadTracing (TracingT m) where
   traceCS cs newSpanSpec action =
-    TracingT \tracerOps -> do
-      spanSpec <- toSpanSpec tracerOps newSpanSpec
-      span <- liftIO $ tracerOpsStartSpan tracerOps spanSpec
-      attachContext span \spanKey -> do
-        result <- unTracingT (action MutableSpan { mutableSpanSpanKey = spanKey }) tracerOps
-        result <$ processSpan tracerOps spanKey
-        `Safe.withException` handler tracerOps spanKey
+    TracingT \tracer -> do
+      flip runContextT (tracerContextBackend tracer) do
+        spanSpec <- toSpanSpec tracer newSpanSpec
+        span <- liftIO $ tracerStartSpan tracer spanSpec
+        attachContext span \spanKey -> do
+          result <- lift do
+            runTracingT (action MutableSpan { mutableSpanSpanKey = spanKey }) tracer
+          result <$ processSpan tracer spanKey
+          `Safe.withException` handler tracer spanKey
     where
-    processSpan :: TracerOps -> ContextKey Span -> ContextT Span m ()
-    processSpan tracerOps spanKey = do
+    processSpan :: Tracer -> ContextKey Span -> ContextT Span m ()
+    processSpan tracer spanKey = do
       span <- getContext spanKey
       timestamp <- liftIO now
       liftIO
@@ -120,19 +114,19 @@ instance (MonadIO m, MonadMask m) => MonadTracing (TracingT m) where
             spanEventAttrsLimits
             spanAttrsLimits
             span
-      () <$ updateContext spanKey \s -> s { spanIsRecording = False }
+      void $ updateContext spanKey \s -> s { spanIsRecording = False }
       where
-      TracerOps
-        { tracerOpsNow = now
-        , tracerOpsOnSpanStart = onSpanStart
-        , tracerOpsOnSpanEnd = onSpanEnd
-        , tracerOpsSpanAttrsLimits = spanAttrsLimits
-        , tracerOpsSpanEventAttrsLimits = spanEventAttrsLimits
-        , tracerOpsSpanLinkAttrsLimits = spanLinkAttrsLimits
-        } = tracerOps
+      Tracer
+        { tracerNow = now
+        , tracerOnSpanStart = onSpanStart
+        , tracerOnSpanEnd = onSpanEnd
+        , tracerSpanAttrsLimits = spanAttrsLimits
+        , tracerSpanEventAttrsLimits = spanEventAttrsLimits
+        , tracerSpanLinkAttrsLimits = spanLinkAttrsLimits
+        } = tracer
 
-    handler :: TracerOps -> ContextKey Span -> SomeException -> ContextT Span m ()
-    handler tracerOps spanKey someEx = do
+    handler :: Tracer -> ContextKey Span -> SomeException -> ContextT Span m ()
+    handler tracer spanKey someEx = do
       -- TODO: Set status to error? Spec docs make it sound like application
       -- authors set the status, and the API shouldn't set the status.
       -- https://opentelemetry.io/docs/reference/specification/trace/api/#set-status
@@ -142,12 +136,12 @@ instance (MonadIO m, MonadMask m) => MonadTracing (TracingT m) where
       -- N.B. It is important that we finish the span after recording the
       -- exception and not the other way around, because the span is no longer
       -- recording after it is ended.
-      processSpan tracerOps spanKey
+      processSpan tracer spanKey
       where
-      TracerOps { tracerOpsNow = now } = tracerOps
+      Tracer { tracerNow = now } = tracer
 
-    toSpanSpec :: TracerOps -> NewSpanSpec -> ContextT Span m SpanSpec
-    toSpanSpec tracerOps spec =
+    toSpanSpec :: Tracer -> NewSpanSpec -> ContextT Span m SpanSpec
+    toSpanSpec tracer spec =
       buildSpanSpec (liftIO now) spanParentFromSource spec { newSpanSpecAttrs }
       where
       spanParentFromSource
@@ -172,44 +166,19 @@ instance (MonadIO m, MonadMask m) => MonadTracing (TracingT m) where
               <> CODE_LINENO .@ srcLocStartLine srcLoc
           _ -> mempty
 
-      TracerOps { tracerOpsNow = now } = tracerOps
+      Tracer { tracerNow = now } = tracer
 
 instance (MonadIO m) => MonadTraceContext (TracingT m) where
   getSpanContext mutableSpan =
-    TracingT \_tracerOps ->
-      fmap spanContext $ getContext $ mutableSpanSpanKey mutableSpan
+    TracingT \tracer -> do
+      flip runContextT (tracerContextBackend tracer) do
+        fmap spanContext $ getContext $ mutableSpanSpanKey mutableSpan
 
   updateSpan mutableSpan updateSpanSpec =
-    TracingT update
-      where
-      update
-        :: TracerOps
-        -> ContextT Span m Span
-      update tracerOps =
+    TracingT \tracer -> do
+      flip runContextT (tracerContextBackend tracer) do
         updateContext (mutableSpanSpanKey mutableSpan)
-          =<< buildSpanUpdater (liftIO now) updateSpanSpec
-        where
-        TracerOps { tracerOpsNow = now } = tracerOps
-
-runTracingT
-  :: forall m a
-   . TracingT m a
-  -> Tracer
-  -> m a
-runTracingT action tracer =
-  runContextT (unTracingT action tracerOps) ctxBackend
-  where
-  tracerOps =
-    TracerOps
-      { tracerOpsNow = tracerNow tracer
-      , tracerOpsStartSpan = tracerStartSpan tracer
-      , tracerOpsOnSpanStart = tracerOnSpanStart tracer
-      , tracerOpsOnSpanEnd = tracerOnSpanEnd tracer
-      , tracerOpsSpanAttrsLimits = tracerSpanAttrsLimits tracer
-      , tracerOpsSpanEventAttrsLimits = tracerSpanEventAttrsLimits tracer
-      , tracerOpsSpanLinkAttrsLimits = tracerSpanLinkAttrsLimits tracer
-      }
-  ctxBackend = tracerContextBackend tracer
+          =<< buildSpanUpdater (liftIO $ tracerNow tracer) updateSpanSpec
 
 mapTracingT
   :: forall m n a b
@@ -217,19 +186,8 @@ mapTracingT
   -> TracingT m a
   -> TracingT n b
 mapTracingT f action =
-  TracingT \tracerOps ->
-    ContextT \ctxBackend ->
-      f $ runContextT (unTracingT action tracerOps) ctxBackend
-
-data TracerOps = TracerOps
-  { tracerOpsNow :: IO Timestamp
-  , tracerOpsStartSpan :: SpanSpec -> IO Span
-  , tracerOpsOnSpanStart :: MutableSpan -> IO ()
-  , tracerOpsOnSpanEnd :: EndedSpan -> IO ()
-  , tracerOpsSpanAttrsLimits :: SpanAttrsLimits
-  , tracerOpsSpanEventAttrsLimits :: SpanEventAttrsLimits
-  , tracerOpsSpanLinkAttrsLimits :: SpanLinkAttrsLimits
-  }
+  TracingT \tracer ->
+    f $ runTracingT action tracer
 
 -- $disclaimer
 --
