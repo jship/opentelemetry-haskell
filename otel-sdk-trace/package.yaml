@@ -29,12 +29,13 @@ ghc-options:
 library:
   dependencies:
   - base >=4.11.1.0 && <5
-  - monad-logger
+  - monad-logger-aeson
   - mtl >=2.3
   - otel-api-core
   - otel-api-context
   - otel-api-trace
   - safe-exceptions
+  - text
   - transformers-base
   - unliftio-core
   source-dirs: library
