@@ -19,6 +19,7 @@ module OTel.API.Context.Internal
 
   , ContextBackend(..)
   , withContextBackend
+  , unsafeNewContextBackend
 
   , ContextKey(..)
 
@@ -150,6 +151,13 @@ withContextBackend
 withContextBackend action = do
   Context.withStore Context.noPropagation Nothing \ctxBackendStore ->
     action ContextBackend { ctxBackendStore }
+
+unsafeNewContextBackend
+  :: forall m ctx
+   . (MonadIO m)
+  => m (ContextBackend ctx)
+unsafeNewContextBackend = do
+  fmap ContextBackend $ Context.newStore Context.noPropagation Nothing
 
 newtype ContextKey ctx = ContextKey
   { contextKeyRef :: IORef ctx

@@ -33,10 +33,8 @@ import Data.Aeson (object)
 import Data.Kind (Type)
 import Data.Monoid (Ap(..))
 import Data.Text (Text)
-import OTel.API.Context
-  ( ContextT(runContextT), ContextBackend, ContextKey, updateContext, withContextBackend
-  )
-import OTel.API.Context.Internal (newContextKey)
+import OTel.API.Context (ContextT(runContextT), ContextBackend, ContextKey, updateContext)
+import OTel.API.Context.Internal (newContextKey, unsafeNewContextBackend)
 import OTel.API.Core
   ( SpanParent(..), SpanSpec(..), SpanStatus(..), Attrs, AttrsBuilder, InstrumentationScope
   , SpanAttrsLimits, SpanContext, SpanEventAttrsLimits, SpanId, SpanLinkAttrsLimits, Timestamp
@@ -63,6 +61,7 @@ data TracerProviderSpec = TracerProviderSpec
   , tracerProviderSpecSpanAttrsLimits :: SpanAttrsLimits
   , tracerProviderSpecSpanEventAttrsLimits :: SpanEventAttrsLimits
   , tracerProviderSpecSpanLinkAttrsLimits :: SpanLinkAttrsLimits
+  , tracerProviderSpecTraceContextBackend :: ContextBackend (Span AttrsBuilder)
   }
 
 defaultTracerProviderSpec :: TracerProviderSpec
@@ -76,6 +75,7 @@ defaultTracerProviderSpec =
     , tracerProviderSpecSpanAttrsLimits = defaultAttrsLimits
     , tracerProviderSpecSpanEventAttrsLimits = defaultAttrsLimits
     , tracerProviderSpecSpanLinkAttrsLimits = defaultAttrsLimits
+    , tracerProviderSpecTraceContextBackend = defaultTraceContextBackend
     }
 
 withTracerProvider
@@ -84,20 +84,18 @@ withTracerProvider
   => TracerProviderSpec
   -> (TracerProvider -> m a)
   -> m a
-withTracerProvider spanProcessor f = do
-  withContextBackend \ctxBackendTrace -> do
-    Exception.bracket
-      (newTracerProvider ctxBackendTrace spanProcessor)
-      shutdownTracerProvider
-      f
+withTracerProvider tracerProviderSpec f = do
+  Exception.bracket
+    (newTracerProvider tracerProviderSpec)
+    shutdownTracerProvider
+    f
 
 newTracerProvider
   :: forall m
    . (MonadLoggerIO m)
-  => ContextBackend (Span AttrsBuilder)
-  -> TracerProviderSpec
+  => TracerProviderSpec
   -> m TracerProvider
-newTracerProvider ctxBackendTrace tracerProviderSpec = do
+newTracerProvider tracerProviderSpec = do
   logger <- askLoggerIO
   shutdownRef <- liftIO $ newTVarIO False
   prngRef <- newPRNGRef seed
@@ -229,6 +227,7 @@ newTracerProvider ctxBackendTrace tracerProviderSpec = do
     , tracerProviderSpecSpanAttrsLimits = spanAttrsLimits
     , tracerProviderSpecSpanEventAttrsLimits = spanEventAttrsLimits
     , tracerProviderSpecSpanLinkAttrsLimits = spanLinkAttrsLimits
+    , tracerProviderSpecTraceContextBackend = ctxBackendTrace
     } = tracerProviderSpec
 
 shutdownTracerProvider :: forall m. (MonadIO m) => TracerProvider -> m ()
@@ -505,6 +504,10 @@ unlessShutdown shutdownRef action =
 defaultSystemSeed :: Seed
 defaultSystemSeed = unsafePerformIO createSystemSeed
 {-# NOINLINE defaultSystemSeed #-}
+
+defaultTraceContextBackend :: ContextBackend (Span AttrsBuilder)
+defaultTraceContextBackend = unsafePerformIO $ liftIO unsafeNewContextBackend
+{-# NOINLINE defaultTraceContextBackend #-}
 
 -- $disclaimer
 --
