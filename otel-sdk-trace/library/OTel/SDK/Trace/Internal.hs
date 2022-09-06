@@ -30,7 +30,7 @@ import Control.Monad.Cont (cont, runCont)
 import Control.Monad.IO.Class (MonadIO(liftIO))
 import Control.Monad.IO.Unlift (MonadUnliftIO(..))
 import Control.Monad.Logger.Aeson
-  ( LoggingT(..), Message(..), MonadLoggerIO(askLoggerIO), (.=), Loc, LogLevel, LogSource, LogStr
+  ( LoggingT(..), Message(..), (.=), Loc, LogLevel, LogSource, LogStr
   , MonadLogger, SeriesElem, logError
   )
 import Control.Monad.Reader (ReaderT(..))
@@ -64,6 +64,7 @@ import qualified Data.Vector as Vector
 
 data TracerProviderSpec = TracerProviderSpec
   { tracerProviderSpecNow :: IO Timestamp
+  , tracerProviderSpecLogger :: Loc -> LogSource -> LogLevel -> LogStr -> IO ()
   , tracerProviderSpecSeed :: Seed
   , tracerProviderSpecIdGenerator :: IdGeneratorSpec
   , tracerProviderSpecSpanProcessors :: [SpanProcessorSpec]
@@ -78,6 +79,7 @@ defaultTracerProviderSpec =
   TracerProviderSpec
     { tracerProviderSpecNow =
         fmap (timestampFromNanoseconds . toNanoSecs) $ getTime Realtime
+    , tracerProviderSpecLogger = mempty
     , tracerProviderSpecSeed = defaultSystemSeed
     , tracerProviderSpecIdGenerator = defaultIdGeneratorSpec
     , tracerProviderSpecSpanProcessors = mempty
@@ -87,31 +89,21 @@ defaultTracerProviderSpec =
     , tracerProviderSpecTraceContextBackend = defaultTraceContextBackend
     }
 
-withTracerProvider
-  :: forall m a
-   . (MonadMask m, MonadLoggerIO m)
-  => TracerProviderSpec
-  -> (TracerProvider -> m a)
-  -> m a
+withTracerProvider :: TracerProviderSpec -> (TracerProvider -> IO a) -> IO a
 withTracerProvider tracerProviderSpec f = do
   Exception.bracket
     (newTracerProvider tracerProviderSpec)
     shutdownTracerProvider
     f
 
-newTracerProvider
-  :: forall m
-   . (MonadLoggerIO m)
-  => TracerProviderSpec
-  -> m TracerProvider
+newTracerProvider :: TracerProviderSpec -> IO TracerProvider
 newTracerProvider tracerProviderSpec = do
-  logger <- askLoggerIO
   shutdownRef <- liftIO $ newTVarIO False
   prngRef <- newPRNGRef seed
   spanProcessor <- liftIO $ foldMap (buildSpanProcessor logger) spanProcessorSpecs
   pure TracerProvider
     { tracerProviderGetTracer =
-        pure . getTracerWith prngRef logger spanProcessor
+        pure . getTracerWith prngRef spanProcessor
     , tracerProviderShutdown = do
         unlessShutdown shutdownRef do
           writeTVar shutdownRef True
@@ -123,15 +115,14 @@ newTracerProvider tracerProviderSpec = do
   where
   getTracerWith
     :: MVar PRNG
-    -> (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
     -> SpanProcessor
     -> InstrumentationScope
     -> Tracer
-  getTracerWith prngRef logger spanProcessor scope =
+  getTracerWith prngRef spanProcessor scope =
     Tracer
       { tracerInstrumentationScope = scope
       , tracerNow = now
-      , tracerStartSpan = startSpan prngRef logger scope spanProcessor
+      , tracerStartSpan = startSpan prngRef scope spanProcessor
       , tracerProcessSpan = endSpan spanProcessor
       , tracerContextBackend = ctxBackendTrace
       , tracerSpanAttrsLimits = spanAttrsLimits
@@ -146,16 +137,15 @@ newTracerProvider tracerProviderSpec = do
 
   startSpan
     :: MVar PRNG
-    -> (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
     -> InstrumentationScope
     -> SpanProcessor
     -> SpanSpec
     -> IO MutableSpan
-  startSpan prngRef logger scope spanProcessor spanSpec = do
+  startSpan prngRef scope spanProcessor spanSpec = do
     let spanParent = spanSpecParent spanSpec
     let mParentSpanContext = spanParentContext spanParent
 
-    spanContext <- newSpanContext prngRef logger spanParent
+    spanContext <- newSpanContext prngRef spanParent
     let span = Span
           { spanParent
           , spanContext
@@ -182,10 +172,9 @@ newTracerProvider tracerProviderSpec = do
 
   newSpanContext
     :: MVar PRNG
-    -> (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
     -> SpanParent
     -> IO SpanContext
-  newSpanContext prngRef logger spanParent = do
+  newSpanContext prngRef spanParent = do
     (spanContextTraceId, spanContextSpanId) <- do
       runIdGeneratorM prngRef logger
         case spanParent of
@@ -226,6 +215,7 @@ newTracerProvider tracerProviderSpec = do
 
   TracerProviderSpec
     { tracerProviderSpecNow = now
+    , tracerProviderSpecLogger = logger
     , tracerProviderSpecSeed = seed
     , tracerProviderSpecIdGenerator =
         IdGeneratorSpec
@@ -239,11 +229,11 @@ newTracerProvider tracerProviderSpec = do
     , tracerProviderSpecTraceContextBackend = ctxBackendTrace
     } = tracerProviderSpec
 
-shutdownTracerProvider :: forall m. (MonadIO m) => TracerProvider -> m ()
-shutdownTracerProvider = liftIO . tracerProviderShutdown
+shutdownTracerProvider :: TracerProvider -> IO ()
+shutdownTracerProvider = tracerProviderShutdown
 
-forceFlushTracerProvider :: forall m. (MonadIO m) => TracerProvider -> m ()
-forceFlushTracerProvider = liftIO . tracerProviderForceFlush
+forceFlushTracerProvider :: TracerProvider -> IO ()
+forceFlushTracerProvider = tracerProviderForceFlush
 
 data SpanProcessor = SpanProcessor
   { spanProcessorOnSpanStart
@@ -531,11 +521,10 @@ genUniform :: forall a. (Variate a) => IdGeneratorM a
 genUniform =
   IdGeneratorM \PRNG { unPRNG = gen } -> liftIO $ uniform gen
 
-newPRNGRef :: (MonadIO m) => Seed -> m (MVar PRNG)
+newPRNGRef :: Seed -> IO (MVar PRNG)
 newPRNGRef seed = do
-  liftIO do
-    prng <- fmap PRNG $ initialize $ fromSeed seed
-    newMVar prng
+  prng <- fmap PRNG $ initialize $ fromSeed seed
+  newMVar prng
 
 newtype OnSynchronousException a = OnSynchronousException
   { runOnSynchronousException :: SomeException -> [SeriesElem] -> LoggingT IO a
