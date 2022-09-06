@@ -48,7 +48,7 @@ import OTel.API.Core
   , pattern CODE_LINENO, pattern CODE_NAMESPACE
   )
 import OTel.API.Core.Internal (MutableSpan(..), Tracer(..), buildSpanUpdater)
-import OTel.API.Trace.Core (MonadTraceContext(..), MonadTracing(..), MonadTracingIO(..))
+import OTel.API.Trace.Core (MonadTraceContext(..), MonadTracing(..), MonadTracingEnv(..))
 import Prelude hiding (span)
 import qualified Control.Exception.Safe as Safe
 import qualified GHC.Stack as Stack
@@ -169,8 +169,8 @@ instance (MonadIO m, MonadMask m) => MonadTracing (TracingT m) where
 
       Tracer { tracerNow = now } = tracer
 
-instance (MonadIO m, MonadMask m) => MonadTracingIO (TracingT m) where
-  askTracerIO = TracingT pure
+instance (MonadIO m, MonadMask m) => MonadTracingEnv (TracingT m) where
+  askTracer = TracingT pure
 
 instance (MonadIO m) => MonadTraceContext (TracingT m) where
   getSpanContext mutableSpan =
