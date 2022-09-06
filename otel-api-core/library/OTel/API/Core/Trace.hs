@@ -91,6 +91,7 @@ module OTel.API.Core.Trace
 
   , MutableSpan
   , Span
+  , SpanFrozenAt
   , spanParent
   , spanContext
   , spanName

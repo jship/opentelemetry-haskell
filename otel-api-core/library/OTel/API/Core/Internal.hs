@@ -107,6 +107,7 @@ module OTel.API.Core.Internal
   , SpanName(..)
   , MutableSpan(..)
   , Span(..)
+  , SpanFrozenAt
   , freezeSpan
   , SpanParentSource(.., Implicit, Explicit)
   , SpanParent(.., Root, ChildOf)
