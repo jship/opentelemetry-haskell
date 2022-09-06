@@ -101,7 +101,10 @@ instance (MonadIO m, MonadMask m) => MonadTracing (TracingT m) where
           result <$ processSpan tracer spanKey
           `Safe.withException` handler tracer spanKey
     where
-    processSpan :: Tracer -> ContextKey Span -> ContextT Span m ()
+    processSpan
+      :: Tracer
+      -> ContextKey (Span AttrsBuilder)
+      -> ContextT (Span AttrsBuilder) m ()
     processSpan tracer spanKey = do
       span <- getContext spanKey
       timestamp <- liftIO now
@@ -124,7 +127,11 @@ instance (MonadIO m, MonadMask m) => MonadTracing (TracingT m) where
         , tracerSpanLinkAttrsLimits = spanLinkAttrsLimits
         } = tracer
 
-    handler :: Tracer -> ContextKey Span -> SomeException -> ContextT Span m ()
+    handler
+      :: Tracer
+      -> ContextKey (Span AttrsBuilder)
+      -> SomeException
+      -> ContextT (Span AttrsBuilder) m ()
     handler tracer spanKey someEx = do
       -- TODO: Set status to error? Spec docs make it sound like application
       -- authors set the status, and the API shouldn't set the status.
@@ -139,13 +146,16 @@ instance (MonadIO m, MonadMask m) => MonadTracing (TracingT m) where
       where
       Tracer { tracerNow = now } = tracer
 
-    toSpanSpec :: Tracer -> NewSpanSpec -> ContextT Span m SpanSpec
+    toSpanSpec
+      :: Tracer
+      -> NewSpanSpec
+      -> ContextT (Span AttrsBuilder) m SpanSpec
     toSpanSpec tracer spec =
       buildSpanSpec (liftIO now) spanParentFromSource spec { newSpanSpecAttrs }
       where
       spanParentFromSource
         :: SpanParentSource
-        -> ContextT Span m SpanParent
+        -> ContextT (Span AttrsBuilder) m SpanParent
       spanParentFromSource = \case
         SpanParentSourceExplicit spanParent -> pure spanParent
         SpanParentSourceImplicit -> do

@@ -118,6 +118,7 @@ module OTel.API.Core.Trace
 
   , SpanParentSource(..)
   , SpanParent(..)
+  , spanParentContext
 
   , SpanKind(..)
 

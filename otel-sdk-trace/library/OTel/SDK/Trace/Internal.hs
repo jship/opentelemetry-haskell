@@ -20,7 +20,7 @@ import Control.Concurrent.STM (STM, TVar, atomically, newTVarIO, readTVar, write
 import Control.Exception.Safe
   ( Exception(..), SomeException(..), MonadCatch, MonadMask, MonadThrow, catchAny
   )
-import Control.Monad ((<=<), join, void)
+import Control.Monad (join)
 import Control.Monad.IO.Class (MonadIO(liftIO))
 import Control.Monad.IO.Unlift (MonadUnliftIO(..))
 import Control.Monad.Logger.Aeson
@@ -33,21 +33,22 @@ import Data.Kind (Type)
 import Data.Monoid (Ap(..))
 import Data.Text (Text)
 import OTel.API.Context
-  ( ContextT(runContextT), ContextBackend, getContext, updateContext, withContextBackend
+  ( ContextT(runContextT), ContextBackend, ContextKey, updateContext, withContextBackend
   )
 import OTel.API.Context.Internal (newContextKey)
 import OTel.API.Core
-  ( EndedSpan(..), SpanParent(..), SpanSpec(..), SpanStatus(..), SpanAttrsLimits, SpanContext
-  , SpanEventAttrsLimits, SpanId, SpanLinkAttrsLimits, Timestamp, TraceId, UpdateSpanSpec
-  , defaultAttrsLimits, emptySpanContext, spanContextIsRemote, spanContextSpanId
-  , spanContextTraceFlags, spanContextTraceId, spanContextTraceState, spanIdFromWords
-  , timestampFromNanoseconds, traceIdFromWords
+  ( EndedSpan(..), SpanParent(..), SpanSpec(..), SpanStatus(..), Attrs, AttrsBuilder
+  , InstrumentationScope, SpanAttrsLimits, SpanContext, SpanEventAttrsLimits, SpanId
+  , SpanLinkAttrsLimits, Timestamp, TraceId, UpdateSpanSpec, defaultAttrsLimits, emptySpanContext
+  , spanContextIsRemote, spanContextSpanId, spanContextTraceFlags, spanContextTraceId
+  , spanContextTraceState, spanIdFromWords, spanParentContext, timestampFromNanoseconds
+  , traceIdFromWords
   )
 import OTel.API.Core.Internal
   ( MutableSpan(..), Span(..), TraceFlags(..), TraceState(..), Tracer(..), TracerProvider(..)
-  , buildSpanUpdater
+  , buildSpanUpdater, freezeSpan
   )
-import Prelude
+import Prelude hiding (span)
 import System.Clock (Clock(Realtime), getTime, toNanoSecs)
 import System.IO.Unsafe (unsafePerformIO)
 import System.Random.MWC (Variate(..), GenIO, Seed, createSystemSeed, fromSeed, initialize, uniform)
@@ -93,7 +94,7 @@ withTracerProvider spanProcessor f = do
 newTracerProvider
   :: forall m
    . (MonadLoggerIO m)
-  => ContextBackend Span
+  => ContextBackend (Span AttrsBuilder)
   -> TracerProviderSpec
   -> m TracerProvider
 newTracerProvider ctxBackendTrace tracerProviderSpec = do
@@ -102,7 +103,8 @@ newTracerProvider ctxBackendTrace tracerProviderSpec = do
   prngRef <- newPRNGRef seed
   spanProcessor <- liftIO $ foldMap (buildSpanProcessor logger) spanProcessorSpecs
   pure TracerProvider
-    { tracerProviderGetTracer = getTracerWith prngRef logger spanProcessor
+    { tracerProviderGetTracer =
+        pure . getTracerWith prngRef logger spanProcessor
     , tracerProviderShutdown = do
         unlessShutdown shutdownRef do
           writeTVar shutdownRef True
@@ -112,8 +114,14 @@ newTracerProvider ctxBackendTrace tracerProviderSpec = do
           pure $ spanProcessorForceFlush spanProcessor
     }
   where
+  getTracerWith
+    :: MVar PRNG
+    -> (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
+    -> SpanProcessor
+    -> InstrumentationScope
+    -> Tracer
   getTracerWith prngRef logger spanProcessor scope =
-    pure Tracer
+    Tracer
       { tracerInstrumentationScope = scope
       , tracerNow = now
       , tracerStartSpan = startSpan prngRef logger spanProcessor
@@ -124,13 +132,21 @@ newTracerProvider ctxBackendTrace tracerProviderSpec = do
       , tracerSpanLinkAttrsLimits = spanLinkAttrsLimits
       }
 
+  startSpan
+    :: MVar PRNG
+    -> (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
+    -> SpanProcessor
+    -> SpanSpec
+    -> IO MutableSpan
   startSpan prngRef logger spanProcessor spanSpec = do
     let spanParent = spanSpecParent spanSpec
-    freshSpanContext <- newSpanContext spanParent
+    let mParentSpanContext = spanParentContext spanParent
+
+    spanContext <- newSpanContext prngRef logger spanParent
     mutableSpan@MutableSpan { mutableSpanSpanKey = spanKey } <- do
       fmap MutableSpan $ newContextKey Span
         { spanParent
-        , spanContext = freshSpanContext
+        , spanContext
         , spanName = spanSpecName spanSpec
         , spanStatus = SpanStatusUnset
         , spanStart = spanSpecStart spanSpec
@@ -142,48 +158,52 @@ newTracerProvider ctxBackendTrace tracerProviderSpec = do
         , spanIsRecording = True -- TODO: Implement!
         }
 
-    let getSpan = runContextT (getContext spanKey) ctxBackendTrace
-    let updateSpan updatedSpan =
-          void $ flip runContextT ctxBackendTrace do
-            updateContext spanKey <=< buildSpanUpdater (liftIO now) $ updatedSpan
-
-    -- TODO: Double-check this - might not be right
-    parentSpanContext <- fmap spanContext getSpan
     -- TODO: Fetch baggage from context and pass along too
-    spanProcessorOnSpanStart
-      spanProcessor
-      parentSpanContext
-      updateSpan
-      getSpan
+    spanProcessorOnSpanStart spanProcessor mParentSpanContext $ spanUpdater spanKey
     pure mutableSpan
-    where
-    newSpanContext spanParent = do
-      (spanContextTraceId, spanContextSpanId) <- do
-        runIdGeneratorM prngRef logger
-          case spanParent of
-            SpanParentRoot ->
-              liftA2 (,) genTraceId genSpanId
-                `catchAny` \(SomeException ex) -> do
-                  logError $ "Falling back to default trace/span ID gen due to exception" :#
-                    [ "exception" .= displayException ex ]
-                  traceId <- idGeneratorSpecGenTraceId defaultIdGeneratorSpec
-                  spanId <- idGeneratorSpecGenSpanId defaultIdGeneratorSpec
-                  pure (traceId, spanId)
-            SpanParentChildOf spanParentContext ->
-              liftA2 (,) (pure $ spanContextTraceId spanParentContext) genSpanId
-                `catchAny` \(SomeException ex) -> do
-                  logError $ "Falling back to default span ID gen due to exception" :#
-                    [ "exception" .= displayException ex ]
-                  spanId <- idGeneratorSpecGenSpanId defaultIdGeneratorSpec
-                  pure (spanContextTraceId spanParentContext, spanId)
 
-      pure emptySpanContext
-        { spanContextTraceId
-        , spanContextSpanId
-        , spanContextTraceFlags = TraceFlags 0 -- TODO: Populate correctly
-        , spanContextTraceState = TraceState [] -- TODO: Populate correctly
-        , spanContextIsRemote = False -- TODO: Populate correctly
-        }
+  newSpanContext
+    :: MVar PRNG
+    -> (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
+    -> SpanParent
+    -> IO SpanContext
+  newSpanContext prngRef logger spanParent = do
+    (spanContextTraceId, spanContextSpanId) <- do
+      runIdGeneratorM prngRef logger
+        case spanParent of
+          SpanParentRoot ->
+            liftA2 (,) genTraceId genSpanId
+              `catchAny` \(SomeException ex) -> do
+                logError $ "Falling back to default trace/span ID gen due to exception" :#
+                  [ "exception" .= displayException ex ]
+                traceId <- idGeneratorSpecGenTraceId defaultIdGeneratorSpec
+                spanId <- idGeneratorSpecGenSpanId defaultIdGeneratorSpec
+                pure (traceId, spanId)
+          SpanParentChildOf scParent ->
+            liftA2 (,) (pure $ spanContextTraceId scParent) genSpanId
+              `catchAny` \(SomeException ex) -> do
+                logError $ "Falling back to default span ID gen due to exception" :#
+                  [ "exception" .= displayException ex ]
+                spanId <- idGeneratorSpecGenSpanId defaultIdGeneratorSpec
+                pure (spanContextTraceId scParent, spanId)
+
+    pure emptySpanContext
+      { spanContextTraceId
+      , spanContextSpanId
+      , spanContextTraceFlags = TraceFlags 0 -- TODO: Populate correctly
+      , spanContextTraceState = TraceState [] -- TODO: Populate correctly
+      , spanContextIsRemote = False -- TODO: Populate correctly
+      }
+
+  spanUpdater
+    :: ContextKey (Span AttrsBuilder)
+    -> UpdateSpanSpec
+    -> SpanProcessorM (Span Attrs)
+  spanUpdater spanKey updateSpanSpec =
+    flip runContextT ctxBackendTrace do
+      updater <- buildSpanUpdater (liftIO now) updateSpanSpec
+      fmap (freezeSpan spanLinkAttrsLimits spanEventAttrsLimits spanAttrsLimits) do
+        updateContext spanKey updater
 
   TracerProviderSpec
     { tracerProviderSpecNow = now
@@ -207,9 +227,8 @@ forceFlushTracerProvider = liftIO . tracerProviderForceFlush
 
 data SpanProcessor = SpanProcessor
   { spanProcessorOnSpanStart
-      :: SpanContext -- Parent span context pulled from the context
-      -> (UpdateSpanSpec -> IO ())
-      -> IO Span
+      :: Maybe SpanContext -- Parent span context pulled from the context
+      -> (UpdateSpanSpec -> SpanProcessorM (Span Attrs))
       -> IO ()
   , spanProcessorOnSpanEnd
       :: EndedSpan
@@ -252,10 +271,10 @@ buildSpanProcessor logger spanProcessorSpec = do
   where
   spanProcessor shutdownRef =
     SpanProcessor
-      { spanProcessorOnSpanStart = \parentSpanContext updateSpan getSpan -> do
+      { spanProcessorOnSpanStart = \mParentSpanContext spanUpdater -> do
           unlessShutdown shutdownRef $ pure do
             runSpanProcessorM defaultTimeout loggingMeta'onSpanStart logger onTimeout onSyncEx do
-              spanProcessorSpecOnSpanStart parentSpanContext updateSpan getSpan
+              spanProcessorSpecOnSpanStart mParentSpanContext spanUpdater
       , spanProcessorOnSpanEnd = \endedSpan -> do
           unlessShutdown shutdownRef $ pure do
             runSpanProcessorM defaultTimeout loggingMeta'onSpanEnd logger onTimeout onSyncEx do
@@ -341,9 +360,8 @@ data SpanProcessorSpec = SpanProcessorSpec
   { spanProcessorSpecName
       :: Text
   , spanProcessorSpecOnSpanStart
-      :: SpanContext -- Parent span context pulled from the context
-      -> (UpdateSpanSpec -> IO ())
-      -> IO Span
+      :: Maybe SpanContext -- Parent span context pulled from the context
+      -> (UpdateSpanSpec -> SpanProcessorM (Span Attrs))
       -> SpanProcessorM ()
   , spanProcessorSpecOnSpanEnd
       :: EndedSpan

@@ -5,6 +5,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
@@ -106,10 +107,12 @@ module OTel.API.Core.Internal
   , SpanName(..)
   , MutableSpan(..)
   , Span(..)
+  , freezeSpan
   , EndedSpan(..)
   , toEndedSpan
   , SpanParentSource(.., Implicit, Explicit)
   , SpanParent(.., Root, ChildOf)
+  , spanParentContext
   , SpanKind(.., Server, Client, Producer, Consumer, Internal)
   , SpanStatus(.., Unset, OK, Error)
   ) where
@@ -675,7 +678,7 @@ data Tracer = Tracer
   , tracerNow :: IO Timestamp
   , tracerStartSpan :: SpanSpec -> IO MutableSpan
   , tracerProcessSpan :: EndedSpan -> IO ()
-  , tracerContextBackend :: ContextBackend Span
+  , tracerContextBackend :: ContextBackend (Span AttrsBuilder)
   , tracerSpanAttrsLimits :: SpanAttrsLimits
   , tracerSpanEventAttrsLimits :: SpanEventAttrsLimits
   , tracerSpanLinkAttrsLimits :: SpanLinkAttrsLimits
@@ -990,7 +993,7 @@ buildSpanUpdater
    . (Monad m)
   => m Timestamp
   -> UpdateSpanSpec
-  -> m (Span -> Span)
+  -> m (Span AttrsBuilder -> Span AttrsBuilder)
 buildSpanUpdater getTimestamp updateSpanSpec = do
   newSpanEvents <- do
     fmap SpanEvents do
@@ -1040,10 +1043,10 @@ instance IsString SpanName where
   fromString = SpanName . Text.pack
 
 newtype MutableSpan = MutableSpan
-  { mutableSpanSpanKey :: ContextKey Span
+  { mutableSpanSpanKey :: ContextKey (Span AttrsBuilder)
   }
 
-data Span = Span
+data Span (attrs :: AttrsFor -> Type) = Span
   { spanParent :: SpanParent
   , spanContext :: SpanContext
   , spanName :: SpanName
@@ -1051,11 +1054,27 @@ data Span = Span
   , spanStart :: Timestamp
   , spanEnd :: Maybe Timestamp
   , spanKind :: SpanKind
-  , spanAttrs :: AttrsBuilder 'AttrsForSpan
-  , spanLinks :: SpanLinks AttrsBuilder
-  , spanEvents :: SpanEvents AttrsBuilder
+  , spanAttrs :: attrs 'AttrsForSpan
+  , spanLinks :: SpanLinks attrs
+  , spanEvents :: SpanEvents attrs
   , spanIsRecording :: Bool
   }
+
+freezeSpan
+  :: SpanLinkAttrsLimits
+  -> SpanEventAttrsLimits
+  -> SpanAttrsLimits
+  -> Span AttrsBuilder
+  -> Span Attrs
+freezeSpan spanLinkAttrsLimits spanEventAttrsLimits spanAttrsLimits span =
+  span
+    { spanAttrs =
+        runAttrsBuilder (spanAttrs span) spanAttrsLimits
+    , spanLinks =
+        freezeAllSpanLinkAttrs spanLinkAttrsLimits $ spanLinks span
+    , spanEvents =
+        freezeAllSpanEventAttrs spanEventAttrsLimits $ spanEvents span
+    }
 
 data EndedSpan = EndedSpan
   { endedSpanParent :: SpanParent
@@ -1075,27 +1094,26 @@ toEndedSpan
   -> SpanLinkAttrsLimits
   -> SpanEventAttrsLimits
   -> SpanAttrsLimits
-  -> Span
+  -> Span AttrsBuilder
   -> EndedSpan
 toEndedSpan defaultSpanEnd spanLinkAttrsLimits spanEventAttrsLimits spanAttrsLimits span =
   EndedSpan
-    { endedSpanParent = spanParent span
-    , endedSpanContext = spanContext span
-    , endedSpanName = spanName span
-    , endedSpanStatus = spanStatus span
-    , endedSpanStart = spanStart span
+    { endedSpanParent = spanParent frozenSpan
+    , endedSpanContext = spanContext frozenSpan
+    , endedSpanName = spanName frozenSpan
+    , endedSpanStatus = spanStatus frozenSpan
+    , endedSpanStart = spanStart frozenSpan
     , endedSpanEnd =
-        case spanEnd span of
+        case spanEnd frozenSpan of
           Nothing -> defaultSpanEnd
           Just endedAt -> endedAt
-    , endedSpanKind = spanKind span
-    , endedSpanAttrs =
-        runAttrsBuilder (spanAttrs span) spanAttrsLimits
-    , endedSpanLinks =
-        freezeAllSpanLinkAttrs spanLinkAttrsLimits $ spanLinks span
-    , endedSpanEvents =
-        freezeAllSpanEventAttrs spanEventAttrsLimits $ spanEvents span
+    , endedSpanKind = spanKind frozenSpan
+    , endedSpanAttrs = spanAttrs frozenSpan
+    , endedSpanLinks = spanLinks frozenSpan
+    , endedSpanEvents = spanEvents frozenSpan
     }
+  where
+  frozenSpan = freezeSpan spanLinkAttrsLimits spanEventAttrsLimits spanAttrsLimits span
 
 data SpanParentSource
   = SpanParentSourceImplicit
@@ -1124,6 +1142,11 @@ pattern Root <- SpanParentRoot where
 pattern ChildOf :: SpanContext -> SpanParent
 pattern ChildOf sc <- SpanParentChildOf sc where
   ChildOf sc = SpanParentChildOf sc
+
+spanParentContext :: SpanParent -> Maybe SpanContext
+spanParentContext = \case
+  SpanParentRoot -> Nothing
+  SpanParentChildOf sc -> Just sc
 
 {-# COMPLETE Root, ChildOf :: SpanParent #-}
 
