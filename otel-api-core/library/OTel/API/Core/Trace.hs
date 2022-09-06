@@ -96,25 +96,13 @@ module OTel.API.Core.Trace
   , spanName
   , spanStatus
   , spanStart
-  , spanEnd
+  , spanFrozenAt
   , spanKind
   , spanAttrs
   , spanLinks
   , spanEvents
   , spanIsRecording
-
-  , EndedSpan
-  , toEndedSpan
-  , endedSpanParent
-  , endedSpanContext
-  , endedSpanName
-  , endedSpanStatus
-  , endedSpanStart
-  , endedSpanEnd
-  , endedSpanKind
-  , endedSpanAttrs
-  , endedSpanLinks
-  , endedSpanEvents
+  , spanInstrumentationScope
 
   , SpanParentSource(..)
   , SpanParent(..)

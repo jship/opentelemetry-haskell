@@ -42,12 +42,12 @@ import GHC.Stack (SrcLoc(..))
 import OTel.API.Context (ContextT(..), ContextKey, getAttachedContextKey, getContext, updateContext)
 import OTel.API.Context.Internal (unsafeAttachContext)
 import OTel.API.Core
-  ( AttrsFor(AttrsForSpan), KV(..), NewSpanSpec(..), Span(spanContext, spanEnd, spanIsRecording)
-  , SpanParent(..), SpanParentSource(..), SpanSpec(..), TimestampSource(..), AttrsBuilder
-  , buildSpanSpec, recordException, toEndedSpan, pattern CODE_FILEPATH, pattern CODE_FUNCTION
-  , pattern CODE_LINENO, pattern CODE_NAMESPACE
+  ( AttrsFor(AttrsForSpan), KV(..), NewSpanSpec(..)
+  , Span(spanContext, spanFrozenAt, spanIsRecording), SpanParent(..), SpanParentSource(..)
+  , SpanSpec(..), TimestampSource(..), AttrsBuilder, buildSpanSpec, recordException
+  , pattern CODE_FILEPATH, pattern CODE_FUNCTION, pattern CODE_LINENO, pattern CODE_NAMESPACE
   )
-import OTel.API.Core.Internal (MutableSpan(..), Tracer(..), buildSpanUpdater)
+import OTel.API.Core.Internal (MutableSpan(..), Tracer(..), buildSpanUpdater, freezeSpan)
 import OTel.API.Trace.Core (MonadTraceContext(..), MonadTracing(..), MonadTracingEnv(..))
 import Prelude hiding (span)
 import qualified Control.Exception.Safe as Safe
@@ -102,14 +102,14 @@ instance (MonadIO m, MonadMask m) => MonadTracing (TracingT m) where
       timestamp <- liftIO now
       liftIO
         $ tracerProcessSpan
-        $ toEndedSpan
+        $ freezeSpan
             timestamp
             spanLinkAttrsLimits
             spanEventAttrsLimits
             spanAttrsLimits
             span
       void $ updateContext spanKey \s ->
-        s { spanIsRecording = False, spanEnd = Just timestamp }
+        s { spanIsRecording = False, spanFrozenAt = Just timestamp }
       where
       Tracer
         { tracerNow = now

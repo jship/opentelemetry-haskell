@@ -108,8 +108,6 @@ module OTel.API.Core.Internal
   , MutableSpan(..)
   , Span(..)
   , freezeSpan
-  , EndedSpan(..)
-  , toEndedSpan
   , SpanParentSource(.., Implicit, Explicit)
   , SpanParent(.., Root, ChildOf)
   , spanParentContext
@@ -677,7 +675,7 @@ data Tracer = Tracer
   { tracerInstrumentationScope :: InstrumentationScope
   , tracerNow :: IO Timestamp
   , tracerStartSpan :: SpanSpec -> IO MutableSpan
-  , tracerProcessSpan :: EndedSpan -> IO ()
+  , tracerProcessSpan :: Span Attrs -> IO ()
   , tracerContextBackend :: ContextBackend (Span AttrsBuilder)
   , tracerSpanAttrsLimits :: SpanAttrsLimits
   , tracerSpanEventAttrsLimits :: SpanEventAttrsLimits
@@ -1046,71 +1044,44 @@ newtype MutableSpan = MutableSpan
   { mutableSpanSpanKey :: ContextKey (Span AttrsBuilder)
   }
 
+-- TODO: Add reference to Resource?
+-- See https://opentelemetry.io/docs/reference/specification/trace/sdk/#additional-span-interfaces
 data Span (attrs :: AttrsFor -> Type) = Span
   { spanParent :: SpanParent
   , spanContext :: SpanContext
   , spanName :: SpanName
   , spanStatus :: SpanStatus
   , spanStart :: Timestamp
-  , spanEnd :: Maybe Timestamp
+  , spanFrozenAt :: SpanFrozenAt attrs
   , spanKind :: SpanKind
   , spanAttrs :: attrs 'AttrsForSpan
   , spanLinks :: SpanLinks attrs
   , spanEvents :: SpanEvents attrs
   , spanIsRecording :: Bool
+  , spanInstrumentationScope :: InstrumentationScope
   }
 
+type family SpanFrozenAt (attrs :: AttrsFor -> Type) :: Type where
+  SpanFrozenAt AttrsBuilder = Maybe Timestamp
+  SpanFrozenAt Attrs = Timestamp
+
 freezeSpan
-  :: SpanLinkAttrsLimits
+  :: Timestamp
+  -> SpanLinkAttrsLimits
   -> SpanEventAttrsLimits
   -> SpanAttrsLimits
   -> Span AttrsBuilder
   -> Span Attrs
-freezeSpan spanLinkAttrsLimits spanEventAttrsLimits spanAttrsLimits span =
+freezeSpan defaultSpanFrozenAt spanLinkAttrsLimits spanEventAttrsLimits spanAttrsLimits span =
   span
-    { spanAttrs =
+    { spanFrozenAt = Maybe.fromMaybe defaultSpanFrozenAt $ spanFrozenAt span
+    , spanAttrs =
         runAttrsBuilder (spanAttrs span) spanAttrsLimits
     , spanLinks =
         freezeAllSpanLinkAttrs spanLinkAttrsLimits $ spanLinks span
     , spanEvents =
         freezeAllSpanEventAttrs spanEventAttrsLimits $ spanEvents span
     }
-
-data EndedSpan = EndedSpan
-  { endedSpanParent :: SpanParent
-  , endedSpanContext :: SpanContext
-  , endedSpanName :: SpanName
-  , endedSpanStatus :: SpanStatus
-  , endedSpanStart :: Timestamp
-  , endedSpanEnd :: Timestamp
-  , endedSpanKind :: SpanKind
-  , endedSpanAttrs :: Attrs 'AttrsForSpan
-  , endedSpanLinks :: SpanLinks Attrs
-  , endedSpanEvents :: SpanEvents Attrs
-  } deriving stock (Eq, Show)
-
-toEndedSpan
-  :: Timestamp
-  -> SpanLinkAttrsLimits
-  -> SpanEventAttrsLimits
-  -> SpanAttrsLimits
-  -> Span AttrsBuilder
-  -> EndedSpan
-toEndedSpan defaultSpanEnd spanLinkAttrsLimits spanEventAttrsLimits spanAttrsLimits span =
-  EndedSpan
-    { endedSpanParent = spanParent frozenSpan
-    , endedSpanContext = spanContext frozenSpan
-    , endedSpanName = spanName frozenSpan
-    , endedSpanStatus = spanStatus frozenSpan
-    , endedSpanStart = spanStart frozenSpan
-    , endedSpanEnd = Maybe.fromMaybe defaultSpanEnd $ spanEnd frozenSpan
-    , endedSpanKind = spanKind frozenSpan
-    , endedSpanAttrs = spanAttrs frozenSpan
-    , endedSpanLinks = spanLinks frozenSpan
-    , endedSpanEvents = spanEvents frozenSpan
-    }
-  where
-  frozenSpan = freezeSpan spanLinkAttrsLimits spanEventAttrsLimits spanAttrsLimits span
 
 data SpanParentSource
   = SpanParentSourceImplicit

@@ -21,7 +21,7 @@ import Control.Concurrent.STM (STM, TVar, atomically, newTVarIO, readTVar, write
 import Control.Exception.Safe
   ( Exception(..), SomeException(..), MonadCatch, MonadMask, MonadThrow, catchAny
   )
-import Control.Monad (join)
+import Control.Monad (join, when)
 import Control.Monad.IO.Class (MonadIO(liftIO))
 import Control.Monad.IO.Unlift (MonadUnliftIO(..))
 import Control.Monad.Logger.Aeson
@@ -38,12 +38,11 @@ import OTel.API.Context
   )
 import OTel.API.Context.Internal (newContextKey)
 import OTel.API.Core
-  ( EndedSpan(..), SpanParent(..), SpanSpec(..), SpanStatus(..), Attrs, AttrsBuilder
-  , InstrumentationScope, SpanAttrsLimits, SpanContext, SpanEventAttrsLimits, SpanId
-  , SpanLinkAttrsLimits, Timestamp, TraceId, UpdateSpanSpec, defaultAttrsLimits, emptySpanContext
-  , spanContextIsRemote, spanContextSpanId, spanContextTraceFlags, spanContextTraceId
-  , spanContextTraceState, spanIdFromWords, spanParentContext, timestampFromNanoseconds
-  , traceIdFromWords
+  ( SpanParent(..), SpanSpec(..), SpanStatus(..), Attrs, AttrsBuilder, InstrumentationScope
+  , SpanAttrsLimits, SpanContext, SpanEventAttrsLimits, SpanId, SpanLinkAttrsLimits, Timestamp
+  , TraceId, UpdateSpanSpec, defaultAttrsLimits, emptySpanContext, spanContextIsRemote
+  , spanContextSpanId, spanContextTraceFlags, spanContextTraceId, spanContextTraceState
+  , spanIdFromWords, spanParentContext, timestampFromNanoseconds, traceIdFromWords
   )
 import OTel.API.Core.Internal
   ( MutableSpan(..), Span(..), TraceFlags(..), TraceState(..), Tracer(..), TracerProvider(..)
@@ -125,42 +124,53 @@ newTracerProvider ctxBackendTrace tracerProviderSpec = do
     Tracer
       { tracerInstrumentationScope = scope
       , tracerNow = now
-      , tracerStartSpan = startSpan prngRef logger spanProcessor
-      , tracerProcessSpan = spanProcessorOnSpanEnd spanProcessor
+      , tracerStartSpan = startSpan prngRef logger scope spanProcessor
+      , tracerProcessSpan = endSpan spanProcessor
       , tracerContextBackend = ctxBackendTrace
       , tracerSpanAttrsLimits = spanAttrsLimits
       , tracerSpanEventAttrsLimits = spanEventAttrsLimits
       , tracerSpanLinkAttrsLimits = spanLinkAttrsLimits
       }
 
+  endSpan :: SpanProcessor -> Span Attrs -> IO ()
+  endSpan spanProcessor endedSpan = do
+    when (spanIsRecording endedSpan) do
+      spanProcessorOnSpanEnd spanProcessor endedSpan
+
   startSpan
     :: MVar PRNG
     -> (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
+    -> InstrumentationScope
     -> SpanProcessor
     -> SpanSpec
     -> IO MutableSpan
-  startSpan prngRef logger spanProcessor spanSpec = do
+  startSpan prngRef logger scope spanProcessor spanSpec = do
     let spanParent = spanSpecParent spanSpec
     let mParentSpanContext = spanParentContext spanParent
 
     spanContext <- newSpanContext prngRef logger spanParent
-    mutableSpan@MutableSpan { mutableSpanSpanKey = spanKey } <- do
-      fmap MutableSpan $ newContextKey Span
-        { spanParent
-        , spanContext
-        , spanName = spanSpecName spanSpec
-        , spanStatus = SpanStatusUnset
-        , spanStart = spanSpecStart spanSpec
-        , spanEnd = Nothing
-        , spanKind = spanSpecKind spanSpec
-        , spanAttrs = spanSpecAttrs spanSpec
-        , spanLinks = spanSpecLinks spanSpec
-        , spanEvents = mempty
-        , spanIsRecording = True -- TODO: Implement!
-        }
+    let span = Span
+          { spanParent
+          , spanContext
+          , spanName = spanSpecName spanSpec
+          , spanStatus = SpanStatusUnset
+          , spanStart = spanSpecStart spanSpec
+          , spanFrozenAt = Nothing
+          , spanKind = spanSpecKind spanSpec
+          , spanAttrs = spanSpecAttrs spanSpec
+          , spanLinks = spanSpecLinks spanSpec
+          , spanEvents = mempty
+          , spanIsRecording = True -- TODO: Implement!
+          , spanInstrumentationScope = scope
+          }
 
-    -- TODO: Fetch baggage from context and pass along too
-    spanProcessorOnSpanStart spanProcessor mParentSpanContext $ spanUpdater spanKey
+    mutableSpan@MutableSpan { mutableSpanSpanKey = spanKey } <- do
+      fmap MutableSpan $ newContextKey span
+
+    when (spanIsRecording span) do
+      -- TODO: Fetch baggage from context and pass along too
+      spanProcessorOnSpanStart spanProcessor mParentSpanContext $ spanUpdater spanKey
+
     pure mutableSpan
 
   newSpanContext
@@ -203,7 +213,8 @@ newTracerProvider ctxBackendTrace tracerProviderSpec = do
   spanUpdater spanKey updateSpanSpec =
     flip runContextT ctxBackendTrace do
       updater <- buildSpanUpdater (liftIO now) updateSpanSpec
-      fmap (freezeSpan spanLinkAttrsLimits spanEventAttrsLimits spanAttrsLimits) do
+      frozenAt <- liftIO now
+      fmap (freezeSpan frozenAt spanLinkAttrsLimits spanEventAttrsLimits spanAttrsLimits) do
         updateContext spanKey updater
 
   TracerProviderSpec
@@ -232,7 +243,7 @@ data SpanProcessor = SpanProcessor
       -> (UpdateSpanSpec -> SpanProcessorM (Span Attrs))
       -> IO ()
   , spanProcessorOnSpanEnd
-      :: EndedSpan
+      :: Span Attrs
       -> IO ()
   , spanProcessorShutdown
       :: IO ()
@@ -369,7 +380,7 @@ data SpanProcessorSpec = SpanProcessorSpec
       :: Maybe SpanContext -- Parent span context pulled from the context
       -> (UpdateSpanSpec -> SpanProcessorM (Span Attrs))
       -> SpanProcessorM ()
-  , spanProcessorSpecOnSpanEnd :: EndedSpan -> SpanProcessorM ()
+  , spanProcessorSpecOnSpanEnd :: Span Attrs -> SpanProcessorM ()
   , spanProcessorSpecShutdown :: SpanProcessorM ()
   , spanProcessorSpecShutdownTimeout :: Int
   , spanProcessorSpecForceFlush :: SpanProcessorM ()
