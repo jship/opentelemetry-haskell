@@ -9,6 +9,7 @@
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE GADTs #-}
 module OTel.SDK.Trace.Internal
   ( -- * Disclaimer
     -- $disclaimer
@@ -17,11 +18,15 @@ module OTel.SDK.Trace.Internal
 
 import Control.Applicative (Applicative(..))
 import Control.Concurrent (MVar, newMVar, withMVar)
+import Control.Concurrent.Async (Async, waitCatch, withAsync)
 import Control.Concurrent.STM (STM, TVar, atomically, newTVarIO, readTVar, writeTVar)
+import Control.Concurrent.STM.TBMQueue
 import Control.Exception.Safe
-  ( Exception(..), SomeException(..), MonadCatch, MonadMask, MonadThrow, catchAny
+  ( Exception(..), SomeException(..), MonadCatch, MonadMask, MonadThrow, catchAny, finally
   )
 import Control.Monad (join, when)
+import Control.Monad.Base (MonadBase(..))
+import Control.Monad.Cont (cont, runCont)
 import Control.Monad.IO.Class (MonadIO(liftIO))
 import Control.Monad.IO.Unlift (MonadUnliftIO(..))
 import Control.Monad.Logger.Aeson
@@ -29,7 +34,9 @@ import Control.Monad.Logger.Aeson
   , MonadLogger, SeriesElem, logError
   )
 import Control.Monad.Reader (ReaderT(..))
+import Control.Monad.Trans.Control (MonadBaseControl(..))
 import Data.Aeson (object)
+import Data.Foldable (traverse_)
 import Data.Kind (Type)
 import Data.Monoid (Ap(..))
 import Data.Text (Text)
@@ -338,11 +345,80 @@ buildSpanProcessor logger spanProcessorSpec = do
     , spanProcessorSpecOnException = onSyncEx
     } = spanProcessorSpec
 
-simpleSpanProcessor :: SpanProcessor
-simpleSpanProcessor = mempty -- TODO: Implement!
+-- TODO: Implement!
+simpleSpanProcessor :: SpanProcessorSpec
+simpleSpanProcessor =
+  defaultSpanProcessorSpec
+    { spanProcessorSpecName = "simple"
+    , spanProcessorSpecOnSpanStart = mempty
+    , spanProcessorSpecOnSpanEnd = mempty
+    , spanProcessorSpecShutdown = mempty
+    , spanProcessorSpecForceFlush = mempty
+    }
 
-batchedSpanProcessor :: SpanProcessor
-batchedSpanProcessor = mempty -- TODO: Implement!
+data BatchingSpanProcessorSpec = BatchingSpanProcessorSpec
+  { batchingSpanProcessorSpecExporter :: SpanExporter
+  , batchingSpanProcessorSpecMaxQueueSize :: Int
+  , batchingSpanProcessorSpecScheduledDelayMicros :: Int
+  , batchingSpanProcessorSpecMaxExportBatchSize :: Int
+  }
+
+defaultBatchingSpanProcessorSpec
+  :: SpanExporter
+  -> BatchingSpanProcessorSpec
+defaultBatchingSpanProcessorSpec spanExporter =
+  BatchingSpanProcessorSpec
+    { batchingSpanProcessorSpecExporter = spanExporter
+    , batchingSpanProcessorSpecMaxQueueSize = 2048
+    , batchingSpanProcessorSpecScheduledDelayMicros = 5_000_000
+    , batchingSpanProcessorSpecMaxExportBatchSize = 512
+    }
+
+-- TODO: Implement!
+withBatchingSpanProcessor
+  :: (MonadBaseControl IO m)
+  => BatchingSpanProcessorSpec
+  -> (SpanProcessorSpec -> m a)
+  -> m a
+withBatchingSpanProcessor batchingSpanProcessorSpec f =
+  f $ defaultSpanProcessorSpec
+    { spanProcessorSpecName
+    , spanProcessorSpecOnSpanEnd = \batch -> do
+        liftIO (spanExporterExport $ batchFromList [batch]) >>= \case
+          Nothing -> pure () -- N.B. The exporter was shutdown
+          Just SpanExportResultSuccess -> pure ()
+          Just SpanExportResultFailure -> do
+            logError $ "Failed to export span batch" :# metaOnSpanEnd
+    , spanProcessorSpecShutdown = do
+        liftIO spanExporterShutdown
+    , spanProcessorSpecForceFlush = do
+        liftIO spanExporterForceFlush
+    }
+  where
+  metaOnSpanEnd = mkLoggingMeta "onSpanEnd"
+
+  mkLoggingMeta :: Text -> [SeriesElem]
+  mkLoggingMeta method =
+    [ "spanProcessor" .= object
+        [ "name" .= spanProcessorSpecName
+        , "method" .= method
+        ]
+    ]
+
+  spanProcessorSpecName :: Text
+  spanProcessorSpecName = "batching"
+
+  BatchingSpanProcessorSpec
+    { batchingSpanProcessorSpecExporter =
+        SpanExporter
+          { spanExporterExport
+          , spanExporterShutdown
+          , spanExporterForceFlush
+          }
+--    , batchingSpanProcessorSpecMaxQueueSize = 2048
+--    , batchingSpanProcessorSpecScheduledDelayMicros = 5_000_000
+--    , batchingSpanProcessorSpecMaxExportBatchSize = 512
+    } = batchingSpanProcessorSpec
 
 type SpanProcessorM :: Type -> Type
 newtype SpanProcessorM a = SpanProcessorM
@@ -510,6 +586,7 @@ instance Semigroup SpanExportResult where
 instance Monoid SpanExportResult where
   mempty = SpanExportResultSuccess
 
+-- Export function returns only if the exporter is shutdown.
 data SpanExporter = SpanExporter
   { spanExporterExport :: Batch (Span Attrs) -> IO (Maybe SpanExportResult)
   , spanExporterShutdown :: IO ()
@@ -546,7 +623,7 @@ buildSpanExporter logger spanExporterSpec = do
       }
 
   defaultTimeout :: Int
-  defaultTimeout = 5_000_000
+  defaultTimeout = 10_000_000
 
   metaExport = mkLoggingMeta "export"
   metaShutdown = mkLoggingMeta "shutdown"
@@ -664,6 +741,33 @@ defaultSystemSeed = unsafePerformIO createSystemSeed
 defaultTraceContextBackend :: ContextBackend (Span AttrsBuilder)
 defaultTraceContextBackend = unsafePerformIO $ liftIO unsafeNewContextBackend
 {-# NOINLINE defaultTraceContextBackend #-}
+
+--foo :: (MonadBaseControl IO m) => Int -> Int -> m a -> m a
+foo queueSize workerCount action = do
+  queue <- liftBase $ newTBMQueueIO queueSize
+  withAll (replicate workerCount $ withAsyncLifted $ mkWorker queue) \workers -> do
+    action `finally` stopWorkers queue workers
+
+mkWorker :: (MonadBase IO m) => TBMQueue Int -> m ()
+mkWorker _queue = pure ()
+
+stopWorkers :: (MonadBase IO m) => TBMQueue Int -> [Async ()] -> m ()
+stopWorkers queue workers = do
+  liftBase do
+    atomically $ closeTBMQueue queue
+    traverse_ waitCatch workers
+
+withAsyncLifted
+  :: (MonadBaseControl IO m)
+  => m a
+  -> (Async (StM m a) -> m b)
+  -> m b
+withAsyncLifted action k =
+  restoreM =<< liftBaseWith \runInIO -> do
+    withAsync (runInIO action) (runInIO . k)
+
+withAll :: [(a -> b) -> b] -> ([a] -> b) -> b
+withAll withFuncs = runCont (mapM cont withFuncs)
 
 -- $disclaimer
 --

@@ -40,8 +40,10 @@ library
   ghc-options: -Wall -fwarn-tabs -Wincomplete-uni-patterns -Wredundant-constraints
   build-depends:
       aeson
+    , async
     , base >=4.11.1.0 && <5
     , clock
+    , monad-control
     , monad-logger-aeson
     , mtl >=2.3
     , mwc-random
@@ -50,6 +52,7 @@ library
     , otel-api-trace
     , safe-exceptions
     , stm
+    , stm-chans
     , text
     , transformers-base
     , unliftio-core
