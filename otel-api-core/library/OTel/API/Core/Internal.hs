@@ -149,7 +149,7 @@ instance KV (AttrsBuilder af) where
   type KVConstraints (AttrsBuilder af) = ToAttrVal
   (.@) = go
     where
-    go :: forall to from. (ToAttrVal from to) => Key to -> from -> (AttrsBuilder af)
+    go :: forall to from. (ToAttrVal from to) => Key to -> from -> AttrsBuilder af
     go k v =
       AttrsBuilder \attrsLimits ->
         Attrs $ HashMap.singleton (unKey k) $ SomeAttr Attr
@@ -319,7 +319,7 @@ instance Semigroup (AttrsBuilder af) where
       AttrsLimits { attrsLimitsCount } = attrsLimits
 
 instance Monoid (AttrsBuilder af) where
-  mempty = AttrsBuilder \_attrsLimits -> Attrs $ HashMap.empty
+  mempty = AttrsBuilder \_attrsLimits -> Attrs HashMap.empty
   mappend = (<>)
 
 data AttrsFor
@@ -723,7 +723,7 @@ traceIdFromWords = TraceId
 
 -- TODO: Get hex string
 -- TODO: Get byte array
-data SpanId = SpanId
+newtype SpanId = SpanId
   { spanIdLo :: Word64
   } deriving stock (Eq, Show)
 
@@ -1103,10 +1103,7 @@ toEndedSpan defaultSpanEnd spanLinkAttrsLimits spanEventAttrsLimits spanAttrsLim
     , endedSpanName = spanName frozenSpan
     , endedSpanStatus = spanStatus frozenSpan
     , endedSpanStart = spanStart frozenSpan
-    , endedSpanEnd =
-        case spanEnd frozenSpan of
-          Nothing -> defaultSpanEnd
-          Just endedAt -> endedAt
+    , endedSpanEnd = Maybe.fromMaybe defaultSpanEnd $ spanEnd frozenSpan
     , endedSpanKind = spanKind frozenSpan
     , endedSpanAttrs = spanAttrs frozenSpan
     , endedSpanLinks = spanLinks frozenSpan

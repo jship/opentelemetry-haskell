@@ -7,6 +7,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE StrictData #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE UndecidableInstances #-}
 module OTel.SDK.Trace.Internal
   ( -- * Disclaimer
@@ -180,7 +181,7 @@ newTracerProvider ctxBackendTrace tracerProviderSpec = do
                 spanId <- idGeneratorSpecGenSpanId defaultIdGeneratorSpec
                 pure (traceId, spanId)
           SpanParentChildOf scParent ->
-            liftA2 (,) (pure $ spanContextTraceId scParent) genSpanId
+            fmap (spanContextTraceId scParent,) genSpanId
               `catchAny` \(SomeException ex) -> do
                 logError $ "Falling back to default span ID gen due to exception" :#
                   [ "exception" .= displayException ex ]
@@ -272,32 +273,38 @@ buildSpanProcessor logger spanProcessorSpec = do
   spanProcessor shutdownRef =
     SpanProcessor
       { spanProcessorOnSpanStart = \mParentSpanContext spanUpdater -> do
-          unlessShutdown shutdownRef $ pure do
-            runSpanProcessorM defaultTimeout loggingMeta'onSpanStart logger onTimeout onSyncEx do
-              spanProcessorSpecOnSpanStart mParentSpanContext spanUpdater
+          unlessShutdown shutdownRef do
+            pure do
+              run defaultTimeout metaOnSpanStart do
+                spanProcessorSpecOnSpanStart mParentSpanContext spanUpdater
       , spanProcessorOnSpanEnd = \endedSpan -> do
-          unlessShutdown shutdownRef $ pure do
-            runSpanProcessorM defaultTimeout loggingMeta'onSpanEnd logger onTimeout onSyncEx do
-              spanProcessorSpecOnSpanEnd endedSpan
+          unlessShutdown shutdownRef do
+            pure do
+              run defaultTimeout metaOnSpanEnd do
+                spanProcessorSpecOnSpanEnd endedSpan
       , spanProcessorShutdown = do
           unlessShutdown shutdownRef do
             writeTVar shutdownRef True
             pure do
-              runSpanProcessorM spanProcessorSpecShutdownTimeout loggingMeta'shutdown logger onTimeout onSyncEx do
+              run shutdownTimeout metaShutdown do
                 spanProcessorSpecShutdown
       , spanProcessorForceFlush = do
-          unlessShutdown shutdownRef $ pure do
-            runSpanProcessorM spanProcessorSpecForceFlushTimeout loggingMeta'forceFlush logger onTimeout onSyncEx do
-              spanProcessorSpecForceFlush
+          unlessShutdown shutdownRef do
+            pure do
+              run forceFlushTimeout metaForceFlush do
+                spanProcessorSpecForceFlush
       }
 
-  defaultTimeout :: Int
-  defaultTimeout = 10000000
+  run :: Int -> [SeriesElem] -> SpanProcessorM () -> IO ()
+  run = runSpanProcessorM logger onTimeout onSyncEx
 
-  loggingMeta'onSpanStart = mkLoggingMeta "onSpanStart"
-  loggingMeta'onSpanEnd = mkLoggingMeta "onSpanEnd"
-  loggingMeta'shutdown = mkLoggingMeta "shutdown"
-  loggingMeta'forceFlush = mkLoggingMeta "forceFlush"
+  defaultTimeout :: Int
+  defaultTimeout = 5_000_000
+
+  metaOnSpanStart = mkLoggingMeta "onSpanStart"
+  metaOnSpanEnd = mkLoggingMeta "onSpanEnd"
+  metaShutdown = mkLoggingMeta "shutdown"
+  metaForceFlush = mkLoggingMeta "forceFlush"
 
   mkLoggingMeta :: Text -> [SeriesElem]
   mkLoggingMeta method =
@@ -312,9 +319,9 @@ buildSpanProcessor logger spanProcessorSpec = do
     , spanProcessorSpecOnSpanStart
     , spanProcessorSpecOnSpanEnd
     , spanProcessorSpecShutdown
-    , spanProcessorSpecShutdownTimeout
+    , spanProcessorSpecShutdownTimeout = shutdownTimeout
     , spanProcessorSpecForceFlush
-    , spanProcessorSpecForceFlushTimeout
+    , spanProcessorSpecForceFlushTimeout = forceFlushTimeout
     , spanProcessorSpecOnTimeout = onTimeout
     , spanProcessorSpecOnSynchronousException = onSyncEx
     } = spanProcessorSpec
@@ -339,45 +346,36 @@ newtype SpanProcessorM a = SpanProcessorM
       ) via (Ap (LoggingT IO) a)
 
 runSpanProcessorM
-  :: Int
+  :: (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
+  -> OnTimeout ()
+  -> OnSynchronousException ()
+  -> Int
   -> [SeriesElem]
-  -> (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
-  -> ([SeriesElem] -> OnTimeout ())
-  -> ([SeriesElem] -> OnSynchronousException ())
   -> SpanProcessorM ()
   -> IO ()
-runSpanProcessorM timeoutMicros pairs logger onTimeout onSyncEx action = do
+runSpanProcessorM logger onTimeout onSyncEx timeoutMicros pairs action = do
   flip runLoggingT logger do
     mResult <- withRunInIO \runInIO -> do
       timeout timeoutMicros $ runInIO do
         unSpanProcessorM action `catchAny` \someEx -> do
-          runOnSynchronousException (onSyncEx pairs) someEx
+          runOnSynchronousException onSyncEx someEx pairs
     case mResult of
       Just () -> pure ()
-      Nothing -> runOnTimeout (onTimeout pairs) timeoutMicros
+      Nothing -> runOnTimeout onTimeout timeoutMicros pairs
 
 data SpanProcessorSpec = SpanProcessorSpec
-  { spanProcessorSpecName
-      :: Text
+  { spanProcessorSpecName :: Text
   , spanProcessorSpecOnSpanStart
       :: Maybe SpanContext -- Parent span context pulled from the context
       -> (UpdateSpanSpec -> SpanProcessorM (Span Attrs))
       -> SpanProcessorM ()
-  , spanProcessorSpecOnSpanEnd
-      :: EndedSpan
-      -> SpanProcessorM ()
-  , spanProcessorSpecShutdown
-      :: SpanProcessorM ()
-  , spanProcessorSpecShutdownTimeout
-      :: Int
-  , spanProcessorSpecForceFlush
-      :: SpanProcessorM ()
-  , spanProcessorSpecForceFlushTimeout
-      :: Int
-  , spanProcessorSpecOnTimeout
-      :: [SeriesElem] -> OnTimeout ()
-  , spanProcessorSpecOnSynchronousException
-      :: [SeriesElem] -> OnSynchronousException ()
+  , spanProcessorSpecOnSpanEnd :: EndedSpan -> SpanProcessorM ()
+  , spanProcessorSpecShutdown :: SpanProcessorM ()
+  , spanProcessorSpecShutdownTimeout :: Int
+  , spanProcessorSpecForceFlush :: SpanProcessorM ()
+  , spanProcessorSpecForceFlushTimeout :: Int
+  , spanProcessorSpecOnTimeout :: OnTimeout ()
+  , spanProcessorSpecOnSynchronousException :: OnSynchronousException ()
   }
 
 defaultSpanProcessorSpec :: SpanProcessorSpec
@@ -390,12 +388,14 @@ defaultSpanProcessorSpec =
     , spanProcessorSpecShutdownTimeout = 30_000_000
     , spanProcessorSpecForceFlush = mempty
     , spanProcessorSpecForceFlushTimeout = 30_000_000
-    , spanProcessorSpecOnTimeout = \pairs -> do
+    , spanProcessorSpecOnTimeout = do
         timeoutMicros <- askTimeoutMicros
+        pairs <- askTimeoutMetadata
         logError $ "Action did not complete within timeout" :#
           "timeoutMicros" .= timeoutMicros : pairs
-    , spanProcessorSpecOnSynchronousException = \pairs -> do
+    , spanProcessorSpecOnSynchronousException = do
         SomeException ex <- askException
+        pairs <- askExceptionMetadata
         logError $ "Ignoring exception" :#
           "exception" .= displayException ex : pairs
     }
@@ -450,34 +450,40 @@ newPRNGRef seed = do
     newMVar prng
 
 newtype OnSynchronousException a = OnSynchronousException
-  { runOnSynchronousException :: SomeException -> LoggingT IO a
+  { runOnSynchronousException :: SomeException -> [SeriesElem] -> LoggingT IO a
   } deriving
       ( Applicative, Functor, Monad, MonadIO -- @base@
       , MonadCatch, MonadMask, MonadThrow -- @exceptions@
       , MonadUnliftIO -- @unliftio-core@
       , MonadLogger -- @monad-logger@
-      ) via (ReaderT SomeException (LoggingT IO))
+      ) via (ReaderT SomeException (ReaderT [SeriesElem] (LoggingT IO)))
     deriving
       ( Semigroup, Monoid -- @base@
-      ) via (Ap (ReaderT SomeException (LoggingT IO)) a)
+      ) via (Ap (ReaderT SomeException (ReaderT [SeriesElem] (LoggingT IO))) a)
 
 askException :: OnSynchronousException SomeException
-askException = OnSynchronousException \someEx -> pure someEx
+askException = OnSynchronousException \someEx _pairs -> pure someEx
+
+askExceptionMetadata :: OnSynchronousException [SeriesElem]
+askExceptionMetadata = OnSynchronousException \_someEx pairs -> pure pairs
 
 newtype OnTimeout a = OnTimeout
-  { runOnTimeout :: Int -> LoggingT IO a
+  { runOnTimeout :: Int -> [SeriesElem] -> LoggingT IO a
   } deriving
       ( Applicative, Functor, Monad, MonadIO -- @base@
       , MonadCatch, MonadMask, MonadThrow -- @exceptions@
       , MonadUnliftIO -- @unliftio-core@
       , MonadLogger -- @monad-logger@
-      ) via (ReaderT Int (LoggingT IO))
+      ) via (ReaderT Int (ReaderT [SeriesElem] (LoggingT IO)))
     deriving
       ( Semigroup, Monoid -- @base@
-      ) via (Ap (ReaderT Int (LoggingT IO)) a)
+      ) via (Ap (ReaderT Int (ReaderT [SeriesElem] (LoggingT IO))) a)
 
 askTimeoutMicros :: OnTimeout Int
-askTimeoutMicros = OnTimeout \timeoutMicros -> pure timeoutMicros
+askTimeoutMicros = OnTimeout \timeoutMicros _pairs -> pure timeoutMicros
+
+askTimeoutMetadata :: OnTimeout [SeriesElem]
+askTimeoutMetadata = OnTimeout \_timeoutMicros pairs -> pure pairs
 
 unlessShutdown :: (Monoid a) => TVar Bool -> STM (IO a) -> IO a
 unlessShutdown shutdownRef action =

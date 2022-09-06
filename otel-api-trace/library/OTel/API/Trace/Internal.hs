@@ -42,13 +42,13 @@ import GHC.Stack (SrcLoc(..))
 import OTel.API.Context (ContextT(..), ContextKey, getAttachedContextKey, getContext, updateContext)
 import OTel.API.Context.Internal (unsafeAttachContext)
 import OTel.API.Core
-  ( AttrsFor(AttrsForSpan), KV(..), NewSpanSpec(..), Span(spanContext, spanIsRecording, spanEnd)
+  ( AttrsFor(AttrsForSpan), KV(..), NewSpanSpec(..), Span(spanContext, spanEnd, spanIsRecording)
   , SpanParent(..), SpanParentSource(..), SpanSpec(..), TimestampSource(..), AttrsBuilder
   , buildSpanSpec, recordException, toEndedSpan, pattern CODE_FILEPATH, pattern CODE_FUNCTION
   , pattern CODE_LINENO, pattern CODE_NAMESPACE
   )
 import OTel.API.Core.Internal (MutableSpan(..), Tracer(..), buildSpanUpdater)
-import OTel.API.Trace.Core (MonadTraceContext(..), MonadTracing(..))
+import OTel.API.Trace.Core (MonadTraceContext(..), MonadTracing(..), MonadTracingIO(..))
 import Prelude hiding (span)
 import qualified Control.Exception.Safe as Safe
 import qualified GHC.Stack as Stack
@@ -67,6 +67,10 @@ newtype TracingT m a = TracingT
       , MonadResource -- @resourcet@
       ) via (ReaderT Tracer m)
     deriving
+      ( MonadTrans -- @base@
+      , MonadTransControl -- @monad-control@
+      ) via (ReaderT Tracer)
+    deriving
       ( Semigroup, Monoid -- @base@
       ) via (Ap (ReaderT Tracer m) a)
 
@@ -76,18 +80,6 @@ instance (MonadReader r m) => MonadReader r (TracingT m) where
   local = mapTracingT . local
 
 instance (MonadRWS r w s m) => MonadRWS r w s (TracingT m)
-
-instance MonadTrans TracingT where
-  lift action =
-    TracingT \_tracer ->
-      action
-
-instance MonadTransControl TracingT where
-  type StT TracingT a = a
-  liftWith action =
-    TracingT \tracer ->
-      action $ \t -> runTracingT t tracer
-  restoreT = lift
 
 instance (MonadIO m, MonadMask m) => MonadTracing (TracingT m) where
   traceCS cs newSpanSpec action =
@@ -177,6 +169,9 @@ instance (MonadIO m, MonadMask m) => MonadTracing (TracingT m) where
 
       Tracer { tracerNow = now } = tracer
 
+instance (MonadIO m, MonadMask m) => MonadTracingIO (TracingT m) where
+  askTracerIO = TracingT pure
+
 instance (MonadIO m) => MonadTraceContext (TracingT m) where
   getSpanContext mutableSpan =
     TracingT \tracer -> do
@@ -194,9 +189,7 @@ mapTracingT
    . (m a -> n b)
   -> TracingT m a
   -> TracingT n b
-mapTracingT f action =
-  TracingT \tracer ->
-    f $ runTracingT action tracer
+mapTracingT f action = TracingT $ f . runTracingT action
 
 -- $disclaimer
 --

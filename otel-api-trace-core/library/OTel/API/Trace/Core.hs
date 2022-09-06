@@ -7,10 +7,12 @@ module OTel.API.Trace.Core
     trace
   , trace_
   , MonadTracing(..)
+  , MonadTracingIO(..)
   , MonadTraceContext(..)
   , MutableSpan
   ) where
 
+import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.IO.Unlift (MonadUnliftIO(withRunInIO))
 import Control.Monad.Logger (LoggingT)
 import Control.Monad.Trans.Accum (AccumT)
@@ -24,7 +26,7 @@ import Control.Monad.Trans.Reader (ReaderT(..))
 import Control.Monad.Trans.Resource (ResourceT)
 import Control.Monad.Trans.Select (SelectT)
 import GHC.Stack (CallStack, HasCallStack, callStack)
-import OTel.API.Core (AttrsBuilder, NewSpanSpec, Span, SpanContext, UpdateSpanSpec)
+import OTel.API.Core (AttrsBuilder, NewSpanSpec, Span, SpanContext, Tracer, UpdateSpanSpec)
 import OTel.API.Core.Internal (MutableSpan(..))
 import Prelude
 import qualified Control.Monad.Trans.RWS.CPS as RWS.CPS
@@ -78,6 +80,26 @@ instance (MonadTracing m, MonadUnliftIO m) => MonadTracing (ResourceT m) where
   traceCS cs newSpanSpec f = do
     withRunInIO \runInIO -> do
       runInIO $ traceCS cs newSpanSpec f
+
+class (MonadIO m, MonadTracing m) => MonadTracingIO m where
+  askTracerIO :: m Tracer
+
+  default askTracerIO
+    :: (MonadTrans t, MonadTracingIO n, m ~ t n)
+    => m Tracer
+  askTracerIO = lift askTracerIO
+
+instance (MonadTracingIO m) => MonadTracingIO (ExceptT e m)
+instance (MonadTracingIO m) => MonadTracingIO (IdentityT m)
+instance (MonadTracingIO m) => MonadTracingIO (MaybeT m)
+instance (MonadTracingIO m) => MonadTracingIO (ReaderT r m)
+instance (MonadTracingIO m) => MonadTracingIO (State.Lazy.StateT r m)
+instance (MonadTracingIO m) => MonadTracingIO (State.Strict.StateT r m)
+instance (MonadTracingIO m, Monoid w) => MonadTracingIO (RWS.Lazy.RWST r w s m)
+instance (MonadTracingIO m, Monoid w) => MonadTracingIO (RWS.Strict.RWST r w s m)
+instance (MonadTracingIO m, Monoid w) => MonadTracingIO (Writer.Lazy.WriterT w m)
+instance (MonadTracingIO m, Monoid w) => MonadTracingIO (Writer.Strict.WriterT w m)
+instance (MonadTracingIO m) => MonadTracingIO (LoggingT m)
 
 class (Monad m) => MonadTraceContext m where
   getSpanContext :: MutableSpan -> m SpanContext
