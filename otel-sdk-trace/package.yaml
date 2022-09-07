@@ -32,7 +32,6 @@ library:
   - async
   - base >=4.11.1.0 && <5
   - clock
-  - monad-control
   - monad-logger-aeson
   - mtl >=2.3
   - mwc-random
