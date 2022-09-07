@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE LambdaCase #-}
@@ -9,22 +10,23 @@
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE GADTs #-}
 module OTel.SDK.Trace.Internal
   ( -- * Disclaimer
     -- $disclaimer
     module OTel.SDK.Trace.Internal -- TODO: Explicit exports
   ) where
 
-import Control.Applicative (Alternative(..), Applicative(..))
-import Control.Concurrent (MVar, newMVar, withMVar)
-import Control.Concurrent.Async (Async, waitCatch, withAsync)
-import Control.Concurrent.STM (STM, TVar, atomically, newTVarIO, readTVar, writeTVar)
+import Control.Applicative (Applicative(..))
+import Control.Concurrent (MVar, newMVar, threadDelay, withMVar)
+import Control.Concurrent.Async
+  ( AsyncCancelled(..), Async, uninterruptibleCancel, waitCatch, withAsync
+  )
+import Control.Concurrent.STM (STM, atomically, newTVarIO, readTVar, writeTVar)
 import Control.Concurrent.STM.TBMQueue
 import Control.Exception.Safe
   ( Exception(..), SomeException(..), MonadCatch, MonadMask, MonadThrow, catchAny, finally
   )
-import Control.Monad (join, when)
+import Control.Monad (join, unless, void, when)
 import Control.Monad.Cont (cont, runCont)
 import Control.Monad.IO.Class (MonadIO(liftIO))
 import Control.Monad.IO.Unlift (MonadUnliftIO(..))
@@ -34,7 +36,8 @@ import Control.Monad.Logger.Aeson
   )
 import Control.Monad.Reader (ReaderT(..))
 import Data.Aeson (object)
-import Data.Foldable (for_)
+import Data.DList (DList)
+import Data.Foldable (traverse_)
 import Data.Kind (Type)
 import Data.Monoid (Ap(..))
 import Data.Text (Text)
@@ -58,6 +61,9 @@ import System.IO.Unsafe (unsafePerformIO)
 import System.Random.MWC (Variate(..), GenIO, Seed, createSystemSeed, fromSeed, initialize, uniform)
 import System.Timeout (timeout)
 import qualified Control.Exception.Safe as Exception
+import qualified Data.DList as DList
+import qualified Data.List as List
+import qualified Data.List.Split as Split
 import qualified Data.Vector as Vector
 
 data TracerProviderSpec = TracerProviderSpec
@@ -348,8 +354,10 @@ data BatchingSpanProcessorSpec = BatchingSpanProcessorSpec
   { batchingSpanProcessorSpecExporter :: SpanExporter (Batch (Span Attrs))
   , batchingSpanProcessorSpecMaxQueueSize :: Int
   , batchingSpanProcessorSpecScheduledDelayMicros :: Int
+  , batchingSpanProcessorSpecExportTimeoutMicros :: Int
   , batchingSpanProcessorSpecMaxExportBatchSize :: Int
   , batchingSpanProcessorSpecWorkerCount :: Int
+  , batchingSpanProcessorSpecLogger :: Loc -> LogSource -> LogLevel -> LogStr -> IO ()
   }
 
 defaultBatchingSpanProcessorSpec
@@ -360,103 +368,169 @@ defaultBatchingSpanProcessorSpec spanExporter =
     { batchingSpanProcessorSpecExporter = spanExporter
     , batchingSpanProcessorSpecMaxQueueSize = 2_048
     , batchingSpanProcessorSpecScheduledDelayMicros = 5_000_000
+    , batchingSpanProcessorSpecExportTimeoutMicros = 30_000_000
     , batchingSpanProcessorSpecMaxExportBatchSize = 512
     , batchingSpanProcessorSpecWorkerCount = 10
+    , batchingSpanProcessorSpecLogger = mempty
     }
+
+data BatchCommand a
+  = BatchCommandAddItem a
+  | BatchCommandProcessBatch
+  | BatchCommandForceFlush
 
 withBatchingSpanProcessor
   :: BatchingSpanProcessorSpec
-  -> (SpanProcessorSpec -> SpanProcessorM a)
-  -> SpanProcessorM a
+  -> (SpanProcessorSpec -> IO a)
+  -> IO a
 withBatchingSpanProcessor batchingSpanProcessorSpec action = do
-  queue <- liftIO $ newTBMQueueIO maxQueueSize
-  batchNumElemsRef <- liftIO $ newTVarIO 0
-  batchElemsRef <- liftIO $ newTVarIO []
-  withAll (replicate workerCount $ mkWorker queue batchNumElemsRef batchElemsRef) \workers -> do
-    let spanProcessorSpec = mkSpanProcessorSpec queue workers
-    action spanProcessorSpec `finally` stopWorkers queue workers
+  commandQueue <- liftIO $ newTBMQueueIO maxQueueSize
+  withAsync (exportTimer commandQueue) \exportTimerThread -> do
+    withAsync (processCommandQueue commandQueue) \processorThread -> do
+      let spanProcessorSpec = mkSpanProcessorSpec commandQueue exportTimerThread processorThread
+      action spanProcessorSpec `finally` do
+        unlessShutdown (isClosedTBMQueue commandQueue) do
+          pure $ shutdown commandQueue exportTimerThread processorThread
   where
   mkSpanProcessorSpec
-    :: TBMQueue (Span Attrs)
-    -> [Async ()]
+    :: TBMQueue (BatchCommand (Span Attrs))
+    -> Async ()
+    -> Async ()
     -> SpanProcessorSpec
-  mkSpanProcessorSpec queue workers =
+  mkSpanProcessorSpec commandQueue exportTimerThread processorThread =
     defaultSpanProcessorSpec
       { spanProcessorSpecName
       , spanProcessorSpecOnSpanEnd = \span -> do
-          unlessShutdown (isClosedTBMQueue queue) do
-            pure do
-              mResult <- liftIO $ atomically $ tryWriteTBMQueue queue span
-              case mResult of
-                Nothing -> logDebug $ "Cannot write to batch queue as it is closed" :#
-                  metaOnSpanEnd
-                Just False -> logError $ "Batch queue is full" :# metaOnSpanEnd
-                Just True -> pure ()
+          unlessShutdown (isClosedTBMQueue commandQueue) do
+            sendCommand_ commandQueue (BatchCommandAddItem span) metaOnSpanEnd
       , spanProcessorSpecShutdown = do
-          unlessShutdown (isClosedTBMQueue queue) do
-            pure do
-              liftIO spanExporterShutdown
+          unlessShutdown (isClosedTBMQueue commandQueue) do
+            pure $ liftIO $ shutdown commandQueue exportTimerThread processorThread
       , spanProcessorSpecForceFlush = do
-          unlessShutdown (isClosedTBMQueue queue) do
-            pure do
-              liftIO spanExporterForceFlush
+          unlessShutdown (isClosedTBMQueue commandQueue) do
+            sendCommand_ commandQueue BatchCommandForceFlush metaForceFlush
       }
 
---  mkBatchSender
---    :: TBMQueue (Span Attrs)
---    -> TVar Int
---    -> TVar [Span Attrs]
---    -> (Async () -> SpanProcessorM a)
---    -> SpanProcessorM a
---  mkBatchSender queue batchNumElemsRef batchElemsRef = withAsyncUnlifted go
---    where
---    go = do
---      unlessShutdown (isClosedTBMQueue queue) do
---        numElems <- readTVar batchNumElemsRef
---        pure do
---          go
-
-  mkWorker
-    :: TBMQueue (Span Attrs)
-    -> TVar Int
-    -> TVar [Span Attrs]
-    -> (Async () -> SpanProcessorM a)
-    -> SpanProcessorM a
-  mkWorker queue batchNumElemsRef batchElemsRef = withAsyncUnlifted go
+  processCommandQueue :: TBMQueue (BatchCommand (Span Attrs)) -> IO ()
+  processCommandQueue commandQueue = go mempty
     where
+    go :: DList (Span Attrs) -> IO ()
+    go !spans = do
+      join $ atomically do
+        readTBMQueue commandQueue >>= \case
+          Nothing -> do
+            pure do
+              forceFlush spans
+              spanExporterShutdown
+          Just BatchCommandForceFlush -> do
+            pure do
+              forceFlush spans
+              go mempty
+          Just (BatchCommandAddItem span) -> do
+            pure $ go (DList.snoc spans span)
+          Just BatchCommandProcessBatch -> do
+            pure do
+              let (batch, rest) = List.splitAt maxExportBatchSize $ DList.toList spans
+              unless (List.null batch) do
+                processBatch batch
+              go (DList.fromList rest)
+
+    processBatch :: [Span Attrs] -> IO ()
+    processBatch spans = do
+      mResult <- timeout exportTimeoutMicros $ spanExporterExport $ batchFromList spans
+      flip runLoggingT logger do
+        case mResult of
+          Nothing -> do
+            logError $ "Processor timed out when exporting batch" :# metaProcessBatch
+          Just Nothing -> do
+            logDebug $ "Processor cannot export batch as exporter is shut down" :# metaProcessBatch
+          Just (Just SpanExportResultFailure) -> do
+            logError $ "Processor cannot export batch due to exporter failure" :# metaProcessBatch
+          Just (Just SpanExportResultSuccess) -> pure ()
+
+    forceFlush :: DList (Span Attrs) -> IO ()
+    forceFlush spans = do
+      let batches = Split.chunksOf maxExportBatchSize $ DList.toList spans
+      traverse_ processBatch batches
+      spanExporterForceFlush
+
+  exportTimer :: TBMQueue (BatchCommand (Span Attrs)) -> IO ()
+  exportTimer commandQueue = go
+    where
+    go :: IO ()
     go = do
-      join $ liftIO $ atomically $ sendIfNeeded <|> fillBatch
---          Nothing -> do
---            pure do
---              pure ()
---          Just span -> do
---            pure do
---              go
+      threadDelay scheduledDelayMicros
+      unlessShutdown (isClosedTBMQueue commandQueue) do
+        sender <- sendCommand commandQueue BatchCommandProcessBatch metaExportTimer
+        pure do
+          sender >>= \case
+            Nothing -> pure ()
+            Just True -> go
+            Just False -> go
 
-    sendIfNeeded :: STM (SpanProcessorM ())
-    sendIfNeeded = do
-      pure do
-        pure ()
+  shutdown :: TBMQueue (BatchCommand (Span Attrs)) -> Async () -> Async () -> IO ()
+  shutdown commandQueue exportTimerThread processorThread= do
+    flip runLoggingT logger do
+      -- Closing the queue ultimately signals shutdown.
+      liftIO $ atomically $ closeTBMQueue commandQueue
+      -- We cancel the export timer thread, as we don't want it to be stuck
+      -- in a 'threadDelay' forcing us to wait for that delay in our cleanup.
+      liftIO $ uninterruptibleCancel exportTimerThread
+      liftIO (waitCatch processorThread) >>= \case
+        Right () -> pure ()
+        Left (SomeException ex) -> do
+          logError $ "Unhandled exception when stopping batch export timer" :#
+            "exception" .= displayException ex : metaCleanup
+      liftIO (waitCatch exportTimerThread) >>= \case
+        Right () -> pure ()
+        Left someEx@(SomeException ex) -> do
+          case fromException someEx of
+            Nothing -> do
+              logError $ "Unhandled exception when stopping batch export timer" :#
+                "exception" .= displayException ex : metaCleanup
+            Just AsyncCancelled -> do
+              logDebug $ "Successfully cancelled batch export timer" :# metaCleanup
 
-    fillBatch :: STM (SpanProcessorM ())
-    fillBatch = do
-      pure do
-        pure ()
+  sendCommand
+    :: (MonadIO m)
+    => TBMQueue (BatchCommand (Span Attrs))
+    -> BatchCommand (Span Attrs)
+    -> [SeriesElem]
+    -> STM (m (Maybe Bool))
+  sendCommand commandQueue command pairs = do
+    mResult <- tryWriteTBMQueue commandQueue command
+    pure do
+      flip runLoggingT logger do
+        case mResult of
+          Just True -> pure ()
+          Just False -> logError $ "Batch queue is full" :# pairs
+          Nothing -> logDebug $ "Cannot write to batch queue as it is closed" :# pairs
+        pure mResult
 
-  stopWorkers :: TBMQueue (Span Attrs) -> [Async ()] -> SpanProcessorM ()
-  stopWorkers queue workers = do
-    unlessShutdown (isClosedTBMQueue queue) do
-      pure do
-        liftIO $ atomically $ closeTBMQueue queue
-        for_ workers \worker -> do
-          liftIO (waitCatch worker) >>= \case
-            Left (SomeException ex) -> do
-              logError $ "Unhandled exception when stopping batch worker" :#
-                mkLoggingMeta "stopWorkers"
-            Right () -> pure ()
+  sendCommand_
+    :: (MonadIO m)
+    => TBMQueue (BatchCommand (Span Attrs))
+    -> BatchCommand (Span Attrs)
+    -> [SeriesElem]
+    -> STM (m ())
+  sendCommand_ commandQueue command pairs = do
+    io <- sendCommand commandQueue command pairs
+    pure $ void io
 
   metaOnSpanEnd :: [SeriesElem]
   metaOnSpanEnd = mkLoggingMeta "onSpanEnd"
+
+  metaForceFlush :: [SeriesElem]
+  metaForceFlush = mkLoggingMeta "forceFlush"
+
+  metaExportTimer :: [SeriesElem]
+  metaExportTimer = mkLoggingMeta "exportTimer"
+
+  metaCleanup :: [SeriesElem]
+  metaCleanup = mkLoggingMeta "cleanup"
+
+  metaProcessBatch :: [SeriesElem]
+  metaProcessBatch = mkLoggingMeta "processBatch"
 
   mkLoggingMeta :: Text -> [SeriesElem]
   mkLoggingMeta method =
@@ -482,8 +556,10 @@ withBatchingSpanProcessor batchingSpanProcessorSpec action = do
           }
     , batchingSpanProcessorSpecMaxQueueSize = maxQueueSize
     , batchingSpanProcessorSpecScheduledDelayMicros = scheduledDelayMicros
+    , batchingSpanProcessorSpecExportTimeoutMicros = exportTimeoutMicros
     , batchingSpanProcessorSpecMaxExportBatchSize = maxExportBatchSize
     , batchingSpanProcessorSpecWorkerCount = workerCount
+    , batchingSpanProcessorSpecLogger = logger
     } = batchingSpanProcessorSpec
 
 type SpanProcessorM :: Type -> Type
@@ -651,7 +727,7 @@ instance Semigroup SpanExportResult where
 instance Monoid SpanExportResult where
   mempty = SpanExportResultSuccess
 
--- Export function returns only if the exporter is shutdown.
+-- Export function returns 'Nothing' only if the exporter is shutdown.
 data SpanExporter spans = SpanExporter
   { spanExporterExport :: spans -> IO (Maybe SpanExportResult)
   , spanExporterShutdown :: IO ()

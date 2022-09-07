@@ -43,7 +43,7 @@ library
     , async
     , base >=4.11.1.0 && <5
     , clock
-    , monad-control
+    , dlist
     , monad-logger-aeson
     , mtl >=2.3
     , mwc-random
@@ -51,6 +51,7 @@ library
     , otel-api-core
     , otel-api-trace
     , safe-exceptions
+    , split
     , stm
     , stm-chans
     , text
