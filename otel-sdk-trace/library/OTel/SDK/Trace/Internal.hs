@@ -109,12 +109,19 @@ withTracerProviderIO
   -> IO a
 withTracerProviderIO tracerProviderSpec f = do
   Exception.bracket
-    (newTracerProvider tracerProviderSpec)
+    (newTracerProviderIO tracerProviderSpec)
     shutdownTracerProvider
     f
 
-newTracerProvider :: TracerProviderSpec -> IO TracerProvider
-newTracerProvider tracerProviderSpec = do
+newTracerProvider
+  :: forall m
+   . (MonadIO m)
+  => TracerProviderSpec
+  -> m TracerProvider
+newTracerProvider = liftIO . newTracerProvider
+
+newTracerProviderIO :: TracerProviderSpec -> IO TracerProvider
+newTracerProviderIO tracerProviderSpec = do
   shutdownRef <- liftIO $ newTVarIO False
   prngRef <- newPRNGRef seed
   spanProcessor <- liftIO $ foldMap (buildSpanProcessor logger) spanProcessorSpecs
@@ -246,11 +253,11 @@ newTracerProvider tracerProviderSpec = do
     , tracerProviderSpecTraceContextBackend = ctxBackendTrace
     } = tracerProviderSpec
 
-shutdownTracerProvider :: TracerProvider -> IO ()
-shutdownTracerProvider = tracerProviderShutdown
+shutdownTracerProvider :: forall m. (MonadIO m) => TracerProvider -> m ()
+shutdownTracerProvider = liftIO . tracerProviderShutdown
 
-forceFlushTracerProvider :: TracerProvider -> IO ()
-forceFlushTracerProvider = tracerProviderForceFlush
+forceFlushTracerProvider :: forall m. (MonadIO m) => TracerProvider -> m ()
+forceFlushTracerProvider = liftIO . tracerProviderForceFlush
 
 data SpanProcessor = SpanProcessor
   { spanProcessorOnSpanStart
