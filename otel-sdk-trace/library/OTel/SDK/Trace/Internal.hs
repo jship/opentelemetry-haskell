@@ -93,8 +93,21 @@ defaultTracerProviderSpec =
     , tracerProviderSpecTraceContextBackend = defaultTraceContextBackend
     }
 
-withTracerProvider :: TracerProviderSpec -> (TracerProvider -> IO a) -> IO a
-withTracerProvider tracerProviderSpec f = do
+withTracerProvider
+  :: forall m a
+   . (MonadUnliftIO m)
+  => TracerProviderSpec
+  -> (TracerProvider -> m a)
+  -> m a
+withTracerProvider spec action =
+  withRunInIO \runInIO -> withTracerProviderIO spec (runInIO . action)
+
+withTracerProviderIO
+  :: forall a
+   . TracerProviderSpec
+  -> (TracerProvider -> IO a)
+  -> IO a
+withTracerProviderIO tracerProviderSpec f = do
   Exception.bracket
     (newTracerProvider tracerProviderSpec)
     shutdownTracerProvider
@@ -350,69 +363,156 @@ simpleSpanProcessor =
     , spanProcessorSpecForceFlush = mempty
     }
 
+data SimpleSpanProcessorSpec = SimpleSpanProcessorSpec
+  { simpleSpanProcessorSpecExporter :: SpanExporter (Batch (Span Attrs))
+  , simpleSpanProcessorSpecLogger :: Loc -> LogSource -> LogLevel -> LogStr -> IO ()
+  }
+
+defaultSimpleSpanProcessorSpec :: SimpleSpanProcessorSpec
+defaultSimpleSpanProcessorSpec =
+  SimpleSpanProcessorSpec
+    { simpleSpanProcessorSpecExporter = noopSpanExporter
+    , simpleSpanProcessorSpecLogger = mempty
+    }
+
+withSimpleSpanProcessor
+  :: (MonadUnliftIO m)
+  => SimpleSpanProcessorSpec
+  -> (SpanProcessorSpec -> m a)
+  -> m a
+withSimpleSpanProcessor spec action =
+  withRunInIO \runInIO -> withSimpleSpanProcessorIO spec (runInIO . action)
+
+withSimpleSpanProcessorIO
+  :: SimpleSpanProcessorSpec
+  -> (SpanProcessorSpec -> IO a)
+  -> IO a
+withSimpleSpanProcessorIO simpleSpanProcessorSpec action = do
+  commandQueue <- liftIO $ newTBMQueueIO maxQueueSize
+  withBatchingSpanProcessorIO commandQueue batchingSpanProcessorSpec \spanProcessorSpec -> do
+    action $ patchSpanProcessor commandQueue spanProcessorSpec
+  where
+  patchSpanProcessor commandQueue spanProcessorSpec =
+    spanProcessorSpec
+      { spanProcessorSpecOnSpanEnd = \span -> do
+          unlessShutdown (isClosedTBMQueue commandQueue) do
+            add <- sendCommand_ logger commandQueue (BatchCommandAddItem span) metaOnSpanEnd
+            process <- sendCommand_ logger commandQueue BatchCommandProcessBatch metaOnSpanEnd
+            pure $ add <> process
+      }
+
+  metaOnSpanEnd :: [SeriesElem]
+  metaOnSpanEnd = mkLoggingMeta "onSpanEnd"
+
+  -- This and the equivalent one in 'withBatchingSpanProcessorIO' should get
+  -- factored out at some point.
+  mkLoggingMeta :: Text -> [SeriesElem]
+  mkLoggingMeta method =
+    [ "spanProcessorSpec" .= object
+        [ "name" .= spanProcessorSpecName
+        , "method" .= method
+        ]
+    , "maxQueueSize" .= maxQueueSize
+    , "scheduledDelayMicros" .= scheduledDelayMicros
+    , "exportTimeoutMicros" .= exportTimeoutMicros
+    , "maxExportBatchSize" .= maxExportBatchSize
+    ]
+
+  BatchingSpanProcessorSpec
+    { batchingSpanProcessorSpecName = spanProcessorSpecName
+    , batchingSpanProcessorSpecMaxQueueSize = maxQueueSize
+    , batchingSpanProcessorSpecScheduledDelayMicros = scheduledDelayMicros
+    , batchingSpanProcessorSpecExportTimeoutMicros = exportTimeoutMicros
+    , batchingSpanProcessorSpecMaxExportBatchSize = maxExportBatchSize
+    } = batchingSpanProcessorSpec
+
+  batchingSpanProcessorSpec =
+    defaultBatchingSpanProcessorSpec
+      { batchingSpanProcessorSpecExporter = spanExporter
+        -- This delay config is critical as it disables the export timer thread
+        -- in the batching internals. We do not need an export timer from the
+        -- simple span processor, as this processor will export immediately
+        -- after each span is added.
+      , batchingSpanProcessorSpecScheduledDelayMicros = 0
+      , batchingSpanProcessorSpecMaxExportBatchSize = 1
+      , batchingSpanProcessorSpecName = "simple"
+      , batchingSpanProcessorSpecLogger = logger
+      }
+
+  SimpleSpanProcessorSpec
+    { simpleSpanProcessorSpecExporter = spanExporter
+    , simpleSpanProcessorSpecLogger = logger
+    } = simpleSpanProcessorSpec
+
 data BatchingSpanProcessorSpec = BatchingSpanProcessorSpec
   { batchingSpanProcessorSpecExporter :: SpanExporter (Batch (Span Attrs))
   , batchingSpanProcessorSpecMaxQueueSize :: Int
   , batchingSpanProcessorSpecScheduledDelayMicros :: Int
   , batchingSpanProcessorSpecExportTimeoutMicros :: Int
   , batchingSpanProcessorSpecMaxExportBatchSize :: Int
-  , batchingSpanProcessorSpecWorkerCount :: Int
+  , batchingSpanProcessorSpecName :: Text
   , batchingSpanProcessorSpecLogger :: Loc -> LogSource -> LogLevel -> LogStr -> IO ()
   }
 
-defaultBatchingSpanProcessorSpec
-  :: SpanExporter (Batch (Span Attrs))
-  -> BatchingSpanProcessorSpec
-defaultBatchingSpanProcessorSpec spanExporter =
+defaultBatchingSpanProcessorSpec :: BatchingSpanProcessorSpec
+defaultBatchingSpanProcessorSpec =
   BatchingSpanProcessorSpec
-    { batchingSpanProcessorSpecExporter = spanExporter
+    { batchingSpanProcessorSpecExporter = noopSpanExporter
     , batchingSpanProcessorSpecMaxQueueSize = 2_048
     , batchingSpanProcessorSpecScheduledDelayMicros = 5_000_000
     , batchingSpanProcessorSpecExportTimeoutMicros = 30_000_000
     , batchingSpanProcessorSpecMaxExportBatchSize = 512
-    , batchingSpanProcessorSpecWorkerCount = 10
+    , batchingSpanProcessorSpecName = "batching"
     , batchingSpanProcessorSpecLogger = mempty
     }
 
-data BatchCommand a
-  = BatchCommandAddItem a
-  | BatchCommandProcessBatch
-  | BatchCommandForceFlush
-
 withBatchingSpanProcessor
-  :: BatchingSpanProcessorSpec
+  :: (MonadUnliftIO m)
+  => BatchingSpanProcessorSpec
+  -> (SpanProcessorSpec -> m a)
+  -> m a
+withBatchingSpanProcessor spec action = do
+  commandQueue <- liftIO $ newTBMQueueIO maxQueueSize
+  withRunInIO \runInIO -> do
+    withBatchingSpanProcessorIO commandQueue spec $ runInIO . action
+  where
+  BatchingSpanProcessorSpec
+    { batchingSpanProcessorSpecMaxQueueSize = maxQueueSize
+    } = spec
+
+withBatchingSpanProcessorIO
+  :: TBMQueue (BatchCommand (Span Attrs))
+  -> BatchingSpanProcessorSpec
   -> (SpanProcessorSpec -> IO a)
   -> IO a
-withBatchingSpanProcessor batchingSpanProcessorSpec action = do
-  commandQueue <- liftIO $ newTBMQueueIO maxQueueSize
-  withAsync (exportTimer commandQueue) \exportTimerThread -> do
-    withAsync (processCommandQueue commandQueue) \processorThread -> do
-      let spanProcessorSpec = mkSpanProcessorSpec commandQueue exportTimerThread processorThread
+withBatchingSpanProcessorIO commandQueue batchingSpanProcessorSpec action = do
+  withAsync checkedExportTimer \exportTimerThread -> do
+    withAsync processCommandQueue \processorThread -> do
+      let spanProcessorSpec = mkSpanProcessorSpec exportTimerThread processorThread
       action spanProcessorSpec `finally` do
         unlessShutdown (isClosedTBMQueue commandQueue) do
-          pure $ shutdown commandQueue exportTimerThread processorThread
+          pure $ shutdown exportTimerThread processorThread
   where
   mkSpanProcessorSpec
-    :: TBMQueue (BatchCommand (Span Attrs))
-    -> Async ()
+    :: Async ()
     -> Async ()
     -> SpanProcessorSpec
-  mkSpanProcessorSpec commandQueue exportTimerThread processorThread =
+  mkSpanProcessorSpec exportTimerThread processorThread =
     defaultSpanProcessorSpec
       { spanProcessorSpecName
       , spanProcessorSpecOnSpanEnd = \span -> do
           unlessShutdown (isClosedTBMQueue commandQueue) do
-            sendCommand_ commandQueue (BatchCommandAddItem span) metaOnSpanEnd
+            sendCommand_ logger commandQueue (BatchCommandAddItem span) metaOnSpanEnd
       , spanProcessorSpecShutdown = do
           unlessShutdown (isClosedTBMQueue commandQueue) do
-            pure $ liftIO $ shutdown commandQueue exportTimerThread processorThread
+            pure $ liftIO $ shutdown exportTimerThread processorThread
       , spanProcessorSpecForceFlush = do
           unlessShutdown (isClosedTBMQueue commandQueue) do
-            sendCommand_ commandQueue BatchCommandForceFlush metaForceFlush
+            sendCommand_ logger commandQueue BatchCommandForceFlush metaForceFlush
       }
 
-  processCommandQueue :: TBMQueue (BatchCommand (Span Attrs)) -> IO ()
-  processCommandQueue commandQueue = go mempty
+  processCommandQueue :: IO ()
+  processCommandQueue = go mempty
     where
     go :: DList (Span Attrs) -> IO ()
     go !spans = do
@@ -454,22 +554,34 @@ withBatchingSpanProcessor batchingSpanProcessorSpec action = do
       traverse_ processBatch batches
       spanExporterForceFlush
 
-  exportTimer :: TBMQueue (BatchCommand (Span Attrs)) -> IO ()
-  exportTimer commandQueue = go
+  -- If the configured export delay is not positive, then this function returns
+  -- immediately. This is useful behavior, considering that the simple span
+  -- processor also provided by this SDK is implemented in terms of this
+  -- batching span processor, just with a batch size of 1. In the simple span
+  -- processor case, we don't want a timer thread to be pumping process-batch
+  -- commands into the queue at all, and instead, the simple span processor
+  -- also sends a process-batch command after every span is added.
+  checkedExportTimer :: IO ()
+  checkedExportTimer =
+    when (scheduledDelayMicros > 0) do
+      exportTimer
+
+  exportTimer :: IO ()
+  exportTimer = go
     where
     go :: IO ()
     go = do
       threadDelay scheduledDelayMicros
       unlessShutdown (isClosedTBMQueue commandQueue) do
-        sender <- sendCommand commandQueue BatchCommandProcessBatch metaExportTimer
+        sender <- sendCommand logger commandQueue BatchCommandProcessBatch metaExportTimer
         pure do
           sender >>= \case
             Nothing -> pure ()
             Just True -> go
             Just False -> go
 
-  shutdown :: TBMQueue (BatchCommand (Span Attrs)) -> Async () -> Async () -> IO ()
-  shutdown commandQueue exportTimerThread processorThread= do
+  shutdown :: Async () -> Async () -> IO ()
+  shutdown exportTimerThread processorThread= do
     flip runLoggingT logger do
       -- Closing the queue ultimately signals shutdown.
       liftIO $ atomically $ closeTBMQueue commandQueue
@@ -490,32 +602,6 @@ withBatchingSpanProcessor batchingSpanProcessorSpec action = do
                 "exception" .= displayException ex : metaCleanup
             Just AsyncCancelled -> do
               logDebug $ "Successfully cancelled batch export timer" :# metaCleanup
-
-  sendCommand
-    :: (MonadIO m)
-    => TBMQueue (BatchCommand (Span Attrs))
-    -> BatchCommand (Span Attrs)
-    -> [SeriesElem]
-    -> STM (m (Maybe Bool))
-  sendCommand commandQueue command pairs = do
-    mResult <- tryWriteTBMQueue commandQueue command
-    pure do
-      flip runLoggingT logger do
-        case mResult of
-          Just True -> pure ()
-          Just False -> logError $ "Batch queue is full" :# pairs
-          Nothing -> logDebug $ "Cannot write to batch queue as it is closed" :# pairs
-        pure mResult
-
-  sendCommand_
-    :: (MonadIO m)
-    => TBMQueue (BatchCommand (Span Attrs))
-    -> BatchCommand (Span Attrs)
-    -> [SeriesElem]
-    -> STM (m ())
-  sendCommand_ commandQueue command pairs = do
-    io <- sendCommand commandQueue command pairs
-    pure $ void io
 
   metaOnSpanEnd :: [SeriesElem]
   metaOnSpanEnd = mkLoggingMeta "onSpanEnd"
@@ -540,12 +626,9 @@ withBatchingSpanProcessor batchingSpanProcessorSpec action = do
         ]
     , "maxQueueSize" .= maxQueueSize
     , "scheduledDelayMicros" .= scheduledDelayMicros
+    , "exportTimeoutMicros" .= exportTimeoutMicros
     , "maxExportBatchSize" .= maxExportBatchSize
-    , "workerCount" .= workerCount
     ]
-
-  spanProcessorSpecName :: Text
-  spanProcessorSpecName = "batching"
 
   BatchingSpanProcessorSpec
     { batchingSpanProcessorSpecExporter =
@@ -558,9 +641,42 @@ withBatchingSpanProcessor batchingSpanProcessorSpec action = do
     , batchingSpanProcessorSpecScheduledDelayMicros = scheduledDelayMicros
     , batchingSpanProcessorSpecExportTimeoutMicros = exportTimeoutMicros
     , batchingSpanProcessorSpecMaxExportBatchSize = maxExportBatchSize
-    , batchingSpanProcessorSpecWorkerCount = workerCount
+    , batchingSpanProcessorSpecName = spanProcessorSpecName
     , batchingSpanProcessorSpecLogger = logger
     } = batchingSpanProcessorSpec
+
+data BatchCommand a
+  = BatchCommandAddItem a
+  | BatchCommandProcessBatch
+  | BatchCommandForceFlush
+
+sendCommand
+  :: (MonadIO m)
+  => (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
+  -> TBMQueue (BatchCommand (Span Attrs))
+  -> BatchCommand (Span Attrs)
+  -> [SeriesElem]
+  -> STM (m (Maybe Bool))
+sendCommand logger commandQueue command pairs = do
+  mResult <- tryWriteTBMQueue commandQueue command
+  pure do
+    flip runLoggingT logger do
+      case mResult of
+        Just True -> pure ()
+        Just False -> logError $ "Batch queue is full" :# pairs
+        Nothing -> logDebug $ "Cannot write to batch queue as it is closed" :# pairs
+      pure mResult
+
+sendCommand_
+  :: (MonadIO m)
+  => (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
+  -> TBMQueue (BatchCommand (Span Attrs))
+  -> BatchCommand (Span Attrs)
+  -> [SeriesElem]
+  -> STM (m ())
+sendCommand_ logger commandQueue command pairs = do
+  io <- sendCommand logger commandQueue command pairs
+  pure $ void io
 
 type SpanProcessorM :: Type -> Type
 newtype SpanProcessorM a = SpanProcessorM
@@ -733,6 +849,14 @@ data SpanExporter spans = SpanExporter
   , spanExporterShutdown :: IO ()
   , spanExporterForceFlush :: IO ()
   }
+
+noopSpanExporter :: SpanExporter spans
+noopSpanExporter =
+  SpanExporter
+    { spanExporterExport = mempty
+    , spanExporterShutdown = mempty
+    , spanExporterForceFlush = mempty
+    }
 
 buildSpanExporter
   :: (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
