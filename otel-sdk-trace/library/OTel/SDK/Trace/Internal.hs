@@ -1010,6 +1010,8 @@ defaultSystemSeed :: Seed
 defaultSystemSeed = unsafePerformIO createSystemSeed
 {-# NOINLINE defaultSystemSeed #-}
 
+-- TODO: Move to @otel-api-trace@ for symmetry with @otel-api-baggage@?
+-- TODO: Wrap in a @TraceContextBackend@ newtype?
 defaultTraceContextBackend :: ContextBackend (Span AttrsBuilder)
 defaultTraceContextBackend = unsafePerformIO $ liftIO unsafeNewContextBackend
 {-# NOINLINE defaultTraceContextBackend #-}

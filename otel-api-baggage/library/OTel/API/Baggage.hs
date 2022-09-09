@@ -6,6 +6,9 @@ module OTel.API.Baggage
   , Internal.BaggageT
   , Internal.runBaggageT
   , Internal.mapBaggageT
+
+  , Internal.BaggageBackend
+  , Internal.defaultBaggageBackend
   ) where
 
 import OTel.API.Baggage.Core

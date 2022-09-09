@@ -14,6 +14,9 @@ module OTel.API.Baggage.Internal
     -- $disclaimer
     BaggageT(..)
   , mapBaggageT
+
+  , BaggageBackend(..)
+  , defaultBaggageBackend
   ) where
 
 import Control.Exception.Safe (MonadCatch, MonadMask, MonadThrow)
@@ -22,7 +25,7 @@ import Control.Monad.Base (MonadBase)
 import Control.Monad.Cont (MonadCont)
 import Control.Monad.Except (MonadError)
 import Control.Monad.Fix (MonadFix)
-import Control.Monad.IO.Class (MonadIO)
+import Control.Monad.IO.Class (MonadIO(liftIO))
 import Control.Monad.IO.Unlift (MonadUnliftIO)
 import Control.Monad.Logger (MonadLogger)
 import Control.Monad.RWS.Class (MonadRWS)
@@ -40,11 +43,14 @@ import OTel.API.Baggage.Core (MonadBaggage(..), Baggage)
 import OTel.API.Context
   ( ContextT(..), ContextBackend, attachContext, getAttachedContextKey, getContext
   )
+import OTel.API.Context.Internal (unsafeNewContextBackend)
+import OTel.API.Trace.Core (MonadTraceContext, MonadTracing, MonadTracingEnv)
 import Prelude hiding (span)
+import System.IO.Unsafe (unsafePerformIO)
 
 type BaggageT :: (Type -> Type) -> Type -> Type
 newtype BaggageT m a = BaggageT
-  { runBaggageT :: ContextBackend Baggage -> m a
+  { runBaggageT :: BaggageBackend -> m a
   } deriving
       ( Applicative, Functor, Monad, MonadFail, MonadFix, MonadIO -- @base@
       , MonadAccum w, MonadCont, MonadError e, MonadSelect r, MonadState s, MonadWriter w -- @mtl@
@@ -54,14 +60,15 @@ newtype BaggageT m a = BaggageT
       , MonadBaseControl b -- @monad-control@
       , MonadLogger -- @monad-logger@
       , MonadResource -- @resourcet@
-      ) via (ReaderT (ContextBackend Baggage) m)
+      , MonadTracing, MonadTracingEnv, MonadTraceContext -- @otel-api-trace-core@
+      ) via (ReaderT BaggageBackend m)
     deriving
       ( MonadTrans -- @base@
       , MonadTransControl -- @monad-control@
-      ) via (ReaderT (ContextBackend Baggage))
+      ) via (ReaderT BaggageBackend)
     deriving
       ( Semigroup, Monoid -- @base@
-      ) via (Ap (ReaderT (ContextBackend Baggage) m) a)
+      ) via (Ap (ReaderT BaggageBackend m) a)
 
 instance (MonadReader r m) => MonadReader r (BaggageT m) where
   ask = lift ask
@@ -72,17 +79,17 @@ instance (MonadRWS r w s m) => MonadRWS r w s (BaggageT m)
 
 instance (MonadIO m, MonadMask m) => MonadBaggage (BaggageT m) where
   getBaggage =
-    BaggageT \ctxBackend -> do
-      flip runContextT ctxBackend do
+    BaggageT \baggageBackend -> do
+      flip runContextT (unBaggageBackend baggageBackend) do
         getAttachedContextKey >>= \case
           Nothing -> pure mempty
           Just ctxKey -> getContext ctxKey
 
   setBaggage baggage action =
-    BaggageT \ctxBackend -> do
-      flip runContextT ctxBackend do
+    BaggageT \baggageBackend -> do
+      flip runContextT (unBaggageBackend baggageBackend) do
         attachContext "baggage" baggage \_ctxKey -> do
-          lift $ runBaggageT action ctxBackend
+          lift $ runBaggageT action baggageBackend
 
 mapBaggageT
   :: forall m n a b
@@ -90,6 +97,15 @@ mapBaggageT
   -> BaggageT m a
   -> BaggageT n b
 mapBaggageT f action = BaggageT $ f . runBaggageT action
+
+newtype BaggageBackend = BaggageBackend
+  { unBaggageBackend :: ContextBackend Baggage
+  }
+
+defaultBaggageBackend :: BaggageBackend
+defaultBaggageBackend =
+  unsafePerformIO $ fmap BaggageBackend $ liftIO unsafeNewContextBackend
+{-# NOINLINE defaultBaggageBackend #-}
 
 -- $disclaimer
 --

@@ -39,6 +39,7 @@ import Control.Monad.Writer.Class (MonadWriter)
 import Data.Kind (Type)
 import Data.Monoid (Ap(..))
 import GHC.Stack (SrcLoc(..))
+import OTel.API.Baggage.Core (MonadBaggage)
 import OTel.API.Context (ContextT(..), ContextKey, getAttachedContextKey, getContext, updateContext)
 import OTel.API.Context.Internal (unsafeAttachContext)
 import OTel.API.Core
@@ -65,6 +66,7 @@ newtype TracingT m a = TracingT
       , MonadBaseControl b -- @monad-control@
       , MonadLogger -- @monad-logger@
       , MonadResource -- @resourcet@
+      , MonadBaggage -- @otel-api-baggage-core@
       ) via (ReaderT Tracer m)
     deriving
       ( MonadTrans -- @base@

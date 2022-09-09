@@ -32,9 +32,10 @@ library:
   - monad-control
   - monad-logger
   - mtl >=2.3
-  - otel-api-core
-  - otel-api-context
   - otel-api-baggage-core
+  - otel-api-context
+  - otel-api-core
+  - otel-api-trace-core
   - resourcet
   - safe-exceptions
   - transformers
