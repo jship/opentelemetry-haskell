@@ -403,9 +403,20 @@ withSimpleSpanProcessorIO simpleSpanProcessorSpec action = do
     spanProcessorSpec
       { spanProcessorSpecOnSpanEnd = \span -> do
           unlessShutdown (isClosedTBMQueue commandQueue) do
-            add <- sendCommand_ logger commandQueue (BatchCommandAddItem span) metaOnSpanEnd
-            process <- sendCommand_ logger commandQueue BatchCommandProcessBatch metaOnSpanEnd
-            pure $ add <> process
+            (mResult, add) <- sendCommand logger commandQueue (BatchCommandAddItem span) metaOnSpanEnd
+            -- Here we case on the send result while still inside the same STM
+            -- transaction. This lets us conditionally decide what to do next:
+            -- If the queue was closed or the queue was full, we just run the
+            -- effects of attempting the add (which just logs accordingly). If
+            -- the queue was not full and the send succeeded (again, we're still
+            -- in that same transaction), then we also run the effects of
+            -- attempting to send a process-batch command.
+            case mResult of
+              Nothing -> pure add
+              Just False -> pure add
+              Just True -> do
+                process <- sendCommand_ logger commandQueue BatchCommandProcessBatch metaOnSpanEnd
+                pure $ add <> process
       }
 
   metaOnSpanEnd :: [SeriesElem]
@@ -580,9 +591,10 @@ withBatchingSpanProcessorIO commandQueue batchingSpanProcessorSpec action = do
     go = do
       threadDelay scheduledDelayMicros
       unlessShutdown (isClosedTBMQueue commandQueue) do
-        sender <- sendCommand logger commandQueue BatchCommandProcessBatch metaExportTimer
+        (mResult, sender) <- sendCommand logger commandQueue BatchCommandProcessBatch metaExportTimer
         pure do
-          sender >>= \case
+          sender
+          case mResult of
             Nothing -> pure ()
             Just True -> go
             Just False -> go
@@ -663,16 +675,15 @@ sendCommand
   -> TBMQueue (BatchCommand (Span Attrs))
   -> BatchCommand (Span Attrs)
   -> [SeriesElem]
-  -> STM (m (Maybe Bool))
+  -> STM (Maybe Bool, m ())
 sendCommand logger commandQueue command pairs = do
   mResult <- tryWriteTBMQueue commandQueue command
-  pure do
+  fmap (mResult,) $ pure do
     flip runLoggingT logger do
       case mResult of
         Just True -> pure ()
         Just False -> logError $ "Batch queue is full" :# pairs
         Nothing -> logDebug $ "Cannot write to batch queue as it is closed" :# pairs
-      pure mResult
 
 sendCommand_
   :: (MonadIO m)
@@ -682,7 +693,7 @@ sendCommand_
   -> [SeriesElem]
   -> STM (m ())
 sendCommand_ logger commandQueue command pairs = do
-  io <- sendCommand logger commandQueue command pairs
+  (_mResult, io) <- sendCommand logger commandQueue command pairs
   pure $ void io
 
 type SpanProcessorM :: Type -> Type
