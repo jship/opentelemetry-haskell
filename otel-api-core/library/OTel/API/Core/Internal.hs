@@ -22,6 +22,7 @@ module OTel.API.Core.Internal
 
     -- * General
     KV(..)
+  , IsTextKV
   , Key(..)
   , Timestamp(..)
   , timestampFromNanoseconds
@@ -164,6 +165,9 @@ instance KV (AttrsBuilder af) where
       val = toAttrVal @from @to v
       truncateText attrsLimits = Text.take (textLengthLimit attrsLimits)
       textLengthLimit = Maybe.fromMaybe (maxBound :: Int) . attrsLimitsValueLength
+
+class (k ~ Text, v ~ Text) => IsTextKV k v
+instance IsTextKV Text Text
 
 newtype Key a = Key
   { unKey :: Text

@@ -5,6 +5,7 @@ module OTel.API.Core
   , module OTel.API.Core.Trace
 
   , KV(..)
+  , IsTextKV
   , Key(..)
 
   , Timestamp

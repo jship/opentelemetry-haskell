@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.4.
+-- This file has been generated from package.yaml by hpack version 0.34.6.
 --
 -- see: https://github.com/sol/hpack
 
@@ -30,6 +30,7 @@ source-repository head
 library
   exposed-modules:
       OTel.API.Baggage.Core
+      OTel.API.Baggage.Core.Internal
   other-modules:
       Paths_otel_api_baggage_core
   hs-source-dirs:
