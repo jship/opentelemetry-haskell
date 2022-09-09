@@ -520,6 +520,8 @@ withBatchingSpanProcessorIO commandQueue batchingSpanProcessorSpec action = do
       { spanProcessorSpecName
       , spanProcessorSpecOnSpanEnd = \span -> do
           unlessShutdown (isClosedTBMQueue commandQueue) do
+            -- TODO: Check if 'Sampled' flag is set in 'TraceFlags' before
+            -- adding the span to the queue.
             sendCommand_ logger commandQueue (BatchCommandAddItem span) metaOnSpanEnd
       , spanProcessorSpecShutdown = do
           unlessShutdown (isClosedTBMQueue commandQueue) do
