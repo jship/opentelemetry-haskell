@@ -181,16 +181,18 @@ instance (MonadIO m, MonadMask m) => MonadTracingEnv (TracingT m) where
   askTracer = TracingT pure
 
 instance (MonadIO m, MonadMask m) => MonadTracingContext (TracingT m) where
-  getSpan mutableSpan =
+  getSpanContext mutableSpan =
     TracingT \tracer -> do
       flip runContextT (unSpanBackend $ tracerSpanBackend tracer) do
-        getContext $ mutableSpanSpanKey mutableSpan
+        fmap spanContext $ getContext $ mutableSpanSpanKey mutableSpan
 
   updateSpan mutableSpan updateSpanSpec =
     TracingT \tracer -> do
       flip runContextT (unSpanBackend $ tracerSpanBackend tracer) do
-        updateContext (mutableSpanSpanKey mutableSpan)
-          =<< buildSpanUpdater (liftIO $ tracerNow tracer) updateSpanSpec
+         _span <- do
+           updateContext (mutableSpanSpanKey mutableSpan)
+             =<< buildSpanUpdater (liftIO $ tracerNow tracer) updateSpanSpec
+         pure ()
 
 mapTracingT
   :: forall m n a b

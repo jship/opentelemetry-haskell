@@ -21,7 +21,7 @@ import Control.Monad.Trans.Maybe (MaybeT)
 import Control.Monad.Trans.Reader (ReaderT(..))
 import Control.Monad.Trans.Resource (ResourceT)
 import GHC.Stack (CallStack, HasCallStack, callStack)
-import OTel.API.Core (AttrsBuilder, NewSpanSpec, Span, Tracer, UpdateSpanSpec)
+import OTel.API.Core (NewSpanSpec, SpanContext, Tracer, UpdateSpanSpec)
 import OTel.API.Core.Internal (MutableSpan(..))
 import Prelude
 import qualified Control.Monad.Trans.RWS.Lazy as RWS.Lazy
@@ -75,20 +75,20 @@ instance (MonadTracing m, MonadUnliftIO m) => MonadTracing (ResourceT m) where
       runInIO $ traceCS cs newSpanSpec f
 
 class (MonadTracing m) => MonadTracingContext m where
-  getSpan :: MutableSpan -> m (Span AttrsBuilder)
-  updateSpan :: MutableSpan -> UpdateSpanSpec -> m (Span AttrsBuilder)
+  getSpanContext :: MutableSpan -> m SpanContext
+  updateSpan :: MutableSpan -> UpdateSpanSpec -> m ()
 
-  default getSpan
+  default getSpanContext
     :: (MonadTrans t, MonadTracingContext n, m ~ t n)
     => MutableSpan
-    -> m (Span AttrsBuilder)
-  getSpan = lift . getSpan
+    -> m SpanContext
+  getSpanContext = lift . getSpanContext
 
   default updateSpan
     :: (MonadTrans t, MonadTracingContext n, m ~ t n)
     => MutableSpan
     -> UpdateSpanSpec
-    -> m (Span AttrsBuilder)
+    -> m ()
   updateSpan ctxKey = lift . updateSpan ctxKey
 
 instance (MonadTracingContext m) => MonadTracingContext (ExceptT e m)
@@ -103,9 +103,9 @@ instance (MonadTracingContext m, Monoid w) => MonadTracingContext (Writer.Lazy.W
 instance (MonadTracingContext m, Monoid w) => MonadTracingContext (Writer.Strict.WriterT w m)
 instance (MonadTracingContext m) => MonadTracingContext (LoggingT m)
 instance (MonadTracingContext m, MonadUnliftIO m) => MonadTracingContext (ResourceT m) where
-  getSpan mutableSpan = do
+  getSpanContext mutableSpan = do
     withRunInIO \runInIO -> do
-      runInIO $ getSpan mutableSpan
+      runInIO $ getSpanContext mutableSpan
 
   updateSpan mutableSpan updateSpanSpec = do
     withRunInIO \runInIO -> do
