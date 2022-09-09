@@ -44,7 +44,7 @@ import OTel.API.Context
   ( ContextT(..), ContextBackend, attachContext, getAttachedContextKey, getContext
   )
 import OTel.API.Context.Internal (unsafeNewContextBackend)
-import OTel.API.Trace.Core (MonadTraceContext, MonadTracing, MonadTracingEnv)
+import OTel.API.Trace.Core (MonadTracingContext, MonadTracing, MonadTracingEnv)
 import Prelude hiding (span)
 import System.IO.Unsafe (unsafePerformIO)
 
@@ -60,7 +60,7 @@ newtype BaggageT m a = BaggageT
       , MonadBaseControl b -- @monad-control@
       , MonadLogger -- @monad-logger@
       , MonadResource -- @resourcet@
-      , MonadTracing, MonadTracingEnv, MonadTraceContext -- @otel-api-trace-core@
+      , MonadTracing, MonadTracingContext, MonadTracingEnv -- @otel-api-trace-core@
       ) via (ReaderT BaggageBackend m)
     deriving
       ( MonadTrans -- @base@

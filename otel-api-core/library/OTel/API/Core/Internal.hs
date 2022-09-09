@@ -61,6 +61,7 @@ module OTel.API.Core.Internal
   , TracerProvider(..)
   , getTracer
   , Tracer(..)
+  , SpanBackend(..)
   , SpanContext(..)
   , emptySpanContext
   , spanContextIsValid
@@ -681,10 +682,14 @@ data Tracer = Tracer
   , tracerNow :: IO Timestamp
   , tracerStartSpan :: SpanSpec -> IO MutableSpan
   , tracerProcessSpan :: Span Attrs -> IO ()
-  , tracerContextBackend :: ContextBackend (Span AttrsBuilder)
+  , tracerSpanBackend :: SpanBackend
   , tracerSpanAttrsLimits :: SpanAttrsLimits
   , tracerSpanEventAttrsLimits :: SpanEventAttrsLimits
   , tracerSpanLinkAttrsLimits :: SpanLinkAttrsLimits
+  }
+
+newtype SpanBackend = SpanBackend
+  { unSpanBackend :: ContextBackend (Span AttrsBuilder)
   }
 
 data SpanContext = SpanContext

@@ -15,6 +15,9 @@ module OTel.API.Trace.Internal
     -- $disclaimer
     TracingT(..)
   , mapTracingT
+
+  , SpanBackend(..)
+  , defaultSpanBackend
   ) where
 
 import Control.Exception.Safe (MonadCatch, MonadMask, MonadThrow, SomeException)
@@ -41,16 +44,19 @@ import Data.Monoid (Ap(..))
 import GHC.Stack (SrcLoc(..))
 import OTel.API.Baggage.Core (MonadBaggage)
 import OTel.API.Context (ContextT(..), ContextKey, getAttachedContextKey, getContext, updateContext)
-import OTel.API.Context.Internal (unsafeAttachContext)
+import OTel.API.Context.Internal (unsafeAttachContext, unsafeNewContextBackend)
 import OTel.API.Core
   ( AttrsFor(AttrsForSpan), KV(..), NewSpanSpec(..)
   , Span(spanContext, spanFrozenAt, spanIsRecording), SpanParent(..), SpanParentSource(..)
   , SpanSpec(..), TimestampSource(..), AttrsBuilder, buildSpanSpec, recordException
   , pattern CODE_FILEPATH, pattern CODE_FUNCTION, pattern CODE_LINENO, pattern CODE_NAMESPACE
   )
-import OTel.API.Core.Internal (MutableSpan(..), Tracer(..), buildSpanUpdater, freezeSpan)
-import OTel.API.Trace.Core (MonadTraceContext(..), MonadTracing(..), MonadTracingEnv(..))
+import OTel.API.Core.Internal
+  ( MutableSpan(..), SpanBackend(..), Tracer(..), buildSpanUpdater, freezeSpan
+  )
+import OTel.API.Trace.Core (MonadTracingContext(..), MonadTracing(..), MonadTracingEnv(..))
 import Prelude hiding (span)
+import System.IO.Unsafe (unsafePerformIO)
 import qualified Control.Exception.Safe as Safe
 import qualified GHC.Stack as Stack
 
@@ -86,7 +92,7 @@ instance (MonadRWS r w s m) => MonadRWS r w s (TracingT m)
 instance (MonadIO m, MonadMask m) => MonadTracing (TracingT m) where
   traceCS cs newSpanSpec action =
     TracingT \tracer -> do
-      flip runContextT (tracerContextBackend tracer) do
+      flip runContextT (unSpanBackend $ tracerSpanBackend tracer) do
         spanSpec <- toSpanSpec tracer newSpanSpec
         mutableSpan@MutableSpan { mutableSpanSpanKey = spanKey } <- do
           liftIO $ tracerStartSpan tracer spanSpec
@@ -174,15 +180,15 @@ instance (MonadIO m, MonadMask m) => MonadTracing (TracingT m) where
 instance (MonadIO m, MonadMask m) => MonadTracingEnv (TracingT m) where
   askTracer = TracingT pure
 
-instance (MonadIO m) => MonadTraceContext (TracingT m) where
+instance (MonadIO m, MonadMask m) => MonadTracingContext (TracingT m) where
   getSpan mutableSpan =
     TracingT \tracer -> do
-      flip runContextT (tracerContextBackend tracer) do
+      flip runContextT (unSpanBackend $ tracerSpanBackend tracer) do
         getContext $ mutableSpanSpanKey mutableSpan
 
   updateSpan mutableSpan updateSpanSpec =
     TracingT \tracer -> do
-      flip runContextT (tracerContextBackend tracer) do
+      flip runContextT (unSpanBackend $ tracerSpanBackend tracer) do
         updateContext (mutableSpanSpanKey mutableSpan)
           =<< buildSpanUpdater (liftIO $ tracerNow tracer) updateSpanSpec
 
@@ -192,6 +198,11 @@ mapTracingT
   -> TracingT m a
   -> TracingT n b
 mapTracingT f action = TracingT $ f . runTracingT action
+
+defaultSpanBackend :: SpanBackend
+defaultSpanBackend =
+  unsafePerformIO $ fmap SpanBackend $ liftIO unsafeNewContextBackend
+{-# NOINLINE defaultSpanBackend #-}
 
 -- $disclaimer
 --

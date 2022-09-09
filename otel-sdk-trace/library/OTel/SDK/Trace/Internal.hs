@@ -27,7 +27,6 @@ import Control.Exception.Safe
   ( Exception(..), SomeException(..), MonadCatch, MonadMask, MonadThrow, catchAny, finally
   )
 import Control.Monad (join, unless, void, when)
-import Control.Monad.Cont (cont, runCont)
 import Control.Monad.IO.Class (MonadIO(liftIO))
 import Control.Monad.IO.Unlift (MonadUnliftIO(..))
 import Control.Monad.Logger.Aeson
@@ -42,8 +41,8 @@ import Data.Kind (Type)
 import Data.Monoid (Ap(..))
 import Data.Text (Text)
 import Data.Vector (Vector)
-import OTel.API.Context (ContextT(runContextT), ContextBackend, ContextKey, updateContext)
-import OTel.API.Context.Internal (newContextKey, unsafeNewContextBackend)
+import OTel.API.Context (ContextT(runContextT), ContextKey, updateContext)
+import OTel.API.Context.Internal (newContextKey)
 import OTel.API.Core
   ( SpanParent(..), SpanSpec(..), SpanStatus(..), Attrs, AttrsBuilder, InstrumentationScope
   , SpanAttrsLimits, SpanContext, SpanEventAttrsLimits, SpanId, SpanLinkAttrsLimits, Timestamp
@@ -52,9 +51,10 @@ import OTel.API.Core
   , spanIdFromWords, spanParentContext, timestampFromNanoseconds, traceIdFromWords
   )
 import OTel.API.Core.Internal
-  ( MutableSpan(..), Span(..), TraceFlags(..), TraceState(..), Tracer(..), TracerProvider(..)
-  , buildSpanUpdater, freezeSpan
+  ( MutableSpan(..), Span(..), SpanBackend(..), TraceFlags(..), TraceState(..), Tracer(..)
+  , TracerProvider(..), buildSpanUpdater, freezeSpan
   )
+import OTel.API.Trace (defaultSpanBackend)
 import Prelude hiding (span)
 import System.Clock (Clock(Realtime), getTime, toNanoSecs)
 import System.IO.Unsafe (unsafePerformIO)
@@ -75,7 +75,7 @@ data TracerProviderSpec = TracerProviderSpec
   , tracerProviderSpecSpanAttrsLimits :: SpanAttrsLimits
   , tracerProviderSpecSpanEventAttrsLimits :: SpanEventAttrsLimits
   , tracerProviderSpecSpanLinkAttrsLimits :: SpanLinkAttrsLimits
-  , tracerProviderSpecTraceContextBackend :: ContextBackend (Span AttrsBuilder)
+  , tracerProviderSpecSpanBackend :: SpanBackend
   }
 
 defaultTracerProviderSpec :: TracerProviderSpec
@@ -90,7 +90,7 @@ defaultTracerProviderSpec =
     , tracerProviderSpecSpanAttrsLimits = defaultAttrsLimits
     , tracerProviderSpecSpanEventAttrsLimits = defaultAttrsLimits
     , tracerProviderSpecSpanLinkAttrsLimits = defaultAttrsLimits
-    , tracerProviderSpecTraceContextBackend = defaultTraceContextBackend
+    , tracerProviderSpecSpanBackend = defaultSpanBackend
     }
 
 withTracerProvider
@@ -148,7 +148,7 @@ newTracerProviderIO tracerProviderSpec = do
       , tracerNow = now
       , tracerStartSpan = startSpan prngRef scope spanProcessor
       , tracerProcessSpan = endSpan spanProcessor
-      , tracerContextBackend = ctxBackendTrace
+      , tracerSpanBackend = ctxBackendSpan
       , tracerSpanAttrsLimits = spanAttrsLimits
       , tracerSpanEventAttrsLimits = spanEventAttrsLimits
       , tracerSpanLinkAttrsLimits = spanLinkAttrsLimits
@@ -231,7 +231,7 @@ newTracerProviderIO tracerProviderSpec = do
     -> UpdateSpanSpec
     -> SpanProcessorM (Span Attrs)
   spanUpdater spanKey updateSpanSpec =
-    flip runContextT ctxBackendTrace do
+    flip runContextT (unSpanBackend ctxBackendSpan) do
       updater <- buildSpanUpdater (liftIO now) updateSpanSpec
       frozenAt <- liftIO now
       fmap (freezeSpan frozenAt spanLinkAttrsLimits spanEventAttrsLimits spanAttrsLimits) do
@@ -250,7 +250,7 @@ newTracerProviderIO tracerProviderSpec = do
     , tracerProviderSpecSpanAttrsLimits = spanAttrsLimits
     , tracerProviderSpecSpanEventAttrsLimits = spanEventAttrsLimits
     , tracerProviderSpecSpanLinkAttrsLimits = spanLinkAttrsLimits
-    , tracerProviderSpecTraceContextBackend = ctxBackendTrace
+    , tracerProviderSpecSpanBackend = ctxBackendSpan
     } = tracerProviderSpec
 
 shutdownTracerProvider :: forall m. (MonadIO m) => TracerProvider -> m ()
@@ -1009,21 +1009,6 @@ unlessShutdown isShutdownSTM actionSTM =
 defaultSystemSeed :: Seed
 defaultSystemSeed = unsafePerformIO createSystemSeed
 {-# NOINLINE defaultSystemSeed #-}
-
--- TODO: Move to @otel-api-trace@ for symmetry with @otel-api-baggage@?
--- TODO: Wrap in a @TraceContextBackend@ newtype?
-defaultTraceContextBackend :: ContextBackend (Span AttrsBuilder)
-defaultTraceContextBackend = unsafePerformIO $ liftIO unsafeNewContextBackend
-{-# NOINLINE defaultTraceContextBackend #-}
-
-withAllFolded :: (Monoid a) => [(a -> b) -> b] -> (a -> b) -> b
-withAllFolded withFuncs f = withAll withFuncs \xs -> f $ mconcat xs
-
-withAll :: [(a -> b) -> b] -> ([a] -> b) -> b
-withAll withFuncs = runCont (mapM cont withFuncs)
-
-withAsyncUnlifted :: (MonadUnliftIO m) => m a -> (Async a -> m b) -> m b
-withAsyncUnlifted a b = withRunInIO $ \runInIO -> withAsync (runInIO a) (runInIO . b)
 
 -- $disclaimer
 --

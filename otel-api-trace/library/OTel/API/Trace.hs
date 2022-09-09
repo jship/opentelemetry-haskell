@@ -6,6 +6,9 @@ module OTel.API.Trace
   , Internal.TracingT
   , Internal.runTracingT
   , Internal.mapTracingT
+
+  , Internal.SpanBackend
+  , Internal.defaultSpanBackend
   ) where
 
 import OTel.API.Trace.Core
