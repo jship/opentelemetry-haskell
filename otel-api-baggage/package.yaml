@@ -1,0 +1,43 @@
+name: otel-api-baggage
+version: '0.0.0'
+github: "jship/opentelemetry-haskell"
+license: Apache-2.0
+license-file: LICENSE
+copyright: 2022 (c) Jason Shipman
+author: "Jason Shipman"
+maintainer: "Jason Shipman"
+synopsis: STUB
+description: |
+  @otel-api-baggage@ STUB
+category: System
+
+extra-source-files:
+- package.yaml
+- README.md
+- LICENSE
+- CHANGELOG.md
+
+default-extensions:
+- NoImplicitPrelude
+
+ghc-options:
+- -Wall
+- -fwarn-tabs
+- -Wincomplete-uni-patterns
+- -Wredundant-constraints
+
+library:
+  dependencies:
+  - base >=4.11.1.0 && <5
+  - monad-control
+  - monad-logger
+  - mtl >=2.3
+  - otel-api-core
+  - otel-api-context
+  - otel-api-baggage-core
+  - resourcet
+  - safe-exceptions
+  - transformers
+  - transformers-base
+  - unliftio-core
+  source-dirs: library

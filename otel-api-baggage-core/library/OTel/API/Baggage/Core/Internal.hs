@@ -53,21 +53,21 @@ import qualified Data.HashMap.Strict as HashMap
 
 class (Monad m) => MonadBaggage m where
   getBaggage :: m Baggage
-  updateBaggage :: Baggage -> m a -> m a
+  setBaggage :: Baggage -> m a -> m a
 
   default getBaggage
     :: (MonadTrans t, MonadBaggage n, m ~ t n)
     => m Baggage
   getBaggage = lift getBaggage
 
-  default updateBaggage
+  default setBaggage
     :: (MonadTransControl t, MonadBaggage n, m ~ t n)
     => Baggage
     -> m a
     -> m a
-  updateBaggage baggage action =
+  setBaggage baggage action =
     restoreT . pure
-      =<< liftWith \run -> updateBaggage baggage (run action)
+      =<< liftWith \run -> setBaggage baggage (run action)
 
 instance (MonadBaggage m) => MonadBaggage (ExceptT e m)
 instance (MonadBaggage m) => MonadBaggage (IdentityT m)
@@ -81,9 +81,9 @@ instance (MonadBaggage m, Monoid w) => MonadBaggage (Writer.Lazy.WriterT w m)
 instance (MonadBaggage m, Monoid w) => MonadBaggage (Writer.Strict.WriterT w m)
 instance (MonadBaggage m) => MonadBaggage (LoggingT m)
 instance (MonadBaggage m, MonadUnliftIO m) => MonadBaggage (ResourceT m) where
-  updateBaggage baggage action = do
+  setBaggage baggage action = do
     withRunInIO \runInIO -> do
-      runInIO $ updateBaggage baggage action
+      runInIO $ setBaggage baggage action
 
 newtype Baggage = Baggage
   { unBaggage :: HashMap Text Text
