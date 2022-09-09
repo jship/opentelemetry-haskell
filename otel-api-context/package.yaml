@@ -35,6 +35,7 @@ library:
   - monad-logger
   - mtl >=2.3
   - resourcet
+  - text
   - transformers
   - transformers-base
   - unliftio-core

@@ -17,6 +17,7 @@ module OTel.API.Context
 
     -- * Supporting types
   , ContextKey
+  , contextKeyName
   ) where
 
 import OTel.API.Context.Internal

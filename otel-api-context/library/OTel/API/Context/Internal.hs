@@ -40,7 +40,7 @@ import Control.Monad.IO.Class (MonadIO(liftIO))
 import Control.Monad.IO.Unlift (MonadUnliftIO)
 import Control.Monad.Logger (MonadLogger)
 import Control.Monad.RWS.Class (MonadRWS)
-import Control.Monad.Reader (MonadReader(ask, local, reader), MonadReader)
+import Control.Monad.Reader (MonadReader(ask, local, reader))
 import Control.Monad.Select (MonadSelect)
 import Control.Monad.State (MonadState)
 import Control.Monad.Trans.Class (MonadTrans(lift))
@@ -51,6 +51,7 @@ import Control.Monad.Writer.Class (MonadWriter)
 import Data.IORef (IORef)
 import Data.Kind (Type)
 import Data.Monoid (Ap(..))
+import Data.Text (Text)
 import Prelude
 import qualified Context
 import qualified Data.IORef as IORef
@@ -111,12 +112,13 @@ getContext ctxKey = updateContext ctxKey id
 attachContext
   :: forall m ctx a
    . (MonadIO m, MonadMask m)
-  => ctx
+  => Text
+  -> ctx
   -> (ContextKey ctx -> ContextT ctx m a)
   -> ContextT ctx m a
-attachContext ctx f =
+attachContext name ctx f =
   ContextT \ctxBackend -> do
-    ctxKey <- liftIO $ newContextKey ctx
+    ctxKey <- liftIO $ newContextKey name ctx
     Context.use (ctxBackendStore ctxBackend) ctxKey do
       runContextT (f ctxKey) ctxBackend
 
@@ -159,12 +161,18 @@ unsafeNewContextBackend
 unsafeNewContextBackend = do
   fmap ContextBackend $ Context.newStore Context.noPropagation Nothing
 
-newtype ContextKey ctx = ContextKey
-  { contextKeyRef :: IORef ctx
+data ContextKey ctx = ContextKey
+  { contextKeyName :: Text
+  , contextKeyRef :: IORef ctx
   }
 
-newContextKey :: ctx -> IO (ContextKey ctx)
-newContextKey = fmap ContextKey . IORef.newIORef
+newContextKey :: Text -> ctx -> IO (ContextKey ctx)
+newContextKey contextKeyName ctx = do
+  contextKeyRef <- IORef.newIORef ctx
+  pure ContextKey
+    { contextKeyName
+    , contextKeyRef
+    }
 
 updateContextAtKey :: ContextKey ctx -> (ctx -> ctx) -> IO ctx
 updateContextAtKey ctxKey updater = do

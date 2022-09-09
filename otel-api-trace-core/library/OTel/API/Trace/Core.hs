@@ -9,7 +9,6 @@ module OTel.API.Trace.Core
   , MonadTracing(..)
   , MonadTracingEnv(..)
   , MonadTraceContext(..)
-  , MutableSpan
   ) where
 
 import Control.Monad.IO.Unlift (MonadUnliftIO(withRunInIO))

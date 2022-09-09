@@ -186,7 +186,7 @@ newTracerProviderIO tracerProviderSpec = do
           }
 
     mutableSpan@MutableSpan { mutableSpanSpanKey = spanKey } <- do
-      fmap MutableSpan $ newContextKey span
+      fmap MutableSpan $ newContextKey "spanKey" span
 
     when (spanIsRecording span) do
       -- TODO: Fetch baggage from context and pass along too
