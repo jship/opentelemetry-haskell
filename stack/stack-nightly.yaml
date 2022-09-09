@@ -1,5 +1,6 @@
 resolver: nightly-2022-08-04
 packages:
+- ../otel-api-baggage-core
 - ../otel-api-context
 - ../otel-api-core
 - ../otel-api-trace
