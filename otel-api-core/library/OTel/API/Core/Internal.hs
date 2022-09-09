@@ -139,7 +139,7 @@ import qualified Data.Text.Lazy as Text.Lazy
 import qualified Data.Traversable as Traversable
 import qualified Data.Vector as Vector
 
--- TODO: This may not need to be a typeclass if we only have one instance.
+-- TODO: Define precedence explicitly
 class KV (kv :: Type) where
   type KVConstraints kv :: Type -> Type -> Constraint
   (.@) :: KVConstraints kv from to => Key to -> from -> kv
