@@ -41,7 +41,6 @@ library
       base >=4.11.1.0 && <5
     , monad-control
     , monad-logger
-    , otel-api-context
     , otel-api-core
     , resourcet
     , transformers

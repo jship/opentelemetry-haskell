@@ -32,7 +32,6 @@ library:
   - monad-control
   - monad-logger
   - otel-api-core
-  - otel-api-context
   - resourcet
   - transformers
   - unliftio-core

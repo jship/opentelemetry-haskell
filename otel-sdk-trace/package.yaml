@@ -44,7 +44,6 @@ library:
   - stm
   - stm-chans
   - text
-  - transformers-base
   - unliftio-core
   - vector
   source-dirs: library
