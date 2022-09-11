@@ -63,7 +63,8 @@ test-suite otel-api-context-test-suite
   build-tool-depends:
       hspec-discover:hspec-discover
   build-depends:
-      base
+      HUnit
+    , base
     , hspec
     , otel-api-context
     , safe-exceptions

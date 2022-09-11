@@ -51,6 +51,7 @@ tests:
     build-tools:
     - hspec-discover
     dependencies:
+    - HUnit
     - base
     - hspec
     - otel-api-context
