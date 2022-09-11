@@ -1,3 +1,4 @@
+{-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE DeriveAnyClass #-}
@@ -26,21 +27,25 @@ module OTel.API.Baggage.Core.Internal
   , buildBaggagePure
   , baggageKeyFromText
   , baggageValueFromText
-  , BaggageBuildError(..)
+  , BaggageErrors(..)
+  , BaggageError(..)
   , isRFC7230TokenChar
   , isRFC7230VCHARChar
   ) where
 
+import Control.Applicative (Applicative(..))
 import Control.Exception.Safe (Exception, MonadThrow, throwM)
 import Control.Monad.IO.Unlift (MonadUnliftIO(withRunInIO))
 import Control.Monad.Logger (LoggingT)
 import Control.Monad.Trans.Class (MonadTrans(lift))
 import Control.Monad.Trans.Control (MonadTransControl(liftWith, restoreT))
-import Control.Monad.Trans.Except (Except, ExceptT, runExcept, throwE)
+import Control.Monad.Trans.Except (ExceptT)
 import Control.Monad.Trans.Identity (IdentityT(..))
 import Control.Monad.Trans.Maybe (MaybeT)
 import Control.Monad.Trans.Reader (ReaderT(..))
 import Control.Monad.Trans.Resource (ResourceT)
+import Data.Bifunctor (Bifunctor(..))
+import Data.DList (DList)
 import Data.HashMap.Strict (HashMap)
 import Data.Monoid (Ap(..))
 import Data.Text (Text)
@@ -53,6 +58,7 @@ import qualified Control.Monad.Trans.State.Strict as State.Strict
 import qualified Control.Monad.Trans.Writer.Lazy as Writer.Lazy
 import qualified Control.Monad.Trans.Writer.Strict as Writer.Strict
 import qualified Data.Char as Char
+import qualified Data.DList as DList
 import qualified Data.HashMap.Strict as HashMap
 import qualified Data.Text as Text
 
@@ -136,13 +142,22 @@ toListBaggage :: Baggage -> [(Key Text, Text)]
 toListBaggage baggage = foldMapWithKeyBaggage (\k v -> ((k, v) :)) baggage []
 
 newtype BaggageBuilder a = BaggageBuilder
-  { unBaggageBuilder :: Except BaggageBuildError a
+  { unBaggageBuilder :: Either (DList BaggageError) a
   } deriving
-      ( Applicative, Functor, Monad -- @base@
-      ) via (Except BaggageBuildError)
+      ( Functor -- @base@
+      ) via (Either (DList BaggageError))
     deriving
       ( Semigroup, Monoid -- @base@
-      ) via (Ap (Except BaggageBuildError) a)
+      ) via (Ap BaggageBuilder a)
+
+instance Applicative BaggageBuilder where
+  pure = BaggageBuilder . Right
+  liftA2 f (BaggageBuilder mx) (BaggageBuilder my) =
+    BaggageBuilder $ case (mx, my) of
+      (Left ex, Left ey) -> Left $ ex <> ey
+      (Left ex, Right {}) -> Left ex
+      (Right {}, Left ey) -> Left ey
+      (Right x, Right y) -> Right $ f x y
 
 instance KV (BaggageBuilder Baggage) where
   type KVConstraints (BaggageBuilder Baggage) = IsTextKV
@@ -164,18 +179,18 @@ buildBaggage builder =
     Left err -> throwM err
     Right x -> pure x
 
-buildBaggagePure :: BaggageBuilder Baggage -> Either BaggageBuildError Baggage
-buildBaggagePure = runExcept . unBaggageBuilder
+buildBaggagePure :: BaggageBuilder Baggage -> Either BaggageErrors Baggage
+buildBaggagePure = first (BaggageErrors . DList.toList) . unBaggageBuilder
 
 baggageKeyFromText :: Text -> BaggageBuilder (Key Text)
 baggageKeyFromText keyText =
   BaggageBuilder do
     if Text.null keyText then do
-      throwE BaggageKeyIsEmpty
+      Left $ DList.singleton BaggageKeyIsEmpty
     else if not (Text.null invalidChars) then do
-      throwE $ BaggageKeyContainsInvalidChars (Key keyText) invalidChars
+      Left $ DList.singleton $ BaggageKeyContainsInvalidChars (Key keyText) invalidChars
     else do
-      pure $ Key keyText
+      Right $ Key keyText
   where
   invalidChars = Text.filter (not . isRFC7230TokenChar) keyText
 
@@ -183,21 +198,25 @@ baggageValueFromText :: Text -> BaggageBuilder Text
 baggageValueFromText valText =
   BaggageBuilder do
     if Text.null valText then do
-      throwE BaggageValueIsEmpty
+      Left $ DList.singleton BaggageValueIsEmpty
     else if not (Text.null invalidChars) then do
-      throwE $ BaggageValueContainsInvalidChars valText invalidChars
+      Left $ DList.singleton $ BaggageValueContainsInvalidChars valText invalidChars
     else do
       pure valText
   where
   invalidChars = Text.filter (not . isRFC7230VCHARChar) valText
 
-data BaggageBuildError
+newtype BaggageErrors = BaggageErrors
+  { unBaggageErrors :: [BaggageError]
+  } deriving stock (Eq, Show)
+    deriving anyclass (Exception)
+
+data BaggageError
   = BaggageKeyIsEmpty
   | BaggageKeyContainsInvalidChars (Key Text) Text
   | BaggageValueIsEmpty
   | BaggageValueContainsInvalidChars Text Text
   deriving stock (Eq, Show)
-  deriving anyclass (Exception)
 
 isRFC7230TokenChar :: Char -> Bool
 isRFC7230TokenChar = \case

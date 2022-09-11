@@ -38,6 +38,7 @@ library
   ghc-options: -Wall -fwarn-tabs -Wincomplete-uni-patterns -Wredundant-constraints
   build-depends:
       base >=4.11.1.0 && <5
+    , dlist
     , hspec
     , monad-control
     , monad-logger

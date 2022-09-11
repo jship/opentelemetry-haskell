@@ -18,9 +18,9 @@ import Data.Maybe (fromJust)
 import Data.Text (Text)
 import GHC.Exts (IsList)
 import OTel.API.Baggage.Core
-  ( BaggageBuildError(..), (.@), BaggageBuilder, buildBaggage, buildBaggagePure, deleteBaggage
-  , filterBaggage, filterWithKeyBaggage, findWithDefaultBaggage, foldMapWithKeyBaggage
-  , lookupBaggage, memberBaggage, nullBaggage, sizeBaggage, toListBaggage
+  ( BaggageError(..), BaggageErrors(..), (.@), BaggageBuilder, buildBaggage, buildBaggagePure
+  , deleteBaggage, filterBaggage, filterWithKeyBaggage, findWithDefaultBaggage
+  , foldMapWithKeyBaggage, lookupBaggage, memberBaggage, nullBaggage, sizeBaggage, toListBaggage
   )
 import OTel.API.Baggage.Core.Internal (Baggage(..))
 import OTel.API.Core (Key(..))
@@ -56,22 +56,40 @@ spec = do
         }
     it "specific error when parsing key" do
       runTest BuildBaggageTestCase
-        { expectedValue = Left BaggageKeyIsEmpty
+        { expectedValue = Left [BaggageKeyIsEmpty]
         , baggageBuilder = "" .@ "1"
         }
       runTest BuildBaggageTestCase
-        { expectedValue = Left $ BaggageKeyContainsInvalidChars (Key "(a)") "()"
+        { expectedValue = Left [BaggageKeyContainsInvalidChars (Key "(a)") "()"]
         , baggageBuilder = "(a)" .@ "1"
         }
     it "specific error when parsing value" do
       runTest BuildBaggageTestCase
-        { expectedValue = Left BaggageValueIsEmpty
+        { expectedValue = Left [BaggageValueIsEmpty]
         , baggageBuilder = "a" .@ ""
         }
       let nullByte = Text.singleton $ Char.chr 0
       runTest BuildBaggageTestCase
-        { expectedValue = Left $ BaggageValueContainsInvalidChars nullByte nullByte
+        { expectedValue = Left [BaggageValueContainsInvalidChars nullByte nullByte]
         , baggageBuilder = "a" .@ nullByte
+        }
+    it "provides all encountered errors" do
+      let nullByte = Text.singleton $ Char.chr 0
+      runTest BuildBaggageTestCase
+        { expectedValue =
+            Left
+              [ BaggageKeyIsEmpty
+              , BaggageKeyContainsInvalidChars (Key "(a)") "()"
+              , BaggageValueIsEmpty
+              , BaggageValueContainsInvalidChars nullByte nullByte
+              ]
+        , baggageBuilder =
+            mconcat
+              [ "" .@ "1"
+              , "(a)" .@ "1"
+              , "a" .@ ""
+              , "a" .@ nullByte
+              ]
         }
 
   describe "nullBaggage" do
@@ -266,7 +284,7 @@ spec = do
         }
 
 data BuildBaggageTestCase = BuildBaggageTestCase
-  { expectedValue :: Either BaggageBuildError Baggage
+  { expectedValue :: Either BaggageErrors Baggage
   , baggageBuilder :: BaggageBuilder Baggage
   }
 
@@ -401,3 +419,4 @@ class IsTest a where
   runTest :: (HasCallStack) => a -> IO ()
 
 deriving via (HashMap Text Text) instance IsList Baggage
+deriving via ([BaggageError]) instance IsList BaggageErrors

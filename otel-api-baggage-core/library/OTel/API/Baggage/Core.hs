@@ -20,7 +20,8 @@ module OTel.API.Baggage.Core
   , Internal.buildBaggagePure
   , Internal.baggageKeyFromText
   , Internal.baggageValueFromText
-  , Internal.BaggageBuildError(..)
+  , Internal.BaggageErrors(..)
+  , Internal.BaggageError(..)
 
   , (.@)
   ) where
