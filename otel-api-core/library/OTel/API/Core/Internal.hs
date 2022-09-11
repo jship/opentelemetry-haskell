@@ -172,7 +172,7 @@ instance IsTextKV Text Text
 
 newtype Key a = Key
   { unKey :: Text
-  } deriving stock (Eq, Show)
+  } deriving stock (Eq, Ord, Show)
 
 instance IsString (Key a) where
   fromString = Key . Text.pack

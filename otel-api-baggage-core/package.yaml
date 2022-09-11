@@ -38,4 +38,26 @@ library:
   - transformers
   - unliftio-core
   - unordered-containers
+  - hspec
   source-dirs: library
+  when:
+  - condition: false
+    other-modules: Paths_otel_api_baggage_core
+
+tests:
+  otel-api-baggage-core-test-suite:
+    source-dirs: test-suite
+    main: Driver.hs
+    build-tools:
+    - hspec-discover
+    dependencies:
+    - attoparsec
+    - base
+    - hspec
+    - otel-api-core
+    - otel-api-baggage-core
+    - text
+    - unordered-containers
+    when:
+    - condition: false
+      other-modules: Paths_otel_api_baggage_core

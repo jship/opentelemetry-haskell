@@ -31,8 +31,6 @@ library
   exposed-modules:
       OTel.API.Baggage.Core
       OTel.API.Baggage.Core.Internal
-  other-modules:
-      Paths_otel_api_baggage_core
   hs-source-dirs:
       library
   default-extensions:
@@ -40,6 +38,7 @@ library
   ghc-options: -Wall -fwarn-tabs -Wincomplete-uni-patterns -Wredundant-constraints
   build-depends:
       base >=4.11.1.0 && <5
+    , hspec
     , monad-control
     , monad-logger
     , otel-api-core
@@ -48,5 +47,27 @@ library
     , text
     , transformers
     , unliftio-core
+    , unordered-containers
+  default-language: Haskell2010
+
+test-suite otel-api-baggage-core-test-suite
+  type: exitcode-stdio-1.0
+  main-is: Driver.hs
+  other-modules:
+      Test.OTel.API.Baggage.CoreSpec
+  hs-source-dirs:
+      test-suite
+  default-extensions:
+      NoImplicitPrelude
+  ghc-options: -Wall -fwarn-tabs -Wincomplete-uni-patterns -Wredundant-constraints
+  build-tool-depends:
+      hspec-discover:hspec-discover
+  build-depends:
+      attoparsec
+    , base
+    , hspec
+    , otel-api-baggage-core
+    , otel-api-core
+    , text
     , unordered-containers
   default-language: Haskell2010

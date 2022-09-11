@@ -3,7 +3,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 module OTel.API.Baggage.Core.Internal
@@ -20,12 +20,15 @@ module OTel.API.Baggage.Core.Internal
   , filterBaggage
   , filterWithKeyBaggage
   , foldMapWithKeyBaggage
+  , toListBaggage
   , BaggageBuilder(..)
   , buildBaggage
   , buildBaggagePure
   , baggageKeyFromText
   , baggageValueFromText
   , BaggageBuildError(..)
+  , isRFC7230TokenChar
+  , isRFC7230VCHARChar
   ) where
 
 import Control.Exception.Safe (Exception, MonadThrow, throwM)
@@ -33,7 +36,7 @@ import Control.Monad.IO.Unlift (MonadUnliftIO(withRunInIO))
 import Control.Monad.Logger (LoggingT)
 import Control.Monad.Trans.Class (MonadTrans(lift))
 import Control.Monad.Trans.Control (MonadTransControl(liftWith, restoreT))
-import Control.Monad.Trans.Except (Except, ExceptT, runExcept)
+import Control.Monad.Trans.Except (Except, ExceptT, runExcept, throwE)
 import Control.Monad.Trans.Identity (IdentityT(..))
 import Control.Monad.Trans.Maybe (MaybeT)
 import Control.Monad.Trans.Reader (ReaderT(..))
@@ -49,7 +52,9 @@ import qualified Control.Monad.Trans.State.Lazy as State.Lazy
 import qualified Control.Monad.Trans.State.Strict as State.Strict
 import qualified Control.Monad.Trans.Writer.Lazy as Writer.Lazy
 import qualified Control.Monad.Trans.Writer.Strict as Writer.Strict
+import qualified Data.Char as Char
 import qualified Data.HashMap.Strict as HashMap
+import qualified Data.Text as Text
 
 class (Monad m) => MonadBaggage m where
   getBaggage :: m Baggage
@@ -127,6 +132,9 @@ foldMapWithKeyBaggage f baggage =
   flip HashMap.foldMapWithKey (unBaggage baggage) \keyText val ->
     f (Key keyText) val
 
+toListBaggage :: Baggage -> [(Key Text, Text)]
+toListBaggage baggage = foldMapWithKeyBaggage (\k v -> ((k, v) :)) baggage []
+
 newtype BaggageBuilder a = BaggageBuilder
   { unBaggageBuilder :: Except BaggageBuildError a
   } deriving
@@ -159,18 +167,80 @@ buildBaggage builder =
 buildBaggagePure :: BaggageBuilder Baggage -> Either BaggageBuildError Baggage
 buildBaggagePure = runExcept . unBaggageBuilder
 
--- TODO: Add parsing according to https://www.rfc-editor.org/rfc/rfc7230#section-3.2.6
 baggageKeyFromText :: Text -> BaggageBuilder (Key Text)
-baggageKeyFromText = pure . Key
+baggageKeyFromText keyText =
+  BaggageBuilder do
+    if Text.null keyText then do
+      throwE BaggageKeyIsEmpty
+    else if not (Text.null invalidChars) then do
+      throwE $ BaggageKeyContainsInvalidChars (Key keyText) invalidChars
+    else do
+      pure $ Key keyText
+  where
+  invalidChars = Text.filter (not . isRFC7230TokenChar) keyText
 
--- TODO: Add parsing according to https://www.rfc-editor.org/rfc/rfc7230#section-3.2.6
 baggageValueFromText :: Text -> BaggageBuilder Text
-baggageValueFromText = pure
+baggageValueFromText valText =
+  BaggageBuilder do
+    if Text.null valText then do
+      throwE BaggageValueIsEmpty
+    else if not (Text.null invalidChars) then do
+      throwE $ BaggageValueContainsInvalidChars valText invalidChars
+    else do
+      pure valText
+  where
+  invalidChars = Text.filter (not . isRFC7230VCHARChar) valText
 
--- TODO: Flesh this out
-data BaggageBuildError = BaggageBuildError
+data BaggageBuildError
+  = BaggageKeyIsEmpty
+  | BaggageKeyContainsInvalidChars (Key Text) Text
+  | BaggageValueIsEmpty
+  | BaggageValueContainsInvalidChars Text Text
   deriving stock (Eq, Show)
   deriving anyclass (Exception)
+
+isRFC7230TokenChar :: Char -> Bool
+isRFC7230TokenChar = \case
+  '!'  -> True
+  '#'  -> True
+  '$'  -> True
+  '%'  -> True
+  '&'  -> True
+  '\'' -> True
+  '*'  -> True
+  '+'  -> True
+  '-'  -> True
+  '.'  -> True
+  '^'  -> True
+  '_'  -> True
+  '`'  -> True
+  '|'  -> True
+  '~'  -> True
+  c    -> Char.isAscii c && Char.isAlphaNum c
+
+isRFC7230VCHARChar :: Char -> Bool
+isRFC7230VCHARChar c = Char.isAscii c && Char.isPrint c
+
+_isRFC7230DelimiterChar :: Char -> Bool
+_isRFC7230DelimiterChar = \case
+  '"'  -> True
+  '('  -> True
+  ')'  -> True
+  ','  -> True
+  '/'  -> True
+  ':'  -> True
+  ';'  -> True
+  '<'  -> True
+  '='  -> True
+  '>'  -> True
+  '?'  -> True
+  '@'  -> True
+  '['  -> True
+  '\\' -> True
+  ']'  -> True
+  '{'  -> True
+  '}'  -> True
+  _    -> False
 
 -- $disclaimer
 --

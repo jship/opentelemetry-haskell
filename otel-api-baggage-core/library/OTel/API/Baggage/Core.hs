@@ -13,6 +13,7 @@ module OTel.API.Baggage.Core
   , Internal.filterBaggage
   , Internal.filterWithKeyBaggage
   , Internal.foldMapWithKeyBaggage
+  , Internal.toListBaggage
 
   , Internal.BaggageBuilder
   , Internal.buildBaggage
@@ -20,8 +21,11 @@ module OTel.API.Baggage.Core
   , Internal.baggageKeyFromText
   , Internal.baggageValueFromText
   , Internal.BaggageBuildError(..)
+
+  , (.@)
   ) where
 
+import OTel.API.Core (KV((.@)))
 import qualified OTel.API.Baggage.Core.Internal as Internal
 
 -- $synopsis
