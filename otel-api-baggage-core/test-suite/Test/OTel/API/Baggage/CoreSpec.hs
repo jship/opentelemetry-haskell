@@ -18,7 +18,9 @@ import Data.Maybe (fromJust)
 import Data.Text (Text)
 import GHC.Exts (IsList)
 import OTel.API.Baggage.Core
-  ( BaggageError(..), BaggageErrors(..), (.@), BaggageBuilder, buildBaggage, buildBaggagePure
+  ( BaggageError(..), BaggageErrors(..), BaggageKeyContainsInvalidCharsError(..)
+  , BaggageKeyIsEmptyError(..), BaggageValueContainsInvalidCharsError(..)
+  , BaggageValueIsEmptyError(..), (.@), BaggageBuilder, buildBaggage, buildBaggagePure
   , deleteBaggage, filterBaggage, filterWithKeyBaggage, findWithDefaultBaggage
   , foldMapWithKeyBaggage, lookupBaggage, memberBaggage, nullBaggage, sizeBaggage, toListBaggage
   )
@@ -56,21 +58,41 @@ spec = do
         }
     it "specific error when parsing key" do
       runTest BuildBaggageTestCase
-        { expectedValue = Left [BaggageKeyIsEmpty]
+        { expectedValue =
+            Left
+              [ BaggageKeyIsEmpty BaggageKeyIsEmptyError { rawValue = "1" }
+              ]
         , baggageBuilder = "" .@ "1"
         }
       runTest BuildBaggageTestCase
-        { expectedValue = Left [BaggageKeyContainsInvalidChars (Key "(a)") "()"]
+        { expectedValue =
+            Left
+              [ BaggageKeyContainsInvalidChars BaggageKeyContainsInvalidCharsError
+                  { rawKey = "(a)"
+                  , rawValue = "1"
+                  , invalidChars = "()"
+                  }
+              ]
         , baggageBuilder = "(a)" .@ "1"
         }
     it "specific error when parsing value" do
       runTest BuildBaggageTestCase
-        { expectedValue = Left [BaggageValueIsEmpty]
+        { expectedValue =
+            Left
+              [ BaggageValueIsEmpty BaggageValueIsEmptyError { rawKey = "a" }
+              ]
         , baggageBuilder = "a" .@ ""
         }
       let nullByte = Text.singleton $ Char.chr 0
       runTest BuildBaggageTestCase
-        { expectedValue = Left [BaggageValueContainsInvalidChars nullByte nullByte]
+        { expectedValue =
+            Left
+              [ BaggageValueContainsInvalidChars BaggageValueContainsInvalidCharsError
+                  { rawKey = "a"
+                  , rawValue = nullByte
+                  , invalidChars = nullByte
+                  }
+              ]
         , baggageBuilder = "a" .@ nullByte
         }
     it "provides all encountered errors" do
@@ -78,10 +100,28 @@ spec = do
       runTest BuildBaggageTestCase
         { expectedValue =
             Left
-              [ BaggageKeyIsEmpty
-              , BaggageKeyContainsInvalidChars (Key "(a)") "()"
-              , BaggageValueIsEmpty
-              , BaggageValueContainsInvalidChars nullByte nullByte
+              [ BaggageKeyIsEmpty BaggageKeyIsEmptyError { rawValue = "1" }
+              , BaggageKeyContainsInvalidChars BaggageKeyContainsInvalidCharsError
+                  { rawKey = "(a)"
+                  , rawValue = "1"
+                  , invalidChars = "()"
+                  }
+              , BaggageValueIsEmpty BaggageValueIsEmptyError { rawKey = "a" }
+              , BaggageValueContainsInvalidChars BaggageValueContainsInvalidCharsError
+                  { rawKey = "a"
+                  , rawValue = nullByte
+                  , invalidChars = nullByte
+                  }
+              , BaggageKeyContainsInvalidChars BaggageKeyContainsInvalidCharsError
+                  { rawKey = "b)"
+                  , rawValue = nullByte
+                  , invalidChars = ")"
+                  }
+              , BaggageValueContainsInvalidChars BaggageValueContainsInvalidCharsError
+                  { rawKey = "b)"
+                  , rawValue = nullByte
+                  , invalidChars = nullByte
+                  }
               ]
         , baggageBuilder =
             mconcat
@@ -89,6 +129,8 @@ spec = do
               , "(a)" .@ "1"
               , "a" .@ ""
               , "a" .@ nullByte
+              , "a" .@ "1" -- N.B. This is a valid baggage entry pair
+              , "b)" .@ nullByte -- N.B. This produces an error for both key and value
               ]
         }
 

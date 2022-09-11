@@ -18,10 +18,12 @@ module OTel.API.Baggage.Core
   , Internal.BaggageBuilder
   , Internal.buildBaggage
   , Internal.buildBaggagePure
-  , Internal.baggageKeyFromText
-  , Internal.baggageValueFromText
   , Internal.BaggageErrors(..)
   , Internal.BaggageError(..)
+  , Internal.BaggageKeyIsEmptyError(..)
+  , Internal.BaggageKeyContainsInvalidCharsError(..)
+  , Internal.BaggageValueIsEmptyError(..)
+  , Internal.BaggageValueContainsInvalidCharsError(..)
 
   , (.@)
   ) where
