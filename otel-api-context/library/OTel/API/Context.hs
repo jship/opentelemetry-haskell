@@ -13,7 +13,6 @@ module OTel.API.Context
 
     -- * Context backend
   , ContextBackend
-  , withContextBackend
 
     -- * Supporting types
   , ContextKey

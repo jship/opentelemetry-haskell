@@ -42,7 +42,7 @@ import Data.Monoid (Ap(..))
 import Data.Text (Text)
 import Data.Vector (Vector)
 import OTel.API.Context (ContextT(runContextT), ContextKey, updateContext)
-import OTel.API.Context.Internal (newContextKey)
+import OTel.API.Context.Internal (unsafeNewContextKey)
 import OTel.API.Core
   ( SpanParent(..), SpanSpec(..), SpanStatus(..), Attrs, AttrsBuilder, InstrumentationScope
   , SpanAttrsLimits, SpanContext, SpanEventAttrsLimits, SpanId, SpanLinkAttrsLimits, Timestamp
@@ -186,7 +186,7 @@ newTracerProviderIO tracerProviderSpec = do
           }
 
     mutableSpan@MutableSpan { mutableSpanSpanKey = spanKey } <- do
-      fmap MutableSpan $ newContextKey "spanKey" span
+      fmap MutableSpan $ unsafeNewContextKey "spanKey" span
 
     when (spanIsRecording span) do
       -- TODO: Fetch baggage from context and pass along too

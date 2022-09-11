@@ -1,6 +1,8 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MagicHash #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -18,15 +20,16 @@ module OTel.API.Context.Internal
   , getAttachedContextKey
 
   , ContextBackend(..)
-  , withContextBackend
   , unsafeNewContextBackend
 
   , ContextKey(..)
+  , contextKeyName
 
     -- ** Extremely internal things below
-  , newContextKey
-  , updateContextAtKey
+  , unsafeNewContextKey
+  , unsafeUpdateContextAtKey
   , unsafeAttachContext
+  , unsafeEqContextKeys
   ) where
 
 import Context (Store)
@@ -52,6 +55,9 @@ import Data.IORef (IORef)
 import Data.Kind (Type)
 import Data.Monoid (Ap(..))
 import Data.Text (Text)
+import GHC.Exts (Int(I#), sameMutVar#)
+import GHC.IORef (IORef(IORef))
+import GHC.STRef (STRef(STRef))
 import Prelude
 import qualified Context
 import qualified Data.IORef as IORef
@@ -100,7 +106,7 @@ updateContext
   -> ContextT ctx m ctx
 updateContext ctxKey updater =
   ContextT \_ctxBackend ->
-    liftIO $ updateContextAtKey ctxKey updater
+    liftIO $ unsafeUpdateContextAtKey ctxKey updater
 
 getContext
   :: forall m ctx
@@ -118,7 +124,7 @@ attachContext
   -> ContextT ctx m a
 attachContext name ctx f =
   ContextT \ctxBackend -> do
-    ctxKey <- liftIO $ newContextKey name ctx
+    ctxKey <- liftIO $ unsafeNewContextKey name ctx
     Context.use (ctxBackendStore ctxBackend) ctxKey do
       runContextT (f ctxKey) ctxBackend
 
@@ -145,15 +151,6 @@ newtype ContextBackend ctx = ContextBackend
   { ctxBackendStore :: Store (ContextKey ctx)
   }
 
-withContextBackend
-  :: forall m ctx a
-   . (MonadIO m, MonadMask m)
-  => (ContextBackend ctx -> m a)
-  -> m a
-withContextBackend action = do
-  Context.withStore Context.noPropagation Nothing \ctxBackendStore ->
-    action ContextBackend { ctxBackendStore }
-
 unsafeNewContextBackend
   :: forall m ctx
    . (MonadIO m)
@@ -162,23 +159,43 @@ unsafeNewContextBackend = do
   fmap ContextBackend $ Context.newStore Context.noPropagation Nothing
 
 data ContextKey ctx = ContextKey
-  { contextKeyName :: Text
+  { contextKeyDebugName :: Text
   , contextKeyRef :: IORef ctx
   }
 
-newContextKey :: Text -> ctx -> IO (ContextKey ctx)
-newContextKey contextKeyName ctx = do
+contextKeyName :: ContextKey ctx -> Text
+contextKeyName = contextKeyDebugName
+
+unsafeNewContextKey :: Text -> ctx -> IO (ContextKey ctx)
+unsafeNewContextKey contextKeyDebugName ctx = do
   contextKeyRef <- IORef.newIORef ctx
   pure ContextKey
-    { contextKeyName
+    { contextKeyDebugName
     , contextKeyRef
     }
 
-updateContextAtKey :: ContextKey ctx -> (ctx -> ctx) -> IO ctx
-updateContextAtKey ctxKey updater = do
+unsafeUpdateContextAtKey :: ContextKey ctx -> (ctx -> ctx) -> IO ctx
+unsafeUpdateContextAtKey ctxKey updater = do
   IORef.atomicModifyIORef' (contextKeyRef ctxKey) \ctx ->
     let ctx' = updater ctx
      in (ctx', ctx')
+
+unsafeEqContextKeys :: ContextKey ctx -> ContextKey ctx -> Bool
+unsafeEqContextKeys ctxKey1 ctxKey2 = namesMatch && varsMatch
+  where
+  namesMatch = dbgName1 == dbgName2
+  varsMatch = I# (sameMutVar# var1# var2#) == 1
+  !(IORef (STRef var1#)) = ref1
+  ContextKey
+    { contextKeyDebugName = dbgName1
+    , contextKeyRef = ref1
+    } = ctxKey1
+
+  !(IORef (STRef var2#)) = ref2
+  ContextKey
+    { contextKeyDebugName = dbgName2
+    , contextKeyRef = ref2
+    } = ctxKey2
 
 -- $disclaimer
 --

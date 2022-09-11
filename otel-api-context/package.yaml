@@ -43,3 +43,20 @@ library:
   when:
   - condition: false
     other-modules: Paths_otel_api_context
+
+tests:
+  otel-api-context-test-suite:
+    source-dirs: test-suite
+    main: Driver.hs
+    build-tools:
+    - hspec-discover
+    dependencies:
+    - base
+    - hspec
+    - otel-api-context
+    - safe-exceptions
+    - text
+    - unliftio-core
+    when:
+    - condition: false
+      other-modules: Paths_otel_api_context
