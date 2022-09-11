@@ -30,8 +30,6 @@ source-repository head
 library
   exposed-modules:
       OTel.API.Trace.Core
-  other-modules:
-      Paths_otel_api_trace_core
   hs-source-dirs:
       library
   default-extensions:

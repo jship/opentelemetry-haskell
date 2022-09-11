@@ -36,3 +36,6 @@ library:
   - transformers
   - unliftio-core
   source-dirs: library
+  when:
+  - condition: false
+    other-modules: Paths_otel_api_trace_core

@@ -36,3 +36,6 @@ library:
   - unordered-containers
   - vector
   source-dirs: library
+  when:
+  - condition: false
+    other-modules: Paths_otel_api_core

@@ -31,8 +31,6 @@ library
   exposed-modules:
       OTel.API.Context
       OTel.API.Context.Internal
-  other-modules:
-      Paths_otel_api_context
   hs-source-dirs:
       library
   default-extensions:

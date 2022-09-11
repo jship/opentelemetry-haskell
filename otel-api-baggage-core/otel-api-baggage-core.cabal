@@ -63,8 +63,7 @@ test-suite otel-api-baggage-core-test-suite
   build-tool-depends:
       hspec-discover:hspec-discover
   build-depends:
-      attoparsec
-    , base
+      base
     , hspec
     , otel-api-baggage-core
     , otel-api-core
