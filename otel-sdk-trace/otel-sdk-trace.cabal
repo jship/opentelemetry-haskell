@@ -31,8 +31,6 @@ library
   exposed-modules:
       OTel.SDK.Trace
       OTel.SDK.Trace.Internal
-  other-modules:
-      Paths_otel_sdk_trace
   hs-source-dirs:
       library
   default-extensions:

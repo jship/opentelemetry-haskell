@@ -49,4 +49,4 @@ library:
   source-dirs: library
   when:
   - condition: false
-    other-modules: Paths_otel_api_sdk_trace
+    other-modules: Paths_otel_sdk_trace
