@@ -6,9 +6,13 @@ packages:
 - ./otel-api-core
 - ./otel-api-trace
 - ./otel-api-trace-core
+- ./otel-sdk-otlp-bindings
 - ./otel-sdk-trace
 extra-deps:
 - exceptions-0.10.5@sha256:b2c634a95ba2a68e0df3ae67d006f0dabb02edbe4dc77b321133551e308ca047,2832
 - mtl-2.3@sha256:9850384335d39f4307bdd8010c61b61cc2adb88adcb6820f8372f4d2f4905a3d,1830
+# BEGIN proto-lens-runtime
+- parsec-3.1.15.1@sha256:8c7a36aaadff12a38817fc3c4ff6c87e3352cffd1a58df640de7ed7a97ad8fa3,4601
+# END proto-lens-runtime
 ghc-options:
   '$everything': -haddock
