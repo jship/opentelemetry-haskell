@@ -17,26 +17,21 @@ module OTel.SDK.Trace.Internal
   ) where
 
 import Control.Applicative (Applicative(..))
-import Control.Concurrent (MVar, newMVar, threadDelay, withMVar)
-import Control.Concurrent.Async
-  ( AsyncCancelled(..), Async, uninterruptibleCancel, waitCatch, withAsync
-  )
+import Control.Concurrent (MVar, newMVar, withMVar)
 import Control.Concurrent.STM (STM, atomically, newTVarIO, readTVar, writeTVar)
-import Control.Concurrent.STM.TBMQueue
 import Control.Exception.Safe
-  ( Exception(..), SomeException(..), MonadCatch, MonadMask, MonadThrow, catchAny, finally
+  ( Exception(..), SomeException(..), MonadCatch, MonadMask, MonadThrow, catchAny
   )
-import Control.Monad (join, unless, void, when)
+import Control.Monad (join, when)
 import Control.Monad.IO.Class (MonadIO(liftIO))
 import Control.Monad.IO.Unlift (MonadUnliftIO(..))
 import Control.Monad.Logger.Aeson
   ( LoggingT(..), Message(..), (.=), Loc, LogLevel, LogSource, LogStr, MonadLogger, SeriesElem
-  , logDebug, logError
+  , logError, MonadLoggerIO (askLoggerIO)
   )
 import Control.Monad.Reader (ReaderT(..))
 import Data.Aeson (object)
-import Data.DList (DList)
-import Data.Foldable (traverse_)
+import Data.Functor.Contravariant (Contravariant(..))
 import Data.Kind (Type)
 import Data.Monoid (Ap(..))
 import Data.Text (Text)
@@ -61,9 +56,6 @@ import System.IO.Unsafe (unsafePerformIO)
 import System.Random.MWC (Variate(..), GenIO, Seed, createSystemSeed, fromSeed, initialize, uniform)
 import System.Timeout (timeout)
 import qualified Control.Exception.Safe as Exception
-import qualified Data.DList as DList
-import qualified Data.List as List
-import qualified Data.List.Split as Split
 import qualified Data.Vector as Vector
 
 data TracerProviderSpec = TracerProviderSpec
@@ -190,7 +182,8 @@ newTracerProviderIO tracerProviderSpec = do
 
     when (spanIsRecording span) do
       -- TODO: Fetch baggage from context and pass along too
-      spanProcessorOnSpanStart spanProcessor mParentSpanContext $ spanUpdater spanKey
+      spanProcessorOnSpanStart spanProcessor mParentSpanContext \updateSpanSpec -> do
+        spanUpdater spanKey updateSpanSpec
 
     pure mutableSpan
 
@@ -229,7 +222,7 @@ newTracerProviderIO tracerProviderSpec = do
   spanUpdater
     :: ContextKey (Span AttrsBuilder)
     -> UpdateSpanSpec
-    -> SpanProcessorM (Span Attrs)
+    -> IO (Span Attrs)
   spanUpdater spanKey updateSpanSpec =
     flip runContextT (unSpanBackend ctxBackendSpan) do
       updater <- buildSpanUpdater (liftIO now) updateSpanSpec
@@ -262,15 +255,11 @@ forceFlushTracerProvider = liftIO . tracerProviderForceFlush
 data SpanProcessor = SpanProcessor
   { spanProcessorOnSpanStart
       :: Maybe SpanContext -- Parent span context pulled from the context
-      -> (UpdateSpanSpec -> SpanProcessorM (Span Attrs))
+      -> (UpdateSpanSpec -> IO (Span Attrs))
       -> IO ()
-  , spanProcessorOnSpanEnd
-      :: Span Attrs
-      -> IO ()
-  , spanProcessorShutdown
-      :: IO ()
-  , spanProcessorForceFlush
-      :: IO ()
+  , spanProcessorOnSpanEnd :: Span Attrs -> IO ()
+  , spanProcessorShutdown :: IO ()
+  , spanProcessorForceFlush :: IO ()
   }
 
 instance Semigroup SpanProcessor where
@@ -309,7 +298,8 @@ buildSpanProcessor logger spanProcessorSpec = do
           unlessShutdown (readTVar shutdownRef) do
             pure do
               run defaultTimeout metaOnSpanStart do
-                spanProcessorSpecOnSpanStart mParentSpanContext spanUpdater
+                spanProcessorSpecOnSpanStart mParentSpanContext \updateSpanSpec -> do
+                  liftIO $ spanUpdater updateSpanSpec
       , spanProcessorOnSpanEnd = \endedSpan -> do
           unlessShutdown (readTVar shutdownRef) do
             pure do
@@ -359,344 +349,57 @@ buildSpanProcessor logger spanProcessorSpec = do
     , spanProcessorSpecOnException = onSyncEx
     } = spanProcessorSpec
 
--- TODO: Implement!
-simpleSpanProcessor :: SpanProcessorSpec
-simpleSpanProcessor =
-  defaultSpanProcessorSpec
-    { spanProcessorSpecName = "simple"
-    , spanProcessorSpecOnSpanStart = mempty
-    , spanProcessorSpecOnSpanEnd = mempty
-    , spanProcessorSpecShutdown = mempty
-    , spanProcessorSpecForceFlush = mempty
-    }
-
 data SimpleSpanProcessorSpec = SimpleSpanProcessorSpec
-  { simpleSpanProcessorSpecExporter :: SpanExporter (Batch (Span Attrs))
-  , simpleSpanProcessorSpecLogger :: Loc -> LogSource -> LogLevel -> LogStr -> IO ()
+  { simpleSpanProcessorSpecName :: Text
+  , simpleSpanProcessorSpecExporter :: SpanExporter (Span Attrs)
+  , simpleSpanProcessorSpecOnSpansExported :: Span Attrs -> OnSpansExported ()
   }
 
 defaultSimpleSpanProcessorSpec :: SimpleSpanProcessorSpec
 defaultSimpleSpanProcessorSpec =
   SimpleSpanProcessorSpec
     { simpleSpanProcessorSpecExporter = noopSpanExporter
-    , simpleSpanProcessorSpecLogger = mempty
+    , simpleSpanProcessorSpecName = "simple"
+    , simpleSpanProcessorSpecOnSpansExported = \span -> do
+        askSpanExportResult >>= \case
+          SpanExportResultSuccess {} -> pure ()
+          SpanExportResultFailure {} -> do
+            pairs <- askSpanExportResultMetadata
+            logError $ "Exporter failed to export span" :#
+              "span" .= span : pairs
     }
 
-withSimpleSpanProcessor
-  :: (MonadUnliftIO m)
-  => SimpleSpanProcessorSpec
-  -> (SpanProcessorSpec -> m a)
-  -> m a
-withSimpleSpanProcessor spec action =
-  withRunInIO \runInIO -> withSimpleSpanProcessorIO spec (runInIO . action)
-
-withSimpleSpanProcessorIO
-  :: SimpleSpanProcessorSpec
-  -> (SpanProcessorSpec -> IO a)
-  -> IO a
-withSimpleSpanProcessorIO simpleSpanProcessorSpec action = do
-  commandQueue <- liftIO $ newTBMQueueIO maxQueueSize
-  withBatchingSpanProcessorIO commandQueue batchingSpanProcessorSpec \spanProcessorSpec -> do
-    action $ patchSpanProcessor commandQueue spanProcessorSpec
+simpleSpanProcessor :: SimpleSpanProcessorSpec -> SpanProcessorSpec
+simpleSpanProcessor simpleSpanProcessorSpec = spanProcessorSpec
   where
-  patchSpanProcessor commandQueue spanProcessorSpec =
-    spanProcessorSpec
-      { spanProcessorSpecOnSpanEnd = \span -> do
-          unlessShutdown (isClosedTBMQueue commandQueue) do
-            (mResult, add) <- sendCommand logger commandQueue (BatchCommandAddItem span) metaOnSpanEnd
-            -- Here we case on the send result while still inside the same STM
-            -- transaction. This lets us conditionally decide what to do next:
-            -- If the queue was closed or the queue was full, we just run the
-            -- effects of attempting the add (which just logs accordingly). If
-            -- the queue was not full and the send succeeded (again, we're still
-            -- in that same transaction), then we also run the effects of
-            -- attempting to send a process-batch command.
-            case mResult of
-              Nothing -> pure add
-              Just False -> pure add
-              Just True -> do
-                process <- sendCommand_ logger commandQueue BatchCommandProcessBatch metaOnSpanEnd
-                pure $ add <> process
+  spanProcessorSpec =
+    defaultSpanProcessorSpec
+      { spanProcessorSpecName = name
+      , spanProcessorSpecOnSpanEnd = \span -> do
+          liftIO $ spanExporterExport spanExporter span \spanExportResult -> do
+            logger <- askLoggerIO
+            liftIO $ flip runLoggingT logger do
+              runOnSpansExported (onExportResult span) spanExportResult metaOnSpanEnd
+      , spanProcessorSpecShutdown = liftIO $ spanExporterShutdown spanExporter
+      , spanProcessorSpecForceFlush = liftIO $ spanExporterForceFlush spanExporter
       }
 
   metaOnSpanEnd :: [SeriesElem]
   metaOnSpanEnd = mkLoggingMeta "onSpanEnd"
 
-  -- This and the equivalent one in 'withBatchingSpanProcessorIO' should get
-  -- factored out at some point.
   mkLoggingMeta :: Text -> [SeriesElem]
   mkLoggingMeta method =
     [ "spanProcessorSpec" .= object
-        [ "name" .= spanProcessorSpecName
+        [ "name" .= name
         , "method" .= method
         ]
-    , "maxQueueSize" .= maxQueueSize
-    , "scheduledDelayMicros" .= scheduledDelayMicros
-    , "exportTimeoutMicros" .= exportTimeoutMicros
-    , "maxExportBatchSize" .= maxExportBatchSize
     ]
-
-  BatchingSpanProcessorSpec
-    { batchingSpanProcessorSpecName = spanProcessorSpecName
-    , batchingSpanProcessorSpecMaxQueueSize = maxQueueSize
-    , batchingSpanProcessorSpecScheduledDelayMicros = scheduledDelayMicros
-    , batchingSpanProcessorSpecExportTimeoutMicros = exportTimeoutMicros
-    , batchingSpanProcessorSpecMaxExportBatchSize = maxExportBatchSize
-    } = batchingSpanProcessorSpec
-
-  batchingSpanProcessorSpec =
-    defaultBatchingSpanProcessorSpec
-      { batchingSpanProcessorSpecExporter = spanExporter
-        -- This delay config is critical as it disables the export timer thread
-        -- in the batching internals. We do not need an export timer from the
-        -- simple span processor, as this processor will export immediately
-        -- after each span is added.
-      , batchingSpanProcessorSpecScheduledDelayMicros = 0
-      , batchingSpanProcessorSpecMaxExportBatchSize = 1
-      , batchingSpanProcessorSpecName = "simple"
-      , batchingSpanProcessorSpecLogger = logger
-      }
 
   SimpleSpanProcessorSpec
-    { simpleSpanProcessorSpecExporter = spanExporter
-    , simpleSpanProcessorSpecLogger = logger
+    { simpleSpanProcessorSpecName = name
+    , simpleSpanProcessorSpecExporter = spanExporter
+    , simpleSpanProcessorSpecOnSpansExported = onExportResult
     } = simpleSpanProcessorSpec
-
-data BatchingSpanProcessorSpec = BatchingSpanProcessorSpec
-  { batchingSpanProcessorSpecExporter :: SpanExporter (Batch (Span Attrs))
-  , batchingSpanProcessorSpecMaxQueueSize :: Int
-  , batchingSpanProcessorSpecScheduledDelayMicros :: Int
-  , batchingSpanProcessorSpecExportTimeoutMicros :: Int
-  , batchingSpanProcessorSpecMaxExportBatchSize :: Int
-  , batchingSpanProcessorSpecName :: Text
-  , batchingSpanProcessorSpecLogger :: Loc -> LogSource -> LogLevel -> LogStr -> IO ()
-  }
-
-defaultBatchingSpanProcessorSpec :: BatchingSpanProcessorSpec
-defaultBatchingSpanProcessorSpec =
-  BatchingSpanProcessorSpec
-    { batchingSpanProcessorSpecExporter = noopSpanExporter
-    , batchingSpanProcessorSpecMaxQueueSize = 2_048
-    , batchingSpanProcessorSpecScheduledDelayMicros = 5_000_000
-    , batchingSpanProcessorSpecExportTimeoutMicros = 30_000_000
-    , batchingSpanProcessorSpecMaxExportBatchSize = 512
-    , batchingSpanProcessorSpecName = "batching"
-    , batchingSpanProcessorSpecLogger = mempty
-    }
-
-withBatchingSpanProcessor
-  :: (MonadUnliftIO m)
-  => BatchingSpanProcessorSpec
-  -> (SpanProcessorSpec -> m a)
-  -> m a
-withBatchingSpanProcessor spec action = do
-  commandQueue <- liftIO $ newTBMQueueIO maxQueueSize
-  withRunInIO \runInIO -> do
-    withBatchingSpanProcessorIO commandQueue spec $ runInIO . action
-  where
-  BatchingSpanProcessorSpec
-    { batchingSpanProcessorSpecMaxQueueSize = maxQueueSize
-    } = spec
-
-withBatchingSpanProcessorIO
-  :: TBMQueue (BatchCommand (Span Attrs))
-  -> BatchingSpanProcessorSpec
-  -> (SpanProcessorSpec -> IO a)
-  -> IO a
-withBatchingSpanProcessorIO commandQueue batchingSpanProcessorSpec action = do
-  withAsync checkedExportTimer \exportTimerThread -> do
-    withAsync processCommandQueue \processorThread -> do
-      let spanProcessorSpec = mkSpanProcessorSpec exportTimerThread processorThread
-      action spanProcessorSpec `finally` do
-        unlessShutdown (isClosedTBMQueue commandQueue) do
-          pure $ shutdown exportTimerThread processorThread
-  where
-  mkSpanProcessorSpec
-    :: Async ()
-    -> Async ()
-    -> SpanProcessorSpec
-  mkSpanProcessorSpec exportTimerThread processorThread =
-    defaultSpanProcessorSpec
-      { spanProcessorSpecName
-      , spanProcessorSpecOnSpanEnd = \span -> do
-          unlessShutdown (isClosedTBMQueue commandQueue) do
-            -- TODO: Check if 'Sampled' flag is set in 'TraceFlags' before
-            -- adding the span to the queue.
-            sendCommand_ logger commandQueue (BatchCommandAddItem span) metaOnSpanEnd
-      , spanProcessorSpecShutdown = do
-          unlessShutdown (isClosedTBMQueue commandQueue) do
-            pure $ liftIO $ shutdown exportTimerThread processorThread
-      , spanProcessorSpecForceFlush = do
-          unlessShutdown (isClosedTBMQueue commandQueue) do
-            sendCommand_ logger commandQueue BatchCommandForceFlush metaForceFlush
-      }
-
-  processCommandQueue :: IO ()
-  processCommandQueue = go mempty
-    where
-    go :: DList (Span Attrs) -> IO ()
-    go !spans = do
-      join $ atomically do
-        readTBMQueue commandQueue >>= \case
-          Nothing -> do
-            pure do
-              forceFlush spans
-              spanExporterShutdown
-          Just BatchCommandForceFlush -> do
-            pure do
-              forceFlush spans
-              go mempty
-          Just (BatchCommandAddItem span) -> do
-            pure $ go (DList.snoc spans span)
-          Just BatchCommandProcessBatch -> do
-            pure do
-              let (batch, rest) = List.splitAt maxExportBatchSize $ DList.toList spans
-              unless (List.null batch) do
-                processBatch batch
-              go (DList.fromList rest)
-
-    processBatch :: [Span Attrs] -> IO ()
-    processBatch spans = do
-      mResult <- timeout exportTimeoutMicros $ spanExporterExport $ batchFromList spans
-      flip runLoggingT logger do
-        case mResult of
-          Nothing -> do
-            logError $ "Processor timed out when exporting batch" :# metaProcessBatch
-          Just Nothing -> do
-            logDebug $ "Processor cannot export batch as exporter is shut down" :# metaProcessBatch
-          Just (Just SpanExportResultFailure) -> do
-            logError $ "Processor cannot export batch due to exporter failure" :# metaProcessBatch
-          Just (Just SpanExportResultSuccess) -> pure ()
-
-    forceFlush :: DList (Span Attrs) -> IO ()
-    forceFlush spans = do
-      let batches = Split.chunksOf maxExportBatchSize $ DList.toList spans
-      traverse_ processBatch batches
-      spanExporterForceFlush
-
-  -- If the configured export delay is not positive, then this function returns
-  -- immediately. This is useful behavior, considering that the simple span
-  -- processor also provided by this SDK is implemented in terms of this
-  -- batching span processor, just with a batch size of 1. In the simple span
-  -- processor case, we don't want a timer thread to be pumping process-batch
-  -- commands into the queue at all, and instead, the simple span processor
-  -- also sends a process-batch command after every span is added.
-  checkedExportTimer :: IO ()
-  checkedExportTimer =
-    when (scheduledDelayMicros > 0) do
-      exportTimer
-
-  exportTimer :: IO ()
-  exportTimer = go
-    where
-    go :: IO ()
-    go = do
-      threadDelay scheduledDelayMicros
-      unlessShutdown (isClosedTBMQueue commandQueue) do
-        (mResult, sender) <- sendCommand logger commandQueue BatchCommandProcessBatch metaExportTimer
-        pure do
-          sender
-          case mResult of
-            Nothing -> pure ()
-            Just True -> go
-            Just False -> go
-
-  shutdown :: Async () -> Async () -> IO ()
-  shutdown exportTimerThread processorThread= do
-    flip runLoggingT logger do
-      -- Closing the queue ultimately signals shutdown.
-      liftIO $ atomically $ closeTBMQueue commandQueue
-      -- We cancel the export timer thread, as we don't want it to be stuck
-      -- in a 'threadDelay' forcing us to wait for that delay in our cleanup.
-      liftIO $ uninterruptibleCancel exportTimerThread
-      liftIO (waitCatch processorThread) >>= \case
-        Right () -> pure ()
-        Left (SomeException ex) -> do
-          logError $ "Unhandled exception when stopping batch export timer" :#
-            "exception" .= displayException ex : metaCleanup
-      liftIO (waitCatch exportTimerThread) >>= \case
-        Right () -> pure ()
-        Left someEx@(SomeException ex) -> do
-          case fromException someEx of
-            Nothing -> do
-              logError $ "Unhandled exception when stopping batch export timer" :#
-                "exception" .= displayException ex : metaCleanup
-            Just AsyncCancelled -> do
-              logDebug $ "Successfully cancelled batch export timer" :# metaCleanup
-
-  metaOnSpanEnd :: [SeriesElem]
-  metaOnSpanEnd = mkLoggingMeta "onSpanEnd"
-
-  metaForceFlush :: [SeriesElem]
-  metaForceFlush = mkLoggingMeta "forceFlush"
-
-  metaExportTimer :: [SeriesElem]
-  metaExportTimer = mkLoggingMeta "exportTimer"
-
-  metaCleanup :: [SeriesElem]
-  metaCleanup = mkLoggingMeta "cleanup"
-
-  metaProcessBatch :: [SeriesElem]
-  metaProcessBatch = mkLoggingMeta "processBatch"
-
-  mkLoggingMeta :: Text -> [SeriesElem]
-  mkLoggingMeta method =
-    [ "spanProcessorSpec" .= object
-        [ "name" .= spanProcessorSpecName
-        , "method" .= method
-        ]
-    , "maxQueueSize" .= maxQueueSize
-    , "scheduledDelayMicros" .= scheduledDelayMicros
-    , "exportTimeoutMicros" .= exportTimeoutMicros
-    , "maxExportBatchSize" .= maxExportBatchSize
-    ]
-
-  BatchingSpanProcessorSpec
-    { batchingSpanProcessorSpecExporter =
-        SpanExporter
-          { spanExporterExport
-          , spanExporterShutdown
-          , spanExporterForceFlush
-          }
-    , batchingSpanProcessorSpecMaxQueueSize = maxQueueSize
-    , batchingSpanProcessorSpecScheduledDelayMicros = scheduledDelayMicros
-    , batchingSpanProcessorSpecExportTimeoutMicros = exportTimeoutMicros
-    , batchingSpanProcessorSpecMaxExportBatchSize = maxExportBatchSize
-    , batchingSpanProcessorSpecName = spanProcessorSpecName
-    , batchingSpanProcessorSpecLogger = logger
-    } = batchingSpanProcessorSpec
-
-data BatchCommand a
-  = BatchCommandAddItem a
-  | BatchCommandProcessBatch
-  | BatchCommandForceFlush
-
-sendCommand
-  :: (MonadIO m)
-  => (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
-  -> TBMQueue (BatchCommand (Span Attrs))
-  -> BatchCommand (Span Attrs)
-  -> [SeriesElem]
-  -> STM (Maybe Bool, m ())
-sendCommand logger commandQueue command pairs = do
-  mResult <- tryWriteTBMQueue commandQueue command
-  fmap (mResult,) $ pure do
-    flip runLoggingT logger do
-      case mResult of
-        Just True -> pure ()
-        Just False -> logError $ "Batch queue is full" :# pairs
-        Nothing -> logDebug $ "Cannot write to batch queue as it is closed" :# pairs
-
-sendCommand_
-  :: (MonadIO m)
-  => (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
-  -> TBMQueue (BatchCommand (Span Attrs))
-  -> BatchCommand (Span Attrs)
-  -> [SeriesElem]
-  -> STM (m ())
-sendCommand_ logger commandQueue command pairs = do
-  (_mResult, io) <- sendCommand logger commandQueue command pairs
-  pure $ void io
 
 type SpanProcessorM :: Type -> Type
 newtype SpanProcessorM a = SpanProcessorM
@@ -705,7 +408,7 @@ newtype SpanProcessorM a = SpanProcessorM
       ( Applicative, Functor, Monad, MonadIO -- @base@
       , MonadCatch, MonadMask, MonadThrow -- @exceptions@
       , MonadUnliftIO -- @unliftio-core@
-      , MonadLogger -- @monad-logger@
+      , MonadLogger, MonadLoggerIO -- @monad-logger@
       ) via (LoggingT IO)
     deriving
       ( Semigroup, Monoid -- @base@
@@ -773,7 +476,7 @@ newtype IdGeneratorM a = IdGeneratorM
       ( Applicative, Functor, Monad, MonadIO -- @base@
       , MonadCatch, MonadMask, MonadThrow -- @exceptions@
       , MonadUnliftIO -- @unliftio-core@
-      , MonadLogger -- @monad-logger@
+      , MonadLogger, MonadLoggerIO -- @monad-logger@
       ) via (ReaderT PRNG (LoggingT IO))
     deriving
       ( Semigroup, Monoid -- @base@
@@ -820,7 +523,7 @@ newtype OnSynchronousException a = OnSynchronousException
       ( Applicative, Functor, Monad, MonadIO -- @base@
       , MonadCatch, MonadMask, MonadThrow -- @exceptions@
       , MonadUnliftIO -- @unliftio-core@
-      , MonadLogger -- @monad-logger@
+      , MonadLogger, MonadLoggerIO -- @monad-logger@
       ) via (ReaderT SomeException (ReaderT [SeriesElem] (LoggingT IO)))
     deriving
       ( Semigroup, Monoid -- @base@
@@ -838,7 +541,7 @@ newtype OnTimeout a = OnTimeout
       ( Applicative, Functor, Monad, MonadIO -- @base@
       , MonadCatch, MonadMask, MonadThrow -- @exceptions@
       , MonadUnliftIO -- @unliftio-core@
-      , MonadLogger -- @monad-logger@
+      , MonadLogger, MonadLoggerIO -- @monad-logger@
       ) via (ReaderT Int (ReaderT [SeriesElem] (LoggingT IO)))
     deriving
       ( Semigroup, Monoid -- @base@
@@ -850,25 +553,44 @@ askTimeoutMicros = OnTimeout \timeoutMicros _pairs -> pure timeoutMicros
 askTimeoutMetadata :: OnTimeout [SeriesElem]
 askTimeoutMetadata = OnTimeout \_timeoutMicros pairs -> pure pairs
 
+newtype OnSpansExported a = OnSpansExported
+  { runOnSpansExported :: SpanExportResult -> [SeriesElem] -> LoggingT IO a
+  } deriving
+      ( Applicative, Functor, Monad, MonadIO -- @base@
+      , MonadCatch, MonadMask, MonadThrow -- @exceptions@
+      , MonadUnliftIO -- @unliftio-core@
+      , MonadLogger, MonadLoggerIO -- @monad-logger@
+      ) via (ReaderT SpanExportResult (ReaderT [SeriesElem] (LoggingT IO)))
+    deriving
+      ( Semigroup, Monoid -- @base@
+      ) via (Ap (ReaderT SpanExportResult (ReaderT [SeriesElem] (LoggingT IO))) a)
+
+askSpanExportResult :: OnSpansExported SpanExportResult
+askSpanExportResult = OnSpansExported \spanExportResult _pairs -> pure spanExportResult
+
+askSpanExportResultMetadata :: OnSpansExported [SeriesElem]
+askSpanExportResultMetadata = OnSpansExported \_spanExportResult pairs -> pure pairs
+
 data SpanExportResult
   = SpanExportResultSuccess
   | SpanExportResultFailure
 
-instance Semigroup SpanExportResult where
-  x <> y =
-    case (x, y) of
-      (SpanExportResultFailure, _) -> SpanExportResultFailure
-      (SpanExportResultSuccess, _) -> y
-
-instance Monoid SpanExportResult where
-  mempty = SpanExportResultSuccess
-
 -- Export function returns 'Nothing' only if the exporter is shutdown.
 data SpanExporter spans = SpanExporter
-  { spanExporterExport :: spans -> IO (Maybe SpanExportResult)
+  { spanExporterExport
+      :: spans
+      -> (SpanExportResult -> SpanProcessorM ())
+      -> IO ()
   , spanExporterShutdown :: IO ()
   , spanExporterForceFlush :: IO ()
   }
+
+instance Contravariant SpanExporter where
+  contramap f spanExporter =
+    spanExporter
+      { spanExporterExport = \spans onSpansExported -> do
+          spanExporterExport spanExporter (f spans) onSpansExported
+      }
 
 noopSpanExporter :: SpanExporter spans
 noopSpanExporter =
@@ -877,6 +599,9 @@ noopSpanExporter =
     , spanExporterShutdown = mempty
     , spanExporterForceFlush = mempty
     }
+
+toSingletonSpanExporter :: SpanExporter (Batch (Span Attrs)) -> SpanExporter (Span Attrs)
+toSingletonSpanExporter = contramap singletonBatch
 
 buildSpanExporter
   :: (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
@@ -888,12 +613,12 @@ buildSpanExporter logger spanExporterSpec = do
   where
   spanExporter shutdownRef =
     SpanExporter
-      { spanExporterExport = \batch -> do
+      { spanExporterExport = \spans onSpansExported -> do
           unlessShutdown (readTVar shutdownRef) do
             pure do
-              fmap Just do
-                runSpanExporterM logger onTimeout' onSyncEx' defaultTimeout metaExport do
-                  spanExporterSpecExport batch
+              runSpanExporterM logger onTimeout onSyncEx defaultTimeout metaExport do
+                spanExporterSpecExport spans \spanExportResult -> do
+                  onSpansExported spanExportResult
       , spanExporterShutdown = do
           unlessShutdown (readTVar shutdownRef) do
             writeTVar shutdownRef True
@@ -922,12 +647,6 @@ buildSpanExporter logger spanExporterSpec = do
         ]
     ]
 
-  onTimeout' :: OnTimeout SpanExportResult
-  onTimeout' = SpanExportResultFailure <$ onTimeout
-
-  onSyncEx' :: OnSynchronousException SpanExportResult
-  onSyncEx' = SpanExportResultFailure <$ onSyncEx
-
   SpanExporterSpec
     { spanExporterSpecName
     , spanExporterSpecExport
@@ -946,7 +665,7 @@ newtype SpanExporterM a = SpanExporterM
       ( Applicative, Functor, Monad, MonadIO -- @base@
       , MonadCatch, MonadMask, MonadThrow -- @exceptions@
       , MonadUnliftIO -- @unliftio-core@
-      , MonadLogger -- @monad-logger@
+      , MonadLogger, MonadLoggerIO -- @monad-logger@
       ) via (LoggingT IO)
     deriving
       ( Semigroup, Monoid -- @base@
@@ -972,7 +691,10 @@ runSpanExporterM logger onTimeout onSyncEx timeoutMicros pairs action = do
 
 data SpanExporterSpec spans = SpanExporterSpec
   { spanExporterSpecName :: Text
-  , spanExporterSpecExport :: spans -> SpanExporterM SpanExportResult
+  , spanExporterSpecExport
+      :: spans
+      -> (SpanExportResult -> SpanProcessorM ())
+      -> SpanExporterM ()
   , spanExporterSpecShutdown :: SpanExporterM ()
   , spanExporterSpecShutdownTimeout :: Int
   , spanExporterSpecForceFlush :: SpanExporterM ()
@@ -1010,8 +732,11 @@ newtype Batch a = Batch
 instance Traversable Batch where
   traverse f (Batch xs) = fmap Batch $ traverse f xs
 
-batchFromList :: [a] -> Batch a
-batchFromList = Batch. Vector.fromList
+singletonBatch :: a -> Batch a
+singletonBatch = Batch . Vector.singleton
+
+fromListBatch :: [a] -> Batch a
+fromListBatch = Batch . Vector.fromList
 
 unlessShutdown :: (MonadIO m, Monoid (m a)) => STM Bool -> STM (m a) -> m a
 unlessShutdown isShutdownSTM actionSTM =
