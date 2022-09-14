@@ -123,6 +123,7 @@ module OTel.API.Core.Internal
   ) where
 
 import Control.Monad.IO.Class (MonadIO(liftIO))
+import Data.Aeson (KeyValue((.=)), ToJSON(..))
 import Data.ByteString.Builder (Builder)
 import Data.DList (DList)
 import Data.HashMap.Strict (HashMap)
@@ -137,6 +138,7 @@ import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.Float (float2Double)
 import OTel.API.Context (ContextBackend, ContextKey)
 import Prelude hiding (span)
+import qualified Data.Aeson as Aeson
 import qualified Data.ByteString as ByteString
 import qualified Data.ByteString.Builder as Builder
 import qualified Data.DList as DList
@@ -189,6 +191,7 @@ instance IsString (Key a) where
 newtype Timestamp = Timestamp
   { unTimestamp :: Integer -- ^ nanoseconds
   } deriving stock (Eq, Show)
+    deriving (ToJSON) via (Integer)
 
 timestampFromNanoseconds :: Integer -> Timestamp
 timestampFromNanoseconds = Timestamp
@@ -217,6 +220,20 @@ data InstrumentationScope = InstrumentationScope
   , instrumentationScopeSchemaURL :: Maybe SchemaURL
   }
 
+instance ToJSON InstrumentationScope where
+  toJSON instrumentationScope =
+    Aeson.object
+      [ "name" .= instrumentationScopeName
+      , "version" .= instrumentationScopeVersion
+      , "schemaURL" .= instrumentationScopeSchemaURL
+      ]
+    where
+    InstrumentationScope
+      { instrumentationScopeName
+      , instrumentationScopeVersion
+      , instrumentationScopeSchemaURL
+      } = instrumentationScope
+
 instance IsString InstrumentationScope where
   fromString s =
     defaultInstrumentationScope
@@ -234,6 +251,7 @@ defaultInstrumentationScope =
 newtype InstrumentationScopeName = InstrumentationScopeName
   { unInstrumentationScopeName :: Text
   } deriving stock (Eq, Show)
+    deriving (ToJSON) via (Text)
 
 instance IsString InstrumentationScopeName where
   fromString = InstrumentationScopeName . Text.pack
@@ -241,6 +259,7 @@ instance IsString InstrumentationScopeName where
 newtype Version = Version
   { unVersion :: Text
   } deriving stock (Eq, Show)
+    deriving (ToJSON) via (Text)
 
 instance IsString Version where
   fromString = Version . Text.pack
@@ -248,6 +267,7 @@ instance IsString Version where
 newtype SchemaURL = SchemaURL
   { unSchemaURL :: Text
   } deriving stock (Eq, Show)
+    deriving (ToJSON) via (Text)
 
 schemaURLFromText :: Text -> Either Text SchemaURL
 schemaURLFromText = Right . SchemaURL
@@ -258,6 +278,7 @@ schemaURLToText = unSchemaURL
 newtype Attrs (af :: AttrsFor) = Attrs
   { unAttrs :: HashMap Text SomeAttr
   } deriving stock (Eq, Show)
+    deriving (ToJSON) via (HashMap Text SomeAttr)
 
 nullAttrs :: Attrs af -> Bool
 nullAttrs = HashMap.null . unAttrs
@@ -386,6 +407,51 @@ instance Show SomeAttr where
       AttrTypeDoubleArray -> show attr
       AttrTypeIntArray -> show attr
 
+instance ToJSON SomeAttr where
+  toJSON = \case
+    SomeAttr Attr { attrType, attrVal } ->
+      case attrType of
+        AttrTypeText ->
+          Aeson.object
+            [ "tag" .= ("text" :: Text)
+            , "content" .= toJSON attrVal
+            ]
+        AttrTypeBool ->
+          Aeson.object
+            [ "tag" .= ("bool" :: Text)
+            , "content" .= toJSON attrVal
+            ]
+        AttrTypeDouble ->
+          Aeson.object
+            [ "tag" .= ("double" :: Text)
+            , "content" .= toJSON attrVal
+            ]
+        AttrTypeInt ->
+          Aeson.object
+            [ "tag" .= ("int" :: Text)
+            , "content" .= toJSON attrVal
+            ]
+        AttrTypeTextArray ->
+          Aeson.object
+            [ "tag" .= ("textArray" :: Text)
+            , "content" .= toJSON attrVal
+            ]
+        AttrTypeBoolArray ->
+          Aeson.object
+            [ "tag" .= ("boolArray" :: Text)
+            , "content" .= toJSON attrVal
+            ]
+        AttrTypeDoubleArray ->
+          Aeson.object
+            [ "tag" .= ("doubleArray" :: Text)
+            , "content" .= toJSON attrVal
+            ]
+        AttrTypeIntArray ->
+          Aeson.object
+            [ "tag" .= ("intArray" :: Text)
+            , "content" .= toJSON attrVal
+            ]
+
 data Attr a = Attr
   { attrType :: AttrType a
   , attrVal :: a
@@ -393,7 +459,7 @@ data Attr a = Attr
 
 newtype AttrVals a = AttrVals
   { unAttrVals :: Vector a
-  } deriving (Eq, Monoid, Semigroup, Show) via (Vector a)
+  } deriving (Eq, Monoid, Semigroup, Show, ToJSON) via (Vector a)
     deriving (Foldable, Functor, Applicative, Monad) via Vector
 
 instance Traversable AttrVals where
@@ -709,6 +775,24 @@ data SpanContext = SpanContext
   , spanContextIsRemote :: Bool
   } deriving stock (Eq, Show)
 
+instance ToJSON SpanContext where
+  toJSON spanContext =
+    Aeson.object
+      [ "traceId" .= spanContextTraceId
+      , "spanId" .= spanContextSpanId
+      , "traceFlags" .= spanContextTraceFlags
+      , "traceState" .= spanContextTraceState
+      , "isRemote" .= spanContextIsRemote
+      ]
+    where
+    SpanContext
+      { spanContextTraceId
+      , spanContextSpanId
+      , spanContextTraceFlags
+      , spanContextTraceState
+      , spanContextIsRemote
+      } = spanContext
+
 emptySpanContext :: SpanContext
 emptySpanContext =
   SpanContext
@@ -730,6 +814,9 @@ data TraceId = TraceId
   { traceIdHi :: Word64
   , traceIdLo :: Word64
   } deriving stock (Eq, Show)
+
+instance ToJSON TraceId where
+  toJSON = toJSON . traceIdToHexText
 
 traceIdToHexText :: TraceId -> Text
 traceIdToHexText traceId =
@@ -755,6 +842,9 @@ newtype SpanId = SpanId
   { spanIdLo :: Word64
   } deriving stock (Eq, Show)
 
+instance ToJSON SpanId where
+  toJSON = toJSON . spanIdToHexText
+
 spanIdToHexText :: SpanId -> Text
 spanIdToHexText spanId =
   Text.Encoding.decodeUtf8
@@ -777,14 +867,19 @@ spanIdFromWords = SpanId
 newtype TraceFlags = TraceFlags
   { unTraceFlags :: Word8
   } deriving stock (Eq, Show)
+    deriving (ToJSON) via (Word8)
 
 newtype TraceState = TraceState
   { unTraceState :: [(Text, Text)] -- TODO: Better type
   } deriving stock (Eq, Show)
+    deriving (ToJSON) via ([(Text, Text)]) -- TODO: Better ToJSON instance
 
 newtype SpanEvents (attrs :: AttrsFor -> Type) = SpanEvents
   { unSpanEvents :: DList (SpanEvent attrs)
   }
+
+instance ToJSON (SpanEvents Attrs) where
+  toJSON = toJSON . unSpanEvents
 
 deriving stock instance (Eq (attrs 'AttrsForSpanEvent)) => Eq (SpanEvents attrs)
 deriving stock instance (Show (attrs 'AttrsForSpanEvent)) => Show (SpanEvents attrs)
@@ -811,6 +906,20 @@ data SpanEvent (attrs :: AttrsFor -> Type) = SpanEvent
   , spanEventTimestamp :: Timestamp
   , spanEventAttrs :: attrs 'AttrsForSpanEvent
   }
+
+instance ToJSON (SpanEvent Attrs) where
+  toJSON spanEvent =
+    Aeson.object
+      [ "name" .= spanEventName
+      , "timestamp" .= spanEventTimestamp
+      , "attrs" .= spanEventAttrs
+      ]
+    where
+    SpanEvent
+      { spanEventName
+      , spanEventTimestamp
+      , spanEventAttrs
+      } = spanEvent
 
 deriving stock instance (Eq (attrs 'AttrsForSpanEvent)) => Eq (SpanEvent attrs)
 deriving stock instance (Show (attrs 'AttrsForSpanEvent)) => Show (SpanEvent attrs)
@@ -860,6 +969,7 @@ instance IsString SpanEventSpec where
 newtype SpanEventName = SpanEventName
   { unSpanEventName :: Text
   } deriving stock (Eq, Show)
+    deriving (ToJSON) via (Text)
 
 instance IsString SpanEventName where
   fromString = SpanEventName . Text.pack
@@ -867,6 +977,9 @@ instance IsString SpanEventName where
 newtype SpanLinks (attrs :: AttrsFor -> Type) = SpanLinks
   { unSpanLinks :: DList (SpanLink attrs)
   }
+
+instance ToJSON (SpanLinks Attrs) where
+  toJSON = toJSON . unSpanLinks
 
 deriving stock instance (Eq (attrs 'AttrsForSpanLink)) => Eq (SpanLinks attrs)
 deriving stock instance (Show (attrs 'AttrsForSpanLink)) => Show (SpanLinks attrs)
@@ -905,6 +1018,18 @@ data SpanLink (attrs :: AttrsFor -> Type) = SpanLink
   { spanLinkSpanContext :: SpanContext
   , spanLinkAttrs :: attrs 'AttrsForSpanLink
   }
+
+instance ToJSON (SpanLink Attrs) where
+  toJSON spanLink =
+    Aeson.object
+      [ "spanContext" .= spanLinkSpanContext
+      , "attrs" .= spanLinkAttrs
+      ]
+    where
+    SpanLink
+      { spanLinkSpanContext
+      , spanLinkAttrs
+      } = spanLink
 
 deriving stock instance (Eq (attrs 'AttrsForSpanLink)) => Eq (SpanLink attrs)
 deriving stock instance (Show (attrs 'AttrsForSpanLink)) => Show (SpanLink attrs)
@@ -1079,6 +1204,7 @@ buildSpanUpdater getTimestamp updateSpanSpec = do
 newtype SpanName = SpanName
   { unSpanName :: Text
   } deriving stock (Eq, Show)
+    deriving (ToJSON) via (Text)
 
 instance IsString SpanName where
   fromString = SpanName . Text.pack
@@ -1103,6 +1229,38 @@ data Span (attrs :: AttrsFor -> Type) = Span
   , spanIsRecording :: Bool
   , spanInstrumentationScope :: InstrumentationScope
   }
+
+instance ToJSON (Span Attrs) where
+  toJSON span =
+    Aeson.object
+      [ "parent" .= spanParent
+      , "spanContext" .= spanContext
+      , "name" .= spanName
+      , "status" .= spanStatus
+      , "start" .= spanStart
+      , "frozenAt" .= spanFrozenAt
+      , "kind" .= spanKind
+      , "attrs" .= spanAttrs
+      , "links" .= spanLinks
+      , "events" .= spanEvents
+      , "isRecording" .= spanIsRecording
+      , "instrumentationScope" .= spanInstrumentationScope
+      ]
+    where
+    Span
+      { spanParent
+      , spanContext
+      , spanName
+      , spanStatus
+      , spanStart
+      , spanFrozenAt
+      , spanKind
+      , spanAttrs
+      , spanLinks
+      , spanEvents
+      , spanIsRecording
+      , spanInstrumentationScope
+      } = span
 
 type family SpanFrozenAt (attrs :: AttrsFor -> Type) :: Type where
   SpanFrozenAt AttrsBuilder = Maybe Timestamp
@@ -1141,10 +1299,23 @@ pattern Explicit sp <- SpanParentSourceExplicit sp where
 
 {-# COMPLETE Implicit, Explicit :: SpanParentSource #-}
 
+-- TODO: Rename back to SpanLineage?
 data SpanParent
   = SpanParentRoot
   | SpanParentChildOf SpanContext
   deriving stock (Eq, Show)
+
+instance ToJSON SpanParent where
+  toJSON = \case
+    SpanParentRoot ->
+      Aeson.object
+        [ "tag" .= ("root" :: Text)
+        ]
+    SpanParentChildOf spanContext ->
+      Aeson.object
+        [ "tag" .= ("childOf" :: Text)
+        , "content" .= toJSON spanContext
+        ]
 
 pattern Root :: SpanParent
 pattern Root <- SpanParentRoot where
@@ -1168,6 +1339,14 @@ data SpanKind
   | SpanKindConsumer
   | SpanKindInternal
   deriving stock (Eq, Show)
+
+instance ToJSON SpanKind where
+  toJSON = \case
+    SpanKindServer -> Aeson.object ["tag" .= ("server" :: Text)]
+    SpanKindClient -> Aeson.object ["tag" .= ("client" :: Text)]
+    SpanKindProducer -> Aeson.object ["tag" .= ("producer" :: Text)]
+    SpanKindConsumer -> Aeson.object ["tag" .= ("consumer" :: Text)]
+    SpanKindInternal -> Aeson.object ["tag" .= ("internal" :: Text)]
 
 pattern Server :: SpanKind
 pattern Server <- SpanKindServer where
@@ -1196,6 +1375,22 @@ data SpanStatus
   | SpanStatusOk
   | SpanStatusError Text
   deriving stock (Eq, Show)
+
+instance ToJSON SpanStatus where
+  toJSON = \case
+    SpanStatusUnset ->
+      Aeson.object
+        [ "tag" .= ("unset" :: Text)
+        ]
+    SpanStatusOk ->
+      Aeson.object
+        [ "tag" .= ("ok" :: Text)
+        ]
+    SpanStatusError errText ->
+      Aeson.object
+        [ "tag" .= ("error" :: Text)
+        , "content" .= toJSON errText
+        ]
 
 pattern Unset :: SpanStatus
 pattern Unset <- SpanStatusUnset where
