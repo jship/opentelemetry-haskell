@@ -352,7 +352,7 @@ buildSpanProcessor logger spanProcessorSpec = do
 data SimpleSpanProcessorSpec = SimpleSpanProcessorSpec
   { simpleSpanProcessorSpecName :: Text
   , simpleSpanProcessorSpecExporter :: SpanExporter (Span Attrs)
-  , simpleSpanProcessorSpecOnSpansExported :: Span Attrs -> OnSpansExported ()
+  , simpleSpanProcessorSpecOnSpansExported :: OnSpansExported (Span Attrs) ()
   }
 
 defaultSimpleSpanProcessorSpec :: SimpleSpanProcessorSpec
@@ -360,11 +360,12 @@ defaultSimpleSpanProcessorSpec =
   SimpleSpanProcessorSpec
     { simpleSpanProcessorSpecExporter = noopSpanExporter
     , simpleSpanProcessorSpecName = "simple"
-    , simpleSpanProcessorSpecOnSpansExported = \span -> do
-        askSpanExportResult >>= \case
-          SpanExportResultSuccess {} -> pure ()
-          SpanExportResultFailure {} -> do
-            pairs <- askSpanExportResultMetadata
+    , simpleSpanProcessorSpecOnSpansExported = do
+        askSpansExportedResult >>= \case
+          SpanExportResultSuccess -> pure ()
+          SpanExportResultFailure -> do
+            span <- askSpansExported
+            pairs <- askSpansExportedMetadata
             logError $ "Exporter failed to export span" :#
               "span" .= span : pairs
     }
@@ -379,7 +380,7 @@ simpleSpanProcessor simpleSpanProcessorSpec = spanProcessorSpec
           liftIO $ spanExporterExport spanExporter span \spanExportResult -> do
             logger <- askLoggerIO
             liftIO $ flip runLoggingT logger do
-              runOnSpansExported (onExportResult span) spanExportResult metaOnSpanEnd
+              runOnSpansExported onExportResult span spanExportResult metaOnSpanEnd
       , spanProcessorSpecShutdown = liftIO $ spanExporterShutdown spanExporter
       , spanProcessorSpecForceFlush = liftIO $ spanExporterForceFlush spanExporter
       }
@@ -553,23 +554,26 @@ askTimeoutMicros = OnTimeout \timeoutMicros _pairs -> pure timeoutMicros
 askTimeoutMetadata :: OnTimeout [SeriesElem]
 askTimeoutMetadata = OnTimeout \_timeoutMicros pairs -> pure pairs
 
-newtype OnSpansExported a = OnSpansExported
-  { runOnSpansExported :: SpanExportResult -> [SeriesElem] -> LoggingT IO a
+newtype OnSpansExported spans a = OnSpansExported
+  { runOnSpansExported :: spans -> SpanExportResult -> [SeriesElem] -> LoggingT IO a
   } deriving
       ( Applicative, Functor, Monad, MonadIO -- @base@
       , MonadCatch, MonadMask, MonadThrow -- @exceptions@
       , MonadUnliftIO -- @unliftio-core@
       , MonadLogger, MonadLoggerIO -- @monad-logger@
-      ) via (ReaderT SpanExportResult (ReaderT [SeriesElem] (LoggingT IO)))
+      ) via (ReaderT spans (ReaderT SpanExportResult (ReaderT [SeriesElem] (LoggingT IO))))
     deriving
       ( Semigroup, Monoid -- @base@
-      ) via (Ap (ReaderT SpanExportResult (ReaderT [SeriesElem] (LoggingT IO))) a)
+      ) via (Ap (ReaderT spans (ReaderT SpanExportResult (ReaderT [SeriesElem] (LoggingT IO)))) a)
 
-askSpanExportResult :: OnSpansExported SpanExportResult
-askSpanExportResult = OnSpansExported \spanExportResult _pairs -> pure spanExportResult
+askSpansExported :: OnSpansExported spans spans
+askSpansExported = OnSpansExported \spans _spanExportResult _pairs -> pure spans
 
-askSpanExportResultMetadata :: OnSpansExported [SeriesElem]
-askSpanExportResultMetadata = OnSpansExported \_spanExportResult pairs -> pure pairs
+askSpansExportedResult :: OnSpansExported spans SpanExportResult
+askSpansExportedResult = OnSpansExported \_spans spanExportResult _pairs -> pure spanExportResult
+
+askSpansExportedMetadata :: OnSpansExported spans [SeriesElem]
+askSpansExportedMetadata = OnSpansExported \_spans _spanExportResult pairs -> pure pairs
 
 data SpanExportResult
   = SpanExportResultSuccess
