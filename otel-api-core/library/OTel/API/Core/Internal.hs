@@ -66,9 +66,13 @@ module OTel.API.Core.Internal
   , emptySpanContext
   , spanContextIsValid
   , TraceId(..)
+  , traceIdToHexText
+  , traceIdToHexBuilder
   , emptyTraceId
   , traceIdFromWords
   , SpanId(..)
+  , spanIdToHexText
+  , spanIdToHexBuilder
   , emptySpanId
   , spanIdFromWords
   , TraceFlags(..)
@@ -119,6 +123,7 @@ module OTel.API.Core.Internal
   ) where
 
 import Control.Monad.IO.Class (MonadIO(liftIO))
+import Data.ByteString.Builder (Builder)
 import Data.DList (DList)
 import Data.HashMap.Strict (HashMap)
 import Data.Int (Int16, Int32, Int64, Int8)
@@ -132,11 +137,14 @@ import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.Float (float2Double)
 import OTel.API.Context (ContextBackend, ContextKey)
 import Prelude hiding (span)
+import qualified Data.ByteString as ByteString
+import qualified Data.ByteString.Builder as Builder
 import qualified Data.DList as DList
 import qualified Data.Foldable as Foldable
 import qualified Data.HashMap.Strict as HashMap
 import qualified Data.Maybe as Maybe
 import qualified Data.Text as Text
+import qualified Data.Text.Encoding as Text.Encoding
 import qualified Data.Text.Lazy as Text.Lazy
 import qualified Data.Traversable as Traversable
 import qualified Data.Vector as Vector
@@ -717,12 +725,24 @@ spanContextIsValid spanContext =
   where
   SpanContext { spanContextTraceId, spanContextSpanId } = spanContext
 
--- TODO: Get hex string
 -- TODO: Get byte array
 data TraceId = TraceId
   { traceIdHi :: Word64
   , traceIdLo :: Word64
   } deriving stock (Eq, Show)
+
+traceIdToHexText :: TraceId -> Text
+traceIdToHexText traceId =
+  Text.Encoding.decodeUtf8
+    $ ByteString.toStrict
+    $ Builder.toLazyByteString
+    $ traceIdToHexBuilder traceId
+
+traceIdToHexBuilder :: TraceId -> Builder
+traceIdToHexBuilder traceId =
+  Builder.word64HexFixed traceIdHi <> Builder.word64HexFixed traceIdLo
+  where
+  TraceId { traceIdHi, traceIdLo } = traceId
 
 emptyTraceId :: TraceId
 emptyTraceId = TraceId { traceIdHi = 0, traceIdLo = 0 }
@@ -730,11 +750,23 @@ emptyTraceId = TraceId { traceIdHi = 0, traceIdLo = 0 }
 traceIdFromWords :: Word64 -> Word64 -> TraceId
 traceIdFromWords = TraceId
 
--- TODO: Get hex string
 -- TODO: Get byte array
 newtype SpanId = SpanId
   { spanIdLo :: Word64
   } deriving stock (Eq, Show)
+
+spanIdToHexText :: SpanId -> Text
+spanIdToHexText spanId =
+  Text.Encoding.decodeUtf8
+    $ ByteString.toStrict
+    $ Builder.toLazyByteString
+    $ spanIdToHexBuilder spanId
+
+spanIdToHexBuilder :: SpanId -> Builder
+spanIdToHexBuilder spanId =
+  Builder.word64HexFixed spanIdLo
+  where
+  SpanId { spanIdLo } = spanId
 
 emptySpanId :: SpanId
 emptySpanId = SpanId { spanIdLo = 0 }

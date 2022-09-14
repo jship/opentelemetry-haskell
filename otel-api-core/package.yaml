@@ -28,7 +28,9 @@ ghc-options:
 
 library:
   dependencies:
+  - aeson
   - base >=4.11.1.0 && <5
+  - bytestring
   - containers
   - dlist
   - otel-api-context

@@ -14,9 +14,13 @@ module OTel.API.Core.Trace
   , spanContextIsRemote
   , spanContextIsValid
   , TraceId
+  , traceIdToHexText
+  , traceIdToHexBuilder
   , emptyTraceId
   , traceIdFromWords
   , SpanId
+  , spanIdToHexText
+  , spanIdToHexBuilder
   , emptySpanId
   , spanIdFromWords
   , TraceFlags
