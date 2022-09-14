@@ -26,8 +26,8 @@ import Control.Monad (join, when)
 import Control.Monad.IO.Class (MonadIO(liftIO))
 import Control.Monad.IO.Unlift (MonadUnliftIO(..))
 import Control.Monad.Logger.Aeson
-  ( LoggingT(..), Message(..), (.=), Loc, LogLevel, LogSource, LogStr, MonadLogger, SeriesElem
-  , logError, MonadLoggerIO (askLoggerIO)
+  ( LoggingT(..), Message(..), MonadLoggerIO(askLoggerIO), (.=), Loc, LogLevel, LogSource, LogStr
+  , MonadLogger, SeriesElem, logError
   )
 import Control.Monad.Reader (ReaderT(..))
 import Data.Aeson (object)
@@ -380,7 +380,7 @@ simpleSpanProcessor simpleSpanProcessorSpec = spanProcessorSpec
           liftIO $ spanExporterExport spanExporter span \spanExportResult -> do
             logger <- askLoggerIO
             liftIO $ flip runLoggingT logger do
-              runOnSpansExported onExportResult span spanExportResult metaOnSpanEnd
+              runOnSpansExported onSpansExported span spanExportResult metaOnSpanEnd
       , spanProcessorSpecShutdown = liftIO $ spanExporterShutdown spanExporter
       , spanProcessorSpecForceFlush = liftIO $ spanExporterForceFlush spanExporter
       }
@@ -399,7 +399,7 @@ simpleSpanProcessor simpleSpanProcessorSpec = spanProcessorSpec
   SimpleSpanProcessorSpec
     { simpleSpanProcessorSpecName = name
     , simpleSpanProcessorSpecExporter = spanExporter
-    , simpleSpanProcessorSpecOnSpansExported = onExportResult
+    , simpleSpanProcessorSpecOnSpansExported = onSpansExported
     } = simpleSpanProcessorSpec
 
 type SpanProcessorM :: Type -> Type
