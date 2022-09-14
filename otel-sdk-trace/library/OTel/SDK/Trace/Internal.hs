@@ -418,7 +418,7 @@ newtype SpanProcessorM a = SpanProcessorM
 runSpanProcessorM
   :: (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
   -> OnTimeout a
-  -> OnSynchronousException a
+  -> OnException a
   -> Int
   -> [SeriesElem]
   -> SpanProcessorM a
@@ -428,7 +428,7 @@ runSpanProcessorM logger onTimeout onSyncEx timeoutMicros pairs action = do
     mResult <- withRunInIO \runInIO -> do
       timeout timeoutMicros $ runInIO do
         unSpanProcessorM action `catchAny` \someEx -> do
-          runOnSynchronousException onSyncEx someEx pairs
+          runOnException onSyncEx someEx pairs
     case mResult of
       Just x -> pure x
       Nothing -> runOnTimeout onTimeout timeoutMicros pairs
@@ -445,7 +445,7 @@ data SpanProcessorSpec = SpanProcessorSpec
   , spanProcessorSpecForceFlush :: SpanProcessorM ()
   , spanProcessorSpecForceFlushTimeout :: Int
   , spanProcessorSpecOnTimeout :: OnTimeout ()
-  , spanProcessorSpecOnException :: OnSynchronousException ()
+  , spanProcessorSpecOnException :: OnException ()
   }
 
 defaultSpanProcessorSpec :: SpanProcessorSpec
@@ -518,8 +518,8 @@ newPRNGRef seed = do
   prng <- fmap PRNG $ initialize $ fromSeed seed
   newMVar prng
 
-newtype OnSynchronousException a = OnSynchronousException
-  { runOnSynchronousException :: SomeException -> [SeriesElem] -> LoggingT IO a
+newtype OnException a = OnException
+  { runOnException :: SomeException -> [SeriesElem] -> LoggingT IO a
   } deriving
       ( Applicative, Functor, Monad, MonadIO -- @base@
       , MonadCatch, MonadMask, MonadThrow -- @exceptions@
@@ -530,11 +530,11 @@ newtype OnSynchronousException a = OnSynchronousException
       ( Semigroup, Monoid -- @base@
       ) via (Ap (ReaderT SomeException (ReaderT [SeriesElem] (LoggingT IO))) a)
 
-askException :: OnSynchronousException SomeException
-askException = OnSynchronousException \someEx _pairs -> pure someEx
+askException :: OnException SomeException
+askException = OnException \someEx _pairs -> pure someEx
 
-askExceptionMetadata :: OnSynchronousException [SeriesElem]
-askExceptionMetadata = OnSynchronousException \_someEx pairs -> pure pairs
+askExceptionMetadata :: OnException [SeriesElem]
+askExceptionMetadata = OnException \_someEx pairs -> pure pairs
 
 newtype OnTimeout a = OnTimeout
   { runOnTimeout :: Int -> [SeriesElem] -> LoggingT IO a
@@ -678,7 +678,7 @@ newtype SpanExporterM a = SpanExporterM
 runSpanExporterM
   :: (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
   -> OnTimeout a
-  -> OnSynchronousException a
+  -> OnException a
   -> Int
   -> [SeriesElem]
   -> SpanExporterM a
@@ -688,7 +688,7 @@ runSpanExporterM logger onTimeout onSyncEx timeoutMicros pairs action = do
     mResult <- withRunInIO \runInIO -> do
       timeout timeoutMicros $ runInIO do
         unSpanExporterM action `catchAny` \someEx -> do
-          runOnSynchronousException onSyncEx someEx pairs
+          runOnException onSyncEx someEx pairs
     case mResult of
       Just x -> pure x
       Nothing -> runOnTimeout onTimeout timeoutMicros pairs
@@ -704,7 +704,7 @@ data SpanExporterSpec spans = SpanExporterSpec
   , spanExporterSpecForceFlush :: SpanExporterM ()
   , spanExporterSpecForceFlushTimeout :: Int
   , spanExporterSpecOnTimeout :: OnTimeout ()
-  , spanExporterSpecOnException :: OnSynchronousException ()
+  , spanExporterSpecOnException :: OnException ()
   }
 
 defaultSpanExporterSpec :: SpanExporterSpec spans
