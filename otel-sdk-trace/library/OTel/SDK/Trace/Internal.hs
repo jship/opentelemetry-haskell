@@ -319,7 +319,7 @@ buildSpanProcessor logger spanProcessorSpec = do
       }
 
   run :: Int -> [SeriesElem] -> SpanProcessorM () -> IO ()
-  run = runSpanProcessorM logger onTimeout onSyncEx
+  run = runSpanProcessorM logger onTimeout onEx
 
   defaultTimeout :: Int
   defaultTimeout = 5_000_000
@@ -346,7 +346,7 @@ buildSpanProcessor logger spanProcessorSpec = do
     , spanProcessorSpecForceFlush
     , spanProcessorSpecForceFlushTimeout = forceFlushTimeout
     , spanProcessorSpecOnTimeout = onTimeout
-    , spanProcessorSpecOnException = onSyncEx
+    , spanProcessorSpecOnException = onEx
     } = spanProcessorSpec
 
 data SimpleSpanProcessorSpec = SimpleSpanProcessorSpec
@@ -403,37 +403,6 @@ simpleSpanProcessor simpleSpanProcessorSpec = spanProcessorSpec
     , simpleSpanProcessorSpecOnSpansExported = onSpansExported
     } = simpleSpanProcessorSpec
 
-type SpanProcessorM :: Type -> Type
-newtype SpanProcessorM a = SpanProcessorM
-  { unSpanProcessorM :: LoggingT IO a
-  } deriving
-      ( Applicative, Functor, Monad, MonadIO -- @base@
-      , MonadCatch, MonadMask, MonadThrow -- @exceptions@
-      , MonadUnliftIO -- @unliftio-core@
-      , MonadLogger, MonadLoggerIO -- @monad-logger@
-      ) via (LoggingT IO)
-    deriving
-      ( Semigroup, Monoid -- @base@
-      ) via (Ap (LoggingT IO) a)
-
-runSpanProcessorM
-  :: (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
-  -> OnTimeout a
-  -> OnException a
-  -> Int
-  -> [SeriesElem]
-  -> SpanProcessorM a
-  -> IO a
-runSpanProcessorM logger onTimeout onSyncEx timeoutMicros pairs action = do
-  flip runLoggingT logger do
-    mResult <- withRunInIO \runInIO -> do
-      timeout timeoutMicros $ runInIO do
-        unSpanProcessorM action `catchAny` \someEx -> do
-          runOnException onSyncEx someEx pairs
-    case mResult of
-      Just x -> pure x
-      Nothing -> runOnTimeout onTimeout timeoutMicros pairs
-
 data SpanProcessorSpec = SpanProcessorSpec
   { spanProcessorSpecName :: Text
   , spanProcessorSpecOnSpanStart
@@ -470,6 +439,186 @@ defaultSpanProcessorSpec =
         logError $ "Ignoring exception" :#
           "exception" .= displayException ex : pairs
     }
+
+data SpanExportResult
+  = SpanExportResultSuccess
+  | SpanExportResultFailure
+
+data SpanExporter (f :: Type -> Type) = SpanExporter
+  { spanExporterExport
+      :: f (Span Attrs)
+      -> (SpanExportResult -> SpanProcessorM ())
+      -> IO ()
+  , spanExporterShutdown :: IO ()
+  , spanExporterForceFlush :: IO ()
+  }
+
+noopSpanExporter :: SpanExporter f
+noopSpanExporter =
+  SpanExporter
+    { spanExporterExport = mempty
+    , spanExporterShutdown = mempty
+    , spanExporterForceFlush = mempty
+    }
+
+toSingletonSpanExporter :: SpanExporter Batch -> SpanExporter Identity
+toSingletonSpanExporter spanExporter =
+  spanExporter
+    { spanExporterExport = \Identity { runIdentity = span } onSpansExported -> do
+        spanExporterExport spanExporter (singletonBatch span) onSpansExported
+    }
+
+buildSpanExporter
+  :: (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
+  -> SpanExporterSpec f
+  -> IO (SpanExporter f)
+buildSpanExporter logger spanExporterSpec = do
+  shutdownRef <- liftIO $ newTVarIO False
+  pure $ spanExporter shutdownRef
+  where
+  spanExporter shutdownRef =
+    SpanExporter
+      { spanExporterExport = \spans onSpansExported -> do
+          unlessShutdown (readTVar shutdownRef) do
+            pure do
+              runSpanExporterM logger onTimeout onEx defaultTimeout metaExport do
+                spanExporterSpecExport spans \spanExportResult -> do
+                  onSpansExported spanExportResult
+      , spanExporterShutdown = do
+          unlessShutdown (readTVar shutdownRef) do
+            writeTVar shutdownRef True
+            pure do
+              runSpanExporterM logger onTimeout onEx shutdownTimeout metaShutdown do
+                spanExporterSpecShutdown
+      , spanExporterForceFlush = do
+          unlessShutdown (readTVar shutdownRef) do
+            pure do
+              runSpanExporterM logger onTimeout onEx forceFlushTimeout metaForceFlush do
+                spanExporterSpecForceFlush
+      }
+
+  defaultTimeout :: Int
+  defaultTimeout = 10_000_000
+
+  metaExport = mkLoggingMeta "export"
+  metaShutdown = mkLoggingMeta "shutdown"
+  metaForceFlush = mkLoggingMeta "forceFlush"
+
+  mkLoggingMeta :: Text -> [SeriesElem]
+  mkLoggingMeta method =
+    [ "spanExporter" .= object
+        [ "name" .= spanExporterSpecName
+        , "method" .= method
+        ]
+    ]
+
+  SpanExporterSpec
+    { spanExporterSpecName
+    , spanExporterSpecExport
+    , spanExporterSpecShutdown
+    , spanExporterSpecShutdownTimeout = shutdownTimeout
+    , spanExporterSpecForceFlush
+    , spanExporterSpecForceFlushTimeout = forceFlushTimeout
+    , spanExporterSpecOnTimeout = onTimeout
+    , spanExporterSpecOnException = onEx
+    } = spanExporterSpec
+
+data SpanExporterSpec (f :: Type -> Type) = SpanExporterSpec
+  { spanExporterSpecName :: Text
+  , spanExporterSpecExport
+      :: f (Span Attrs)
+      -> (SpanExportResult -> SpanProcessorM ())
+      -> SpanExporterM ()
+  , spanExporterSpecShutdown :: SpanExporterM ()
+  , spanExporterSpecShutdownTimeout :: Int
+  , spanExporterSpecForceFlush :: SpanExporterM ()
+  , spanExporterSpecForceFlushTimeout :: Int
+  , spanExporterSpecOnTimeout :: OnTimeout ()
+  , spanExporterSpecOnException :: OnException ()
+  }
+
+defaultSpanExporterSpec :: SpanExporterSpec f
+defaultSpanExporterSpec =
+  SpanExporterSpec
+    { spanExporterSpecName = "default"
+    , spanExporterSpecExport = mempty
+    , spanExporterSpecShutdown = mempty
+    , spanExporterSpecShutdownTimeout = 30_000_000
+    , spanExporterSpecForceFlush = mempty
+    , spanExporterSpecForceFlushTimeout = 30_000_000
+    , spanExporterSpecOnTimeout = do
+        timeoutMicros <- askTimeoutMicros
+        pairs <- askTimeoutMetadata
+        logError $ "Action did not complete within timeout" :#
+          "timeoutMicros" .= timeoutMicros : pairs
+    , spanExporterSpecOnException = do
+        SomeException ex <- askException
+        pairs <- askExceptionMetadata
+        logError $ "Ignoring exception" :#
+          "exception" .= displayException ex : pairs
+    }
+
+type SpanProcessorM :: Type -> Type
+newtype SpanProcessorM a = SpanProcessorM
+  { unSpanProcessorM :: LoggingT IO a
+  } deriving
+      ( Applicative, Functor, Monad, MonadIO -- @base@
+      , MonadCatch, MonadMask, MonadThrow -- @exceptions@
+      , MonadUnliftIO -- @unliftio-core@
+      , MonadLogger, MonadLoggerIO -- @monad-logger@
+      ) via (LoggingT IO)
+    deriving
+      ( Semigroup, Monoid -- @base@
+      ) via (Ap (LoggingT IO) a)
+
+runSpanProcessorM
+  :: (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
+  -> OnTimeout a
+  -> OnException a
+  -> Int
+  -> [SeriesElem]
+  -> SpanProcessorM a
+  -> IO a
+runSpanProcessorM logger onTimeout onEx timeoutMicros pairs action = do
+  flip runLoggingT logger do
+    mResult <- withRunInIO \runInIO -> do
+      timeout timeoutMicros $ runInIO do
+        unSpanProcessorM action `catchAny` \someEx -> do
+          runOnException onEx someEx pairs
+    case mResult of
+      Just x -> pure x
+      Nothing -> runOnTimeout onTimeout timeoutMicros pairs
+
+type SpanExporterM :: Type -> Type
+newtype SpanExporterM a = SpanExporterM
+  { unSpanExporterM :: LoggingT IO a
+  } deriving
+      ( Applicative, Functor, Monad, MonadIO -- @base@
+      , MonadCatch, MonadMask, MonadThrow -- @exceptions@
+      , MonadUnliftIO -- @unliftio-core@
+      , MonadLogger, MonadLoggerIO -- @monad-logger@
+      ) via (LoggingT IO)
+    deriving
+      ( Semigroup, Monoid -- @base@
+      ) via (Ap (LoggingT IO) a)
+
+runSpanExporterM
+  :: (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
+  -> OnTimeout a
+  -> OnException a
+  -> Int
+  -> [SeriesElem]
+  -> SpanExporterM a
+  -> IO a
+runSpanExporterM logger onTimeout onEx timeoutMicros pairs action = do
+  flip runLoggingT logger do
+    mResult <- withRunInIO \runInIO -> do
+      timeout timeoutMicros $ runInIO do
+        unSpanExporterM action `catchAny` \someEx -> do
+          runOnException onEx someEx pairs
+    case mResult of
+      Just x -> pure x
+      Nothing -> runOnTimeout onTimeout timeoutMicros pairs
 
 type IdGeneratorM :: Type -> Type
 newtype IdGeneratorM a = IdGeneratorM
@@ -575,156 +724,6 @@ askSpansExportedResult = OnSpansExported \_spans spanExportResult _pairs -> pure
 
 askSpansExportedMetadata :: OnSpansExported f [SeriesElem]
 askSpansExportedMetadata = OnSpansExported \_spans _spanExportResult pairs -> pure pairs
-
-data SpanExportResult
-  = SpanExportResultSuccess
-  | SpanExportResultFailure
-
--- Export function returns 'Nothing' only if the exporter is shutdown.
-data SpanExporter (f :: Type -> Type) = SpanExporter
-  { spanExporterExport
-      :: f (Span Attrs)
-      -> (SpanExportResult -> SpanProcessorM ())
-      -> IO ()
-  , spanExporterShutdown :: IO ()
-  , spanExporterForceFlush :: IO ()
-  }
-
-noopSpanExporter :: SpanExporter f
-noopSpanExporter =
-  SpanExporter
-    { spanExporterExport = mempty
-    , spanExporterShutdown = mempty
-    , spanExporterForceFlush = mempty
-    }
-
-toSingletonSpanExporter :: SpanExporter Batch -> SpanExporter Identity
-toSingletonSpanExporter spanExporter =
-  spanExporter
-    { spanExporterExport = \Identity { runIdentity = span } onSpansExported -> do
-        spanExporterExport spanExporter (singletonBatch span) onSpansExported
-    }
-
-buildSpanExporter
-  :: (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
-  -> SpanExporterSpec f
-  -> IO (SpanExporter f)
-buildSpanExporter logger spanExporterSpec = do
-  shutdownRef <- liftIO $ newTVarIO False
-  pure $ spanExporter shutdownRef
-  where
-  spanExporter shutdownRef =
-    SpanExporter
-      { spanExporterExport = \spans onSpansExported -> do
-          unlessShutdown (readTVar shutdownRef) do
-            pure do
-              runSpanExporterM logger onTimeout onSyncEx defaultTimeout metaExport do
-                spanExporterSpecExport spans \spanExportResult -> do
-                  onSpansExported spanExportResult
-      , spanExporterShutdown = do
-          unlessShutdown (readTVar shutdownRef) do
-            writeTVar shutdownRef True
-            pure do
-              runSpanExporterM logger onTimeout onSyncEx shutdownTimeout metaShutdown do
-                spanExporterSpecShutdown
-      , spanExporterForceFlush = do
-          unlessShutdown (readTVar shutdownRef) do
-            pure do
-              runSpanExporterM logger onTimeout onSyncEx forceFlushTimeout metaForceFlush do
-                spanExporterSpecForceFlush
-      }
-
-  defaultTimeout :: Int
-  defaultTimeout = 10_000_000
-
-  metaExport = mkLoggingMeta "export"
-  metaShutdown = mkLoggingMeta "shutdown"
-  metaForceFlush = mkLoggingMeta "forceFlush"
-
-  mkLoggingMeta :: Text -> [SeriesElem]
-  mkLoggingMeta method =
-    [ "spanExporter" .= object
-        [ "name" .= spanExporterSpecName
-        , "method" .= method
-        ]
-    ]
-
-  SpanExporterSpec
-    { spanExporterSpecName
-    , spanExporterSpecExport
-    , spanExporterSpecShutdown
-    , spanExporterSpecShutdownTimeout = shutdownTimeout
-    , spanExporterSpecForceFlush
-    , spanExporterSpecForceFlushTimeout = forceFlushTimeout
-    , spanExporterSpecOnTimeout = onTimeout
-    , spanExporterSpecOnException = onSyncEx
-    } = spanExporterSpec
-
-type SpanExporterM :: Type -> Type
-newtype SpanExporterM a = SpanExporterM
-  { unSpanExporterM :: LoggingT IO a
-  } deriving
-      ( Applicative, Functor, Monad, MonadIO -- @base@
-      , MonadCatch, MonadMask, MonadThrow -- @exceptions@
-      , MonadUnliftIO -- @unliftio-core@
-      , MonadLogger, MonadLoggerIO -- @monad-logger@
-      ) via (LoggingT IO)
-    deriving
-      ( Semigroup, Monoid -- @base@
-      ) via (Ap (LoggingT IO) a)
-
-runSpanExporterM
-  :: (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
-  -> OnTimeout a
-  -> OnException a
-  -> Int
-  -> [SeriesElem]
-  -> SpanExporterM a
-  -> IO a
-runSpanExporterM logger onTimeout onSyncEx timeoutMicros pairs action = do
-  flip runLoggingT logger do
-    mResult <- withRunInIO \runInIO -> do
-      timeout timeoutMicros $ runInIO do
-        unSpanExporterM action `catchAny` \someEx -> do
-          runOnException onSyncEx someEx pairs
-    case mResult of
-      Just x -> pure x
-      Nothing -> runOnTimeout onTimeout timeoutMicros pairs
-
-data SpanExporterSpec (f :: Type -> Type) = SpanExporterSpec
-  { spanExporterSpecName :: Text
-  , spanExporterSpecExport
-      :: f (Span Attrs)
-      -> (SpanExportResult -> SpanProcessorM ())
-      -> SpanExporterM ()
-  , spanExporterSpecShutdown :: SpanExporterM ()
-  , spanExporterSpecShutdownTimeout :: Int
-  , spanExporterSpecForceFlush :: SpanExporterM ()
-  , spanExporterSpecForceFlushTimeout :: Int
-  , spanExporterSpecOnTimeout :: OnTimeout ()
-  , spanExporterSpecOnException :: OnException ()
-  }
-
-defaultSpanExporterSpec :: SpanExporterSpec f
-defaultSpanExporterSpec =
-  SpanExporterSpec
-    { spanExporterSpecName = "default"
-    , spanExporterSpecExport = mempty
-    , spanExporterSpecShutdown = mempty
-    , spanExporterSpecShutdownTimeout = 30_000_000
-    , spanExporterSpecForceFlush = mempty
-    , spanExporterSpecForceFlushTimeout = 30_000_000
-    , spanExporterSpecOnTimeout = do
-        timeoutMicros <- askTimeoutMicros
-        pairs <- askTimeoutMetadata
-        logError $ "Action did not complete within timeout" :#
-          "timeoutMicros" .= timeoutMicros : pairs
-    , spanExporterSpecOnException = do
-        SomeException ex <- askException
-        pairs <- askExceptionMetadata
-        logError $ "Ignoring exception" :#
-          "exception" .= displayException ex : pairs
-    }
 
 newtype Batch a = Batch
   { unBatch :: Vector a
