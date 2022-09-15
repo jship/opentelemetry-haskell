@@ -45,6 +45,7 @@ library
     , bytestring
     , containers
     , dlist
+    , exceptions
     , otel-api-context
     , text
     , unordered-containers

@@ -13,23 +13,57 @@ module OTel.API.Core.Trace
   , spanContextTraceState
   , spanContextIsRemote
   , spanContextIsValid
+
   , TraceId
   , traceIdToHexText
   , traceIdToHexBuilder
   , emptyTraceId
   , traceIdFromWords
+
   , SpanId
   , spanIdToHexText
   , spanIdToHexBuilder
   , emptySpanId
   , spanIdFromWords
+
   , TraceFlags
   , traceFlagsToHexText
   , traceFlagsToHexBuilder
   , emptyTraceFlags
   , setSampledFlag
   , isSampled
+
   , TraceState
+  , emptyTraceState
+  , nullTraceState
+  , sizeTraceState
+  , memberTraceState
+  , lookupTraceState
+  , findWithDefaultTraceState
+  , deleteTraceState
+  , filterTraceState
+  , filterWithKeyTraceState
+  , foldMapWithKeyTraceState
+  , toListTraceState
+
+  , TraceStateBuilder
+  , buildTraceState
+  , buildTraceStatePure
+  , TraceStateErrors(..)
+  , TraceStateError(..)
+  , TraceStateSimpleKeyIsEmptyError(..)
+  , TraceStateSimpleKeyContainsInvalidCharsError(..)
+  , TraceStateTenantIdIsEmptyError(..)
+  , TraceStateTenantIdContainsInvalidCharsError(..)
+  , TraceStateSystemIdIsEmptyError(..)
+  , TraceStateSystemIdContainsInvalidCharsError(..)
+  , TraceStateSimpleKeyTooLongError(..)
+  , TraceStateTenantIdTooLongError(..)
+  , TraceStateSystemIdTooLongError(..)
+  , TraceStateKeyTypeUnknownError(..)
+  , TraceStateValueIsEmptyError(..)
+  , TraceStateValueContainsInvalidCharsError(..)
+  , TraceStateValueTooLongError(..)
 
   , SpanEvents
   , spanEventsFromList

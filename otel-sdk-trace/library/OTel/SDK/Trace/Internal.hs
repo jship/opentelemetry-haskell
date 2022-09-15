@@ -41,13 +41,14 @@ import OTel.API.Context.Internal (unsafeNewContextKey)
 import OTel.API.Core
   ( SpanParent(..), SpanSpec(..), SpanStatus(..), Attrs, AttrsBuilder, InstrumentationScope
   , SpanAttrsLimits, SpanContext, SpanEventAttrsLimits, SpanId, SpanLinkAttrsLimits, Timestamp
-  , TraceId, UpdateSpanSpec, defaultAttrsLimits, emptySpanContext, spanContextIsRemote
-  , spanContextSpanId, spanContextTraceFlags, spanContextTraceId, spanContextTraceState
-  , spanIdFromWords, spanParentContext, timestampFromNanoseconds, traceIdFromWords
+  , TraceId, UpdateSpanSpec, defaultAttrsLimits, emptySpanContext, emptyTraceState
+  , spanContextIsRemote, spanContextSpanId, spanContextTraceFlags, spanContextTraceId
+  , spanContextTraceState, spanIdFromWords, spanParentContext, timestampFromNanoseconds
+  , traceIdFromWords
   )
 import OTel.API.Core.Internal
-  ( MutableSpan(..), Span(..), SpanBackend(..), TraceFlags(..), TraceState(..), Tracer(..)
-  , TracerProvider(..), buildSpanUpdater, freezeSpan
+  ( MutableSpan(..), Span(..), SpanBackend(..), Tracer(..), TracerProvider(..), buildSpanUpdater
+  , freezeSpan
   )
 import OTel.API.Trace (defaultSpanBackend)
 import Prelude hiding (span)
@@ -214,8 +215,8 @@ newTracerProviderIO tracerProviderSpec = do
     pure emptySpanContext
       { spanContextTraceId
       , spanContextSpanId
-      , spanContextTraceFlags = TraceFlags 0 -- TODO: Populate correctly
-      , spanContextTraceState = TraceState [] -- TODO: Populate correctly
+      , spanContextTraceFlags = mempty
+      , spanContextTraceState = emptyTraceState
       , spanContextIsRemote = False -- TODO: Populate correctly
       }
 

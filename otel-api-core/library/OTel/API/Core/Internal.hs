@@ -1,7 +1,10 @@
+{-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
@@ -82,6 +85,35 @@ module OTel.API.Core.Internal
   , setSampledFlag
   , isSampled
   , TraceState(..)
+  , emptyTraceState
+  , nullTraceState
+  , sizeTraceState
+  , memberTraceState
+  , lookupTraceState
+  , findWithDefaultTraceState
+  , deleteTraceState
+  , filterTraceState
+  , filterWithKeyTraceState
+  , foldMapWithKeyTraceState
+  , toListTraceState
+  , TraceStateBuilder(..)
+  , buildTraceState
+  , buildTraceStatePure
+  , TraceStateErrors(..)
+  , TraceStateError(..)
+  , TraceStateSimpleKeyIsEmptyError(..)
+  , TraceStateSimpleKeyContainsInvalidCharsError(..)
+  , TraceStateTenantIdIsEmptyError(..)
+  , TraceStateTenantIdContainsInvalidCharsError(..)
+  , TraceStateSystemIdIsEmptyError(..)
+  , TraceStateSystemIdContainsInvalidCharsError(..)
+  , TraceStateSimpleKeyTooLongError(..)
+  , TraceStateTenantIdTooLongError(..)
+  , TraceStateSystemIdTooLongError(..)
+  , TraceStateKeyTypeUnknownError(..)
+  , TraceStateValueIsEmptyError(..)
+  , TraceStateValueContainsInvalidCharsError(..)
+  , TraceStateValueTooLongError(..)
   , SpanEvents(..)
   , spanEventsFromList
   , spanEventsToList
@@ -127,14 +159,18 @@ module OTel.API.Core.Internal
   , SpanStatus(.., Unset, OK, Error)
   ) where
 
+import Control.Applicative (Applicative(..))
+import Control.Monad.Catch (Exception, MonadThrow, throwM)
 import Control.Monad.IO.Class (MonadIO(liftIO))
 import Data.Aeson (KeyValue((.=)), ToJSON(..))
-import Data.Bits (Bits((.|.), testBit))
+import Data.Bifunctor (Bifunctor(..))
+import Data.Bits (Bits((.|.), testBit), Ior(..))
 import Data.ByteString.Builder (Builder)
 import Data.DList (DList)
 import Data.HashMap.Strict (HashMap)
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Kind (Constraint, Type)
+import Data.Monoid (Ap(..))
 import Data.Proxy (Proxy(..))
 import Data.Sequence (Seq)
 import Data.String (IsString(fromString))
@@ -147,6 +183,7 @@ import Prelude hiding (span)
 import qualified Data.Aeson as Aeson
 import qualified Data.ByteString as ByteString
 import qualified Data.ByteString.Builder as Builder
+import qualified Data.Char as Char
 import qualified Data.DList as DList
 import qualified Data.Foldable as Foldable
 import qualified Data.HashMap.Strict as HashMap
@@ -804,8 +841,8 @@ emptySpanContext =
   SpanContext
     { spanContextTraceId = emptyTraceId
     , spanContextSpanId = emptySpanId
-    , spanContextTraceFlags = TraceFlags { unTraceFlags = 0 }
-    , spanContextTraceState = TraceState  { unTraceState = [] }
+    , spanContextTraceFlags = mempty
+    , spanContextTraceState = emptyTraceState
     , spanContextIsRemote = False
     }
 
@@ -873,6 +910,7 @@ spanIdFromWords = SpanId
 newtype TraceFlags = TraceFlags
   { unTraceFlags :: Word8
   } deriving stock (Eq, Show)
+    deriving (Semigroup, Monoid) via (Ior Word8)
 
 instance ToJSON TraceFlags where
   toJSON = toJSON . traceFlagsToHexText
@@ -902,9 +940,343 @@ isSampled traceFlags =
   unTraceFlags traceFlags `testBit` 0
 
 newtype TraceState = TraceState
-  { unTraceState :: [(Text, Text)] -- TODO: Better type
+  { unTraceState :: HashMap Text Text
   } deriving stock (Eq, Show)
-    deriving (ToJSON) via ([(Text, Text)]) -- TODO: Better ToJSON instance
+    deriving (ToJSON) via (HashMap Text Text)
+
+emptyTraceState :: TraceState
+emptyTraceState = TraceState { unTraceState = mempty }
+
+nullTraceState :: TraceState -> Bool
+nullTraceState = HashMap.null . unTraceState
+
+sizeTraceState :: TraceState -> Int
+sizeTraceState = HashMap.size . unTraceState
+
+memberTraceState :: Key Text -> TraceState -> Bool
+memberTraceState key = HashMap.member (unKey key) . unTraceState
+
+lookupTraceState :: Key Text -> TraceState -> Maybe Text
+lookupTraceState key = HashMap.lookup (unKey key) . unTraceState
+
+findWithDefaultTraceState :: Text -> Key Text -> TraceState -> Text
+findWithDefaultTraceState defVal key =
+  HashMap.findWithDefault defVal (unKey key) . unTraceState
+
+deleteTraceState :: Key Text -> TraceState -> TraceState
+deleteTraceState key = TraceState . HashMap.delete (unKey key) . unTraceState
+
+filterTraceState :: (Text -> Bool) -> TraceState -> TraceState
+filterTraceState f = TraceState . HashMap.filter f . unTraceState
+
+filterWithKeyTraceState :: (Key Text -> Text -> Bool) -> TraceState -> TraceState
+filterWithKeyTraceState f = TraceState . HashMap.filterWithKey f' . unTraceState
+  where
+  f' keyText val = f (Key keyText) val
+
+foldMapWithKeyTraceState
+  :: forall m
+   . (Monoid m)
+  => (Key Text -> Text -> m)
+  -> TraceState
+  -> m
+foldMapWithKeyTraceState f traceState =
+  flip HashMap.foldMapWithKey (unTraceState traceState) \keyText val ->
+    f (Key keyText) val
+
+toListTraceState :: TraceState -> [(Key Text, Text)]
+toListTraceState traceState = foldMapWithKeyTraceState (\k v -> ((k, v) :)) traceState []
+
+newtype TraceStateBuilder a = TraceStateBuilder
+  { unTraceStateBuilder :: Either (DList TraceStateError) a
+  } deriving
+      ( Functor -- @base@
+      ) via (Either (DList TraceStateError))
+    deriving
+      ( Semigroup, Monoid -- @base@
+      ) via (Ap TraceStateBuilder a)
+
+instance Applicative TraceStateBuilder where
+  pure = TraceStateBuilder . Right
+  liftA2 f (TraceStateBuilder mx) (TraceStateBuilder my) =
+    TraceStateBuilder $ case (mx, my) of
+      (Left ex, Left ey) -> Left $ ex <> ey
+      (Left ex, Right {}) -> Left ex
+      (Right {}, Left ey) -> Left ey
+      (Right x, Right y) -> Right $ f x y
+
+instance KV (TraceStateBuilder TraceState) where
+  type KVConstraints (TraceStateBuilder TraceState) = IsTextKV
+  (.@) = go
+    where
+    go :: Key Text -> Text -> TraceStateBuilder TraceState
+    go (Key keyText) valText = do
+      traceStateKey <- fmap unKey parseKey
+      traceStateVal <- parseValue
+      pure $ TraceState $ HashMap.singleton traceStateKey traceStateVal
+      where
+      parseKey :: TraceStateBuilder (Key Text)
+      parseKey =
+        TraceStateBuilder do
+          case Text.splitOn "@" keyText of
+            [] -> error "TraceStateBuilder: parseKey - impossible!"
+            [simpleKeyText] -> do
+              if Text.null simpleKeyText then do
+                Left $ DList.singleton $ TraceStateSimpleKeyIsEmpty TraceStateSimpleKeyIsEmptyError
+                  { rawValue = valText
+                  }
+              else if Text.length simpleKeyText > 256 then do
+                Left $ DList.singleton $ TraceStateSimpleKeyTooLong TraceStateSimpleKeyTooLongError
+                  { rawKey = Key simpleKeyText
+                  , rawValue = valText
+                  }
+              else if not (isFirstSimpleKeyCharValid $ Text.head simpleKeyText) then do
+                Left $ DList.singleton $ TraceStateSimpleKeyContainsInvalidChars TraceStateSimpleKeyContainsInvalidCharsError
+                  { rawKey = Key simpleKeyText
+                  , rawValue = valText
+                  , invalidChars = Text.singleton $ Text.head simpleKeyText
+                  }
+              else if not (Text.null invalidChars) then do
+                Left $ DList.singleton $ TraceStateSimpleKeyContainsInvalidChars TraceStateSimpleKeyContainsInvalidCharsError
+                  { rawKey = Key simpleKeyText
+                  , rawValue = valText
+                  , invalidChars
+                  }
+              else do
+                Right $ Key keyText
+              where
+              invalidChars = Text.filter (not . isValidKeyChar) simpleKeyText
+            [tenantIdText, systemIdText] -> do
+              if Text.null tenantIdText then do
+                Left $ DList.singleton $ TraceStateTenantIdIsEmpty TraceStateTenantIdIsEmptyError
+                  { rawSystemId = systemIdText
+                  , rawValue = valText
+                  }
+              else if Text.length tenantIdText > 241 then do
+                Left $ DList.singleton $ TraceStateTenantIdTooLong TraceStateTenantIdTooLongError
+                  { rawTenantId = tenantIdText
+                  , rawSystemId = systemIdText
+                  , rawValue = valText
+                  }
+              else if not (isFirstTenantIdCharValid $ Text.head tenantIdText) then do
+                Left $ DList.singleton $ TraceStateTenantIdContainsInvalidChars TraceStateTenantIdContainsInvalidCharsError
+                  { rawTenantId = tenantIdText
+                  , rawSystemId = systemIdText
+                  , rawValue = valText
+                  , invalidChars = Text.singleton $ Text.head tenantIdText
+                  }
+              else if not (Text.null invalidTenantIdChars) then do
+                Left $ DList.singleton $ TraceStateTenantIdContainsInvalidChars TraceStateTenantIdContainsInvalidCharsError
+                  { rawTenantId = tenantIdText
+                  , rawSystemId = systemIdText
+                  , rawValue = valText
+                  , invalidChars = invalidTenantIdChars
+                  }
+              else if Text.null systemIdText then do
+                Left $ DList.singleton $ TraceStateSystemIdIsEmpty TraceStateSystemIdIsEmptyError
+                  { rawSystemId = systemIdText
+                  , rawValue = valText
+                  }
+              else if Text.length systemIdText > 14 then do
+                Left $ DList.singleton $ TraceStateSystemIdTooLong TraceStateSystemIdTooLongError
+                  { rawTenantId = tenantIdText
+                  , rawSystemId = systemIdText
+                  , rawValue = valText
+                  }
+              else if not (isFirstSystemIdCharValid $ Text.head systemIdText) then do
+                Left $ DList.singleton $ TraceStateSystemIdContainsInvalidChars TraceStateSystemIdContainsInvalidCharsError
+                  { rawTenantId = systemIdText
+                  , rawSystemId = systemIdText
+                  , rawValue = valText
+                  , invalidChars = Text.singleton $ Text.head systemIdText
+                  }
+              else if not (Text.null invalidSystemIdChars) then do
+                Left $ DList.singleton $ TraceStateSystemIdContainsInvalidChars TraceStateSystemIdContainsInvalidCharsError
+                  { rawTenantId = systemIdText
+                  , rawSystemId = systemIdText
+                  , rawValue = valText
+                  , invalidChars = invalidSystemIdChars
+                  }
+              else do
+                Right $ Key keyText
+              where
+              invalidTenantIdChars = Text.filter (not . isValidKeyChar) tenantIdText
+              invalidSystemIdChars = Text.filter (not . isValidKeyChar) systemIdText
+            _texts -> do
+              Left $ DList.singleton $ TraceStateKeyTypeUnknown TraceStateKeyTypeUnknownError
+                { rawKey = Key keyText
+                , rawValue = valText
+                }
+
+      parseValue :: TraceStateBuilder Text
+      parseValue =
+        TraceStateBuilder do
+          if Text.null valText then do
+            Left $ DList.singleton $ TraceStateValueIsEmpty TraceStateValueIsEmptyError
+              { rawKey = Key keyText
+              }
+          else if Text.length valText > 256 then do
+            Left $ DList.singleton $ TraceStateValueTooLong TraceStateValueTooLongError
+              { rawKey = Key keyText
+              , rawValue = valText
+              }
+          else if not (isLastValueCharValid $ Text.last valText) then do
+            Left $ DList.singleton $ TraceStateValueContainsInvalidChars TraceStateValueContainsInvalidCharsError
+              { rawKey = Key keyText
+              , rawValue = valText
+              , invalidChars = Text.singleton $ Text.last valText
+              }
+          else if not (Text.null invalidChars) then do
+            Left $ DList.singleton $ TraceStateValueContainsInvalidChars TraceStateValueContainsInvalidCharsError
+              { rawKey = Key keyText
+              , rawValue = valText
+              , invalidChars
+              }
+          else do
+            pure valText
+        where
+        invalidChars = Text.filter (not . isValidValueChar) valText
+
+      isValidKeyChar :: Char -> Bool
+      isValidKeyChar c
+        | c == '_' || c == '-' || c == '*' || c == '/' = True
+        | otherwise = n >= 0x61 && n <= 0x7a
+        where
+        n = Char.ord c
+
+      isFirstSimpleKeyCharValid :: Char -> Bool
+      isFirstSimpleKeyCharValid c = n >= 0x61 && n <= 0x7a
+        where
+        n = Char.ord c
+
+      isFirstTenantIdCharValid :: Char -> Bool
+      isFirstTenantIdCharValid c = (n >= 0x61 && n <= 0x7a) || Char.isDigit c
+        where
+        n = Char.ord c
+
+      isFirstSystemIdCharValid :: Char -> Bool
+      isFirstSystemIdCharValid c = n >= 0x61 && n <= 0x7a
+        where
+        n = Char.ord c
+
+      isValidValueChar :: Char -> Bool
+      isValidValueChar c
+        | n >= 0x20 && n <= 0x2b = True
+        | n >= 0x2d && n <= 0x3c = True
+        | n >= 0x3e && n <= 0x7e = True
+        | otherwise = False
+        where
+        n = Char.ord c
+
+      isLastValueCharValid :: Char -> Bool
+      isLastValueCharValid c = isValidValueChar c && n /= 0x20
+        where
+        n = Char.ord c
+
+buildTraceState
+  :: forall m
+   . (MonadThrow m)
+  => TraceStateBuilder TraceState
+  -> m TraceState
+buildTraceState builder =
+  case buildTraceStatePure builder of
+    Left err -> throwM err
+    Right x -> pure x
+
+buildTraceStatePure :: TraceStateBuilder TraceState -> Either TraceStateErrors TraceState
+buildTraceStatePure = first (TraceStateErrors . DList.toList) . unTraceStateBuilder
+
+newtype TraceStateErrors = TraceStateErrors
+  { unTraceStateErrors :: [TraceStateError]
+  } deriving stock (Eq, Show)
+    deriving anyclass (Exception)
+
+data TraceStateError
+  = TraceStateSimpleKeyIsEmpty TraceStateSimpleKeyIsEmptyError
+  | TraceStateSimpleKeyContainsInvalidChars TraceStateSimpleKeyContainsInvalidCharsError
+  | TraceStateTenantIdIsEmpty TraceStateTenantIdIsEmptyError
+  | TraceStateTenantIdContainsInvalidChars TraceStateTenantIdContainsInvalidCharsError
+  | TraceStateSystemIdIsEmpty TraceStateSystemIdIsEmptyError
+  | TraceStateSystemIdContainsInvalidChars TraceStateSystemIdContainsInvalidCharsError
+  | TraceStateSimpleKeyTooLong TraceStateSimpleKeyTooLongError
+  | TraceStateTenantIdTooLong TraceStateTenantIdTooLongError
+  | TraceStateSystemIdTooLong TraceStateSystemIdTooLongError
+  | TraceStateKeyTypeUnknown TraceStateKeyTypeUnknownError
+  | TraceStateValueIsEmpty TraceStateValueIsEmptyError
+  | TraceStateValueContainsInvalidChars TraceStateValueContainsInvalidCharsError
+  | TraceStateValueTooLong TraceStateValueTooLongError
+  deriving stock (Eq, Show)
+
+newtype TraceStateSimpleKeyIsEmptyError = TraceStateSimpleKeyIsEmptyError
+  { rawValue :: Text
+  } deriving stock (Eq, Show)
+
+data TraceStateSimpleKeyContainsInvalidCharsError = TraceStateSimpleKeyContainsInvalidCharsError
+  { rawKey :: Key Text
+  , rawValue :: Text
+  , invalidChars :: Text
+  } deriving stock (Eq, Show)
+
+data TraceStateTenantIdIsEmptyError = TraceStateTenantIdIsEmptyError
+  { rawSystemId :: Text
+  , rawValue :: Text
+  } deriving stock (Eq, Show)
+
+data TraceStateTenantIdContainsInvalidCharsError = TraceStateTenantIdContainsInvalidCharsError
+  { rawTenantId :: Text
+  , rawSystemId :: Text
+  , rawValue :: Text
+  , invalidChars :: Text
+  } deriving stock (Eq, Show)
+
+data TraceStateSystemIdIsEmptyError = TraceStateSystemIdIsEmptyError
+  { rawSystemId :: Text
+  , rawValue :: Text
+  } deriving stock (Eq, Show)
+
+data TraceStateSystemIdContainsInvalidCharsError = TraceStateSystemIdContainsInvalidCharsError
+  { rawTenantId :: Text
+  , rawSystemId :: Text
+  , rawValue :: Text
+  , invalidChars :: Text
+  } deriving stock (Eq, Show)
+
+data TraceStateSimpleKeyTooLongError = TraceStateSimpleKeyTooLongError
+  { rawKey :: Key Text
+  , rawValue :: Text
+  } deriving stock (Eq, Show)
+
+data TraceStateTenantIdTooLongError = TraceStateTenantIdTooLongError
+  { rawTenantId :: Text
+  , rawSystemId :: Text
+  , rawValue :: Text
+  } deriving stock (Eq, Show)
+
+data TraceStateSystemIdTooLongError = TraceStateSystemIdTooLongError
+  { rawTenantId :: Text
+  , rawSystemId :: Text
+  , rawValue :: Text
+  } deriving stock (Eq, Show)
+
+data TraceStateKeyTypeUnknownError = TraceStateKeyTypeUnknownError
+  { rawKey :: Key Text
+  , rawValue :: Text
+  } deriving stock (Eq, Show)
+
+newtype TraceStateValueIsEmptyError = TraceStateValueIsEmptyError
+  { rawKey :: Key Text
+  } deriving stock (Eq, Show)
+
+data TraceStateValueContainsInvalidCharsError = TraceStateValueContainsInvalidCharsError
+  { rawKey :: Key Text
+  , rawValue :: Text
+  , invalidChars :: Text
+  } deriving stock (Eq, Show)
+
+data TraceStateValueTooLongError = TraceStateValueTooLongError
+  { rawKey :: Key Text
+  , rawValue :: Text
+  } deriving stock (Eq, Show)
 
 newtype SpanEvents (attrs :: AttrsFor -> Type) = SpanEvents
   { unSpanEvents :: DList (SpanEvent attrs)
