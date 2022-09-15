@@ -285,9 +285,11 @@ instance Monoid SpanProcessor where
       }
 
 buildSpanProcessor
-  :: (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
+  :: forall m
+   . (MonadIO m)
+  => (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
   -> SpanProcessorSpec
-  -> IO SpanProcessor
+  -> m SpanProcessor
 buildSpanProcessor logger spanProcessorSpec = do
   shutdownRef <- liftIO $ newTVarIO False
   pure $ spanProcessor shutdownRef
@@ -378,9 +380,9 @@ simpleSpanProcessor simpleSpanProcessorSpec = spanProcessorSpec
       { spanProcessorSpecName = name
       , spanProcessorSpecOnSpanEnd = \span -> do
           let idSpan = Identity { runIdentity = span }
+          logger <- askLoggerIO
           liftIO $ spanExporterExport spanExporter idSpan \spanExportResult -> do
-            logger <- askLoggerIO
-            liftIO $ flip runLoggingT logger do
+            flip runLoggingT logger do
               runOnSpansExported onSpansExported idSpan spanExportResult metaOnSpanEnd
       , spanProcessorSpecShutdown = liftIO $ spanExporterShutdown spanExporter
       , spanProcessorSpecForceFlush = liftIO $ spanExporterForceFlush spanExporter
@@ -447,7 +449,7 @@ data SpanExportResult
 data SpanExporter (f :: Type -> Type) = SpanExporter
   { spanExporterExport
       :: f (Span Attrs)
-      -> (SpanExportResult -> SpanProcessorM ())
+      -> (SpanExportResult -> IO ())
       -> IO ()
   , spanExporterShutdown :: IO ()
   , spanExporterForceFlush :: IO ()
@@ -469,9 +471,11 @@ toSingletonSpanExporter spanExporter =
     }
 
 buildSpanExporter
-  :: (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
+  :: forall m f
+   . (MonadIO m)
+  => (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
   -> SpanExporterSpec f
-  -> IO (SpanExporter f)
+  -> m (SpanExporter f)
 buildSpanExporter logger spanExporterSpec = do
   shutdownRef <- liftIO $ newTVarIO False
   pure $ spanExporter shutdownRef
@@ -483,7 +487,7 @@ buildSpanExporter logger spanExporterSpec = do
             pure do
               runSpanExporterM logger onTimeout onEx defaultTimeout metaExport do
                 spanExporterSpecExport spans \spanExportResult -> do
-                  onSpansExported spanExportResult
+                  liftIO $ onSpansExported spanExportResult
       , spanExporterShutdown = do
           unlessShutdown (readTVar shutdownRef) do
             writeTVar shutdownRef True
@@ -527,7 +531,7 @@ data SpanExporterSpec (f :: Type -> Type) = SpanExporterSpec
   { spanExporterSpecName :: Text
   , spanExporterSpecExport
       :: f (Span Attrs)
-      -> (SpanExportResult -> SpanProcessorM ())
+      -> (SpanExportResult -> SpanExporterM ())
       -> SpanExporterM ()
   , spanExporterSpecShutdown :: SpanExporterM ()
   , spanExporterSpecShutdownTimeout :: Int
