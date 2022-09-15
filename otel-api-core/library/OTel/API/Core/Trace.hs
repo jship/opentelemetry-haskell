@@ -24,6 +24,11 @@ module OTel.API.Core.Trace
   , emptySpanId
   , spanIdFromWords
   , TraceFlags
+  , traceFlagsToHexText
+  , traceFlagsToHexBuilder
+  , emptyTraceFlags
+  , setSampledFlag
+  , isSampled
   , TraceState
 
   , SpanEvents

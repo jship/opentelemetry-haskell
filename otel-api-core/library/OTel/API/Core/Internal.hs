@@ -76,6 +76,11 @@ module OTel.API.Core.Internal
   , emptySpanId
   , spanIdFromWords
   , TraceFlags(..)
+  , traceFlagsToHexText
+  , traceFlagsToHexBuilder
+  , emptyTraceFlags
+  , setSampledFlag
+  , isSampled
   , TraceState(..)
   , SpanEvents(..)
   , spanEventsFromList
@@ -124,6 +129,7 @@ module OTel.API.Core.Internal
 
 import Control.Monad.IO.Class (MonadIO(liftIO))
 import Data.Aeson (KeyValue((.=)), ToJSON(..))
+import Data.Bits (Bits((.|.), testBit))
 import Data.ByteString.Builder (Builder)
 import Data.DList (DList)
 import Data.HashMap.Strict (HashMap)
@@ -867,7 +873,33 @@ spanIdFromWords = SpanId
 newtype TraceFlags = TraceFlags
   { unTraceFlags :: Word8
   } deriving stock (Eq, Show)
-    deriving (ToJSON) via (Word8)
+
+instance ToJSON TraceFlags where
+  toJSON = toJSON . traceFlagsToHexText
+
+traceFlagsToHexText :: TraceFlags -> Text
+traceFlagsToHexText traceFlags =
+  Text.Encoding.decodeUtf8
+    $ ByteString.toStrict
+    $ Builder.toLazyByteString
+    $ traceFlagsToHexBuilder traceFlags
+
+traceFlagsToHexBuilder :: TraceFlags -> Builder
+traceFlagsToHexBuilder traceFlags =
+  Builder.word8HexFixed $ unTraceFlags traceFlags
+
+emptyTraceFlags :: TraceFlags
+emptyTraceFlags = TraceFlags { unTraceFlags = 0 }
+
+setSampledFlag :: TraceFlags -> TraceFlags
+setSampledFlag traceFlags =
+  traceFlags
+    { unTraceFlags = 1 .|. unTraceFlags traceFlags
+    }
+
+isSampled :: TraceFlags -> Bool
+isSampled traceFlags =
+  unTraceFlags traceFlags `testBit` 0
 
 newtype TraceState = TraceState
   { unTraceState :: [(Text, Text)] -- TODO: Better type
