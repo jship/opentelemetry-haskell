@@ -47,6 +47,9 @@ module OTel.API.Core.Internal
   , lookupAttrs
   , foldMapWithKeyAttrs
   , AttrsBuilder(..)
+  , runAttrsBuilder
+  , AttrsAcc(..)
+  , AttrsBuilderElem(..)
   , AttrsFor(..)
   , SpanAttrsLimits
   , SpanEventAttrsLimits
@@ -212,20 +215,23 @@ instance KV (AttrsBuilder af) where
     where
     go :: forall to from. (ToAttrVal from to) => Key to -> from -> AttrsBuilder af
     go k v =
-      AttrsBuilder \attrsLimits ->
-        Attrs $ HashMap.singleton (unKey k) $ SomeAttr Attr
-          { attrType
-          , attrVal =
-              case attrType of
-                AttrTypeText -> truncateText attrsLimits val
-                AttrTypeTextArray -> fmap (truncateText attrsLimits) val
-                _ -> val
-          }
+      AttrsBuilder \textLengthLimit ->
+        pure $
+          AttrsBuilderElem
+            { attrsBuilderElemKey = unKey k
+            , attrsBuilderElemVal =
+                SomeAttr Attr
+                  { attrType
+                  , attrVal =
+                      case attrType of
+                        AttrTypeText -> Text.take textLengthLimit val
+                        AttrTypeTextArray -> fmap (Text.take textLengthLimit) val
+                        _ -> val
+                  }
+            }
       where
       attrType = attrTypeVal $ Proxy @to
       val = toAttrVal @from @to v
-      truncateText attrsLimits = Text.take (textLengthLimit attrsLimits)
-      textLengthLimit = Maybe.fromMaybe (maxBound :: Int) . attrsLimitsValueLength
 
 class (k ~ Text, v ~ Text) => IsTextKV k v
 instance IsTextKV Text Text
@@ -324,19 +330,28 @@ schemaURLFromText = Right . SchemaURL
 schemaURLToText :: SchemaURL -> Text
 schemaURLToText = unSchemaURL
 
-newtype Attrs (af :: AttrsFor) = Attrs
-  { unAttrs :: HashMap Text SomeAttr
+data Attrs (af :: AttrsFor) = Attrs
+  { attrsMap :: HashMap Text SomeAttr
+  , attrsDropped :: Int
   } deriving stock (Eq, Show)
-    deriving (ToJSON) via (HashMap Text SomeAttr)
+
+instance ToJSON (Attrs af) where
+  toJSON attrs =
+    Aeson.object
+      [ "attributes" .= toJSON attrsMap
+      , "attributesDropped" .= toJSON attrsDropped
+      ]
+    where
+    Attrs { attrsMap, attrsDropped } = attrs
 
 nullAttrs :: Attrs af -> Bool
-nullAttrs = HashMap.null . unAttrs
+nullAttrs = HashMap.null . attrsMap
 
 sizeAttrs :: Attrs af -> Int
-sizeAttrs = HashMap.size . unAttrs
+sizeAttrs = HashMap.size . attrsMap
 
 memberAttrs :: Key a -> Attrs af -> Bool
-memberAttrs key = HashMap.member (unKey key) . unAttrs
+memberAttrs key = HashMap.member (unKey key) . attrsMap
 
 lookupAttrs
   :: forall a af
@@ -345,7 +360,7 @@ lookupAttrs
   -> Attrs af
   -> Maybe (Attr a)
 lookupAttrs key attrs =
-  case HashMap.lookup (unKey key) $ unAttrs attrs of
+  case HashMap.lookup (unKey key) $ attrsMap attrs of
     Nothing -> Nothing
     Just (SomeAttr attr) ->
       case (attrTypeVal $ Proxy @a, attrType attr) of
@@ -366,44 +381,79 @@ foldMapWithKeyAttrs
   -> Attrs af
   -> m
 foldMapWithKeyAttrs f attrs =
-  flip HashMap.foldMapWithKey (unAttrs attrs) \keyText someAttr ->
+  flip HashMap.foldMapWithKey (attrsMap attrs) \keyText someAttr ->
     case someAttr of
       SomeAttr attr -> f (Key keyText) attr
 
 newtype AttrsBuilder (af :: AttrsFor) = AttrsBuilder
-  { runAttrsBuilder :: AttrsLimits af -> Attrs af
+  { unAttrsBuilder :: Int -> DList AttrsBuilderElem
+  } deriving (Semigroup, Monoid) via (Int -> DList AttrsBuilderElem)
+
+data AttrsBuilderElem = AttrsBuilderElem
+  { attrsBuilderElemKey :: Text
+  , attrsBuilderElemVal :: SomeAttr
   }
 
--- TODO: Store count of dropped attributes
-instance Semigroup (AttrsBuilder af) where
-  bx <> by =
-    AttrsBuilder \attrsLimits ->
-      let x = unAttrs $ runAttrsBuilder bx attrsLimits
-          y = unAttrs $ runAttrsBuilder by attrsLimits
-       in Attrs $ snd $ HashMap.foldrWithKey' (build attrsLimits) (HashMap.size x, x) y
-    where
-    build
-      :: AttrsLimits af
-      -> Text
-      -> SomeAttr
-      -> (Int, HashMap Text SomeAttr)
-      -> (Int, HashMap Text SomeAttr)
-    build attrsLimits k v (!size, acc) =
-      if size >= Maybe.fromMaybe (maxBound :: Int) attrsLimitsCount then
-        (size, acc)
-      else
-        ( if k `HashMap.member` acc then
-            size
-          else
-            1 + size
-        , HashMap.insert k v acc
-        )
-      where
-      AttrsLimits { attrsLimitsCount } = attrsLimits
+runAttrsBuilder :: forall af. AttrsBuilder af -> AttrsLimits af -> Attrs af
+runAttrsBuilder attrsBuilder attrsLimits =
+  Attrs
+    { attrsMap = attrsAccMap finalAcc
+    , attrsDropped = attrsAccDropped finalAcc
+    }
+  where
+  finalAcc :: AttrsAcc af
+  finalAcc = Foldable.foldl' buildAcc initAcc attrsDList
 
-instance Monoid (AttrsBuilder af) where
-  mempty = AttrsBuilder \_attrsLimits -> Attrs HashMap.empty
-  mappend = (<>)
+  buildAcc :: AttrsAcc af -> AttrsBuilderElem -> AttrsAcc af
+  buildAcc attrsAcc attrsBuilderElem
+    | attrsBuilderElemKey `HashMap.member` attrsAccMap =
+        attrsAcc
+    | attrsAccMapSize >= countLimit =
+        attrsAcc
+          { attrsAccDropped = 1 + attrsAccDropped
+          }
+    | otherwise =
+        attrsAcc
+          { attrsAccMap =
+              HashMap.insert attrsBuilderElemKey attrsBuilderElemVal attrsAccMap
+          , attrsAccMapSize = 1 + attrsAccMapSize
+          }
+    where
+    AttrsAcc
+      { attrsAccMap
+      , attrsAccMapSize
+      , attrsAccDropped
+      } = attrsAcc
+    AttrsBuilderElem
+      { attrsBuilderElemKey
+      , attrsBuilderElemVal
+      } = attrsBuilderElem
+
+  initAcc :: AttrsAcc af
+  initAcc =
+    AttrsAcc
+      { attrsAccMap = mempty
+      , attrsAccMapSize = 0
+      , attrsAccDropped = 0
+      }
+
+  attrsDList :: DList AttrsBuilderElem
+  attrsDList = unAttrsBuilder attrsBuilder textLengthLimit
+    where
+    textLengthLimit :: Int
+    textLengthLimit = Maybe.fromMaybe (maxBound @Int) attrsLimitsValueLength
+
+  countLimit :: Int
+  countLimit = Maybe.fromMaybe (maxBound @Int) attrsLimitsCount
+
+  AttrsLimits { attrsLimitsCount, attrsLimitsValueLength } = attrsLimits
+
+-- N.B. Little ad-hoc type for use in 'runAttrsBuilder'.
+data AttrsAcc af = AttrsAcc
+  { attrsAccMap :: HashMap Text SomeAttr
+  , attrsAccMapSize :: Int
+  , attrsAccDropped :: Int
+  }
 
 data AttrsFor
   = AttrsForSpan
