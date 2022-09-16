@@ -8,9 +8,10 @@ module OTel.API.Trace.Core
   , trace_
   , MonadTracing(..)
   , MonadTracingContext(..)
-  , MonadTracingEnv(..)
+  , MonadTracingIO(..)
   ) where
 
+import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.IO.Unlift (MonadUnliftIO(withRunInIO))
 import Control.Monad.Logger (LoggingT)
 import Control.Monad.Trans.Class (MonadTrans(lift))
@@ -111,26 +112,26 @@ instance (MonadTracingContext m, MonadUnliftIO m) => MonadTracingContext (Resour
     withRunInIO \runInIO -> do
       runInIO $ updateSpan mutableSpan updateSpanSpec
 
-class (MonadTracing m) => MonadTracingEnv m where
+class (MonadTracing m, MonadIO m) => MonadTracingIO m where
   askTracer :: m Tracer
 
   default askTracer
-    :: (MonadTrans t, MonadTracingEnv n, m ~ t n)
+    :: (MonadTrans t, MonadTracingIO n, m ~ t n)
     => m Tracer
   askTracer = lift askTracer
 
-instance (MonadTracingEnv m) => MonadTracingEnv (ExceptT e m)
-instance (MonadTracingEnv m) => MonadTracingEnv (IdentityT m)
-instance (MonadTracingEnv m) => MonadTracingEnv (MaybeT m)
-instance (MonadTracingEnv m) => MonadTracingEnv (ReaderT r m)
-instance (MonadTracingEnv m) => MonadTracingEnv (State.Lazy.StateT r m)
-instance (MonadTracingEnv m) => MonadTracingEnv (State.Strict.StateT r m)
-instance (MonadTracingEnv m, Monoid w) => MonadTracingEnv (RWS.Lazy.RWST r w s m)
-instance (MonadTracingEnv m, Monoid w) => MonadTracingEnv (RWS.Strict.RWST r w s m)
-instance (MonadTracingEnv m, Monoid w) => MonadTracingEnv (Writer.Lazy.WriterT w m)
-instance (MonadTracingEnv m, Monoid w) => MonadTracingEnv (Writer.Strict.WriterT w m)
-instance (MonadTracingEnv m) => MonadTracingEnv (LoggingT m)
-instance (MonadTracingEnv m, MonadUnliftIO m) => MonadTracingEnv (ResourceT m) where
+instance (MonadTracingIO m) => MonadTracingIO (ExceptT e m)
+instance (MonadTracingIO m) => MonadTracingIO (IdentityT m)
+instance (MonadTracingIO m) => MonadTracingIO (MaybeT m)
+instance (MonadTracingIO m) => MonadTracingIO (ReaderT r m)
+instance (MonadTracingIO m) => MonadTracingIO (State.Lazy.StateT r m)
+instance (MonadTracingIO m) => MonadTracingIO (State.Strict.StateT r m)
+instance (MonadTracingIO m, Monoid w) => MonadTracingIO (RWS.Lazy.RWST r w s m)
+instance (MonadTracingIO m, Monoid w) => MonadTracingIO (RWS.Strict.RWST r w s m)
+instance (MonadTracingIO m, Monoid w) => MonadTracingIO (Writer.Lazy.WriterT w m)
+instance (MonadTracingIO m, Monoid w) => MonadTracingIO (Writer.Strict.WriterT w m)
+instance (MonadTracingIO m) => MonadTracingIO (LoggingT m)
+instance (MonadTracingIO m, MonadUnliftIO m) => MonadTracingIO (ResourceT m) where
   askTracer = do
     withRunInIO \runInIO -> do
       runInIO askTracer

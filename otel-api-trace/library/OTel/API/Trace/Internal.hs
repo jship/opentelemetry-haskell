@@ -54,7 +54,7 @@ import OTel.API.Core
 import OTel.API.Core.Internal
   ( MutableSpan(..), SpanBackend(..), Tracer(..), buildSpanUpdater, freezeSpan
   )
-import OTel.API.Trace.Core (MonadTracingContext(..), MonadTracing(..), MonadTracingEnv(..))
+import OTel.API.Trace.Core (MonadTracing(..), MonadTracingContext(..), MonadTracingIO(..))
 import Prelude hiding (span)
 import System.IO.Unsafe (unsafePerformIO)
 import qualified Control.Exception.Safe as Safe
@@ -177,7 +177,7 @@ instance (MonadIO m, MonadMask m) => MonadTracing (TracingT m) where
 
       Tracer { tracerNow = now } = tracer
 
-instance (MonadIO m, MonadMask m) => MonadTracingEnv (TracingT m) where
+instance (MonadIO m, MonadMask m) => MonadTracingIO (TracingT m) where
   askTracer = TracingT pure
 
 instance (MonadIO m, MonadMask m) => MonadTracingContext (TracingT m) where
