@@ -1680,7 +1680,7 @@ buildSpanUpdater getTimestamp updateSpanSpec = do
             case updateSpanSpecAttrs of
               Nothing -> spanAttrs span
               Just attrsBuilder ->
-                spanAttrs span <> attrsBuilder
+                attrsBuilder <> spanAttrs span
         , spanEvents =
             spanEvents span <> newSpanEvents
         }
