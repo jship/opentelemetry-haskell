@@ -43,8 +43,8 @@ import OTel.API.Core
   , SpanAttrsLimits, SpanContext, SpanEventAttrsLimits, SpanId, SpanLinkAttrsLimits, Timestamp
   , TraceId, UpdateSpanSpec, defaultAttrsLimits, emptySpanContext, emptyTraceState
   , spanContextIsRemote, spanContextSpanId, spanContextTraceFlags, spanContextTraceId
-  , spanContextTraceState, spanIdFromWords, spanParentContext, timestampFromNanoseconds
-  , traceIdFromWords
+  , spanContextTraceState, spanIdFromWords, spanIsSampled, spanParentContext
+  , timestampFromNanoseconds, traceIdFromWords
   )
 import OTel.API.Core.Internal
   ( MutableSpan(..), Span(..), SpanBackend(..), Tracer(..), TracerProvider(..), buildSpanUpdater
@@ -122,11 +122,11 @@ newTracerProviderIO tracerProviderSpec = do
     { tracerProviderGetTracer =
         pure . getTracerWith prngRef spanProcessor
     , tracerProviderShutdown = do
-        unlessShutdown (readTVar shutdownRef) do
+        unlessSTM (readTVar shutdownRef) do
           writeTVar shutdownRef True
           pure $ spanProcessorShutdown spanProcessor
     , tracerProviderForceFlush = do
-        unlessShutdown (readTVar shutdownRef) do
+        unlessSTM (readTVar shutdownRef) do
           pure $ spanProcessorForceFlush spanProcessor
     }
   where
@@ -298,24 +298,24 @@ buildSpanProcessor logger spanProcessorSpec = do
   spanProcessor shutdownRef =
     SpanProcessor
       { spanProcessorOnSpanStart = \mParentSpanContext spanUpdater -> do
-          unlessShutdown (readTVar shutdownRef) do
+          unlessSTM (readTVar shutdownRef) do
             pure do
               run defaultTimeout metaOnSpanStart do
                 spanProcessorSpecOnSpanStart mParentSpanContext \updateSpanSpec -> do
                   liftIO $ spanUpdater updateSpanSpec
       , spanProcessorOnSpanEnd = \endedSpan -> do
-          unlessShutdown (readTVar shutdownRef) do
+          unlessSTM (readTVar shutdownRef) do
             pure do
               run defaultTimeout metaOnSpanEnd do
                 spanProcessorSpecOnSpanEnd endedSpan
       , spanProcessorShutdown = do
-          unlessShutdown (readTVar shutdownRef) do
+          unlessSTM (readTVar shutdownRef) do
             writeTVar shutdownRef True
             pure do
               run shutdownTimeout metaShutdown do
                 spanProcessorSpecShutdown
       , spanProcessorForceFlush = do
-          unlessShutdown (readTVar shutdownRef) do
+          unlessSTM (readTVar shutdownRef) do
             pure do
               run forceFlushTimeout metaForceFlush do
                 spanProcessorSpecForceFlush
@@ -380,11 +380,12 @@ simpleSpanProcessor simpleSpanProcessorSpec = spanProcessorSpec
     defaultSpanProcessorSpec
       { spanProcessorSpecName = name
       , spanProcessorSpecOnSpanEnd = \span -> do
-          let idSpan = Identity { runIdentity = span }
-          logger <- askLoggerIO
-          liftIO $ spanExporterExport spanExporter idSpan \spanExportResult -> do
-            flip runLoggingT logger do
-              runOnSpansExported onSpansExported idSpan spanExportResult metaOnSpanEnd
+          when (spanIsSampled span) do
+            let idSpan = Identity { runIdentity = span }
+            logger <- askLoggerIO
+            liftIO $ spanExporterExport spanExporter idSpan \spanExportResult -> do
+              flip runLoggingT logger do
+                runOnSpansExported onSpansExported idSpan spanExportResult metaOnSpanEnd
       , spanProcessorSpecShutdown = liftIO $ spanExporterShutdown spanExporter
       , spanProcessorSpecForceFlush = liftIO $ spanExporterForceFlush spanExporter
       }
@@ -484,19 +485,19 @@ buildSpanExporter logger spanExporterSpec = do
   spanExporter shutdownRef =
     SpanExporter
       { spanExporterExport = \spans onSpansExported -> do
-          unlessShutdown (readTVar shutdownRef) do
+          unlessSTM (readTVar shutdownRef) do
             pure do
               runSpanExporterM logger onTimeout onEx defaultTimeout metaExport do
                 spanExporterSpecExport spans \spanExportResult -> do
                   liftIO $ onSpansExported spanExportResult
       , spanExporterShutdown = do
-          unlessShutdown (readTVar shutdownRef) do
+          unlessSTM (readTVar shutdownRef) do
             writeTVar shutdownRef True
             pure do
               runSpanExporterM logger onTimeout onEx shutdownTimeout metaShutdown do
                 spanExporterSpecShutdown
       , spanExporterForceFlush = do
-          unlessShutdown (readTVar shutdownRef) do
+          unlessSTM (readTVar shutdownRef) do
             pure do
               runSpanExporterM logger onTimeout onEx forceFlushTimeout metaForceFlush do
                 spanExporterSpecForceFlush
@@ -744,8 +745,8 @@ singletonBatch = Batch . Vector.singleton
 fromListBatch :: [a] -> Batch a
 fromListBatch = Batch . Vector.fromList
 
-unlessShutdown :: (MonadIO m, Monoid (m a)) => STM Bool -> STM (m a) -> m a
-unlessShutdown isShutdownSTM actionSTM =
+unlessSTM :: (Monoid a) => STM Bool -> STM (IO a) -> IO a
+unlessSTM isShutdownSTM actionSTM =
   join $ liftIO $ atomically $ isShutdownSTM >>= \case
     True -> pure mempty
     False -> actionSTM

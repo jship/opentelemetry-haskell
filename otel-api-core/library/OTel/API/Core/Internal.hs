@@ -71,6 +71,7 @@ module OTel.API.Core.Internal
   , SpanContext(..)
   , emptySpanContext
   , spanContextIsValid
+  , spanContextIsSampled
   , TraceId(..)
   , traceIdToHexText
   , traceIdToBytesVector
@@ -90,7 +91,7 @@ module OTel.API.Core.Internal
   , traceFlagsToHexBuilder
   , emptyTraceFlags
   , setSampledFlag
-  , isSampled
+  , isSampledFlagSet
   , TraceState(..)
   , emptyTraceState
   , nullTraceState
@@ -159,6 +160,7 @@ module OTel.API.Core.Internal
   , Span(..)
   , SpanFrozenAt
   , freezeSpan
+  , spanIsSampled
   , SpanParentSource(.., Implicit, Explicit)
   , SpanParent(.., Root, ChildOf)
   , spanParentContext
@@ -908,6 +910,11 @@ spanContextIsValid spanContext =
   where
   SpanContext { spanContextTraceId, spanContextSpanId } = spanContext
 
+spanContextIsSampled :: SpanContext -> Bool
+spanContextIsSampled spanContext = isSampledFlagSet spanContextTraceFlags
+  where
+  SpanContext { spanContextTraceFlags } = spanContext
+
 data TraceId = TraceId
   { traceIdHi :: Word64
   , traceIdLo :: Word64
@@ -1015,8 +1022,8 @@ setSampledFlag traceFlags =
     { unTraceFlags = 1 .|. unTraceFlags traceFlags
     }
 
-isSampled :: TraceFlags -> Bool
-isSampled traceFlags =
+isSampledFlagSet :: TraceFlags -> Bool
+isSampledFlagSet traceFlags =
   unTraceFlags traceFlags `testBit` 0
 
 newtype TraceState = TraceState
@@ -1767,6 +1774,11 @@ freezeSpan defaultSpanFrozenAt spanLinkAttrsLimits spanEventAttrsLimits spanAttr
     , spanEvents =
         freezeAllSpanEventAttrs spanEventAttrsLimits $ spanEvents span
     }
+
+spanIsSampled :: Span attrs -> Bool
+spanIsSampled span = spanContextIsSampled spanContext
+  where
+  Span { spanContext } = span
 
 data SpanParentSource
   = SpanParentSourceImplicit

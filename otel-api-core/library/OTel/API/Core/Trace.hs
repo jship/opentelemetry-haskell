@@ -13,6 +13,7 @@ module OTel.API.Core.Trace
   , spanContextTraceState
   , spanContextIsRemote
   , spanContextIsValid
+  , spanContextIsSampled
 
   , TraceId
   , traceIdToHexText
@@ -35,7 +36,7 @@ module OTel.API.Core.Trace
   , traceFlagsToHexBuilder
   , emptyTraceFlags
   , setSampledFlag
-  , isSampled
+  , isSampledFlagSet
 
   , TraceState
   , emptyTraceState
@@ -151,6 +152,7 @@ module OTel.API.Core.Trace
   , spanEvents
   , spanIsRecording
   , spanInstrumentationScope
+  , spanIsSampled
 
   , SpanParentSource(..)
   , SpanParent(..)
