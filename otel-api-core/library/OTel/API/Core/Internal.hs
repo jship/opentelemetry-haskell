@@ -394,17 +394,17 @@ data AttrsBuilderElem = AttrsBuilderElem
   , attrsBuilderElemVal :: SomeAttr
   }
 
-runAttrsBuilder :: forall af. AttrsBuilder af -> AttrsLimits af -> Attrs af
+runAttrsBuilder :: AttrsBuilder af -> AttrsLimits af -> Attrs af
 runAttrsBuilder attrsBuilder attrsLimits =
   Attrs
     { attrsMap = attrsAccMap finalAcc
     , attrsDropped = attrsAccDropped finalAcc
     }
   where
-  finalAcc :: AttrsAcc af
+  finalAcc :: AttrsAcc
   finalAcc = Foldable.foldl' buildAcc initAcc attrsDList
 
-  buildAcc :: AttrsAcc af -> AttrsBuilderElem -> AttrsAcc af
+  buildAcc :: AttrsAcc -> AttrsBuilderElem -> AttrsAcc
   buildAcc attrsAcc attrsBuilderElem
     | attrsBuilderElemKey `HashMap.member` attrsAccMap =
         attrsAcc
@@ -429,7 +429,7 @@ runAttrsBuilder attrsBuilder attrsLimits =
       , attrsBuilderElemVal
       } = attrsBuilderElem
 
-  initAcc :: AttrsAcc af
+  initAcc :: AttrsAcc
   initAcc =
     AttrsAcc
       { attrsAccMap = mempty
@@ -449,7 +449,7 @@ runAttrsBuilder attrsBuilder attrsLimits =
   AttrsLimits { attrsLimitsCount, attrsLimitsValueLength } = attrsLimits
 
 -- N.B. Little ad-hoc type for use in 'runAttrsBuilder'.
-data AttrsAcc af = AttrsAcc
+data AttrsAcc = AttrsAcc
   { attrsAccMap :: HashMap Text SomeAttr
   , attrsAccMapSize :: Int
   , attrsAccDropped :: Int
