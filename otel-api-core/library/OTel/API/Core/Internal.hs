@@ -1,5 +1,4 @@
 {-# LANGUAGE ApplicativeDo #-}
-{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
@@ -148,8 +147,6 @@ module OTel.API.Core.Internal
   , SpanLinkName(..)
   , SpanLinkSpec(..)
   , defaultSpanLinkSpec
-  , SpanSpec(..)
-  , buildSpanSpec
   , NewSpanSpec(..)
   , defaultNewSpanSpec
   , UpdateSpanSpec(..)
@@ -160,6 +157,7 @@ module OTel.API.Core.Internal
   , Span(..)
   , SpanFrozenAt
   , freezeSpan
+  , spanIsRemote
   , spanIsSampled
   , SpanParentSource(.., Implicit, Explicit)
   , SpanParent(.., Root, ChildOf)
@@ -856,7 +854,7 @@ getTracer tracerProvider = liftIO . tracerProviderGetTracer tracerProvider
 data Tracer = Tracer
   { tracerInstrumentationScope :: InstrumentationScope
   , tracerNow :: IO Timestamp
-  , tracerStartSpan :: SpanSpec -> IO MutableSpan
+  , tracerStartSpan :: NewSpanSpec -> IO MutableSpan
   , tracerProcessSpan :: Span Attrs -> IO ()
   , tracerSpanBackend :: SpanBackend
   , tracerSpanAttrsLimits :: SpanAttrsLimits
@@ -1403,7 +1401,7 @@ instance ToJSON (SpanEvent Attrs) where
     Aeson.object
       [ "name" .= spanEventName
       , "timestamp" .= spanEventTimestamp
-      , "attrs" .= spanEventAttrs
+      , "attributes" .= spanEventAttrs
       ]
     where
     SpanEvent
@@ -1514,7 +1512,7 @@ instance ToJSON (SpanLink Attrs) where
   toJSON spanLink =
     Aeson.object
       [ "spanContext" .= spanLinkSpanContext
-      , "attrs" .= spanLinkAttrs
+      , "attributes" .= spanLinkAttrs
       ]
     where
     SpanLink
@@ -1552,56 +1550,6 @@ defaultSpanLinkSpec =
     { spanLinkSpecSpanContext = emptySpanContext
     , spanLinkSpecAttrs = mempty
     }
-
-data SpanSpec = SpanSpec
-  { spanSpecParent :: SpanParent
-  , spanSpecName :: SpanName
-  , spanSpecStart :: Timestamp
-  , spanSpecKind :: SpanKind
-  , spanSpecAttrs :: AttrsBuilder 'AttrsForSpan
-  , spanSpecLinks :: SpanLinks AttrsBuilder
-  }
-
-buildSpanSpec
-  :: forall m
-   . (Monad m)
-  => m Timestamp
-  -> (SpanParentSource -> m SpanParent)
-  -> NewSpanSpec
-  -> m SpanSpec
-buildSpanSpec getTimestamp spanParentFromSource newSpanSpec = do
-  spanSpecParent <- spanParentFromSource newSpanSpecParentSource
-  spanSpecStart <- do
-    case newSpanSpecStart of
-      TimestampSourceAt timestamp -> pure timestamp
-      TimestampSourceNow -> getTimestamp
-
-  pure SpanSpec
-    { spanSpecParent
-    , spanSpecName = newSpanSpecName
-    , spanSpecStart
-    , spanSpecKind = newSpanSpecKind
-    , spanSpecAttrs = newSpanSpecAttrs
-    , spanSpecLinks =
-        SpanLinks $ flip fmap rawLinkSpecs \spanLinkSpec ->
-          SpanLink
-            { spanLinkSpanContext =
-                spanLinkSpecSpanContext spanLinkSpec
-            , spanLinkAttrs =
-                spanLinkSpecAttrs spanLinkSpec
-            }
-    }
-  where
-  rawLinkSpecs = unSpanLinkSpecs newSpanSpecLinks
-
-  NewSpanSpec
-    { newSpanSpecName
-    , newSpanSpecParentSource
-    , newSpanSpecStart
-    , newSpanSpecKind
-    , newSpanSpecAttrs
-    , newSpanSpecLinks
-    } = newSpanSpec
 
 data NewSpanSpec = NewSpanSpec
   { newSpanSpecName :: SpanName
@@ -1731,7 +1679,7 @@ instance ToJSON (Span Attrs) where
       , "start" .= spanStart
       , "frozenAt" .= spanFrozenAt
       , "kind" .= spanKind
-      , "attrs" .= spanAttrs
+      , "attributes" .= spanAttrs
       , "links" .= spanLinks
       , "events" .= spanEvents
       , "isRecording" .= spanIsRecording
@@ -1774,6 +1722,11 @@ freezeSpan defaultSpanFrozenAt spanLinkAttrsLimits spanEventAttrsLimits spanAttr
     , spanEvents =
         freezeAllSpanEventAttrs spanEventAttrsLimits $ spanEvents span
     }
+
+spanIsRemote :: Span attrs -> Bool
+spanIsRemote span = spanContextIsRemote spanContext
+  where
+  Span { spanContext } = span
 
 spanIsSampled :: Span attrs -> Bool
 spanIsSampled span = spanContextIsSampled spanContext

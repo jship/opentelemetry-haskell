@@ -1,10 +1,12 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE StrictData #-}
@@ -36,18 +38,22 @@ import Data.Kind (Type)
 import Data.Monoid (Ap(..))
 import Data.Text (Text)
 import Data.Vector (Vector)
-import OTel.API.Context (ContextT(runContextT), ContextKey, updateContext)
+import OTel.API.Context
+  ( ContextT(runContextT), ContextKey, getAttachedContextKey, getContext, updateContext
+  )
 import OTel.API.Context.Internal (unsafeNewContextKey)
 import OTel.API.Core
-  ( SpanParent(..), SpanSpec(..), SpanStatus(..), Attrs, AttrsBuilder, InstrumentationScope
-  , SpanAttrsLimits, SpanContext, SpanEventAttrsLimits, SpanId, SpanLinkAttrsLimits, Timestamp
-  , TraceId, UpdateSpanSpec, defaultAttrsLimits, emptySpanContext, emptyTraceState
-  , spanContextIsRemote, spanContextSpanId, spanContextTraceFlags, spanContextTraceId
-  , spanContextTraceState, spanIdFromWords, spanIsSampled, spanParentContext
+  ( AttrsFor(..), SpanParent(..), SpanParentSource(..), SpanStatus(..), TimestampSource(..), Attrs
+  , AttrsBuilder, InstrumentationScope, SpanAttrsLimits, SpanContext, SpanEventAttrsLimits, SpanId
+  , SpanKind, SpanLinkAttrsLimits, SpanLinks, SpanName, Timestamp, TraceId, TraceState
+  , UpdateSpanSpec, defaultAttrsLimits, emptySpanContext, emptyTraceState, spanContextIsRemote
+  , spanContextIsSampled, spanContextIsValid, spanContextSpanId, spanContextTraceFlags
+  , spanContextTraceId, spanContextTraceState, spanIdFromWords, spanIsSampled
   , timestampFromNanoseconds, traceIdFromWords
   )
 import OTel.API.Core.Internal
-  ( MutableSpan(..), Span(..), SpanBackend(..), Tracer(..), TracerProvider(..), buildSpanUpdater
+  ( MutableSpan(..), NewSpanSpec(..), Span(..), SpanBackend(..), SpanLink(..), SpanLinkSpec(..)
+  , SpanLinkSpecs(..), SpanLinks(..), Tracer(..), TracerProvider(..), buildSpanUpdater
   , freezeSpan
   )
 import OTel.API.Trace (defaultSpanBackend)
@@ -65,6 +71,7 @@ data TracerProviderSpec = TracerProviderSpec
   , tracerProviderSpecSeed :: Seed
   , tracerProviderSpecIdGenerator :: IdGeneratorSpec
   , tracerProviderSpecSpanProcessors :: [SpanProcessorSpec]
+  , tracerProviderSpecSampler :: SamplerSpec
   , tracerProviderSpecSpanAttrsLimits :: SpanAttrsLimits
   , tracerProviderSpecSpanEventAttrsLimits :: SpanEventAttrsLimits
   , tracerProviderSpecSpanLinkAttrsLimits :: SpanLinkAttrsLimits
@@ -80,6 +87,7 @@ defaultTracerProviderSpec =
     , tracerProviderSpecSeed = defaultSystemSeed
     , tracerProviderSpecIdGenerator = defaultIdGeneratorSpec
     , tracerProviderSpecSpanProcessors = mempty
+    , tracerProviderSpecSampler = defaultSamplerSpec
     , tracerProviderSpecSpanAttrsLimits = defaultAttrsLimits
     , tracerProviderSpecSpanEventAttrsLimits = defaultAttrsLimits
     , tracerProviderSpecSpanLinkAttrsLimits = defaultAttrsLimits
@@ -115,12 +123,13 @@ newTracerProvider = liftIO . newTracerProvider
 
 newTracerProviderIO :: TracerProviderSpec -> IO TracerProvider
 newTracerProviderIO tracerProviderSpec = do
-  shutdownRef <- liftIO $ newTVarIO False
+  shutdownRef <- newTVarIO False
   prngRef <- newPRNGRef seed
-  spanProcessor <- liftIO $ foldMap (buildSpanProcessor logger) spanProcessorSpecs
+  spanProcessor <- foldMap (buildSpanProcessor logger) spanProcessorSpecs
+  sampler <- buildSampler logger samplerSpec
   pure TracerProvider
     { tracerProviderGetTracer =
-        pure . getTracerWith prngRef spanProcessor
+        pure . getTracerWith prngRef sampler spanProcessor
     , tracerProviderShutdown = do
         unlessSTM (readTVar shutdownRef) do
           writeTVar shutdownRef True
@@ -132,14 +141,15 @@ newTracerProviderIO tracerProviderSpec = do
   where
   getTracerWith
     :: MVar PRNG
+    -> Sampler
     -> SpanProcessor
     -> InstrumentationScope
     -> Tracer
-  getTracerWith prngRef spanProcessor scope =
+  getTracerWith prngRef sampler spanProcessor scope =
     Tracer
       { tracerInstrumentationScope = scope
       , tracerNow = now
-      , tracerStartSpan = startSpan prngRef scope spanProcessor
+      , tracerStartSpan = startSpan prngRef sampler scope spanProcessor
       , tracerProcessSpan = endSpan spanProcessor
       , tracerSpanBackend = ctxBackendSpan
       , tracerSpanAttrsLimits = spanAttrsLimits
@@ -154,82 +164,139 @@ newTracerProviderIO tracerProviderSpec = do
 
   startSpan
     :: MVar PRNG
+    -> Sampler
     -> InstrumentationScope
     -> SpanProcessor
-    -> SpanSpec
+    -> NewSpanSpec
     -> IO MutableSpan
-  startSpan prngRef scope spanProcessor spanSpec = do
-    let spanParent = spanSpecParent spanSpec
-    let mParentSpanContext = spanParentContext spanParent
-
-    spanContext <- newSpanContext prngRef spanParent
-    let span = Span
-          { spanParent
-          , spanContext
-          , spanName = spanSpecName spanSpec
-          , spanStatus = SpanStatusUnset
-          , spanStart = spanSpecStart spanSpec
-          , spanFrozenAt = Nothing
-          , spanKind = spanSpecKind spanSpec
-          , spanAttrs = spanSpecAttrs spanSpec
-          , spanLinks = spanSpecLinks spanSpec
-          , spanEvents = mempty
-          , spanIsRecording = True -- TODO: Implement!
-          , spanInstrumentationScope = scope
-          }
-
+  startSpan prngRef sampler scope spanProcessor newSpanSpec = do
+    span <- buildSpan
     mutableSpan@MutableSpan { mutableSpanSpanKey = spanKey } <- do
       fmap MutableSpan $ unsafeNewContextKey "spanKey" span
 
     when (spanIsRecording span) do
       -- TODO: Fetch baggage from context and pass along too
-      spanProcessorOnSpanStart spanProcessor mParentSpanContext \updateSpanSpec -> do
+      spanProcessorOnSpanStart spanProcessor undefined \updateSpanSpec -> do -- TODO: undefined
         spanUpdater spanKey updateSpanSpec
 
     pure mutableSpan
+    where
+    buildSpan :: IO (Span AttrsBuilder)
+    buildSpan = do
+      spanStart <- do
+        case newSpanSpecStart of
+          TimestampSourceAt timestamp -> pure timestamp
+          TimestampSourceNow -> now
 
-  newSpanContext
-    :: MVar PRNG
-    -> SpanParent
-    -> IO SpanContext
-  newSpanContext prngRef spanParent = do
-    (spanContextTraceId, spanContextSpanId) <- do
-      runIdGeneratorM prngRef logger
-        case spanParent of
-          SpanParentRoot ->
-            liftA2 (,) genTraceId genSpanId
-              `catchAny` \(SomeException ex) -> do
-                logError $ "Falling back to default trace/span ID gen due to exception" :#
-                  [ "exception" .= displayException ex ]
-                traceId <- idGeneratorSpecGenTraceId defaultIdGeneratorSpec
-                spanId <- idGeneratorSpecGenSpanId defaultIdGeneratorSpec
-                pure (traceId, spanId)
-          SpanParentChildOf scParent ->
-            fmap (spanContextTraceId scParent,) genSpanId
-              `catchAny` \(SomeException ex) -> do
-                logError $ "Falling back to default span ID gen due to exception" :#
-                  [ "exception" .= displayException ex ]
-                spanId <- idGeneratorSpecGenSpanId defaultIdGeneratorSpec
-                pure (spanContextTraceId scParent, spanId)
+      spanParent <- spanParentFromSource newSpanSpecParentSource
+      spanContext <- newSpanContext spanParent
 
-    pure emptySpanContext
-      { spanContextTraceId
-      , spanContextSpanId
-      , spanContextTraceFlags = mempty
-      , spanContextTraceState = emptyTraceState
-      , spanContextIsRemote = False -- TODO: Populate correctly
-      }
+      samplingResult <- samplerShouldSample sampler SamplerInput
+        { samplerInputContext =
+            Context
+              { contextSpan = undefined
+              }
+        , samplerInputTraceId = spanContextTraceId spanContext
+        , samplerInputSpanName = newSpanSpecName
+        , samplerInputSpanKind = newSpanSpecKind
+        , samplerInputSpanAttrs = newSpanSpecAttrs
+        , samplerInputSpanLinks = spanLinks
+        }
 
-  spanUpdater
-    :: ContextKey (Span AttrsBuilder)
-    -> UpdateSpanSpec
-    -> IO (Span Attrs)
-  spanUpdater spanKey updateSpanSpec =
-    flip runContextT (unSpanBackend ctxBackendSpan) do
-      updater <- buildSpanUpdater (liftIO now) updateSpanSpec
-      frozenAt <- liftIO now
-      fmap (freezeSpan frozenAt spanLinkAttrsLimits spanEventAttrsLimits spanAttrsLimits) do
-        updateContext spanKey updater
+      pure Span
+        { spanParent
+        , spanContext
+        , spanName = newSpanSpecName
+        , spanStatus = SpanStatusUnset
+        , spanStart
+        , spanFrozenAt = Nothing
+        , spanKind = newSpanSpecKind
+        , spanAttrs = newSpanSpecAttrs
+        , spanLinks
+        , spanEvents = mempty
+        , spanIsRecording = False -- TODO: Sampler
+        , spanInstrumentationScope = scope
+        }
+      where
+      spanParentFromSource
+        :: SpanParentSource
+        -> IO SpanParent
+      spanParentFromSource = \case
+        SpanParentSourceExplicit spanParent -> pure spanParent
+        SpanParentSourceImplicit -> do
+          flip runContextT (unSpanBackend ctxBackendSpan) do
+            getAttachedContextKey >>= \case
+              Nothing -> pure SpanParentRoot
+              Just ctxKey -> do
+                parentSpanContext <- fmap spanContext $ getContext ctxKey
+                pure $ SpanParentChildOf parentSpanContext
+
+      newSpanContext
+        :: SpanParent
+        -> IO SpanContext
+      newSpanContext spanParent = do
+        (spanContextTraceId, spanContextSpanId) <- do
+          runIdGeneratorM prngRef logger
+            case spanParent of
+              SpanParentRoot ->
+                liftA2 (,) genTraceId genSpanId
+                  `catchAny` \(SomeException ex) -> do
+                    traceId <- idGeneratorSpecGenTraceId defaultIdGeneratorSpec
+                    spanId <- idGeneratorSpecGenSpanId defaultIdGeneratorSpec
+                    logError $ "Fell back to default trace/span ID gen due to exception" :#
+                      [ "exception" .= displayException ex
+                      , "traceId" .= traceId
+                      , "spanId" .= spanId
+                      ]
+                    pure (traceId, spanId)
+              SpanParentChildOf scParent ->
+                fmap (spanContextTraceId scParent,) genSpanId
+                  `catchAny` \(SomeException ex) -> do
+                    let traceId = spanContextTraceId scParent
+                    spanId <- idGeneratorSpecGenSpanId defaultIdGeneratorSpec
+                    logError $ "Fell back to default trace/span ID gen due to exception" :#
+                      [ "exception" .= displayException ex
+                      , "traceId" .= traceId
+                      , "spanId" .= spanId
+                      ]
+                    pure (traceId, spanId)
+
+        pure emptySpanContext
+          { spanContextTraceId
+          , spanContextSpanId
+          , spanContextTraceFlags = mempty
+          , spanContextTraceState = emptyTraceState
+          , spanContextIsRemote = False -- TODO: Populate correctly
+          }
+
+    spanUpdater
+      :: ContextKey (Span AttrsBuilder)
+      -> UpdateSpanSpec
+      -> IO (Span Attrs)
+    spanUpdater spanKey updateSpanSpec =
+      flip runContextT (unSpanBackend ctxBackendSpan) do
+        updater <- buildSpanUpdater (liftIO now) updateSpanSpec
+        frozenAt <- liftIO now
+        fmap (freezeSpan frozenAt spanLinkAttrsLimits spanEventAttrsLimits spanAttrsLimits) do
+          updateContext spanKey updater
+
+    spanLinks =
+      SpanLinks $ flip fmap (unSpanLinkSpecs newSpanSpecLinks) \spanLinkSpec ->
+        SpanLink
+          { spanLinkSpanContext =
+              spanLinkSpecSpanContext spanLinkSpec
+          , spanLinkAttrs =
+              spanLinkSpecAttrs spanLinkSpec
+          }
+
+    NewSpanSpec
+      { newSpanSpecName
+      , newSpanSpecParentSource
+      , newSpanSpecStart
+      , newSpanSpecKind
+      , newSpanSpecAttrs
+      , newSpanSpecLinks
+      } = newSpanSpec
 
   TracerProviderSpec
     { tracerProviderSpecNow = now
@@ -241,6 +308,7 @@ newTracerProviderIO tracerProviderSpec = do
           , idGeneratorSpecGenSpanId = genSpanId
           }
     , tracerProviderSpecSpanProcessors = spanProcessorSpecs
+    , tracerProviderSpecSampler = samplerSpec
     , tracerProviderSpecSpanAttrsLimits = spanAttrsLimits
     , tracerProviderSpecSpanEventAttrsLimits = spanEventAttrsLimits
     , tracerProviderSpecSpanLinkAttrsLimits = spanLinkAttrsLimits
@@ -564,6 +632,207 @@ defaultSpanExporterSpec =
           "exception" .= displayException ex : pairs
     }
 
+newtype Context = Context
+  { contextSpan :: Span AttrsBuilder -- TODO: SHould be plain Attrs?
+  -- TODO: Add baggage
+  }
+
+data Sampler = Sampler
+  { samplerName :: Text
+  , samplerDescription :: Text
+  , samplerShouldSample :: SamplerInput -> IO SamplingResult
+  }
+
+buildSampler
+  :: forall m
+   . (MonadIO m)
+  => (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
+  -> SamplerSpec
+  -> m Sampler
+buildSampler logger samplerSpec = do
+  pure sampler
+  where
+  sampler =
+    Sampler
+      { samplerName = samplerSpecName
+      , samplerDescription = samplerSpecDescription
+      , samplerShouldSample = \samplerInput -> do
+          runSamplerM logger onEx metaShouldSample do
+            samplerSpecShouldSample samplerInput
+      }
+
+  metaShouldSample = mkLoggingMeta "shouldSample"
+
+  mkLoggingMeta :: Text -> [SeriesElem]
+  mkLoggingMeta method =
+    [ "sampler" .= object
+        [ "name" .= samplerSpecName
+        , "description" .= samplerSpecDescription
+        , "method" .= method
+        ]
+    ]
+
+  SamplerSpec
+    { samplerSpecName
+    , samplerSpecDescription
+    , samplerSpecShouldSample
+    , samplerSpecOnException = onEx
+    } = samplerSpec
+
+data SamplerSpec = SamplerSpec
+  { samplerSpecName :: Text
+  , samplerSpecDescription :: Text
+  , samplerSpecShouldSample :: SamplerInput -> SamplerM SamplingResult
+  , samplerSpecOnException :: OnException SamplingResult
+  }
+
+defaultSamplerSpec :: SamplerSpec
+defaultSamplerSpec =
+  alwaysOffSampler
+    { samplerSpecName = "default"
+    , samplerSpecDescription = "default"
+    }
+
+alwaysOnSampler :: SamplerSpec
+alwaysOnSampler =
+  (constDecisionSampler SamplingDecisionRecordAndSample)
+    { samplerSpecName = "AlwaysOn"
+    , samplerSpecDescription = "AlwaysOnSampler"
+    }
+
+alwaysOffSampler :: SamplerSpec
+alwaysOffSampler =
+  (constDecisionSampler SamplingDecisionRecordAndSample)
+    { samplerSpecName = "AlwaysOff"
+    , samplerSpecDescription = "AlwaysOffSampler"
+    }
+
+data ParentBasedSamplerSpec = ParentBasedSamplerSpec
+  { parentBasedSamplerSpecOnRoot :: SamplerSpec
+  , parentBasedSamplerSpecOnRemoteParentSampled :: SamplerSpec
+  , parentBasedSamplerSpecOnRemoteParentNotSampled :: SamplerSpec
+  , parentBasedSamplerSpecOnLocalParentSampled :: SamplerSpec
+  , parentBasedSamplerSpecOnLocalParentNotSampled :: SamplerSpec
+  }
+
+defaultParentBasedSamplerSpec :: ParentBasedSamplerSpec
+defaultParentBasedSamplerSpec =
+  ParentBasedSamplerSpec
+    { parentBasedSamplerSpecOnRoot = defaultSamplerSpec
+    , parentBasedSamplerSpecOnRemoteParentSampled = alwaysOnSampler
+    , parentBasedSamplerSpecOnRemoteParentNotSampled = alwaysOffSampler
+    , parentBasedSamplerSpecOnLocalParentSampled = alwaysOnSampler
+    , parentBasedSamplerSpecOnLocalParentNotSampled = alwaysOffSampler
+    }
+
+parentBasedSampler :: ParentBasedSamplerSpec -> SamplerSpec
+parentBasedSampler parentBasedSamplerSpec =
+  defaultSamplerSpec
+    { samplerSpecName = "ParentBased"
+    , samplerSpecDescription = "ParentBased"
+    , samplerSpecShouldSample = shouldSample
+    }
+  where
+  shouldSample samplerInput
+    | hasParent && parentIsRemote && parentIsSampled =
+        samplerSpecShouldSample onRemoteParentSampled samplerInput
+    | hasParent && parentIsRemote && not parentIsSampled =
+        samplerSpecShouldSample onRemoteParentNotSampled samplerInput
+    | hasParent && not parentIsRemote && parentIsSampled =
+        samplerSpecShouldSample onLocalParentSampled samplerInput
+    | hasParent && not parentIsRemote && not parentIsSampled =
+        samplerSpecShouldSample onLocalParentNotSampled samplerInput
+    | otherwise =
+        samplerSpecShouldSample onRoot samplerInput
+    where
+    hasParent = spanContextIsValid parentSpanContext
+    parentIsRemote = spanContextIsRemote parentSpanContext
+    parentIsSampled = spanContextIsSampled parentSpanContext
+    parentSpanContext = spanContext parentSpan
+    Context { contextSpan = parentSpan } = samplerInputContext
+    SamplerInput { samplerInputContext } = samplerInput
+
+  ParentBasedSamplerSpec
+    { parentBasedSamplerSpecOnRoot = onRoot
+    , parentBasedSamplerSpecOnRemoteParentSampled = onRemoteParentSampled
+    , parentBasedSamplerSpecOnRemoteParentNotSampled = onRemoteParentNotSampled
+    , parentBasedSamplerSpecOnLocalParentSampled = onLocalParentSampled
+    , parentBasedSamplerSpecOnLocalParentNotSampled = onLocalParentNotSampled
+    } = parentBasedSamplerSpec
+
+constDecisionSampler :: SamplingDecision -> SamplerSpec
+constDecisionSampler samplingDecision =
+  defaultSamplerSpec
+    { samplerSpecName = "ConstDecision"
+    , samplerSpecDescription = "ConstDecision{" <> samplingDecisionText <> "}"
+    , samplerSpecShouldSample = shouldSample
+    }
+  where
+  shouldSample samplerInput =
+    pure defaultSamplingResult
+      { samplingResultDecision = samplingDecision
+      , samplingResultSpanAttrs = mempty
+      , samplingResultTraceState =
+          spanContextTraceState
+            $ spanContext
+            $ contextSpan
+            $ samplerInputContext samplerInput
+      }
+
+  samplingDecisionText =
+    case samplingDecision of
+      SamplingDecisionDrop -> "DROP"
+      SamplingDecisionRecordOnly -> "RECORD_ONLY"
+      SamplingDecisionRecordAndSample -> "RECORD_AND_SAMPLE"
+
+-- Context with parent Span. The Span’s SpanContext may be invalid to indicate a root span.
+-- TraceId of the Span to be created. If the parent SpanContext contains a valid TraceId, they MUST always match.
+-- Name of the Span to be created.
+-- SpanKind of the Span to be created.
+-- Initial set of Attributes of the Span to be created.
+-- Collection of links that will be associated with the Span to be created. Typically useful for batch operations, see Links Between Spans.
+data SamplerInput = SamplerInput
+  { samplerInputContext :: Context
+  , samplerInputTraceId :: TraceId
+  , samplerInputSpanName :: SpanName
+  , samplerInputSpanKind :: SpanKind
+  , samplerInputSpanAttrs :: AttrsBuilder 'AttrsForSpan
+  , samplerInputSpanLinks :: SpanLinks AttrsBuilder
+  }
+
+data SamplingResult = SamplingResult
+  { samplingResultDecision :: SamplingDecision
+  , samplingResultSpanAttrs :: AttrsBuilder 'AttrsForSpan
+  , samplingResultTraceState :: TraceState
+  }
+
+defaultSamplingResult :: SamplingResult
+defaultSamplingResult =
+  SamplingResult
+    { samplingResultDecision = SamplingDecisionDrop
+    , samplingResultSpanAttrs = mempty
+    , samplingResultTraceState = emptyTraceState
+    }
+
+data SamplingDecision
+  = SamplingDecisionDrop
+  | SamplingDecisionRecordOnly
+  | SamplingDecisionRecordAndSample
+
+pattern Drop :: SamplingDecision
+pattern Drop <- SamplingDecisionDrop where
+  Drop = SamplingDecisionDrop
+
+pattern RecordOnly :: SamplingDecision
+pattern RecordOnly <- SamplingDecisionRecordOnly where
+  RecordOnly = SamplingDecisionRecordOnly
+
+pattern RecordAndSample :: SamplingDecision
+pattern RecordAndSample <- SamplingDecisionRecordAndSample where
+  RecordAndSample = SamplingDecisionRecordAndSample
+
+{-# COMPLETE Drop, RecordOnly, RecordAndSample :: SamplingDecision #-}
+
 type SpanProcessorM :: Type -> Type
 newtype SpanProcessorM a = SpanProcessorM
   { unSpanProcessorM :: LoggingT IO a
@@ -625,6 +894,30 @@ runSpanExporterM logger onTimeout onEx timeoutMicros pairs action = do
     case mResult of
       Just x -> pure x
       Nothing -> runOnTimeout onTimeout timeoutMicros pairs
+
+type SamplerM :: Type -> Type
+newtype SamplerM a = SamplerM
+  { unSamplerM :: LoggingT IO a
+  } deriving
+      ( Applicative, Functor, Monad, MonadIO -- @base@
+      , MonadCatch, MonadMask, MonadThrow -- @exceptions@
+      , MonadUnliftIO -- @unliftio-core@
+      , MonadLogger, MonadLoggerIO -- @monad-logger@
+      ) via (LoggingT IO)
+    deriving
+      ( Semigroup, Monoid -- @base@
+      ) via (Ap (LoggingT IO) a)
+
+runSamplerM
+  :: (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
+  -> OnException a
+  -> [SeriesElem]
+  -> SamplerM a
+  -> IO a
+runSamplerM logger onEx pairs action = do
+  flip runLoggingT logger do
+    unSamplerM action `catchAny` \someEx -> do
+      runOnException onEx someEx pairs
 
 type IdGeneratorM :: Type -> Type
 newtype IdGeneratorM a = IdGeneratorM

@@ -43,13 +43,13 @@ import Data.Kind (Type)
 import Data.Monoid (Ap(..))
 import GHC.Stack (SrcLoc(..))
 import OTel.API.Baggage.Core (MonadBaggage)
-import OTel.API.Context (ContextT(..), ContextKey, getAttachedContextKey, getContext, updateContext)
+import OTel.API.Context (ContextT(..), ContextKey, getContext, updateContext)
 import OTel.API.Context.Internal (unsafeAttachContext, unsafeNewContextBackend)
 import OTel.API.Core
   ( AttrsFor(AttrsForSpan), KV(..), NewSpanSpec(..)
-  , Span(spanContext, spanFrozenAt, spanIsRecording), SpanParent(..), SpanParentSource(..)
-  , SpanSpec(..), TimestampSource(..), AttrsBuilder, buildSpanSpec, recordException
-  , pattern CODE_FILEPATH, pattern CODE_FUNCTION, pattern CODE_LINENO, pattern CODE_NAMESPACE
+  , Span(spanContext, spanFrozenAt, spanIsRecording), TimestampSource(..), AttrsBuilder
+  , recordException, pattern CODE_FILEPATH, pattern CODE_FUNCTION, pattern CODE_LINENO
+  , pattern CODE_NAMESPACE
   )
 import OTel.API.Core.Internal
   ( MutableSpan(..), SpanBackend(..), Tracer(..), buildSpanUpdater, freezeSpan
@@ -93,9 +93,10 @@ instance (MonadIO m, MonadMask m) => MonadTracing (TracingT m) where
   traceCS cs newSpanSpec action =
     TracingT \tracer -> do
       flip runContextT (unSpanBackend $ tracerSpanBackend tracer) do
-        spanSpec <- toSpanSpec tracer newSpanSpec
         mutableSpan@MutableSpan { mutableSpanSpanKey = spanKey } <- do
-          liftIO $ tracerStartSpan tracer spanSpec
+          liftIO $ tracerStartSpan tracer newSpanSpec
+            { newSpanSpecAttrs = callStackAttrs <> newSpanSpecAttrs newSpanSpec
+            }
         unsafeAttachContext spanKey do
           result <- lift $ runTracingT (action mutableSpan) tracer
           result <$ processSpan tracer spanKey
@@ -146,36 +147,15 @@ instance (MonadIO m, MonadMask m) => MonadTracing (TracingT m) where
       where
       Tracer { tracerNow = now } = tracer
 
-    toSpanSpec
-      :: Tracer
-      -> NewSpanSpec
-      -> ContextT (Span AttrsBuilder) m SpanSpec
-    toSpanSpec tracer spec =
-      buildSpanSpec (liftIO now) spanParentFromSource spec { newSpanSpecAttrs }
-      where
-      spanParentFromSource
-        :: SpanParentSource
-        -> ContextT (Span AttrsBuilder) m SpanParent
-      spanParentFromSource = \case
-        SpanParentSourceExplicit spanParent -> pure spanParent
-        SpanParentSourceImplicit -> do
-          getAttachedContextKey >>= \case
-            Nothing -> pure SpanParentRoot
-            Just ctxKey -> do
-              parentSpanContext <- fmap spanContext $ getContext ctxKey
-              pure $ SpanParentChildOf parentSpanContext
-
-      newSpanSpecAttrs :: AttrsBuilder 'AttrsForSpan
-      newSpanSpecAttrs =
-        case Stack.getCallStack cs of
-          ((function, srcLoc) : _) ->
-            CODE_FUNCTION .@ function
-              <> CODE_NAMESPACE .@ srcLocModule srcLoc
-              <> CODE_FILEPATH .@ srcLocFile srcLoc
-              <> CODE_LINENO .@ srcLocStartLine srcLoc
-          _ -> mempty
-
-      Tracer { tracerNow = now } = tracer
+    callStackAttrs :: AttrsBuilder 'AttrsForSpan
+    callStackAttrs =
+      case Stack.getCallStack cs of
+        ((function, srcLoc) : _) ->
+          CODE_FUNCTION .@ function
+            <> CODE_NAMESPACE .@ srcLocModule srcLoc
+            <> CODE_FILEPATH .@ srcLocFile srcLoc
+            <> CODE_LINENO .@ srcLocStartLine srcLoc
+        _ -> mempty
 
 instance (MonadIO m, MonadMask m) => MonadTracingIO (TracingT m) where
   askTracer = TracingT pure
