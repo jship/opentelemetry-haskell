@@ -16,13 +16,17 @@ module OTel.API.Core.Trace
 
   , TraceId
   , traceIdToHexText
+  , traceIdToBytesVector
   , traceIdToHexBuilder
+  , traceIdToBytesBuilder
   , emptyTraceId
   , traceIdFromWords
 
   , SpanId
   , spanIdToHexText
+  , spanIdToBytesVector
   , spanIdToHexBuilder
+  , spanIdToBytesBuilder
   , emptySpanId
   , spanIdFromWords
 

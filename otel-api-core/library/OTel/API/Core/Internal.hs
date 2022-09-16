@@ -70,12 +70,16 @@ module OTel.API.Core.Internal
   , spanContextIsValid
   , TraceId(..)
   , traceIdToHexText
+  , traceIdToBytesVector
   , traceIdToHexBuilder
+  , traceIdToBytesBuilder
   , emptyTraceId
   , traceIdFromWords
   , SpanId(..)
   , spanIdToHexText
+  , spanIdToBytesVector
   , spanIdToHexBuilder
+  , spanIdToBytesBuilder
   , emptySpanId
   , spanIdFromWords
   , TraceFlags(..)
@@ -183,6 +187,7 @@ import Prelude hiding (span)
 import qualified Data.Aeson as Aeson
 import qualified Data.ByteString as ByteString
 import qualified Data.ByteString.Builder as Builder
+import qualified Data.ByteString.Lazy as ByteString.Lazy
 import qualified Data.Char as Char
 import qualified Data.DList as DList
 import qualified Data.Foldable as Foldable
@@ -193,6 +198,7 @@ import qualified Data.Text.Encoding as Text.Encoding
 import qualified Data.Text.Lazy as Text.Lazy
 import qualified Data.Traversable as Traversable
 import qualified Data.Vector as Vector
+import qualified Data.Vector.Unboxed as Unboxed
 
 class KV (kv :: Type) where
   type KVConstraints kv :: Type -> Type -> Constraint
@@ -852,7 +858,6 @@ spanContextIsValid spanContext =
   where
   SpanContext { spanContextTraceId, spanContextSpanId } = spanContext
 
--- TODO: Get byte array
 data TraceId = TraceId
   { traceIdHi :: Word64
   , traceIdLo :: Word64
@@ -868,9 +873,22 @@ traceIdToHexText traceId =
     $ Builder.toLazyByteString
     $ traceIdToHexBuilder traceId
 
+traceIdToBytesVector :: TraceId -> Unboxed.Vector Word8
+traceIdToBytesVector traceId =
+  Unboxed.fromList
+    $ ByteString.Lazy.unpack
+    $ Builder.toLazyByteString
+    $ traceIdToBytesBuilder traceId
+
 traceIdToHexBuilder :: TraceId -> Builder
 traceIdToHexBuilder traceId =
   Builder.word64HexFixed traceIdHi <> Builder.word64HexFixed traceIdLo
+  where
+  TraceId { traceIdHi, traceIdLo } = traceId
+
+traceIdToBytesBuilder :: TraceId -> Builder
+traceIdToBytesBuilder traceId =
+  Builder.word64LE traceIdHi <> Builder.word64LE traceIdLo
   where
   TraceId { traceIdHi, traceIdLo } = traceId
 
@@ -880,7 +898,6 @@ emptyTraceId = TraceId { traceIdHi = 0, traceIdLo = 0 }
 traceIdFromWords :: Word64 -> Word64 -> TraceId
 traceIdFromWords = TraceId
 
--- TODO: Get byte array
 newtype SpanId = SpanId
   { spanIdLo :: Word64
   } deriving stock (Eq, Show)
@@ -895,9 +912,22 @@ spanIdToHexText spanId =
     $ Builder.toLazyByteString
     $ spanIdToHexBuilder spanId
 
+spanIdToBytesVector :: SpanId -> Unboxed.Vector Word8
+spanIdToBytesVector spanId =
+  Unboxed.fromList
+    $ ByteString.Lazy.unpack
+    $ Builder.toLazyByteString
+    $ spanIdToBytesBuilder spanId
+
 spanIdToHexBuilder :: SpanId -> Builder
 spanIdToHexBuilder spanId =
   Builder.word64HexFixed spanIdLo
+  where
+  SpanId { spanIdLo } = spanId
+
+spanIdToBytesBuilder :: SpanId -> Builder
+spanIdToBytesBuilder spanId =
+  Builder.word64LE spanIdLo
   where
   SpanId { spanIdLo } = spanId
 
