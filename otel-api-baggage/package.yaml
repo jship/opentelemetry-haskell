@@ -56,7 +56,6 @@ tests:
     - hspec
     - otel-api-baggage
     - otel-api-baggage-core
-    - otel-api-core
     - text
     - unordered-containers
     when:

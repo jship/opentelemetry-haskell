@@ -29,10 +29,8 @@ ghc-options:
 library:
   dependencies:
   - aeson
-  - async
   - base >=4.11.1.0 && <5
   - clock
-  - dlist
   - monad-logger-aeson
   - mtl >=2.3
   - mwc-random
@@ -40,9 +38,7 @@ library:
   - otel-api-context
   - otel-api-trace
   - safe-exceptions
-  - split
   - stm
-  - stm-chans
   - text
   - unliftio-core
   - vector

@@ -68,7 +68,6 @@ test-suite otel-api-baggage-test-suite
     , hspec
     , otel-api-baggage
     , otel-api-baggage-core
-    , otel-api-core
     , text
     , unordered-containers
   default-language: Haskell2010
