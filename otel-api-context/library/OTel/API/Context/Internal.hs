@@ -6,6 +6,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -15,32 +16,18 @@ module OTel.API.Context.Internal
     ContextT(..)
   , mapContextT
 
-  , updateContext
-  , getContext
-  , attachContext
-  , getAttachedContextKey
-
-  , ContextBackend(..)
-  , unsafeNewContextBackend
-
-  , ContextKey(..)
-  , contextKeyName
-
-    -- ** Extremely internal things below
-  , unsafeNewContextKey
-  , unsafeUpdateContextAtKey
-  , unsafeAttachContext
-  , unsafeEqContextKeys
+  , attachContextValue
+  , getAttachedContextValue
+  , getAttachedContext
   ) where
 
-import Context (Store)
 import Control.Monad.Accum (MonadAccum)
 import Control.Monad.Base (MonadBase)
 import Control.Monad.Catch (MonadCatch, MonadMask, MonadThrow)
 import Control.Monad.Cont (MonadCont)
 import Control.Monad.Except (MonadError)
 import Control.Monad.Fix (MonadFix)
-import Control.Monad.IO.Class (MonadIO(liftIO))
+import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.IO.Unlift (MonadUnliftIO)
 import Control.Monad.Logger (MonadLogger)
 import Control.Monad.RWS.Class (MonadRWS)
@@ -52,21 +39,18 @@ import Control.Monad.Trans.Control (MonadBaseControl, MonadTransControl)
 import Control.Monad.Trans.Reader (ReaderT(..))
 import Control.Monad.Trans.Resource (MonadResource)
 import Control.Monad.Writer.Class (MonadWriter)
-import Data.IORef (IORef)
 import Data.Kind (Type)
 import Data.Monoid (Ap(..))
-import Data.Text (Text)
-import GHC.Exts (Int(I#), sameMutVar#)
-import GHC.IORef (IORef(IORef))
-import GHC.STRef (STRef(STRef))
+import OTel.API.Context.Core
+  ( Context, ContextBackend, attachContextValueUsing, getAttachedContextUsing
+  , getAttachedContextValueUsing
+  )
 import Prelude
-import qualified Context
-import qualified Data.IORef as IORef
 
 type ContextT :: Type -> (Type -> Type) -> Type -> Type
 
-newtype ContextT ctx m a = ContextT
-  { runContextT :: ContextBackend ctx -> m a
+newtype ContextT c m a = ContextT
+  { runContextT :: ContextBackend c -> m a
   } deriving
       ( Applicative, Functor, Monad, MonadFail, MonadFix, MonadIO -- @base@
       , MonadAccum w, MonadCont, MonadError e, MonadSelect r, MonadState s, MonadWriter w -- @mtl@
@@ -76,129 +60,55 @@ newtype ContextT ctx m a = ContextT
       , MonadBaseControl b -- @monad-control@
       , MonadLogger -- @monad-logger@
       , MonadResource -- @resourcet@
-      ) via (ReaderT (ContextBackend ctx) m)
+      ) via (ReaderT (ContextBackend c) m)
     deriving
       ( MonadTrans -- @base@
       , MonadTransControl -- @monad-control@
-      ) via (ReaderT (ContextBackend ctx))
+      ) via (ReaderT (ContextBackend c))
     deriving
       ( Semigroup, Monoid -- @base@
-      ) via (Ap (ReaderT (ContextBackend ctx) m) a)
+      ) via (Ap (ReaderT (ContextBackend c) m) a)
 
-instance (MonadReader r m) => MonadReader r (ContextT ctx m) where
+instance (MonadReader r m) => MonadReader r (ContextT c m) where
   ask = lift ask
   reader = lift . reader
   local = mapContextT . local
 
-instance (MonadRWS r w s m) => MonadRWS r w s (ContextT ctx m)
+instance (MonadRWS r w s m) => MonadRWS r w s (ContextT c m)
 
 mapContextT
-  :: forall m n ctx a b
+  :: forall m n c a b
    . (m a -> n b)
-  -> ContextT ctx m a
-  -> ContextT ctx n b
+  -> ContextT c m a
+  -> ContextT c n b
 mapContextT f action = ContextT $ f . runContextT action
 
-updateContext
-  :: forall m ctx
-   . (MonadIO m)
-  => ContextKey ctx
-  -> (ctx -> ctx)
-  -> ContextT ctx m ctx
-updateContext ctxKey updater =
-  ContextT \_ctxBackend ->
-    liftIO $ unsafeUpdateContextAtKey ctxKey updater
-
-getContext
-  :: forall m ctx
-   . (MonadIO m)
-  => ContextKey ctx
-  -> ContextT ctx m ctx
-getContext ctxKey = updateContext ctxKey id
-
-attachContext
-  :: forall m ctx a
+attachContextValue
+  :: forall m a b
    . (MonadIO m, MonadMask m)
-  => Text
-  -> ctx
-  -> (ContextKey ctx -> ContextT ctx m a)
-  -> ContextT ctx m a
-attachContext name ctx f =
+  => a
+  -> ContextT a m b
+  -> ContextT a m b
+attachContextValue value action =
   ContextT \ctxBackend -> do
-    ctxKey <- liftIO $ unsafeNewContextKey name ctx
-    Context.use (ctxBackendStore ctxBackend) ctxKey do
-      runContextT (f ctxKey) ctxBackend
-
-unsafeAttachContext
-  :: forall m ctx a
-   . (MonadIO m, MonadMask m)
-  => ContextKey ctx
-  -> ContextT ctx m a
-  -> ContextT ctx m a
-unsafeAttachContext ctxKey action =
-  ContextT \ctxBackend -> do
-    Context.use (ctxBackendStore ctxBackend) ctxKey do
+    attachContextValueUsing ctxBackend value do
       runContextT action ctxBackend
 
-getAttachedContextKey
-  :: forall m ctx
-   . (MonadIO m, MonadThrow m)
-  => ContextT ctx m (ContextKey ctx)
-getAttachedContextKey =
+getAttachedContextValue
+  :: forall m a
+   . (MonadIO m, MonadMask m)
+  => ContextT a m (Maybe a)
+getAttachedContextValue =
   ContextT \ctxBackend -> do
-    Context.mine $ ctxBackendStore ctxBackend
+    getAttachedContextValueUsing ctxBackend
 
-newtype ContextBackend ctx = ContextBackend
-  { ctxBackendStore :: Store (ContextKey ctx)
-  }
-
-unsafeNewContextBackend
-  :: forall m ctx
-   . (MonadIO m)
-  => ctx
-  -> m (ContextBackend ctx)
-unsafeNewContextBackend initCtx = do
-  ctxKey <- liftIO $ unsafeNewContextKey "default" initCtx
-  fmap ContextBackend $ Context.newStore Context.noPropagation $ Just ctxKey
-
-data ContextKey ctx = ContextKey
-  { contextKeyDebugName :: Text
-  , contextKeyRef :: IORef ctx
-  }
-
-contextKeyName :: ContextKey ctx -> Text
-contextKeyName = contextKeyDebugName
-
-unsafeNewContextKey :: Text -> ctx -> IO (ContextKey ctx)
-unsafeNewContextKey contextKeyDebugName ctx = do
-  contextKeyRef <- IORef.newIORef ctx
-  pure ContextKey
-    { contextKeyDebugName
-    , contextKeyRef
-    }
-
-unsafeUpdateContextAtKey :: ContextKey ctx -> (ctx -> ctx) -> IO ctx
-unsafeUpdateContextAtKey ctxKey updater = do
-  IORef.atomicModifyIORef' (contextKeyRef ctxKey) \ctx ->
-    let ctx' = updater ctx
-     in (ctx', ctx')
-
-unsafeEqContextKeys :: ContextKey ctx -> ContextKey ctx -> Bool
-unsafeEqContextKeys ctxKey1 ctxKey2 = namesMatch && varsMatch
-  where
-  namesMatch = dbgName1 == dbgName2
-  varsMatch = I# (sameMutVar# var1# var2#) == 1
-  !(IORef (STRef var1#)) = ref1
-  ContextKey
-    { contextKeyDebugName = dbgName1
-    , contextKeyRef = ref1
-    } = ctxKey1
-
-  !(IORef (STRef var2#)) = ref2
-  ContextKey
-    { contextKeyDebugName = dbgName2
-    , contextKeyRef = ref2
-    } = ctxKey2
+getAttachedContext
+  :: forall m a
+   . (MonadIO m, MonadThrow m, forall x. (Monoid x) => Monoid (m x))
+  => ContextT a m Context
+getAttachedContext =
+  ContextT \ctxBackend -> do
+    getAttachedContextUsing ctxBackend
 
 -- $disclaimer
 --

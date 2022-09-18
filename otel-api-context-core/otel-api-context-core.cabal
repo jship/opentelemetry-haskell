@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 
-name:           otel-api-context
+name:           otel-api-context-core
 version:        0.0.0
 synopsis:       STUB
-description:    @otel-api-context@ STUB
+description:    @otel-api-context-core@ STUB
 category:       System
 homepage:       https://github.com/jship/opentelemetry-haskell#readme
 bug-reports:    https://github.com/jship/opentelemetry-haskell/issues
@@ -29,8 +29,8 @@ source-repository head
 
 library
   exposed-modules:
-      OTel.API.Context
-      OTel.API.Context.Internal
+      OTel.API.Context.Core
+      OTel.API.Context.Core.Internal
   hs-source-dirs:
       library
   default-extensions:
@@ -43,34 +43,11 @@ library
     , monad-control
     , monad-logger
     , mtl >=2.3
-    , otel-api-context-core
     , resourcet
     , text
     , transformers
     , transformers-base
     , unliftio-core
-  default-language: Haskell2010
-
-test-suite otel-api-context-test-suite
-  type: exitcode-stdio-1.0
-  main-is: Driver.hs
-  other-modules:
-      Test.OTel.API.ContextSpec
-  hs-source-dirs:
-      test-suite
-  default-extensions:
-      NoImplicitPrelude
-  ghc-options: -Wall -fwarn-tabs -Wincomplete-uni-patterns -Wredundant-constraints
-  build-tool-depends:
-      hspec-discover:hspec-discover
-  build-depends:
-      HUnit
-    , base
-    , hspec
-    , otel-api-context
-    , otel-api-context-core
-    , safe-exceptions
-    , text
-    , transformers
-    , unliftio-core
+    , unordered-containers
+    , vault
   default-language: Haskell2010

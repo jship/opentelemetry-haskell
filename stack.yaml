@@ -3,6 +3,7 @@ packages:
 - ./otel-api-baggage
 - ./otel-api-baggage-core
 - ./otel-api-context
+- ./otel-api-context-core
 - ./otel-api-core
 - ./otel-api-trace
 - ./otel-api-trace-core

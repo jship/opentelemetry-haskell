@@ -1,4 +1,4 @@
-name: otel-api-context
+name: otel-api-context-core
 version: '0.0.0'
 github: "jship/opentelemetry-haskell"
 license: Apache-2.0
@@ -8,7 +8,7 @@ author: "Jason Shipman"
 maintainer: "Jason Shipman"
 synopsis: STUB
 description: |
-  @otel-api-context@ STUB
+  @otel-api-context-core@ STUB
 category: System
 
 extra-source-files:
@@ -34,33 +34,14 @@ library:
   - monad-control
   - monad-logger
   - mtl >=2.3
-  - otel-api-context-core
   - resourcet
   - text
   - transformers
   - transformers-base
   - unliftio-core
+  - unordered-containers
+  - vault
   source-dirs: library
   when:
   - condition: false
-    other-modules: Paths_otel_api_context
-
-tests:
-  otel-api-context-test-suite:
-    source-dirs: test-suite
-    main: Driver.hs
-    build-tools:
-    - hspec-discover
-    dependencies:
-    - HUnit
-    - base
-    - hspec
-    - otel-api-context
-    - otel-api-context-core
-    - safe-exceptions
-    - text
-    - transformers
-    - unliftio-core
-    when:
-    - condition: false
-      other-modules: Paths_otel_api_context
+    other-modules: Paths_otel_api_context_core
