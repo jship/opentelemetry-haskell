@@ -6,7 +6,6 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -104,7 +103,7 @@ getAttachedContextValue =
 
 getAttachedContext
   :: forall m a
-   . (MonadIO m, MonadThrow m, forall x. (Monoid x) => Monoid (m x))
+   . (MonadIO m, MonadThrow m)
   => ContextT a m Context
 getAttachedContext =
   ContextT \ctxBackend -> do

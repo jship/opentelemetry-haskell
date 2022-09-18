@@ -2,8 +2,8 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE StrictData #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 module OTel.API.Context.Core.Internal
   ( -- * Disclaimer
     -- $disclaimer
@@ -39,6 +39,7 @@ import System.IO.Unsafe (unsafePerformIO)
 import qualified Context
 import qualified Data.HashMap.Strict as HashMap
 import qualified Data.IORef as IORef
+import qualified Data.Traversable as Traversable
 import qualified Data.Unique.Really as Unique
 import qualified Data.Vault.Strict as Vault
 
@@ -100,14 +101,14 @@ getAttachedContextValueUsing contextBackend = do
 
 getAttachedContextUsing
   :: forall m a
-   . (MonadIO m, MonadThrow m, forall x. (Monoid x) => Monoid (m x))
+   . (MonadIO m, MonadThrow m)
   => ContextBackend a
   -> m Context
 getAttachedContextUsing contextBackend = do
   someContextBackends <- do
     liftIO $ IORef.readIORef $ unContextBackendRegistry $ contextBackendRegistry contextBackend
-  fmap Context do
-    flip foldMap someContextBackends \case
+  fmap (Context . mconcat) do
+    Traversable.for (HashMap.elems someContextBackends) \case
       SomeContextBackend registeredContextBackend -> do
         context <- Context.mine $ contextBackendStore registeredContextBackend
         pure $ unContext context
