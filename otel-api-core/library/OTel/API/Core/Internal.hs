@@ -15,6 +15,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE StrictData #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -66,7 +67,6 @@ module OTel.API.Core.Internal
   , TracerProvider(..)
   , getTracer
   , Tracer(..)
-  , SpanBackend(..)
   , SpanContext(..)
   , emptySpanContext
   , spanContextIsValid
@@ -159,6 +159,7 @@ module OTel.API.Core.Internal
   , freezeSpan
   , spanIsRemote
   , spanIsSampled
+  , HasSpan(..)
   , SpanParentSource(.., Implicit, Explicit)
   , SpanParent(.., Root, ChildOf)
   , spanParentContext
@@ -837,33 +838,29 @@ instance ToAttrVal (Seq Word32) (AttrVals Int64) where
 instance ToAttrVal (Vector Word32) (AttrVals Int64) where
   toAttrVal = AttrVals . fmap (toAttrVal @Word32 @Int64)
 
-data TracerProvider = TracerProvider
-  { tracerProviderGetTracer :: InstrumentationScope -> IO Tracer
+data TracerProvider ctx = TracerProvider
+  { tracerProviderGetTracer :: InstrumentationScope -> IO (Tracer ctx)
   , tracerProviderShutdown :: IO ()
   , tracerProviderForceFlush :: IO ()
   }
 
 getTracer
-  :: forall m
+  :: forall m ctx
    . (MonadIO m)
-  => TracerProvider
+  => TracerProvider ctx
   -> InstrumentationScope
-  -> m Tracer
+  -> m (Tracer ctx)
 getTracer tracerProvider = liftIO . tracerProviderGetTracer tracerProvider
 
-data Tracer = Tracer
+data Tracer ctx = Tracer
   { tracerInstrumentationScope :: InstrumentationScope
   , tracerNow :: IO Timestamp
-  , tracerStartSpan :: NewSpanSpec -> IO MutableSpan
+  , tracerStartSpan :: ctx -> NewSpanSpec ctx -> IO (MutableSpan ctx)
   , tracerProcessSpan :: Span Attrs -> IO ()
-  , tracerSpanBackend :: SpanBackend
+  , tracerContextBackend :: ContextBackend ctx
   , tracerSpanAttrsLimits :: SpanAttrsLimits
   , tracerSpanEventAttrsLimits :: SpanEventAttrsLimits
   , tracerSpanLinkAttrsLimits :: SpanLinkAttrsLimits
-  }
-
-newtype SpanBackend = SpanBackend
-  { unSpanBackend :: ContextBackend (Span AttrsBuilder)
   }
 
 data SpanContext = SpanContext
@@ -1551,26 +1548,26 @@ defaultSpanLinkSpec =
     , spanLinkSpecAttrs = mempty
     }
 
-data NewSpanSpec = NewSpanSpec
+data NewSpanSpec ctx = NewSpanSpec
   { newSpanSpecName :: SpanName
-  , newSpanSpecParentSource :: SpanParentSource
+  , newSpanSpecParentContext :: Maybe ctx
   , newSpanSpecStart :: TimestampSource
   , newSpanSpecKind :: SpanKind
   , newSpanSpecAttrs :: AttrsBuilder 'AttrsForSpan
   , newSpanSpecLinks :: SpanLinkSpecs
   }
 
-instance IsString NewSpanSpec where
+instance IsString (NewSpanSpec ctx) where
   fromString s =
     defaultNewSpanSpec
       { newSpanSpecName = fromString s
       }
 
-defaultNewSpanSpec :: NewSpanSpec
+defaultNewSpanSpec :: NewSpanSpec ctx
 defaultNewSpanSpec =
   NewSpanSpec
     { newSpanSpecName = ""
-    , newSpanSpecParentSource = SpanParentSourceImplicit
+    , newSpanSpecParentContext = Nothing
     , newSpanSpecStart = TimestampSourceNow
     , newSpanSpecKind = SpanKindInternal
     , newSpanSpecAttrs = mempty
@@ -1648,8 +1645,8 @@ newtype SpanName = SpanName
 instance IsString SpanName where
   fromString = SpanName . Text.pack
 
-newtype MutableSpan = MutableSpan
-  { mutableSpanSpanKey :: ContextKey (Span AttrsBuilder)
+newtype MutableSpan ctx = MutableSpan
+  { mutableSpanContextKey :: ContextKey ctx
   }
 
 -- TODO: Add reference to Resource?
@@ -1732,6 +1729,244 @@ spanIsSampled :: Span attrs -> Bool
 spanIsSampled span = spanContextIsSampled spanContext
   where
   Span { spanContext } = span
+
+class HasSpan s where
+  _span :: forall f. Functor f => (Span AttrsBuilder -> f (Span AttrsBuilder)) -> s -> f s
+  _spanAttrs ::
+    forall f. Functor f => (AttrsBuilder 'AttrsForSpan -> f (AttrsBuilder 'AttrsForSpan)) -> s -> f s
+  {-# INLINE _spanAttrs #-}
+  _spanContext :: forall f. Functor f => (SpanContext -> f SpanContext) -> s -> f s
+  {-# INLINE _spanContext #-}
+  _spanEvents ::
+    forall f. Functor f => (SpanEvents AttrsBuilder -> f (SpanEvents AttrsBuilder)) -> s -> f s
+  {-# INLINE _spanEvents #-}
+  _spanFrozenAt ::
+    forall f. Functor f => (SpanFrozenAt AttrsBuilder -> f (SpanFrozenAt AttrsBuilder)) -> s -> f s
+  {-# INLINE _spanFrozenAt #-}
+  _spanInstrumentationScope ::
+    forall f. Functor f => (InstrumentationScope -> f InstrumentationScope) -> s -> f s
+  {-# INLINE _spanInstrumentationScope #-}
+  _spanIsRecording :: forall f. Functor f => (Bool -> f Bool) -> s -> f s
+  {-# INLINE _spanIsRecording #-}
+  _spanKind :: forall f. Functor f => (SpanKind -> f SpanKind) -> s -> f s
+  {-# INLINE _spanKind #-}
+  _spanLinks ::
+    forall f. Functor f => (SpanLinks AttrsBuilder -> f (SpanLinks AttrsBuilder)) -> s -> f s
+  {-# INLINE _spanLinks #-}
+  _spanName :: forall f. Functor f => (SpanName -> f SpanName) -> s -> f s
+  {-# INLINE _spanName #-}
+  _spanParent :: forall f. Functor f => (SpanParent -> f SpanParent) -> s -> f s
+  {-# INLINE _spanParent #-}
+  _spanStart :: forall f. Functor f => (Timestamp -> f Timestamp) -> s -> f s
+  {-# INLINE _spanStart #-}
+  _spanStatus :: forall f. Functor f => (SpanStatus -> f SpanStatus) -> s -> f s
+  {-# INLINE _spanStatus #-}
+  _spanAttrs = ((.) _span) _spanAttrs
+  _spanContext = ((.) _span) _spanContext
+  _spanEvents = ((.) _span) _spanEvents
+  _spanFrozenAt = ((.) _span) _spanFrozenAt
+  _spanInstrumentationScope = ((.) _span) _spanInstrumentationScope
+  _spanIsRecording = ((.) _span) _spanIsRecording
+  _spanKind = ((.) _span) _spanKind
+  _spanLinks = ((.) _span) _spanLinks
+  _spanName = ((.) _span) _spanName
+  _spanParent = ((.) _span) _spanParent
+  _spanStart = ((.) _span) _spanStart
+  _spanStatus = ((.) _span) _spanStatus
+instance HasSpan (Span AttrsBuilder) where
+  {-# INLINE _spanAttrs #-}
+  {-# INLINE _spanContext #-}
+  {-# INLINE _spanEvents #-}
+  {-# INLINE _spanFrozenAt #-}
+  {-# INLINE _spanInstrumentationScope #-}
+  {-# INLINE _spanIsRecording #-}
+  {-# INLINE _spanKind #-}
+  {-# INLINE _spanLinks #-}
+  {-# INLINE _spanName #-}
+  {-# INLINE _spanParent #-}
+  {-# INLINE _spanStart #-}
+  {-# INLINE _spanStatus #-}
+  _span = id
+  _spanAttrs
+    f_akcA
+    (Span x1_akcB x2_akcC x3_akcD x4_akcE x5_akcF x6_akcG x7_akcH
+           x8_akcI x9_akcJ x10_akcK x11_akcL x12_akcM)
+    = (fmap
+         (\ y1_akcN
+            -> (((((((((((Span x1_akcB) x2_akcC) x3_akcD) x4_akcE) x5_akcF)
+                       x6_akcG)
+                      x7_akcH)
+                     y1_akcN)
+                    x9_akcJ)
+                   x10_akcK)
+                  x11_akcL)
+                 x12_akcM))
+        (f_akcA x8_akcI)
+  _spanContext
+    f_akcO
+    (Span x1_akcP x2_akcQ x3_akcR x4_akcS x5_akcT x6_akcU x7_akcV
+           x8_akcW x9_akcX x10_akcY x11_akcZ x12_akd0)
+    = (fmap
+         (\ y1_akd1
+            -> (((((((((((Span x1_akcP) y1_akd1) x3_akcR) x4_akcS) x5_akcT)
+                       x6_akcU)
+                      x7_akcV)
+                     x8_akcW)
+                    x9_akcX)
+                   x10_akcY)
+                  x11_akcZ)
+                 x12_akd0))
+        (f_akcO x2_akcQ)
+  _spanEvents
+    f_akd2
+    (Span x1_akd3 x2_akd4 x3_akd5 x4_akd6 x5_akd7 x6_akd8 x7_akd9
+           x8_akda x9_akdb x10_akdc x11_akdd x12_akde)
+    = (fmap
+         (\ y1_akdf
+            -> (((((((((((Span x1_akd3) x2_akd4) x3_akd5) x4_akd6) x5_akd7)
+                       x6_akd8)
+                      x7_akd9)
+                     x8_akda)
+                    x9_akdb)
+                   y1_akdf)
+                  x11_akdd)
+                 x12_akde))
+        (f_akd2 x10_akdc)
+  _spanFrozenAt
+    f_akdg
+    (Span x1_akdh x2_akdi x3_akdj x4_akdk x5_akdl x6_akdm x7_akdn
+           x8_akdo x9_akdp x10_akdq x11_akdr x12_akds)
+    = (fmap
+         (\ y1_akdt
+            -> (((((((((((Span x1_akdh) x2_akdi) x3_akdj) x4_akdk) x5_akdl)
+                       y1_akdt)
+                      x7_akdn)
+                     x8_akdo)
+                    x9_akdp)
+                   x10_akdq)
+                  x11_akdr)
+                 x12_akds))
+        (f_akdg x6_akdm)
+  _spanInstrumentationScope
+    f_akdu
+    (Span x1_akdv x2_akdw x3_akdx x4_akdy x5_akdz x6_akdA x7_akdB
+           x8_akdC x9_akdD x10_akdE x11_akdF x12_akdG)
+    = (fmap
+         (\ y1_akdH
+            -> (((((((((((Span x1_akdv) x2_akdw) x3_akdx) x4_akdy) x5_akdz)
+                       x6_akdA)
+                      x7_akdB)
+                     x8_akdC)
+                    x9_akdD)
+                   x10_akdE)
+                  x11_akdF)
+                 y1_akdH))
+        (f_akdu x12_akdG)
+  _spanIsRecording
+    f_akdI
+    (Span x1_akdJ x2_akdK x3_akdL x4_akdM x5_akdN x6_akdO x7_akdP
+           x8_akdQ x9_akdR x10_akdS x11_akdT x12_akdU)
+    = (fmap
+         (\ y1_akdV
+            -> (((((((((((Span x1_akdJ) x2_akdK) x3_akdL) x4_akdM) x5_akdN)
+                       x6_akdO)
+                      x7_akdP)
+                     x8_akdQ)
+                    x9_akdR)
+                   x10_akdS)
+                  y1_akdV)
+                 x12_akdU))
+        (f_akdI x11_akdT)
+  _spanKind
+    f_akdW
+    (Span x1_akdX x2_akdY x3_akdZ x4_ake0 x5_ake1 x6_ake2 x7_ake3
+           x8_ake4 x9_ake5 x10_ake6 x11_ake7 x12_ake8)
+    = (fmap
+         (\ y1_ake9
+            -> (((((((((((Span x1_akdX) x2_akdY) x3_akdZ) x4_ake0) x5_ake1)
+                       x6_ake2)
+                      y1_ake9)
+                     x8_ake4)
+                    x9_ake5)
+                   x10_ake6)
+                  x11_ake7)
+                 x12_ake8))
+        (f_akdW x7_ake3)
+  _spanLinks
+    f_akea
+    (Span x1_akeb x2_akec x3_aked x4_akee x5_akef x6_akeg x7_akeh
+           x8_akei x9_akej x10_akek x11_akel x12_akem)
+    = (fmap
+         (\ y1_aken
+            -> (((((((((((Span x1_akeb) x2_akec) x3_aked) x4_akee) x5_akef)
+                       x6_akeg)
+                      x7_akeh)
+                     x8_akei)
+                    y1_aken)
+                   x10_akek)
+                  x11_akel)
+                 x12_akem))
+        (f_akea x9_akej)
+  _spanName
+    f_akeo
+    (Span x1_akep x2_akeq x3_aker x4_akes x5_aket x6_akeu x7_akev
+           x8_akew x9_akex x10_akey x11_akez x12_akeA)
+    = (fmap
+         (\ y1_akeB
+            -> (((((((((((Span x1_akep) x2_akeq) y1_akeB) x4_akes) x5_aket)
+                       x6_akeu)
+                      x7_akev)
+                     x8_akew)
+                    x9_akex)
+                   x10_akey)
+                  x11_akez)
+                 x12_akeA))
+        (f_akeo x3_aker)
+  _spanParent
+    f_akeC
+    (Span x1_akeD x2_akeE x3_akeF x4_akeG x5_akeH x6_akeI x7_akeJ
+           x8_akeK x9_akeL x10_akeM x11_akeN x12_akeO)
+    = (fmap
+         (\ y1_akeP
+            -> (((((((((((Span y1_akeP) x2_akeE) x3_akeF) x4_akeG) x5_akeH)
+                       x6_akeI)
+                      x7_akeJ)
+                     x8_akeK)
+                    x9_akeL)
+                   x10_akeM)
+                  x11_akeN)
+                 x12_akeO))
+        (f_akeC x1_akeD)
+  _spanStart
+    f_akeQ
+    (Span x1_akeR x2_akeS x3_akeT x4_akeU x5_akeV x6_akeW x7_akeX
+           x8_akeY x9_akeZ x10_akf0 x11_akf1 x12_akf2)
+    = (fmap
+         (\ y1_akf3
+            -> (((((((((((Span x1_akeR) x2_akeS) x3_akeT) x4_akeU) y1_akf3)
+                       x6_akeW)
+                      x7_akeX)
+                     x8_akeY)
+                    x9_akeZ)
+                   x10_akf0)
+                  x11_akf1)
+                 x12_akf2))
+        (f_akeQ x5_akeV)
+  _spanStatus
+    f_akf4
+    (Span x1_akf5 x2_akf6 x3_akf7 x4_akf8 x5_akf9 x6_akfa x7_akfb
+           x8_akfc x9_akfd x10_akfe x11_akff x12_akfg)
+    = (fmap
+         (\ y1_akfh
+            -> (((((((((((Span x1_akf5) x2_akf6) x3_akf7) y1_akfh) x5_akf9)
+                       x6_akfa)
+                      x7_akfb)
+                     x8_akfc)
+                    x9_akfd)
+                   x10_akfe)
+                  x11_akff)
+                 x12_akfg))
+        (f_akf4 x4_akf8)
 
 data SpanParentSource
   = SpanParentSourceImplicit

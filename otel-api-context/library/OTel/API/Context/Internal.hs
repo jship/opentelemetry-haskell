@@ -5,6 +5,7 @@
 {-# LANGUAGE MagicHash #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -141,11 +142,11 @@ unsafeAttachContext ctxKey action =
 
 getAttachedContextKey
   :: forall m ctx
-   . (MonadIO m)
-  => ContextT ctx m (Maybe (ContextKey ctx))
+   . (MonadIO m, MonadThrow m)
+  => ContextT ctx m (ContextKey ctx)
 getAttachedContextKey =
   ContextT \ctxBackend -> do
-    Context.mineMay $ ctxBackendStore ctxBackend
+    Context.mine $ ctxBackendStore ctxBackend
 
 newtype ContextBackend ctx = ContextBackend
   { ctxBackendStore :: Store (ContextKey ctx)
@@ -154,9 +155,11 @@ newtype ContextBackend ctx = ContextBackend
 unsafeNewContextBackend
   :: forall m ctx
    . (MonadIO m)
-  => m (ContextBackend ctx)
-unsafeNewContextBackend = do
-  fmap ContextBackend $ Context.newStore Context.noPropagation Nothing
+  => ctx
+  -> m (ContextBackend ctx)
+unsafeNewContextBackend initCtx = do
+  ctxKey <- liftIO $ unsafeNewContextKey "default" initCtx
+  fmap ContextBackend $ Context.newStore Context.noPropagation $ Just ctxKey
 
 data ContextKey ctx = ContextKey
   { contextKeyDebugName :: Text

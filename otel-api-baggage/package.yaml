@@ -29,6 +29,7 @@ ghc-options:
 library:
   dependencies:
   - base >=4.11.1.0 && <5
+  - microlens
   - monad-control
   - monad-logger
   - mtl >=2.3
@@ -56,6 +57,7 @@ tests:
     - hspec
     - otel-api-baggage
     - otel-api-baggage-core
+    - otel-api-context
     - text
     - unordered-containers
     when:

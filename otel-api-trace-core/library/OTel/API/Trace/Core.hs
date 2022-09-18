@@ -1,6 +1,9 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE UndecidableInstances #-}
 module OTel.API.Trace.Core
   ( -- * Synopsis
     -- $synopsis
@@ -22,7 +25,7 @@ import Control.Monad.Trans.Maybe (MaybeT)
 import Control.Monad.Trans.Reader (ReaderT(..))
 import Control.Monad.Trans.Resource (ResourceT)
 import GHC.Stack (CallStack, HasCallStack, callStack)
-import OTel.API.Core (NewSpanSpec, SpanContext, Tracer, UpdateSpanSpec)
+import OTel.API.Core (NewSpanSpec, SpanContext, Tracer, UpdateSpanSpec, HasSpan)
 import OTel.API.Core.Internal (MutableSpan(..))
 import Prelude
 import qualified Control.Monad.Trans.RWS.Lazy as RWS.Lazy
@@ -33,77 +36,77 @@ import qualified Control.Monad.Trans.Writer.Lazy as Writer.Lazy
 import qualified Control.Monad.Trans.Writer.Strict as Writer.Strict
 
 trace
-  :: (MonadTracing m, HasCallStack)
-  => NewSpanSpec
-  -> (MutableSpan -> m a)
+  :: (MonadTracing ctx m, HasCallStack)
+  => NewSpanSpec ctx
+  -> (MutableSpan ctx -> m a)
   -> m a
 trace = traceCS callStack
 
 trace_
-  :: (MonadTracing m, HasCallStack)
-  => NewSpanSpec
+  :: (MonadTracing ctx m, HasCallStack)
+  => NewSpanSpec ctx
   -> m a
   -> m a
 trace_ newSpanSpec = traceCS callStack newSpanSpec . const
 
-class (Monad m) => MonadTracing m where
-  traceCS :: CallStack -> NewSpanSpec -> (MutableSpan -> m a) -> m a
+class (Monad m, HasSpan ctx) => MonadTracing ctx m | m -> ctx where
+  traceCS :: CallStack -> NewSpanSpec ctx -> (MutableSpan ctx -> m a) -> m a
 
   default traceCS
-    :: (MonadTransControl t, MonadTracing n, m ~ t n)
+    :: (MonadTransControl t, MonadTracing ctx n, m ~ t n)
     => CallStack
-    -> NewSpanSpec
-    -> (MutableSpan -> m a)
+    -> NewSpanSpec ctx
+    -> (MutableSpan ctx -> m a)
     -> m a
   traceCS cs newSpanSpec f = do
     restoreT . pure
       =<< liftWith \run -> traceCS cs newSpanSpec (run . f)
 
-instance (MonadTracing m) => MonadTracing (ExceptT e m)
-instance (MonadTracing m) => MonadTracing (IdentityT m)
-instance (MonadTracing m) => MonadTracing (MaybeT m)
-instance (MonadTracing m) => MonadTracing (ReaderT r m)
-instance (MonadTracing m) => MonadTracing (State.Lazy.StateT r m)
-instance (MonadTracing m) => MonadTracing (State.Strict.StateT r m)
-instance (MonadTracing m, Monoid w) => MonadTracing (RWS.Lazy.RWST r w s m)
-instance (MonadTracing m, Monoid w) => MonadTracing (RWS.Strict.RWST r w s m)
-instance (MonadTracing m, Monoid w) => MonadTracing (Writer.Lazy.WriterT w m)
-instance (MonadTracing m, Monoid w) => MonadTracing (Writer.Strict.WriterT w m)
-instance (MonadTracing m) => MonadTracing (LoggingT m)
-instance (MonadTracing m, MonadUnliftIO m) => MonadTracing (ResourceT m) where
+instance (MonadTracing ctx m) => MonadTracing ctx (ExceptT e m)
+instance (MonadTracing ctx m) => MonadTracing ctx (IdentityT m)
+instance (MonadTracing ctx m) => MonadTracing ctx (MaybeT m)
+instance (MonadTracing ctx m) => MonadTracing ctx (ReaderT r m)
+instance (MonadTracing ctx m) => MonadTracing ctx (State.Lazy.StateT r m)
+instance (MonadTracing ctx m) => MonadTracing ctx (State.Strict.StateT r m)
+instance (MonadTracing ctx m, Monoid w) => MonadTracing ctx (RWS.Lazy.RWST r w s m)
+instance (MonadTracing ctx m, Monoid w) => MonadTracing ctx (RWS.Strict.RWST r w s m)
+instance (MonadTracing ctx m, Monoid w) => MonadTracing ctx (Writer.Lazy.WriterT w m)
+instance (MonadTracing ctx m, Monoid w) => MonadTracing ctx (Writer.Strict.WriterT w m)
+instance (MonadTracing ctx m) => MonadTracing ctx (LoggingT m)
+instance (MonadTracing ctx m, MonadUnliftIO m) => MonadTracing ctx (ResourceT m) where
   traceCS cs newSpanSpec f = do
     withRunInIO \runInIO -> do
       runInIO $ traceCS cs newSpanSpec f
 
-class (MonadTracing m) => MonadTracingContext m where
-  getSpanContext :: MutableSpan -> m SpanContext
-  updateSpan :: MutableSpan -> UpdateSpanSpec -> m ()
+class (MonadTracing ctx m) => MonadTracingContext ctx m where
+  getSpanContext :: MutableSpan ctx -> m SpanContext
+  updateSpan :: MutableSpan ctx -> UpdateSpanSpec -> m ()
 
   default getSpanContext
-    :: (MonadTrans t, MonadTracingContext n, m ~ t n)
-    => MutableSpan
+    :: (MonadTrans t, MonadTracingContext ctx n, m ~ t n)
+    => MutableSpan ctx
     -> m SpanContext
   getSpanContext = lift . getSpanContext
 
   default updateSpan
-    :: (MonadTrans t, MonadTracingContext n, m ~ t n)
-    => MutableSpan
+    :: (MonadTrans t, MonadTracingContext ctx n, m ~ t n)
+    => MutableSpan ctx
     -> UpdateSpanSpec
     -> m ()
   updateSpan ctxKey = lift . updateSpan ctxKey
 
-instance (MonadTracingContext m) => MonadTracingContext (ExceptT e m)
-instance (MonadTracingContext m) => MonadTracingContext (IdentityT m)
-instance (MonadTracingContext m) => MonadTracingContext (MaybeT m)
-instance (MonadTracingContext m) => MonadTracingContext (ReaderT r m)
-instance (MonadTracingContext m) => MonadTracingContext (State.Lazy.StateT r m)
-instance (MonadTracingContext m) => MonadTracingContext (State.Strict.StateT r m)
-instance (MonadTracingContext m, Monoid w) => MonadTracingContext (RWS.Lazy.RWST r w s m)
-instance (MonadTracingContext m, Monoid w) => MonadTracingContext (RWS.Strict.RWST r w s m)
-instance (MonadTracingContext m, Monoid w) => MonadTracingContext (Writer.Lazy.WriterT w m)
-instance (MonadTracingContext m, Monoid w) => MonadTracingContext (Writer.Strict.WriterT w m)
-instance (MonadTracingContext m) => MonadTracingContext (LoggingT m)
-instance (MonadTracingContext m, MonadUnliftIO m) => MonadTracingContext (ResourceT m) where
+instance (MonadTracingContext ctx m) => MonadTracingContext ctx (ExceptT e m)
+instance (MonadTracingContext ctx m) => MonadTracingContext ctx (IdentityT m)
+instance (MonadTracingContext ctx m) => MonadTracingContext ctx (MaybeT m)
+instance (MonadTracingContext ctx m) => MonadTracingContext ctx (ReaderT r m)
+instance (MonadTracingContext ctx m) => MonadTracingContext ctx (State.Lazy.StateT r m)
+instance (MonadTracingContext ctx m) => MonadTracingContext ctx (State.Strict.StateT r m)
+instance (MonadTracingContext ctx m, Monoid w) => MonadTracingContext ctx (RWS.Lazy.RWST r w s m)
+instance (MonadTracingContext ctx m, Monoid w) => MonadTracingContext ctx (RWS.Strict.RWST r w s m)
+instance (MonadTracingContext ctx m, Monoid w) => MonadTracingContext ctx (Writer.Lazy.WriterT w m)
+instance (MonadTracingContext ctx m, Monoid w) => MonadTracingContext ctx (Writer.Strict.WriterT w m)
+instance (MonadTracingContext ctx m) => MonadTracingContext ctx (LoggingT m)
+instance (MonadTracingContext ctx m, MonadUnliftIO m) => MonadTracingContext ctx (ResourceT m) where
   getSpanContext mutableSpan = do
     withRunInIO \runInIO -> do
       runInIO $ getSpanContext mutableSpan
@@ -112,26 +115,26 @@ instance (MonadTracingContext m, MonadUnliftIO m) => MonadTracingContext (Resour
     withRunInIO \runInIO -> do
       runInIO $ updateSpan mutableSpan updateSpanSpec
 
-class (MonadTracing m, MonadIO m) => MonadTracingIO m where
-  askTracer :: m Tracer
+class (MonadTracing ctx m, MonadIO m) => MonadTracingIO ctx m where
+  askTracer :: m (Tracer ctx)
 
   default askTracer
-    :: (MonadTrans t, MonadTracingIO n, m ~ t n)
-    => m Tracer
+    :: (MonadTrans t, MonadTracingIO ctx n, m ~ t n)
+    => m (Tracer ctx)
   askTracer = lift askTracer
 
-instance (MonadTracingIO m) => MonadTracingIO (ExceptT e m)
-instance (MonadTracingIO m) => MonadTracingIO (IdentityT m)
-instance (MonadTracingIO m) => MonadTracingIO (MaybeT m)
-instance (MonadTracingIO m) => MonadTracingIO (ReaderT r m)
-instance (MonadTracingIO m) => MonadTracingIO (State.Lazy.StateT r m)
-instance (MonadTracingIO m) => MonadTracingIO (State.Strict.StateT r m)
-instance (MonadTracingIO m, Monoid w) => MonadTracingIO (RWS.Lazy.RWST r w s m)
-instance (MonadTracingIO m, Monoid w) => MonadTracingIO (RWS.Strict.RWST r w s m)
-instance (MonadTracingIO m, Monoid w) => MonadTracingIO (Writer.Lazy.WriterT w m)
-instance (MonadTracingIO m, Monoid w) => MonadTracingIO (Writer.Strict.WriterT w m)
-instance (MonadTracingIO m) => MonadTracingIO (LoggingT m)
-instance (MonadTracingIO m, MonadUnliftIO m) => MonadTracingIO (ResourceT m) where
+instance (MonadTracingIO ctx m) => MonadTracingIO ctx (ExceptT e m)
+instance (MonadTracingIO ctx m) => MonadTracingIO ctx (IdentityT m)
+instance (MonadTracingIO ctx m) => MonadTracingIO ctx (MaybeT m)
+instance (MonadTracingIO ctx m) => MonadTracingIO ctx (ReaderT r m)
+instance (MonadTracingIO ctx m) => MonadTracingIO ctx (State.Lazy.StateT r m)
+instance (MonadTracingIO ctx m) => MonadTracingIO ctx (State.Strict.StateT r m)
+instance (MonadTracingIO ctx m, Monoid w) => MonadTracingIO ctx (RWS.Lazy.RWST r w s m)
+instance (MonadTracingIO ctx m, Monoid w) => MonadTracingIO ctx (RWS.Strict.RWST r w s m)
+instance (MonadTracingIO ctx m, Monoid w) => MonadTracingIO ctx (Writer.Lazy.WriterT w m)
+instance (MonadTracingIO ctx m, Monoid w) => MonadTracingIO ctx (Writer.Strict.WriterT w m)
+instance (MonadTracingIO ctx m) => MonadTracingIO ctx (LoggingT m)
+instance (MonadTracingIO ctx m, MonadUnliftIO m) => MonadTracingIO ctx (ResourceT m) where
   askTracer = do
     withRunInIO \runInIO -> do
       runInIO askTracer

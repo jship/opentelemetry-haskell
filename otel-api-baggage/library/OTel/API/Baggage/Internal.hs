@@ -15,17 +15,16 @@ module OTel.API.Baggage.Internal
     BaggageT(..)
   , mapBaggageT
 
-  , BaggageBackend(..)
-  , defaultBaggageBackend
   ) where
 
 import Control.Exception.Safe (MonadCatch, MonadMask, MonadThrow)
+import Control.Monad (void)
 import Control.Monad.Accum (MonadAccum)
 import Control.Monad.Base (MonadBase)
 import Control.Monad.Cont (MonadCont)
 import Control.Monad.Except (MonadError)
 import Control.Monad.Fix (MonadFix)
-import Control.Monad.IO.Class (MonadIO(liftIO))
+import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.IO.Unlift (MonadUnliftIO)
 import Control.Monad.Logger (MonadLogger)
 import Control.Monad.RWS.Class (MonadRWS)
@@ -37,20 +36,21 @@ import Control.Monad.Trans.Control (MonadTransControl(..), MonadBaseControl)
 import Control.Monad.Trans.Reader (ReaderT(..))
 import Control.Monad.Trans.Resource (MonadResource)
 import Control.Monad.Writer.Class (MonadWriter)
+import Data.Function ((&))
 import Data.Kind (Type)
 import Data.Monoid (Ap(..))
-import OTel.API.Baggage.Core (MonadBaggage(..), Baggage)
+import Lens.Micro (set)
+import Lens.Micro.Extras (view)
+import OTel.API.Baggage.Core (HasBaggage(..), MonadBaggage(..))
 import OTel.API.Context
-  ( ContextT(..), ContextBackend, attachContext, getAttachedContextKey, getContext
+  ( ContextT(..), ContextBackend, getAttachedContextKey, getContext, updateContext
   )
-import OTel.API.Context.Internal (unsafeNewContextBackend)
 import OTel.API.Trace.Core (MonadTracing, MonadTracingContext, MonadTracingIO)
-import Prelude hiding (span)
-import System.IO.Unsafe (unsafePerformIO)
+import Prelude
 
-type BaggageT :: (Type -> Type) -> Type -> Type
-newtype BaggageT m a = BaggageT
-  { runBaggageT :: BaggageBackend -> m a
+type BaggageT :: Type -> (Type -> Type) -> Type -> Type
+newtype BaggageT ctx m a = BaggageT
+  { runBaggageT :: ContextBackend ctx -> m a
   } deriving
       ( Applicative, Functor, Monad, MonadFail, MonadFix, MonadIO -- @base@
       , MonadAccum w, MonadCont, MonadError e, MonadSelect r, MonadState s, MonadWriter w -- @mtl@
@@ -60,52 +60,42 @@ newtype BaggageT m a = BaggageT
       , MonadBaseControl b -- @monad-control@
       , MonadLogger -- @monad-logger@
       , MonadResource -- @resourcet@
-      , MonadTracing, MonadTracingContext, MonadTracingIO -- @otel-api-trace-core@
-      ) via (ReaderT BaggageBackend m)
+      , MonadTracing ctx, MonadTracingContext ctx, MonadTracingIO ctx -- @otel-api-trace-core@
+      ) via (ReaderT (ContextBackend ctx) m)
     deriving
       ( MonadTrans -- @base@
       , MonadTransControl -- @monad-control@
-      ) via (ReaderT BaggageBackend)
+      ) via (ReaderT (ContextBackend ctx))
     deriving
       ( Semigroup, Monoid -- @base@
-      ) via (Ap (ReaderT BaggageBackend m) a)
+      ) via (Ap (ReaderT (ContextBackend ctx) m) a)
 
-instance (MonadReader r m) => MonadReader r (BaggageT m) where
+instance (MonadReader r m) => MonadReader r (BaggageT ctx m) where
   ask = lift ask
   reader = lift . reader
   local = mapBaggageT . local
 
-instance (MonadRWS r w s m) => MonadRWS r w s (BaggageT m)
+instance (MonadRWS r w s m) => MonadRWS r w s (BaggageT ctx m)
 
-instance (MonadIO m, MonadMask m) => MonadBaggage (BaggageT m) where
+instance (MonadIO m, MonadMask m, HasBaggage ctx) => MonadBaggage ctx (BaggageT ctx m) where
   getBaggage =
-    BaggageT \baggageBackend -> do
-      flip runContextT (unBaggageBackend baggageBackend) do
-        getAttachedContextKey >>= \case
-          Nothing -> pure mempty
-          Just ctxKey -> getContext ctxKey
+    BaggageT \ctxBackend -> do
+      flip runContextT ctxBackend do
+        ctxKey <- getAttachedContextKey
+        fmap (view _baggage) $ getContext ctxKey
 
-  setBaggage baggage action =
-    BaggageT \baggageBackend -> do
-      flip runContextT (unBaggageBackend baggageBackend) do
-        attachContext "baggage" baggage \_ctxKey -> do
-          lift $ runBaggageT action baggageBackend
+  setBaggage baggage =
+    BaggageT \ctxBackend -> do
+      flip runContextT ctxBackend do
+        ctxKey <- getAttachedContextKey
+        void $ updateContext ctxKey \ctx -> ctx & set _baggage baggage
 
 mapBaggageT
-  :: forall m n a b
+  :: forall ctx m n a b
    . (m a -> n b)
-  -> BaggageT m a
-  -> BaggageT n b
+  -> BaggageT ctx m a
+  -> BaggageT ctx n b
 mapBaggageT f action = BaggageT $ f . runBaggageT action
-
-newtype BaggageBackend = BaggageBackend
-  { unBaggageBackend :: ContextBackend Baggage
-  }
-
-defaultBaggageBackend :: BaggageBackend
-defaultBaggageBackend =
-  unsafePerformIO $ fmap BaggageBackend $ liftIO unsafeNewContextBackend
-{-# NOINLINE defaultBaggageBackend #-}
 
 -- $disclaimer
 --

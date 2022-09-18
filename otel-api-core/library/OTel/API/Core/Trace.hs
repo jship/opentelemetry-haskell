@@ -110,7 +110,7 @@ module OTel.API.Core.Trace
   , NewSpanSpec
   , defaultNewSpanSpec
   , newSpanSpecName
-  , newSpanSpecParentSource
+  , newSpanSpecParentContext
   , newSpanSpecStart
   , newSpanSpecKind
   , newSpanSpecAttrs
@@ -145,6 +145,7 @@ module OTel.API.Core.Trace
   , spanInstrumentationScope
   , spanIsRemote
   , spanIsSampled
+  , HasSpan(..)
 
   , SpanParentSource(..)
   , SpanParent(..)

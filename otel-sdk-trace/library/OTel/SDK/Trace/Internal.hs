@@ -52,11 +52,10 @@ import OTel.API.Core
   , timestampFromNanoseconds, traceIdFromWords
   )
 import OTel.API.Core.Internal
-  ( MutableSpan(..), NewSpanSpec(..), Span(..), SpanBackend(..), SpanLink(..), SpanLinkSpec(..)
+  ( MutableSpan(..), NewSpanSpec(..), Span(..), SpanLink(..), SpanLinkSpec(..)
   , SpanLinkSpecs(..), SpanLinks(..), Tracer(..), TracerProvider(..), buildSpanUpdater
   , freezeSpan
   )
-import OTel.API.Trace (defaultSpanBackend)
 import Prelude hiding (span)
 import System.Clock (Clock(Realtime), getTime, toNanoSecs)
 import System.IO.Unsafe (unsafePerformIO)
@@ -75,7 +74,7 @@ data TracerProviderSpec = TracerProviderSpec
   , tracerProviderSpecSpanAttrsLimits :: SpanAttrsLimits
   , tracerProviderSpecSpanEventAttrsLimits :: SpanEventAttrsLimits
   , tracerProviderSpecSpanLinkAttrsLimits :: SpanLinkAttrsLimits
-  , tracerProviderSpecSpanBackend :: SpanBackend
+  , tracerProviderSpecContextBackend :: SpanBackend
   }
 
 defaultTracerProviderSpec :: TracerProviderSpec
@@ -91,7 +90,7 @@ defaultTracerProviderSpec =
     , tracerProviderSpecSpanAttrsLimits = defaultAttrsLimits
     , tracerProviderSpecSpanEventAttrsLimits = defaultAttrsLimits
     , tracerProviderSpecSpanLinkAttrsLimits = defaultAttrsLimits
-    , tracerProviderSpecSpanBackend = defaultSpanBackend
+    , tracerProviderSpecContextBackend = defaultSpanBackend
     }
 
 withTracerProvider
@@ -312,7 +311,7 @@ newTracerProviderIO tracerProviderSpec = do
     , tracerProviderSpecSpanAttrsLimits = spanAttrsLimits
     , tracerProviderSpecSpanEventAttrsLimits = spanEventAttrsLimits
     , tracerProviderSpecSpanLinkAttrsLimits = spanLinkAttrsLimits
-    , tracerProviderSpecSpanBackend = ctxBackendSpan
+    , tracerProviderSpecContextBackend = ctxBackendSpan
     } = tracerProviderSpec
 
 shutdownTracerProvider :: forall m. (MonadIO m) => TracerProvider -> m ()

@@ -15,9 +15,6 @@ module OTel.API.Trace.Internal
     -- $disclaimer
     TracingT(..)
   , mapTracingT
-
-  , SpanBackend(..)
-  , defaultSpanBackend
   ) where
 
 import Control.Exception.Safe (MonadCatch, MonadMask, MonadThrow, SomeException)
@@ -39,30 +36,31 @@ import Control.Monad.Trans.Control (MonadTransControl(..), MonadBaseControl)
 import Control.Monad.Trans.Reader (ReaderT(..))
 import Control.Monad.Trans.Resource (MonadResource)
 import Control.Monad.Writer.Class (MonadWriter)
+import Data.Function ((&))
 import Data.Kind (Type)
 import Data.Monoid (Ap(..))
 import GHC.Stack (SrcLoc(..))
+import Lens.Micro (over, set)
+import Lens.Micro.Extras (view)
 import OTel.API.Baggage.Core (MonadBaggage)
-import OTel.API.Context (ContextT(..), ContextKey, getContext, updateContext)
+import OTel.API.Context (ContextT(..), ContextKey, getAttachedContextKey, getContext, updateContext)
 import OTel.API.Context.Internal (unsafeAttachContext, unsafeNewContextBackend)
 import OTel.API.Core
-  ( AttrsFor(AttrsForSpan), KV(..), NewSpanSpec(..)
+  ( AttrsFor(AttrsForSpan), HasSpan(..), KV(..), NewSpanSpec(..)
   , Span(spanContext, spanFrozenAt, spanIsRecording), TimestampSource(..), AttrsBuilder
   , recordException, pattern CODE_FILEPATH, pattern CODE_FUNCTION, pattern CODE_LINENO
   , pattern CODE_NAMESPACE
   )
-import OTel.API.Core.Internal
-  ( MutableSpan(..), SpanBackend(..), Tracer(..), buildSpanUpdater, freezeSpan
-  )
+import OTel.API.Core.Internal (MutableSpan(..), Tracer(..), buildSpanUpdater, freezeSpan)
 import OTel.API.Trace.Core (MonadTracing(..), MonadTracingContext(..), MonadTracingIO(..))
 import Prelude hiding (span)
 import System.IO.Unsafe (unsafePerformIO)
 import qualified Control.Exception.Safe as Safe
 import qualified GHC.Stack as Stack
 
-type TracingT :: (Type -> Type) -> Type -> Type
-newtype TracingT m a = TracingT
-  { runTracingT :: Tracer -> m a
+type TracingT :: Type -> (Type -> Type) -> Type -> Type
+newtype TracingT ctx m a = TracingT
+  { runTracingT :: Tracer ctx -> m a
   } deriving
       ( Applicative, Functor, Monad, MonadFail, MonadFix, MonadIO -- @base@
       , MonadAccum w, MonadCont, MonadError e, MonadSelect r, MonadState s, MonadWriter w -- @mtl@
@@ -72,42 +70,43 @@ newtype TracingT m a = TracingT
       , MonadBaseControl b -- @monad-control@
       , MonadLogger -- @monad-logger@
       , MonadResource -- @resourcet@
-      , MonadBaggage -- @otel-api-baggage-core@
-      ) via (ReaderT Tracer m)
+      , MonadBaggage ctx -- @otel-api-baggage-core@
+      ) via (ReaderT (Tracer ctx) m)
     deriving
       ( MonadTrans -- @base@
       , MonadTransControl -- @monad-control@
-      ) via (ReaderT Tracer)
+      ) via (ReaderT (Tracer ctx))
     deriving
       ( Semigroup, Monoid -- @base@
-      ) via (Ap (ReaderT Tracer m) a)
+      ) via (Ap (ReaderT (Tracer ctx) m) a)
 
-instance (MonadReader r m) => MonadReader r (TracingT m) where
+instance (MonadReader r m) => MonadReader r (TracingT ctx m) where
   ask = lift ask
   reader = lift . reader
   local = mapTracingT . local
 
-instance (MonadRWS r w s m) => MonadRWS r w s (TracingT m)
+instance (MonadRWS r w s m) => MonadRWS r w s (TracingT ctx m)
 
-instance (MonadIO m, MonadMask m) => MonadTracing (TracingT m) where
+instance (MonadIO m, MonadMask m, HasSpan ctx) => MonadTracing ctx (TracingT ctx m) where
   traceCS cs newSpanSpec action =
     TracingT \tracer -> do
-      flip runContextT (unSpanBackend $ tracerSpanBackend tracer) do
-        mutableSpan@MutableSpan { mutableSpanSpanKey = spanKey } <- do
-          liftIO $ tracerStartSpan tracer newSpanSpec
+      flip runContextT (tracerContextBackend tracer) do
+        parentCtx <- getContext =<< getAttachedContextKey
+        mutableSpan@MutableSpan { mutableSpanContextKey = ctxKey } <- do
+          liftIO $ tracerStartSpan tracer parentCtx newSpanSpec
             { newSpanSpecAttrs = callStackAttrs <> newSpanSpecAttrs newSpanSpec
             }
-        unsafeAttachContext spanKey do
+        unsafeAttachContext ctxKey do
           result <- lift $ runTracingT (action mutableSpan) tracer
-          result <$ processSpan tracer spanKey
-          `Safe.withException` handler tracer spanKey
+          result <$ processSpan tracer ctxKey
+          `Safe.withException` handler tracer ctxKey
     where
     processSpan
-      :: Tracer
-      -> ContextKey (Span AttrsBuilder)
-      -> ContextT (Span AttrsBuilder) m ()
-    processSpan tracer spanKey = do
-      span <- getContext spanKey
+      :: Tracer ctx
+      -> ContextKey ctx
+      -> ContextT ctx m ()
+    processSpan tracer ctxKey = do
+      span <- fmap (view _span) $ getContext ctxKey
       timestamp <- liftIO now
       liftIO
         $ tracerProcessSpan
@@ -117,8 +116,10 @@ instance (MonadIO m, MonadMask m) => MonadTracing (TracingT m) where
             spanEventAttrsLimits
             spanAttrsLimits
             span
-      void $ updateContext spanKey \s ->
-        s { spanIsRecording = False, spanFrozenAt = Just timestamp }
+      void $ updateContext ctxKey \ctx ->
+        ctx
+          & set _spanIsRecording False
+          & set _spanFrozenAt (Just timestamp)
       where
       Tracer
         { tracerNow = now
@@ -129,21 +130,22 @@ instance (MonadIO m, MonadMask m) => MonadTracing (TracingT m) where
         } = tracer
 
     handler
-      :: Tracer
-      -> ContextKey (Span AttrsBuilder)
+      :: Tracer ctx
+      -> ContextKey ctx
       -> SomeException
-      -> ContextT (Span AttrsBuilder) m ()
-    handler tracer spanKey someEx = do
+      -> ContextT ctx m ()
+    handler tracer ctxKey someEx = do
       -- TODO: Set status to error? Spec docs make it sound like application
       -- authors set the status, and the API shouldn't set the status.
       -- https://opentelemetry.io/docs/reference/specification/trace/api/#set-status
       -- Probably would be convenient if this was a config option.
-      _ <- updateContext spanKey <=< buildSpanUpdater (liftIO now) $
-        recordException someEx True TimestampSourceNow mempty
+      spanUpdater <- do
+        buildSpanUpdater (liftIO now) $ recordException someEx True TimestampSourceNow mempty
+      _ <- updateContext ctxKey $ over _span spanUpdater
       -- N.B. It is important that we finish the span after recording the
       -- exception and not the other way around, because the span is no longer
       -- recording after it is ended.
-      processSpan tracer spanKey
+      processSpan tracer ctxKey
       where
       Tracer { tracerNow = now } = tracer
 
@@ -157,34 +159,31 @@ instance (MonadIO m, MonadMask m) => MonadTracing (TracingT m) where
             <> CODE_LINENO .@ srcLocStartLine srcLoc
         _ -> mempty
 
-instance (MonadIO m, MonadMask m) => MonadTracingIO (TracingT m) where
+instance (MonadIO m, MonadMask m, HasSpan ctx) => MonadTracingIO ctx (TracingT ctx m) where
   askTracer = TracingT pure
 
-instance (MonadIO m, MonadMask m) => MonadTracingContext (TracingT m) where
+instance (MonadIO m, MonadMask m, HasSpan ctx) => MonadTracingContext ctx (TracingT ctx m) where
   getSpanContext mutableSpan =
     TracingT \tracer -> do
-      flip runContextT (unSpanBackend $ tracerSpanBackend tracer) do
-        fmap spanContext $ getContext $ mutableSpanSpanKey mutableSpan
+      flip runContextT (tracerContextBackend tracer) do
+        fmap (view _spanContext) $ getContext $ mutableSpanContextKey mutableSpan
 
   updateSpan mutableSpan updateSpanSpec =
     TracingT \tracer -> do
-      flip runContextT (unSpanBackend $ tracerSpanBackend tracer) do
+      flip runContextT (tracerContextBackend tracer) do
          _span <- do
-           updateContext (mutableSpanSpanKey mutableSpan)
-             =<< buildSpanUpdater (liftIO $ tracerNow tracer) updateSpanSpec
+           spanUpdater <- buildSpanUpdater (liftIO $ tracerNow tracer) updateSpanSpec
+           updateContext ctxKey $ over _span spanUpdater
          pure ()
+    where
+    MutableSpan { mutableSpanContextKey = ctxKey } = mutableSpan
 
 mapTracingT
-  :: forall m n a b
+  :: forall ctx m n a b
    . (m a -> n b)
-  -> TracingT m a
-  -> TracingT n b
+  -> TracingT ctx m a
+  -> TracingT ctx n b
 mapTracingT f action = TracingT $ f . runTracingT action
-
-defaultSpanBackend :: SpanBackend
-defaultSpanBackend =
-  unsafePerformIO $ fmap SpanBackend $ liftIO unsafeNewContextBackend
-{-# NOINLINE defaultSpanBackend #-}
 
 -- $disclaimer
 --
