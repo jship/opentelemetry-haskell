@@ -41,10 +41,10 @@ import Data.Kind (Type)
 import Data.Monoid (Ap(..))
 import GHC.Stack (SrcLoc(..))
 import OTel.API.Baggage.Core (MonadBaggage)
-import OTel.API.Context (ContextT(..), ContextBackend, attachContextValue, getAttachedContext)
 import OTel.API.Common (AttrsFor(AttrsForSpan), KV(..), TimestampSource(..), AttrsBuilder)
+import OTel.API.Context (ContextT(..), ContextBackend, attachContextValue, getAttachedContext)
 import OTel.API.Trace.Core
-  ( MonadTracing(..), MonadTracingContext(..), MonadTracingIO(..), NewSpanSpec(..)
+  ( MonadTracing(..), MonadTracingIO(..), NewSpanSpec(..)
   , Span(spanContext, spanFrozenAt, spanIsRecording), MutableSpan, contextBackendSpan
   , recordException, pattern CODE_FILEPATH, pattern CODE_FUNCTION, pattern CODE_LINENO
   , pattern CODE_NAMESPACE
@@ -157,10 +157,6 @@ instance (MonadIO m, MonadMask m) => MonadTracing (TracingT m) where
             <> CODE_LINENO .@ srcLocStartLine srcLoc
         _ -> mempty
 
-instance (MonadIO m, MonadMask m) => MonadTracingIO (TracingT m) where
-  askTracer = TracingT \tracer _spanBackend -> pure tracer
-
-instance (MonadIO m, MonadMask m) => MonadTracingContext (TracingT m) where
   getSpanContext mutableSpan =
     TracingT \_tracer _spanBackend -> do
       liftIO $ fmap spanContext $ unsafeReadMutableSpan mutableSpan
@@ -171,6 +167,9 @@ instance (MonadIO m, MonadMask m) => MonadTracingContext (TracingT m) where
         spanUpdater <- buildSpanUpdater (liftIO $ tracerNow tracer) updateSpanSpec
         unsafeModifyMutableSpan mutableSpan \s ->
           (spanUpdater s, ())
+
+instance (MonadIO m, MonadMask m) => MonadTracingIO (TracingT m) where
+  askTracerIO = TracingT \tracer _spanBackend -> pure tracer
 
 mapTracingT
   :: forall m n a b

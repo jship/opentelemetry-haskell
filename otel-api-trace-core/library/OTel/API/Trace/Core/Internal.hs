@@ -20,7 +20,6 @@ module OTel.API.Trace.Core.Internal
     trace
   , trace_
   , MonadTracing(..)
-  , MonadTracingContext(..)
   , MonadTracingIO(..)
 
   , TracerProvider(..)
@@ -211,6 +210,8 @@ trace_ newSpanSpec = traceCS callStack newSpanSpec . const
 
 class (Monad m) => MonadTracing m where
   traceCS :: CallStack -> NewSpanSpec -> (MutableSpan -> m a) -> m a
+  getSpanContext :: MutableSpan -> m SpanContext
+  updateSpan :: MutableSpan -> UpdateSpanSpec -> m ()
 
   default traceCS
     :: (MonadTransControl t, MonadTracing n, m ~ t n)
@@ -221,6 +222,19 @@ class (Monad m) => MonadTracing m where
   traceCS cs newSpanSpec f = do
     restoreT . pure
       =<< liftWith \run -> traceCS cs newSpanSpec (run . f)
+
+  default getSpanContext
+    :: (MonadTrans t, MonadTracing n, m ~ t n)
+    => MutableSpan
+    -> m SpanContext
+  getSpanContext = lift . getSpanContext
+
+  default updateSpan
+    :: (MonadTrans t, MonadTracing n, m ~ t n)
+    => MutableSpan
+    -> UpdateSpanSpec
+    -> m ()
+  updateSpan mutableSpan = lift . updateSpan mutableSpan
 
 instance (MonadTracing m) => MonadTracing (ExceptT e m)
 instance (MonadTracing m) => MonadTracing (IdentityT m)
@@ -238,35 +252,6 @@ instance (MonadTracing m, MonadUnliftIO m) => MonadTracing (ResourceT m) where
     withRunInIO \runInIO -> do
       runInIO $ traceCS cs newSpanSpec f
 
-class (MonadTracing m) => MonadTracingContext m where
-  getSpanContext :: MutableSpan -> m SpanContext
-  updateSpan :: MutableSpan -> UpdateSpanSpec -> m ()
-
-  default getSpanContext
-    :: (MonadTrans t, MonadTracingContext n, m ~ t n)
-    => MutableSpan
-    -> m SpanContext
-  getSpanContext = lift . getSpanContext
-
-  default updateSpan
-    :: (MonadTrans t, MonadTracingContext n, m ~ t n)
-    => MutableSpan
-    -> UpdateSpanSpec
-    -> m ()
-  updateSpan mutableSpan = lift . updateSpan mutableSpan
-
-instance (MonadTracingContext m) => MonadTracingContext (ExceptT e m)
-instance (MonadTracingContext m) => MonadTracingContext (IdentityT m)
-instance (MonadTracingContext m) => MonadTracingContext (MaybeT m)
-instance (MonadTracingContext m) => MonadTracingContext (ReaderT r m)
-instance (MonadTracingContext m) => MonadTracingContext (State.Lazy.StateT r m)
-instance (MonadTracingContext m) => MonadTracingContext (State.Strict.StateT r m)
-instance (MonadTracingContext m, Monoid w) => MonadTracingContext (RWS.Lazy.RWST r w s m)
-instance (MonadTracingContext m, Monoid w) => MonadTracingContext (RWS.Strict.RWST r w s m)
-instance (MonadTracingContext m, Monoid w) => MonadTracingContext (Writer.Lazy.WriterT w m)
-instance (MonadTracingContext m, Monoid w) => MonadTracingContext (Writer.Strict.WriterT w m)
-instance (MonadTracingContext m) => MonadTracingContext (LoggingT m)
-instance (MonadTracingContext m, MonadUnliftIO m) => MonadTracingContext (ResourceT m) where
   getSpanContext mutableSpan = do
     withRunInIO \runInIO -> do
       runInIO $ getSpanContext mutableSpan
@@ -276,12 +261,12 @@ instance (MonadTracingContext m, MonadUnliftIO m) => MonadTracingContext (Resour
       runInIO $ updateSpan mutableSpan updateSpanSpec
 
 class (MonadTracing m, MonadIO m) => MonadTracingIO m where
-  askTracer :: m Tracer
+  askTracerIO :: m Tracer
 
-  default askTracer
+  default askTracerIO
     :: (MonadTrans t, MonadTracingIO n, m ~ t n)
     => m Tracer
-  askTracer = lift askTracer
+  askTracerIO = lift askTracerIO
 
 instance (MonadTracingIO m) => MonadTracingIO (ExceptT e m)
 instance (MonadTracingIO m) => MonadTracingIO (IdentityT m)
@@ -295,9 +280,9 @@ instance (MonadTracingIO m, Monoid w) => MonadTracingIO (Writer.Lazy.WriterT w m
 instance (MonadTracingIO m, Monoid w) => MonadTracingIO (Writer.Strict.WriterT w m)
 instance (MonadTracingIO m) => MonadTracingIO (LoggingT m)
 instance (MonadTracingIO m, MonadUnliftIO m) => MonadTracingIO (ResourceT m) where
-  askTracer = do
+  askTracerIO = do
     withRunInIO \runInIO -> do
-      runInIO askTracer
+      runInIO askTracerIO
 
 data TracerProvider = TracerProvider
   { tracerProviderGetTracer :: InstrumentationScope -> IO Tracer

@@ -41,7 +41,7 @@ import Data.Kind (Type)
 import Data.Monoid (Ap(..))
 import OTel.API.Baggage.Core (MonadBaggage(..), Baggage, contextBackendBaggage)
 import OTel.API.Context (ContextT(..), ContextBackend, attachContextValue, getAttachedContextValue)
-import OTel.API.Trace.Core (MonadTracing, MonadTracingContext, MonadTracingIO)
+import OTel.API.Trace.Core (MonadTracing, MonadTracingIO)
 import Prelude
 
 type BaggageT :: (Type -> Type) -> Type -> Type
@@ -56,7 +56,7 @@ newtype BaggageT m a = BaggageT
       , MonadBaseControl b -- @monad-control@
       , MonadLogger -- @monad-logger@
       , MonadResource -- @resourcet@
-      , MonadTracing, MonadTracingContext, MonadTracingIO -- @otel-api-trace-core@
+      , MonadTracing,  MonadTracingIO -- @otel-api-trace-core@
       ) via (ReaderT BaggageBackend m)
     deriving
       ( MonadTrans -- @base@
