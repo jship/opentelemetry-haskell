@@ -1162,7 +1162,6 @@ freezeSpan defaultSpanFrozenAt spanLinkAttrsLimits spanEventAttrsLimits spanAttr
         freezeAllSpanEventAttrs spanEventAttrsLimits $ spanEvents span
     }
 
--- TODO: Rename back to SpanLineage?
 data SpanParent
   = SpanParentRoot
   | SpanParentChildOf SpanContext
