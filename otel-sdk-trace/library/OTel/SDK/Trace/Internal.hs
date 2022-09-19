@@ -39,15 +39,15 @@ import Data.Maybe (fromMaybe)
 import Data.Monoid (Ap(..))
 import Data.Text (Text)
 import Data.Vector (Vector)
-import OTel.API.Context.Core (Context, lookupContext)
 import OTel.API.Common
   ( AttrsFor(..), TimestampSource(..), Attrs, AttrsBuilder, AttrsLimits, InstrumentationScope
   , Timestamp, defaultAttrsLimits, timestampFromNanoseconds
   )
+import OTel.API.Context.Core (Context, lookupContext)
 import OTel.API.Trace.Core
   ( SpanParent(..), SpanStatus(..), MutableSpan, SpanId, SpanKind, SpanName, TraceId, TraceState
-  , UpdateSpanSpec, contextKeySpan, emptySpanContext, emptyTraceState, setSampledFlag
-  , spanContextIsSampled, spanContextIsValid, spanIdFromWords, spanIsSampled, traceIdFromWords
+  , UpdateSpanSpec, contextKeySpan, emptySpanContext, emptyTraceState, spanContextIsSampled
+  , spanContextIsValid, spanIdFromWords, spanIsSampled, traceFlagsSampled, traceIdFromWords
   )
 import OTel.API.Trace.Core.Internal
   ( NewSpanSpec(..), Span(..), SpanContext(..), SpanLink(..), SpanLinkSpec(..), SpanLinkSpecs(..)
@@ -201,7 +201,7 @@ newTracerProviderIO tracerProviderSpec = do
                 ( True
                 , initSpanContext
                     { spanContextTraceFlags =
-                        setSampledFlag $ spanContextTraceFlags initSpanContext
+                        traceFlagsSampled <>  spanContextTraceFlags initSpanContext
                     }
                 )
 

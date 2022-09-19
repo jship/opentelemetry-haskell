@@ -55,8 +55,7 @@ module OTel.API.Trace.Core.Internal
   , TraceFlags(..)
   , traceFlagsToHexText
   , traceFlagsToHexBuilder
-  , emptyTraceFlags
-  , setSampledFlag
+  , traceFlagsSampled
   , isSampledFlagSet
 
   , TraceState(..)
@@ -139,7 +138,7 @@ import Control.Monad.Trans.Reader (ReaderT(..))
 import Control.Monad.Trans.Resource (ResourceT)
 import Data.Aeson (KeyValue((.=)), ToJSON(..))
 import Data.Bifunctor (Bifunctor(..))
-import Data.Bits (Bits((.|.), testBit), Ior(..))
+import Data.Bits (Bits(testBit), Ior(..))
 import Data.ByteString.Builder (Builder)
 import Data.DList (DList)
 import Data.HashMap.Strict (HashMap)
@@ -150,15 +149,15 @@ import Data.String (IsString(fromString))
 import Data.Text (Text)
 import Data.Word (Word64, Word8)
 import GHC.Stack (CallStack, HasCallStack, callStack)
-import OTel.API.Context.Core (Context, ContextBackend, ContextKey)
-import OTel.API.Context.Core.Internal
-  ( ContextBackend(contextBackendValueKey), unsafeNewContextBackend
-  )
 import OTel.API.Common
   ( AttrsFor(..), KV(..), Key(..), TimestampSource(..), Attrs, AttrsBuilder, AttrsLimits
   , InstrumentationScope, IsTextKV, Timestamp
   )
 import OTel.API.Common.Internal (runAttrsBuilder)
+import OTel.API.Context.Core (Context, ContextBackend, ContextKey)
+import OTel.API.Context.Core.Internal
+  ( ContextBackend(contextBackendValueKey), unsafeNewContextBackend
+  )
 import OTel.API.Trace.Core.Attributes
   ( pattern EXCEPTION_ESCAPED, pattern EXCEPTION_MESSAGE, pattern EXCEPTION_TYPE
   )
@@ -476,14 +475,8 @@ traceFlagsToHexBuilder :: TraceFlags -> Builder
 traceFlagsToHexBuilder traceFlags =
   Builder.word8HexFixed $ unTraceFlags traceFlags
 
-emptyTraceFlags :: TraceFlags
-emptyTraceFlags = TraceFlags { unTraceFlags = 0 }
-
-setSampledFlag :: TraceFlags -> TraceFlags
-setSampledFlag traceFlags =
-  traceFlags
-    { unTraceFlags = 1 .|. unTraceFlags traceFlags
-    }
+traceFlagsSampled :: TraceFlags
+traceFlagsSampled = TraceFlags { unTraceFlags = 1 }
 
 isSampledFlagSet :: TraceFlags -> Bool
 isSampledFlagSet traceFlags =
