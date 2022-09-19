@@ -23,7 +23,7 @@ import Test.Hspec (HasCallStack, Spec, describe, it, shouldBe)
 
 spec :: Spec
 spec = do
-  describe "MonadBaggage/BaggageT" do
+  describe "Spec" do
     it "empty" do
       runTest TestCase
         { initBaggage = mempty

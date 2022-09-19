@@ -38,3 +38,18 @@ library:
   when:
   - condition: false
     other-modules: Paths_otel_api_context_core
+
+tests:
+  otel-api-context-core-test-suite:
+    source-dirs: test-suite
+    main: Driver.hs
+    build-tools:
+    - hspec-discover
+    dependencies:
+    - base
+    - hspec
+    - otel-api-context-core
+    - text
+    when:
+    - condition: false
+      other-modules: Paths_otel_api_context_core

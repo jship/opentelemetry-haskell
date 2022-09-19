@@ -1,6 +1,4 @@
-{-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}
 {-# LANGUAGE BlockArguments #-}
-{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
 module Test.OTel.API.ContextSpec
@@ -21,7 +19,7 @@ import qualified Test.Hspec as Hspec
 
 spec :: Spec
 spec = do
-  describe "ContextT" do
+  describe "Spec" do
     it "it works" do
       contextKeyName intContextKey `shouldBe` "Int"
       contextKeyName textContextKey `shouldBe` "Text"
