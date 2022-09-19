@@ -40,7 +40,7 @@ import Data.Monoid (Ap(..))
 import Data.Text (Text)
 import Data.Vector (Vector)
 import OTel.API.Context.Core (Context, lookupContext)
-import OTel.API.Core
+import OTel.API.Common
   ( AttrsFor(..), TimestampSource(..), Attrs, AttrsBuilder, AttrsLimits, InstrumentationScope
   , Timestamp, defaultAttrsLimits, timestampFromNanoseconds
   )

@@ -1,4 +1,4 @@
-module OTel.API.Core.Attributes
+module OTel.API.Common.Attributes
   ( Attrs
   , nullAttrs
   , sizeAttrs
@@ -26,4 +26,4 @@ module OTel.API.Core.Attributes
   , ToAttrVal(..)
   ) where
 
-import OTel.API.Core.Internal
+import OTel.API.Common.Internal

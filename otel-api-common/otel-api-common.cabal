@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 
-name:           otel-api-core
+name:           otel-api-common
 version:        0.0.0
 synopsis:       STUB
-description:    @otel-api-core@ STUB
+description:    @otel-api-common@ STUB
 category:       System
 homepage:       https://github.com/jship/opentelemetry-haskell#readme
 bug-reports:    https://github.com/jship/opentelemetry-haskell/issues
@@ -29,9 +29,9 @@ source-repository head
 
 library
   exposed-modules:
-      OTel.API.Core
-      OTel.API.Core.Attributes
-      OTel.API.Core.Internal
+      OTel.API.Common
+      OTel.API.Common.Attributes
+      OTel.API.Common.Internal
   hs-source-dirs:
       library
   default-extensions:

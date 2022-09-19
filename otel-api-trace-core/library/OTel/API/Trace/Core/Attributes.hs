@@ -7,8 +7,8 @@ module OTel.API.Trace.Core.Attributes where
 
 import Data.Int (Int64)
 import Data.Text (Text)
-import OTel.API.Core (AttrVals)
-import OTel.API.Core.Internal (Key(..), SchemaURL(..), ToAttrVal(..))
+import OTel.API.Common (AttrVals)
+import OTel.API.Common.Internal (Key(..), SchemaURL(..), ToAttrVal(..))
 import Prelude (Bool, Double)
 
 -- | The URL of the OpenTelemetry schema for these keys and values.

@@ -12,7 +12,7 @@ module OTel.API.Baggage.Core.Builder.Errors
 
 import Control.Exception.Safe (Exception)
 import Data.Text (Text)
-import OTel.API.Core (Key)
+import OTel.API.Common (Key)
 import Prelude
 
 newtype BaggageErrors = BaggageErrors

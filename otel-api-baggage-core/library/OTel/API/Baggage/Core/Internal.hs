@@ -60,7 +60,7 @@ import OTel.API.Baggage.Core.Builder.Errors
   )
 import OTel.API.Context.Core (ContextBackend, ContextKey)
 import OTel.API.Context.Core.Internal (contextBackendValueKey, unsafeNewContextBackend)
-import OTel.API.Core (KV(..), Key(..), IsTextKV)
+import OTel.API.Common (KV(..), Key(..), IsTextKV)
 import Prelude
 import System.IO.Unsafe (unsafePerformIO)
 import qualified Control.Monad.Trans.RWS.Lazy as RWS.Lazy

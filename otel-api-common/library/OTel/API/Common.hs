@@ -1,7 +1,7 @@
-module OTel.API.Core
+module OTel.API.Common
   ( -- * Synopsis
     -- $synopsis
-    module OTel.API.Core.Attributes
+    module OTel.API.Common.Attributes
 
   , KV(..)
   , IsTextKV
@@ -26,8 +26,8 @@ module OTel.API.Core
   , schemaURLToText
   ) where
 
-import OTel.API.Core.Attributes
-import OTel.API.Core.Internal
+import OTel.API.Common.Attributes
+import OTel.API.Common.Internal
 
 -- $synopsis
 --

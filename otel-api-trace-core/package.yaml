@@ -36,7 +36,7 @@ library:
   - monad-control
   - monad-logger
   - otel-api-context-core
-  - otel-api-core
+  - otel-api-common
   - resourcet
   - text
   - transformers

@@ -46,8 +46,8 @@ library
     , hspec
     , monad-control
     , monad-logger
+    , otel-api-common
     , otel-api-context-core
-    , otel-api-core
     , resourcet
     , safe-exceptions
     , text
@@ -72,7 +72,7 @@ test-suite otel-api-baggage-core-test-suite
       base
     , hspec
     , otel-api-baggage-core
-    , otel-api-core
+    , otel-api-common
     , text
     , unordered-containers
   default-language: Haskell2010

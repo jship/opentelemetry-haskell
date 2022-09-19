@@ -22,7 +22,7 @@ module OTel.API.Trace.Core.TraceState.Errors
 
 import Control.Monad.Catch (Exception)
 import Data.Text (Text)
-import OTel.API.Core (Key)
+import OTel.API.Common (Key)
 import Prelude
 
 newtype TraceStateErrors = TraceStateErrors

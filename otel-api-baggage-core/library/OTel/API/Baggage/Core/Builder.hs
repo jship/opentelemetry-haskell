@@ -9,5 +9,5 @@ module OTel.API.Baggage.Core.Builder
   ) where
 
 import OTel.API.Baggage.Core.Builder.Errors
-import OTel.API.Core (KV((.@)))
+import OTel.API.Common (KV((.@)))
 import qualified OTel.API.Baggage.Core.Internal as Internal

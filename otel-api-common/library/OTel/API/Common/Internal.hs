@@ -15,7 +15,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
-module OTel.API.Core.Internal
+module OTel.API.Common.Internal
   ( -- * Disclaimer
     -- $disclaimer
 

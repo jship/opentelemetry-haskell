@@ -34,7 +34,7 @@ library:
   - monad-logger-aeson
   - mtl >=2.3
   - mwc-random
-  - otel-api-core
+  - otel-api-common
   - otel-api-context-core
   - otel-api-trace-core
   - safe-exceptions

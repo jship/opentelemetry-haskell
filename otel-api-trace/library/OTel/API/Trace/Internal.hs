@@ -42,7 +42,7 @@ import Data.Monoid (Ap(..))
 import GHC.Stack (SrcLoc(..))
 import OTel.API.Baggage.Core (MonadBaggage)
 import OTel.API.Context (ContextT(..), ContextBackend, attachContextValue, getAttachedContext)
-import OTel.API.Core (AttrsFor(AttrsForSpan), KV(..), TimestampSource(..), AttrsBuilder)
+import OTel.API.Common (AttrsFor(AttrsForSpan), KV(..), TimestampSource(..), AttrsBuilder)
 import OTel.API.Trace.Core
   ( MonadTracing(..), MonadTracingContext(..), MonadTracingIO(..), NewSpanSpec(..)
   , Span(spanContext, spanFrozenAt, spanIsRecording), MutableSpan, contextBackendSpan

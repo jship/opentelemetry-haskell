@@ -154,11 +154,11 @@ import OTel.API.Context.Core (Context, ContextBackend, ContextKey)
 import OTel.API.Context.Core.Internal
   ( ContextBackend(contextBackendValueKey), unsafeNewContextBackend
   )
-import OTel.API.Core
+import OTel.API.Common
   ( AttrsFor(..), KV(..), Key(..), TimestampSource(..), Attrs, AttrsBuilder, AttrsLimits
   , InstrumentationScope, IsTextKV, Timestamp
   )
-import OTel.API.Core.Internal (runAttrsBuilder)
+import OTel.API.Common.Internal (runAttrsBuilder)
 import OTel.API.Trace.Core.Attributes
   ( pattern EXCEPTION_ESCAPED, pattern EXCEPTION_MESSAGE, pattern EXCEPTION_TYPE
   )

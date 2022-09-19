@@ -33,7 +33,7 @@ library:
   - monad-control
   - monad-logger
   - otel-api-context-core
-  - otel-api-core
+  - otel-api-common
   - resourcet
   - safe-exceptions
   - text
@@ -55,7 +55,7 @@ tests:
     dependencies:
     - base
     - hspec
-    - otel-api-core
+    - otel-api-common
     - otel-api-baggage-core
     - text
     - unordered-containers

@@ -42,8 +42,8 @@ library
     , monad-logger
     , mtl >=2.3
     , otel-api-baggage-core
+    , otel-api-common
     , otel-api-context
-    , otel-api-core
     , otel-api-trace-core
     , resourcet
     , safe-exceptions

@@ -54,8 +54,8 @@ library
     , exceptions
     , monad-control
     , monad-logger
+    , otel-api-common
     , otel-api-context-core
-    , otel-api-core
     , resourcet
     , text
     , transformers

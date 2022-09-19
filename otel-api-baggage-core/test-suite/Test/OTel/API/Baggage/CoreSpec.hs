@@ -25,7 +25,7 @@ import OTel.API.Baggage.Core
   , foldMapWithKeyBaggage, lookupBaggage, memberBaggage, nullBaggage, sizeBaggage, toListBaggage
   )
 import OTel.API.Baggage.Core.Internal (Baggage(..))
-import OTel.API.Core (Key(..))
+import OTel.API.Common (Key(..))
 import Prelude
 import Test.Hspec (HasCallStack, Spec, describe, it, shouldBe)
 import qualified Data.Char as Char
