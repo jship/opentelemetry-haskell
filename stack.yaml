@@ -1,4 +1,4 @@
-resolver: nightly-2022-08-04
+resolver: nightly-2022-09-19
 packages:
 - ./otel-api-baggage
 - ./otel-api-baggage-core
