@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.4.
+-- This file has been generated from package.yaml by hpack version 0.34.6.
 --
 -- see: https://github.com/sol/hpack
 
@@ -38,7 +38,6 @@ library
   ghc-options: -Wall -fwarn-tabs -Wincomplete-uni-patterns -Wredundant-constraints
   build-depends:
       base >=4.11.1.0 && <5
-    , context >=0.2.0.0 && <0.3
     , exceptions
     , monad-control
     , monad-logger
@@ -64,12 +63,10 @@ test-suite otel-api-context-test-suite
   build-tool-depends:
       hspec-discover:hspec-discover
   build-depends:
-      HUnit
-    , base
+      base
     , hspec
     , otel-api-context
     , otel-api-context-core
-    , safe-exceptions
     , text
     , transformers
     , unliftio-core

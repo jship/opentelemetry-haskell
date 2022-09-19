@@ -40,11 +40,8 @@ library
   build-depends:
       aeson
     , base >=4.11.1.0 && <5
-    , bytestring
     , containers
     , dlist
-    , exceptions
-    , otel-api-context-core
     , text
     , unordered-containers
     , vector

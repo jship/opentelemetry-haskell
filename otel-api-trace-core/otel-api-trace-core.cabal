@@ -49,7 +49,6 @@ library
       aeson
     , base >=4.11.1.0 && <5
     , bytestring
-    , containers
     , dlist
     , exceptions
     , monad-control

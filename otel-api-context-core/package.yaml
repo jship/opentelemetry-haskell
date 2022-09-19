@@ -31,14 +31,7 @@ library:
   - base >=4.11.1.0 && <5
   - context >=0.2.0.0 && <0.3
   - exceptions
-  - monad-control
-  - monad-logger
-  - mtl >=2.3
-  - resourcet
   - text
-  - transformers
-  - transformers-base
-  - unliftio-core
   - unordered-containers
   - vault
   source-dirs: library
