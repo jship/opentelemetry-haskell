@@ -41,17 +41,18 @@ import Data.Text (Text)
 import Data.Vector (Vector)
 import OTel.API.Context.Core (Context, lookupContext)
 import OTel.API.Core
-  ( AttrsFor(..), SpanParent(..), SpanStatus(..), TimestampSource(..), Attrs, AttrsBuilder
-  , InstrumentationScope, SpanAttrsLimits, SpanBackend, SpanContext, SpanEventAttrsLimits, SpanId
-  , SpanKind, SpanLinkAttrsLimits, SpanLinks, SpanName, Timestamp, TraceId, TraceState
-  , UpdateSpanSpec, defaultAttrsLimits, defaultSpanBackend, emptySpanContext, emptyTraceState
-  , setSampledFlag, spanContextIsRemote, spanContextIsSampled, spanContextIsValid, spanContextKey
-  , spanContextSpanId, spanContextTraceFlags, spanContextTraceId, spanContextTraceState
-  , spanIdFromWords, spanIsSampled, timestampFromNanoseconds, traceIdFromWords
+  ( AttrsFor(..), TimestampSource(..), Attrs, AttrsBuilder, AttrsLimits, InstrumentationScope
+  , Timestamp, defaultAttrsLimits, timestampFromNanoseconds
   )
-import OTel.API.Core.Internal
-  ( MutableSpan(..), NewSpanSpec(..), Span(..), SpanLink(..), SpanLinkSpec(..), SpanLinkSpecs(..)
-  , SpanLinks(..), Tracer(..), TracerProvider(..), buildSpanUpdater, freezeSpan
+import OTel.API.Trace.Core
+  ( SpanParent(..), SpanStatus(..), SpanId, SpanKind, SpanName, TraceId, TraceState, UpdateSpanSpec
+  , emptySpanContext, emptyTraceState, setSampledFlag, spanContextIsSampled, spanContextIsValid
+  , spanIdFromWords, spanIsSampled, traceIdFromWords
+  )
+import OTel.API.Trace.Core.Internal
+  ( MutableSpan(..), NewSpanSpec(..), Span(..), SpanContext(..), SpanLink(..), SpanLinkSpec(..)
+  , SpanLinkSpecs(..), SpanLinks(..), Tracer(..), TracerProvider(..), SpanBackend, buildSpanUpdater
+  , defaultSpanBackend, freezeSpan, spanContextKey
   )
 import Prelude hiding (span)
 import System.Clock (Clock(Realtime), getTime, toNanoSecs)
@@ -69,9 +70,9 @@ data TracerProviderSpec = TracerProviderSpec
   , tracerProviderSpecIdGenerator :: IdGeneratorSpec
   , tracerProviderSpecSpanProcessors :: [SpanProcessorSpec]
   , tracerProviderSpecSampler :: SamplerSpec
-  , tracerProviderSpecSpanAttrsLimits :: SpanAttrsLimits
-  , tracerProviderSpecSpanEventAttrsLimits :: SpanEventAttrsLimits
-  , tracerProviderSpecSpanLinkAttrsLimits :: SpanLinkAttrsLimits
+  , tracerProviderSpecSpanAttrsLimits :: AttrsLimits 'AttrsForSpan
+  , tracerProviderSpecSpanEventAttrsLimits :: AttrsLimits 'AttrsForSpanEvent
+  , tracerProviderSpecSpanLinkAttrsLimits :: AttrsLimits 'AttrsForSpanLink
   , tracerProviderSpecContextBackend :: SpanBackend
   }
 

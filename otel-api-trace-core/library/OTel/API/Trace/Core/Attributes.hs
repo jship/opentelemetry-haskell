@@ -1,12 +1,14 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
-module OTel.API.Core.Attributes.Trace where
+module OTel.API.Trace.Core.Attributes where
 
 import Data.Int (Int64)
 import Data.Text (Text)
-import OTel.API.Core.Internal (Key(..), SchemaURL(..), SpanEventName(..), ToAttrVal(..), AttrVals)
+import OTel.API.Core (AttrVals)
+import OTel.API.Core.Internal (Key(..), SchemaURL(..), ToAttrVal(..))
 import Prelude (Bool, Double)
 
 -- | The URL of the OpenTelemetry schema for these keys and values.
@@ -1438,17 +1440,6 @@ instance ToAttrVal MessageType Text where
   toAttrVal = \case
     MessageTypeSent -> "sent"
     MessageTypeReceived -> "received"
-
-{-|
-The name of an event describing an exception.
-
-Typically an event with that name should not be manually created. Instead
-'OTel.API.Core.Trace.recordException' should be used.
--}
--- | The URL of the OpenTelemetry schema for these keys and values.
-pattern EXCEPTION_EVENT_NAME :: SpanEventName
-pattern EXCEPTION_EVENT_NAME <- SpanEventName "exception" where
-  EXCEPTION_EVENT_NAME = SpanEventName "exception"
 
 {-|
 The name of the keyspace being accessed.

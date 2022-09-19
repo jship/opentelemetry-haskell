@@ -2,7 +2,6 @@ module OTel.API.Core
   ( -- * Synopsis
     -- $synopsis
     module OTel.API.Core.Attributes
-  , module OTel.API.Core.Trace
 
   , KV(..)
   , IsTextKV
@@ -29,7 +28,6 @@ module OTel.API.Core
 
 import OTel.API.Core.Attributes
 import OTel.API.Core.Internal
-import OTel.API.Core.Trace
 
 -- $synopsis
 --

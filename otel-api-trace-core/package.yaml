@@ -28,13 +28,22 @@ ghc-options:
 
 library:
   dependencies:
+  - aeson
   - base >=4.11.1.0 && <5
+  - bytestring
+  - containers
+  - dlist
+  - exceptions
   - monad-control
   - monad-logger
+  - otel-api-context-core
   - otel-api-core
   - resourcet
+  - text
   - transformers
   - unliftio-core
+  - unordered-containers
+  - vector
   source-dirs: library
   when:
   - condition: false

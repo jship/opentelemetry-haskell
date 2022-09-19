@@ -1,7 +1,5 @@
 module OTel.API.Core.Attributes
-  ( module OTel.API.Core.Attributes.Trace
-
-  , Attrs
+  ( Attrs
   , nullAttrs
   , sizeAttrs
   , memberAttrs
@@ -11,10 +9,6 @@ module OTel.API.Core.Attributes
   , AttrsBuilder
 
   , AttrsFor(..)
-
-  , SpanAttrsLimits
-  , SpanEventAttrsLimits
-  , SpanLinkAttrsLimits
 
   , AttrsLimits
   , attrsLimitsCount
@@ -32,5 +26,4 @@ module OTel.API.Core.Attributes
   , ToAttrVal(..)
   ) where
 
-import OTel.API.Core.Attributes.Trace
 import OTel.API.Core.Internal

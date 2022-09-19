@@ -2,13 +2,11 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
-{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 module OTel.API.Trace.Internal
   ( -- * Disclaimer
@@ -40,16 +38,15 @@ import Data.Monoid (Ap(..))
 import GHC.Stack (SrcLoc(..))
 import OTel.API.Baggage.Core (MonadBaggage)
 import OTel.API.Context (ContextT(..), attachContextValue, getAttachedContext)
-import OTel.API.Core
-  ( AttrsFor(AttrsForSpan), KV(..), NewSpanSpec(..)
-  , Span(spanContext, spanFrozenAt, spanIsRecording), TimestampSource(..), AttrsBuilder
-  , recordException, pattern CODE_FILEPATH, pattern CODE_FUNCTION, pattern CODE_LINENO
-  , pattern CODE_NAMESPACE
+import OTel.API.Core (AttrsFor(AttrsForSpan), KV(..), TimestampSource(..), AttrsBuilder)
+import OTel.API.Trace.Core
+  ( MonadTracing(..), MonadTracingContext(..), MonadTracingIO(..), NewSpanSpec(..)
+  , Span(spanContext, spanFrozenAt, spanIsRecording), recordException, pattern CODE_FILEPATH
+  , pattern CODE_FUNCTION, pattern CODE_LINENO, pattern CODE_NAMESPACE
   )
-import OTel.API.Core.Internal
+import OTel.API.Trace.Core.Internal
   ( MutableSpan(..), SpanBackend(..), Tracer(..), buildSpanUpdater, freezeSpan
   )
-import OTel.API.Trace.Core (MonadTracing(..), MonadTracingContext(..), MonadTracingIO(..))
 import Prelude hiding (span)
 import qualified Control.Exception.Safe as Safe
 import qualified Data.IORef as IORef

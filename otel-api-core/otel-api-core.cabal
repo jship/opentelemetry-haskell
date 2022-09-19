@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.4.
+-- This file has been generated from package.yaml by hpack version 0.34.6.
 --
 -- see: https://github.com/sol/hpack
 
@@ -31,9 +31,7 @@ library
   exposed-modules:
       OTel.API.Core
       OTel.API.Core.Attributes
-      OTel.API.Core.Attributes.Trace
       OTel.API.Core.Internal
-      OTel.API.Core.Trace
   hs-source-dirs:
       library
   default-extensions:

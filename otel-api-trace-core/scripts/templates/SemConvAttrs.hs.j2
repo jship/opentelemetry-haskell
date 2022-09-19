@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -6,7 +7,8 @@ module {{module | trim}} where
 
 import Data.Int (Int64)
 import Data.Text (Text)
-import OTel.API.Core.Internal (Key(..), SchemaURL(..), SpanEventName(..), ToAttrVal(..), AttrVals)
+import OTel.API.Core (AttrVals, AttrsLimits)
+import OTel.API.Core.Internal (Key(..), SchemaURL(..), ToAttrVal(..))
 import Prelude (Bool, Double)
 {%- macro to_haskell_type(type) -%}
   {%- if type == "string" -%}
@@ -32,6 +34,10 @@ import Prelude (Bool, Double)
 {%- macro print_value(type, value) -%}
   {{ "\"" if type == "String"}}{{value}}{{ "\"" if type == "String"}}
 {%- endmacro %}
+
+type SpanAttrsLimits = AttrsLimits 'AttrsForSpan
+type SpanEventAttrsLimits = AttrsLimits 'AttrsForSpanEvent
+type SpanLinkAttrsLimits = AttrsLimits 'AttrsForSpanLink
 
 -- | The URL of the OpenTelemetry schema for these keys and values.
 pattern SCHEMA_URL :: SchemaURL
@@ -83,17 +89,6 @@ instance ToAttrVal {{enum_name}} Text where
 {%- endfor %}
 
 {%- if what == "SemConvAttrs" %}
-{-|
-The name of an event describing an exception.
-
-Typically an event with that name should not be manually created. Instead
-'OTel.API.Core.Trace.recordException' should be used.
--}
--- | The URL of the OpenTelemetry schema for these keys and values.
-pattern EXCEPTION_EVENT_NAME :: SpanEventName
-pattern EXCEPTION_EVENT_NAME <- SpanEventName "exception" where
-  EXCEPTION_EVENT_NAME = SpanEventName "exception"
-
 {-|
 The name of the keyspace being accessed.
 

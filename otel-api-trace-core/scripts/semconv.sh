@@ -13,7 +13,7 @@ function removeTempDir() {
 }
 trap removeTempDir EXIT
 
-declare -g packageDir="$(stack path --project-root)/otel-api-core"
+declare -g packageDir="$(stack path --project-root)/otel-api-trace-core"
 declare -g semconvVersion=1.12.0
 declare -g specVersion=v${semconvVersion}
 declare -g schemaURL=https://opentelemetry.io/schemas/${semconvVersion}
@@ -34,11 +34,11 @@ find .
 docker run --rm \
   -v "${tempDir}/opentelemetry-specification/semantic_conventions/trace:/source" \
   -v "${tempDir}/templates:/templates" \
-  -v "${packageDir}/library/OTel/API/Core/Attributes/:/output" \
+  -v "${packageDir}/library/OTel/API/Trace/Core/:/output" \
   otel/semconvgen:${generatorVersion} \
   -f /source code \
   --template /templates/SemConvAttrs.hs.j2 \
-  --output /output/Trace.hs \
+  --output /output/Attributes.hs \
   -Dwhat=SemConvAttrs \
   -DschemaUrl=${schemaURL} \
-  -Dmodule=OTel.API.Core.Attributes.Trace
+  -Dmodule=OTel.API.Trace.Core.Attributes
