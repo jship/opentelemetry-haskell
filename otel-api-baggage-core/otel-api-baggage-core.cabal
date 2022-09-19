@@ -30,6 +30,10 @@ source-repository head
 library
   exposed-modules:
       OTel.API.Baggage.Core
+      OTel.API.Baggage.Core.Builder
+      OTel.API.Baggage.Core.Builder.Errors
+      OTel.API.Baggage.Core.Class
+      OTel.API.Baggage.Core.Context
       OTel.API.Baggage.Core.Internal
   hs-source-dirs:
       library
@@ -42,6 +46,7 @@ library
     , hspec
     , monad-control
     , monad-logger
+    , otel-api-context-core
     , otel-api-core
     , resourcet
     , safe-exceptions

@@ -1,19 +1,18 @@
 {-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DefaultSignatures #-}
-{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DerivingVia #-}
-{-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
 module OTel.API.Baggage.Core.Internal
   ( -- * Disclaimer
     -- $disclaimer
     MonadBaggage(..)
+
   , Baggage(..)
   , nullBaggage
   , sizeBaggage
@@ -25,21 +24,21 @@ module OTel.API.Baggage.Core.Internal
   , filterWithKeyBaggage
   , foldMapWithKeyBaggage
   , toListBaggage
+
   , BaggageBuilder(..)
   , buildBaggage
   , buildBaggagePure
-  , BaggageErrors(..)
-  , BaggageError(..)
-  , BaggageKeyIsEmptyError(..)
-  , BaggageKeyContainsInvalidCharsError(..)
-  , BaggageValueIsEmptyError(..)
-  , BaggageValueContainsInvalidCharsError(..)
+
+  , contextBackendBaggage
+  , contextKeyBaggage
+
   , isRFC7230TokenChar
   , isRFC7230VCHARChar
   ) where
 
 import Control.Applicative (Applicative(..))
-import Control.Exception.Safe (Exception, MonadThrow, throwM)
+import Control.Exception.Safe (MonadThrow, throwM)
+import Control.Monad.IO.Class (MonadIO(liftIO))
 import Control.Monad.IO.Unlift (MonadUnliftIO(withRunInIO))
 import Control.Monad.Logger (LoggingT)
 import Control.Monad.Trans.Class (MonadTrans(lift))
@@ -54,8 +53,16 @@ import Data.DList (DList)
 import Data.HashMap.Strict (HashMap)
 import Data.Monoid (Ap(..))
 import Data.Text (Text)
+import OTel.API.Baggage.Core.Builder.Errors
+  ( BaggageError(..), BaggageErrors(..), BaggageKeyContainsInvalidCharsError(..)
+  , BaggageKeyIsEmptyError(..), BaggageValueContainsInvalidCharsError(..)
+  , BaggageValueIsEmptyError(..)
+  )
+import OTel.API.Context.Core (ContextBackend, ContextKey)
+import OTel.API.Context.Core.Internal (contextBackendValueKey, unsafeNewContextBackend)
 import OTel.API.Core (KV(..), Key(..), IsTextKV)
 import Prelude
+import System.IO.Unsafe (unsafePerformIO)
 import qualified Control.Monad.Trans.RWS.Lazy as RWS.Lazy
 import qualified Control.Monad.Trans.RWS.Strict as RWS.Strict
 import qualified Control.Monad.Trans.State.Lazy as State.Lazy
@@ -223,37 +230,12 @@ buildBaggage builder =
 buildBaggagePure :: BaggageBuilder Baggage -> Either BaggageErrors Baggage
 buildBaggagePure = first (BaggageErrors . DList.toList) . unBaggageBuilder
 
-newtype BaggageErrors = BaggageErrors
-  { unBaggageErrors :: [BaggageError]
-  } deriving stock (Eq, Show)
-    deriving anyclass (Exception)
+contextBackendBaggage :: ContextBackend Baggage
+contextBackendBaggage = unsafePerformIO $ liftIO unsafeNewContextBackend
+{-# NOINLINE contextBackendBaggage #-}
 
-data BaggageError
-  = BaggageKeyIsEmpty BaggageKeyIsEmptyError
-  | BaggageKeyContainsInvalidChars BaggageKeyContainsInvalidCharsError
-  | BaggageValueIsEmpty BaggageValueIsEmptyError
-  | BaggageValueContainsInvalidChars BaggageValueContainsInvalidCharsError
-  deriving stock (Eq, Show)
-
-newtype BaggageKeyIsEmptyError = BaggageKeyIsEmptyError
-  { rawValue :: Text
-  } deriving stock (Eq, Show)
-
-data BaggageKeyContainsInvalidCharsError = BaggageKeyContainsInvalidCharsError
-  { rawKey :: Key Text
-  , rawValue :: Text
-  , invalidChars :: Text
-  } deriving stock (Eq, Show)
-
-newtype BaggageValueIsEmptyError = BaggageValueIsEmptyError
-  { rawKey :: Key Text
-  } deriving stock (Eq, Show)
-
-data BaggageValueContainsInvalidCharsError = BaggageValueContainsInvalidCharsError
-  { rawKey :: Key Text
-  , rawValue :: Text
-  , invalidChars :: Text
-  } deriving stock (Eq, Show)
+contextKeyBaggage :: ContextKey Baggage
+contextKeyBaggage = contextBackendValueKey contextBackendBaggage
 
 isRFC7230TokenChar :: Char -> Bool
 isRFC7230TokenChar = \case

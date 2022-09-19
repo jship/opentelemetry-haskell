@@ -1,7 +1,7 @@
 module OTel.API.Baggage.Core
   ( -- * Synopsis
     -- $synopsis
-    Internal.MonadBaggage(..)
+    module OTel.API.Baggage.Core.Class
 
   , Internal.Baggage
   , Internal.nullBaggage
@@ -15,20 +15,11 @@ module OTel.API.Baggage.Core
   , Internal.foldMapWithKeyBaggage
   , Internal.toListBaggage
 
-  , Internal.BaggageBuilder
-  , Internal.buildBaggage
-  , Internal.buildBaggagePure
-  , Internal.BaggageErrors(..)
-  , Internal.BaggageError(..)
-  , Internal.BaggageKeyIsEmptyError(..)
-  , Internal.BaggageKeyContainsInvalidCharsError(..)
-  , Internal.BaggageValueIsEmptyError(..)
-  , Internal.BaggageValueContainsInvalidCharsError(..)
-
-  , (.@)
+  , module OTel.API.Baggage.Core.Builder
   ) where
 
-import OTel.API.Core (KV((.@)))
+import OTel.API.Baggage.Core.Builder
+import OTel.API.Baggage.Core.Class
 import qualified OTel.API.Baggage.Core.Internal as Internal
 
 -- $synopsis
