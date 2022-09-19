@@ -1,5 +1,6 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MagicHash #-}
@@ -20,7 +21,6 @@ module OTel.API.Context.Internal
   , getAttachedContext
   ) where
 
-import Control.Monad.Accum (MonadAccum)
 import Control.Monad.Base (MonadBase)
 import Control.Monad.Catch (MonadCatch, MonadMask, MonadThrow)
 import Control.Monad.Cont (MonadCont)
@@ -31,7 +31,6 @@ import Control.Monad.IO.Unlift (MonadUnliftIO)
 import Control.Monad.Logger (MonadLogger)
 import Control.Monad.RWS.Class (MonadRWS)
 import Control.Monad.Reader (MonadReader(ask, local, reader))
-import Control.Monad.Select (MonadSelect)
 import Control.Monad.State (MonadState)
 import Control.Monad.Trans.Class (MonadTrans(lift))
 import Control.Monad.Trans.Control (MonadBaseControl, MonadTransControl)
@@ -46,13 +45,21 @@ import OTel.API.Context.Core
   )
 import Prelude
 
+#if MIN_VERSION_mtl(2,3,0)
+import Control.Monad.Accum (MonadAccum)
+import Control.Monad.Select (MonadSelect)
+#endif
+
 type ContextT :: Type -> (Type -> Type) -> Type -> Type
 
 newtype ContextT c m a = ContextT
   { runContextT :: ContextBackend c -> m a
   } deriving
       ( Applicative, Functor, Monad, MonadFail, MonadFix, MonadIO -- @base@
-      , MonadAccum w, MonadCont, MonadError e, MonadSelect r, MonadState s, MonadWriter w -- @mtl@
+      , MonadCont, MonadError e, MonadState s, MonadWriter w -- @mtl@
+#if MIN_VERSION_mtl(2,3,0)
+      , MonadAccum w, MonadSelect r -- @mtl@
+#endif
       , MonadCatch, MonadMask, MonadThrow -- @exceptions@
       , MonadUnliftIO -- @unliftio-core@
       , MonadBase b -- @transformers-base@

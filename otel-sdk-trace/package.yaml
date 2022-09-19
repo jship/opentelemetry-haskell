@@ -32,7 +32,7 @@ library:
   - base >=4.11.1.0 && <5
   - clock
   - monad-logger-aeson
-  - mtl >=2.3
+  - mtl
   - mwc-random
   - otel-api-common
   - otel-api-context-core

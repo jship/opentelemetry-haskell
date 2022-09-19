@@ -1,4 +1,5 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -20,7 +21,6 @@ module OTel.API.Trace.Internal
   ) where
 
 import Control.Exception.Safe (MonadCatch, MonadMask, MonadThrow, SomeException)
-import Control.Monad.Accum (MonadAccum)
 import Control.Monad.Base (MonadBase)
 import Control.Monad.Cont (MonadCont)
 import Control.Monad.Except (MonadError)
@@ -30,7 +30,6 @@ import Control.Monad.IO.Unlift (MonadUnliftIO)
 import Control.Monad.Logger (MonadLogger)
 import Control.Monad.RWS.Class (MonadRWS)
 import Control.Monad.Reader (MonadReader(ask, local, reader))
-import Control.Monad.Select (MonadSelect)
 import Control.Monad.State (MonadState)
 import Control.Monad.Trans.Class (MonadTrans(lift))
 import Control.Monad.Trans.Control (MonadTransControl(..), MonadBaseControl)
@@ -56,12 +55,20 @@ import Prelude hiding (span)
 import qualified Control.Exception.Safe as Safe
 import qualified GHC.Stack as Stack
 
+#if MIN_VERSION_mtl(2,3,0)
+import Control.Monad.Accum (MonadAccum)
+import Control.Monad.Select (MonadSelect)
+#endif
+
 type TracingT :: (Type -> Type) -> Type -> Type
 newtype TracingT m a = TracingT
   { runTracingT :: Tracer -> SpanBackend -> m a
   } deriving
       ( Applicative, Functor, Monad, MonadFail, MonadFix, MonadIO -- @base@
-      , MonadAccum w, MonadCont, MonadError e, MonadSelect r, MonadState s, MonadWriter w -- @mtl@
+      , MonadCont, MonadError e, MonadState s, MonadWriter w -- @mtl@
+#if MIN_VERSION_mtl(2,3,0)
+      , MonadAccum w, MonadSelect r -- @mtl@
+#endif
       , MonadCatch, MonadMask, MonadThrow -- @exceptions@
       , MonadUnliftIO -- @unliftio-core@
       , MonadBase b -- @transformers-base@

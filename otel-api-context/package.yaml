@@ -32,7 +32,7 @@ library:
   - exceptions
   - monad-control
   - monad-logger
-  - mtl >=2.3
+  - mtl
   - otel-api-context-core
   - resourcet
   - text

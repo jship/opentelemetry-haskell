@@ -31,7 +31,7 @@ library:
   - base >=4.11.1.0 && <5
   - monad-control
   - monad-logger
-  - mtl >=2.3
+  - mtl
   - otel-api-baggage-core
   - otel-api-context
   - otel-api-trace-core

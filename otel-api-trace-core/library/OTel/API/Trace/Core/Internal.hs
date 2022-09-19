@@ -17,8 +17,8 @@
 module OTel.API.Trace.Core.Internal
   ( -- * Disclaimer
     -- $disclaimer
-    trace
-  , trace_
+    trace_
+  , trace
   , MonadTracing(..)
   , MonadTracingIO(..)
 
@@ -194,19 +194,19 @@ import qualified Data.Traversable as Traversable
 import qualified Data.Typeable as Typeable
 import qualified Data.Vector.Unboxed as Unboxed
 
-trace
-  :: (MonadTracing m, HasCallStack)
-  => NewSpanSpec
-  -> (MutableSpan -> m a)
-  -> m a
-trace = traceCS callStack
-
 trace_
   :: (MonadTracing m, HasCallStack)
   => NewSpanSpec
   -> m a
   -> m a
 trace_ newSpanSpec = traceCS callStack newSpanSpec . const
+
+trace
+  :: (MonadTracing m, HasCallStack)
+  => NewSpanSpec
+  -> (MutableSpan -> m a)
+  -> m a
+trace = traceCS callStack
 
 class (Monad m) => MonadTracing m where
   traceCS :: CallStack -> NewSpanSpec -> (MutableSpan -> m a) -> m a
