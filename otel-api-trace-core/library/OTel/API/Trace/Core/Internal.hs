@@ -110,6 +110,10 @@ module OTel.API.Trace.Core.Internal
   , exceptionEvent
   , SpanName(..)
   , MutableSpan(..)
+  , unsafeNewMutableSpan
+  , unsafeReadMutableSpan
+  , unsafeWriteMutableSpan
+  , unsafeModifyMutableSpan
   , Span(..)
   , spanIsRemote
   , spanIsSampled
@@ -184,6 +188,7 @@ import qualified Data.Char as Char
 import qualified Data.DList as DList
 import qualified Data.Foldable as Foldable
 import qualified Data.HashMap.Strict as HashMap
+import qualified Data.IORef as IORef
 import qualified Data.Maybe as Maybe
 import qualified Data.Text as Text
 import qualified Data.Text.Encoding as Text.Encoding
@@ -1052,10 +1057,29 @@ newtype SpanName = SpanName
 instance IsString SpanName where
   fromString = SpanName . Text.pack
 
--- TODO: Need dedicated interface for getting/updating
 newtype MutableSpan = MutableSpan
   { unMutableSpan :: IORef (Span AttrsBuilder)
   }
+
+unsafeNewMutableSpan :: Span AttrsBuilder -> IO MutableSpan
+unsafeNewMutableSpan = fmap MutableSpan . IORef.newIORef
+
+unsafeReadMutableSpan :: MutableSpan -> IO (Span AttrsBuilder)
+unsafeReadMutableSpan mutableSpan =
+  unsafeModifyMutableSpan mutableSpan \s -> (s, s)
+{-# INLINE unsafeReadMutableSpan #-}
+
+unsafeWriteMutableSpan :: MutableSpan -> IO ()
+unsafeWriteMutableSpan mutableSpan =
+  unsafeModifyMutableSpan mutableSpan \s -> (s, ())
+{-# INLINE unsafeWriteMutableSpan #-}
+
+unsafeModifyMutableSpan
+  :: MutableSpan
+  -> (Span AttrsBuilder -> (Span AttrsBuilder, a))
+  -> IO a
+unsafeModifyMutableSpan = IORef.atomicModifyIORef' . unMutableSpan
+{-# INLINE unsafeModifyMutableSpan #-}
 
 -- TODO: Add reference to Resource?
 -- See https://opentelemetry.io/docs/reference/specification/trace/sdk/#additional-span-interfaces

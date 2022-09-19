@@ -45,13 +45,14 @@ import OTel.API.Core
   , Timestamp, defaultAttrsLimits, timestampFromNanoseconds
   )
 import OTel.API.Trace.Core
-  ( SpanParent(..), SpanStatus(..), SpanId, SpanKind, SpanName, TraceId, TraceState, UpdateSpanSpec
-  , contextKeySpan, emptySpanContext, emptyTraceState, setSampledFlag, spanContextIsSampled
-  , spanContextIsValid, spanIdFromWords, spanIsSampled, traceIdFromWords
+  ( SpanParent(..), SpanStatus(..), MutableSpan, SpanId, SpanKind, SpanName, TraceId, TraceState
+  , UpdateSpanSpec, contextKeySpan, emptySpanContext, emptyTraceState, setSampledFlag
+  , spanContextIsSampled, spanContextIsValid, spanIdFromWords, spanIsSampled, traceIdFromWords
   )
 import OTel.API.Trace.Core.Internal
-  ( MutableSpan(..), NewSpanSpec(..), Span(..), SpanContext(..), SpanLink(..), SpanLinkSpec(..)
-  , SpanLinkSpecs(..), SpanLinks(..), Tracer(..), TracerProvider(..), buildSpanUpdater, freezeSpan
+  ( NewSpanSpec(..), Span(..), SpanContext(..), SpanLink(..), SpanLinkSpec(..), SpanLinkSpecs(..)
+  , SpanLinks(..), Tracer(..), TracerProvider(..), buildSpanUpdater, freezeSpan
+  , unsafeModifyMutableSpan, unsafeNewMutableSpan, unsafeReadMutableSpan
   )
 import Prelude hiding (span)
 import System.Clock (Clock(Realtime), getTime, toNanoSecs)
@@ -59,7 +60,6 @@ import System.IO.Unsafe (unsafePerformIO)
 import System.Random.MWC (Variate(..), GenIO, Seed, createSystemSeed, fromSeed, initialize, uniform)
 import System.Timeout (timeout)
 import qualified Control.Exception.Safe as Exception
-import qualified Data.IORef as IORef
 import qualified Data.Vector as Vector
 
 data TracerProviderSpec = TracerProviderSpec
@@ -166,8 +166,7 @@ newTracerProviderIO tracerProviderSpec = do
     -> IO MutableSpan
   startSpan prngRef sampler scope spanProcessor implicitParentContext newSpanSpec = do
     span <- buildSpan
-    mutableSpan <- do
-      fmap MutableSpan $ IORef.newIORef span
+    mutableSpan <- unsafeNewMutableSpan span
 
     when (spanIsRecording span) do
       spanProcessorOnSpanStart spanProcessor parentContext \updateSpanSpec -> do
@@ -228,9 +227,8 @@ newTracerProviderIO tracerProviderSpec = do
       spanParentFromParentContext context =
         case lookupContext contextKeySpan context of
           Nothing -> pure SpanParentRoot
-          Just MutableSpan { unMutableSpan = ref } -> do
-            IORef.atomicModifyIORef' ref \span ->
-              (span, SpanParentChildOf $ spanContext span)
+          Just mutableSpan -> do
+            fmap (SpanParentChildOf . spanContext) $ unsafeReadMutableSpan mutableSpan
 
       newSpanContext :: SpanParent -> IO SpanContext
       newSpanContext spanParent = do
@@ -272,13 +270,11 @@ newTracerProviderIO tracerProviderSpec = do
     spanUpdater mutableSpan updateSpanSpec = do
       updater <- buildSpanUpdater (liftIO now) updateSpanSpec
       frozenAt <- liftIO now
-      IORef.atomicModifyIORef' ref \span ->
+      unsafeModifyMutableSpan mutableSpan \span ->
         let span' = updater span
          in ( span'
             , freezeSpan frozenAt spanLinkAttrsLimits spanEventAttrsLimits spanAttrsLimits span'
             )
-      where
-      MutableSpan { unMutableSpan = ref } = mutableSpan
 
     spanLinks =
       SpanLinks $ flip fmap (unSpanLinkSpecs newSpanSpecLinks) \spanLinkSpec ->
@@ -730,9 +726,8 @@ parentBasedSampler parentBasedSamplerSpec =
         parentSpanContext <- do
           case lookupContext contextKeySpan $ samplerInputContext samplerInput of
             Nothing -> pure emptySpanContext
-            Just MutableSpan { unMutableSpan = ref } -> do
-              liftIO $ IORef.atomicModifyIORef' ref \span ->
-                (span, spanContext span)
+            Just mutableSpan -> do
+              liftIO $ fmap spanContext $ unsafeReadMutableSpan mutableSpan
         shouldSample parentSpanContext samplerInput
     }
   where
@@ -772,9 +767,10 @@ constDecisionSampler samplingDecision =
     samplingResultTraceState <- do
       case lookupContext contextKeySpan samplerInputContext of
         Nothing -> pure emptyTraceState
-        Just MutableSpan { unMutableSpan = ref } -> do
-          liftIO $ IORef.atomicModifyIORef' ref \span ->
-            (span, spanContextTraceState $ spanContext span)
+        Just mutableSpan -> do
+          liftIO
+            $ fmap (spanContextTraceState . spanContext)
+            $ unsafeReadMutableSpan mutableSpan
     pure defaultSamplingResult
       { samplingResultDecision = samplingDecision
       , samplingResultSpanAttrs = mempty

@@ -45,13 +45,15 @@ import OTel.API.Context (ContextT(..), ContextBackend, attachContextValue, getAt
 import OTel.API.Core (AttrsFor(AttrsForSpan), KV(..), TimestampSource(..), AttrsBuilder)
 import OTel.API.Trace.Core
   ( MonadTracing(..), MonadTracingContext(..), MonadTracingIO(..), NewSpanSpec(..)
-  , Span(spanContext, spanFrozenAt, spanIsRecording), contextBackendSpan, recordException
-  , pattern CODE_FILEPATH, pattern CODE_FUNCTION, pattern CODE_LINENO, pattern CODE_NAMESPACE
+  , Span(spanContext, spanFrozenAt, spanIsRecording), MutableSpan, contextBackendSpan
+  , recordException, pattern CODE_FILEPATH, pattern CODE_FUNCTION, pattern CODE_LINENO
+  , pattern CODE_NAMESPACE
   )
-import OTel.API.Trace.Core.Internal (MutableSpan(..), Tracer(..), buildSpanUpdater, freezeSpan)
+import OTel.API.Trace.Core.Internal
+  ( Tracer(..), buildSpanUpdater, freezeSpan, unsafeModifyMutableSpan, unsafeReadMutableSpan
+  )
 import Prelude hiding (span)
 import qualified Control.Exception.Safe as Safe
-import qualified Data.IORef as IORef
 import qualified GHC.Stack as Stack
 
 type TracingT :: (Type -> Type) -> Type -> Type
@@ -111,7 +113,7 @@ instance (MonadIO m, MonadMask m) => MonadTracing (TracingT m) where
     processSpan :: Tracer -> MutableSpan -> IO ()
     processSpan tracer mutableSpan = do
       liftIO do
-        span <- IORef.atomicModifyIORef' ref \s -> (s, s)
+        span <- unsafeReadMutableSpan mutableSpan
         timestamp <- now
         liftIO
           $ tracerProcessSpan
@@ -121,7 +123,7 @@ instance (MonadIO m, MonadMask m) => MonadTracing (TracingT m) where
               spanEventAttrsLimits
               spanAttrsLimits
               span
-        IORef.atomicModifyIORef' ref \s ->
+        unsafeModifyMutableSpan mutableSpan \s ->
           (s { spanIsRecording = False, spanFrozenAt = Just timestamp }, ())
       where
       Tracer
@@ -131,21 +133,19 @@ instance (MonadIO m, MonadMask m) => MonadTracing (TracingT m) where
         , tracerSpanEventAttrsLimits = spanEventAttrsLimits
         , tracerSpanLinkAttrsLimits = spanLinkAttrsLimits
         } = tracer
-      MutableSpan { unMutableSpan = ref } = mutableSpan
 
     handler :: Tracer -> MutableSpan -> SomeException -> IO ()
     handler tracer mutableSpan someEx = do
       spanUpdater <- do
         buildSpanUpdater (liftIO now) $ recordException someEx True TimestampSourceNow mempty
-      liftIO $ IORef.atomicModifyIORef' ref \span ->
-        (spanUpdater span, ())
+      liftIO $ unsafeModifyMutableSpan mutableSpan \s ->
+        (spanUpdater s, ())
       -- N.B. It is important that we finish the span after recording the
       -- exception and not the other way around, because the span is no longer
       -- recording after it is ended.
       processSpan tracer mutableSpan
       where
       Tracer { tracerNow = now } = tracer
-      MutableSpan { unMutableSpan = ref } = mutableSpan
 
     callStackAttrs :: AttrsBuilder 'AttrsForSpan
     callStackAttrs =
@@ -163,18 +163,14 @@ instance (MonadIO m, MonadMask m) => MonadTracingIO (TracingT m) where
 instance (MonadIO m, MonadMask m) => MonadTracingContext (TracingT m) where
   getSpanContext mutableSpan =
     TracingT \_tracer _spanBackend -> do
-      liftIO $ IORef.atomicModifyIORef' ref \span -> (span, spanContext span)
-    where
-    MutableSpan { unMutableSpan = ref } = mutableSpan
+      liftIO $ fmap spanContext $ unsafeReadMutableSpan mutableSpan
 
   updateSpan mutableSpan updateSpanSpec =
     TracingT \tracer _spanBackend -> do
       liftIO do
         spanUpdater <- buildSpanUpdater (liftIO $ tracerNow tracer) updateSpanSpec
-        IORef.atomicModifyIORef' ref \span ->
-          (spanUpdater span, ())
-    where
-    MutableSpan { unMutableSpan = ref } = mutableSpan
+        unsafeModifyMutableSpan mutableSpan \s ->
+          (spanUpdater s, ())
 
 mapTracingT
   :: forall m n a b
