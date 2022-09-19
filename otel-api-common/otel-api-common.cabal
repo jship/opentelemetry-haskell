@@ -31,7 +31,10 @@ library
   exposed-modules:
       OTel.API.Common
       OTel.API.Common.Attributes
+      OTel.API.Common.InstrumentationScope
       OTel.API.Common.Internal
+      OTel.API.Common.KV
+      OTel.API.Common.Timestamp
   hs-source-dirs:
       library
   default-extensions:

@@ -23,10 +23,12 @@ module OTel.API.Common.Internal
     KV(..)
   , IsTextKV
   , Key(..)
+
   , Timestamp(..)
   , timestampFromNanoseconds
   , timestampToNanoseconds
   , TimestampSource(.., Now, At)
+
   , InstrumentationScope(..)
   , defaultInstrumentationScope
   , InstrumentationScopeName(..)
