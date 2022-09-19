@@ -34,7 +34,7 @@ library:
   - containers
   - dlist
   - exceptions
-  - otel-api-context
+  - otel-api-context-core
   - text
   - unordered-containers
   - vector

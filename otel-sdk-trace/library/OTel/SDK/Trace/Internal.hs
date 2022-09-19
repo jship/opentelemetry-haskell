@@ -35,26 +35,23 @@ import Control.Monad.Reader (ReaderT(..))
 import Data.Aeson (object)
 import Data.Functor.Identity (Identity(..))
 import Data.Kind (Type)
+import Data.Maybe (fromMaybe)
 import Data.Monoid (Ap(..))
 import Data.Text (Text)
 import Data.Vector (Vector)
-import OTel.API.Context
-  ( ContextT(runContextT), ContextKey, getAttachedContextKey, getContext, updateContext
-  )
-import OTel.API.Context.Internal (unsafeNewContextKey)
+import OTel.API.Context.Core (Context, lookupContext)
 import OTel.API.Core
-  ( AttrsFor(..), SpanParent(..), SpanParentSource(..), SpanStatus(..), TimestampSource(..), Attrs
-  , AttrsBuilder, InstrumentationScope, SpanAttrsLimits, SpanContext, SpanEventAttrsLimits, SpanId
+  ( AttrsFor(..), SpanParent(..), SpanStatus(..), TimestampSource(..), Attrs, AttrsBuilder
+  , InstrumentationScope, SpanAttrsLimits, SpanBackend, SpanContext, SpanEventAttrsLimits, SpanId
   , SpanKind, SpanLinkAttrsLimits, SpanLinks, SpanName, Timestamp, TraceId, TraceState
-  , UpdateSpanSpec, defaultAttrsLimits, emptySpanContext, emptyTraceState, spanContextIsRemote
-  , spanContextIsSampled, spanContextIsValid, spanContextSpanId, spanContextTraceFlags
-  , spanContextTraceId, spanContextTraceState, spanIdFromWords, spanIsSampled
-  , timestampFromNanoseconds, traceIdFromWords
+  , UpdateSpanSpec, defaultAttrsLimits, defaultSpanBackend, emptySpanContext, emptyTraceState
+  , setSampledFlag, spanContextIsRemote, spanContextIsSampled, spanContextIsValid, spanContextKey
+  , spanContextSpanId, spanContextTraceFlags, spanContextTraceId, spanContextTraceState
+  , spanIdFromWords, spanIsSampled, timestampFromNanoseconds, traceIdFromWords
   )
 import OTel.API.Core.Internal
-  ( MutableSpan(..), NewSpanSpec(..), Span(..), SpanLink(..), SpanLinkSpec(..)
-  , SpanLinkSpecs(..), SpanLinks(..), Tracer(..), TracerProvider(..), buildSpanUpdater
-  , freezeSpan
+  ( MutableSpan(..), NewSpanSpec(..), Span(..), SpanLink(..), SpanLinkSpec(..), SpanLinkSpecs(..)
+  , SpanLinks(..), Tracer(..), TracerProvider(..), buildSpanUpdater, freezeSpan
   )
 import Prelude hiding (span)
 import System.Clock (Clock(Realtime), getTime, toNanoSecs)
@@ -62,6 +59,7 @@ import System.IO.Unsafe (unsafePerformIO)
 import System.Random.MWC (Variate(..), GenIO, Seed, createSystemSeed, fromSeed, initialize, uniform)
 import System.Timeout (timeout)
 import qualified Control.Exception.Safe as Exception
+import qualified Data.IORef as IORef
 import qualified Data.Vector as Vector
 
 data TracerProviderSpec = TracerProviderSpec
@@ -166,17 +164,17 @@ newTracerProviderIO tracerProviderSpec = do
     -> Sampler
     -> InstrumentationScope
     -> SpanProcessor
+    -> Context
     -> NewSpanSpec
     -> IO MutableSpan
-  startSpan prngRef sampler scope spanProcessor newSpanSpec = do
+  startSpan prngRef sampler scope spanProcessor implicitParentContext newSpanSpec = do
     span <- buildSpan
-    mutableSpan@MutableSpan { mutableSpanSpanKey = spanKey } <- do
-      fmap MutableSpan $ unsafeNewContextKey "spanKey" span
+    mutableSpan <- do
+      fmap MutableSpan $ IORef.newIORef span
 
     when (spanIsRecording span) do
-      -- TODO: Fetch baggage from context and pass along too
-      spanProcessorOnSpanStart spanProcessor undefined \updateSpanSpec -> do -- TODO: undefined
-        spanUpdater spanKey updateSpanSpec
+      spanProcessorOnSpanStart spanProcessor parentContext \updateSpanSpec -> do
+        spanUpdater mutableSpan updateSpanSpec
 
     pure mutableSpan
     where
@@ -187,52 +185,57 @@ newTracerProviderIO tracerProviderSpec = do
           TimestampSourceAt timestamp -> pure timestamp
           TimestampSourceNow -> now
 
-      spanParent <- spanParentFromSource newSpanSpecParentSource
-      spanContext <- newSpanContext spanParent
+      spanParent <- spanParentFromParentContext parentContext
+      initSpanContext <- newSpanContext spanParent
 
       samplingResult <- samplerShouldSample sampler SamplerInput
-        { samplerInputContext =
-            Context
-              { contextSpan = undefined
-              }
-        , samplerInputTraceId = spanContextTraceId spanContext
+        { samplerInputContext = parentContext
+        , samplerInputTraceId = spanContextTraceId initSpanContext
         , samplerInputSpanName = newSpanSpecName
         , samplerInputSpanKind = newSpanSpecKind
         , samplerInputSpanAttrs = newSpanSpecAttrs
         , samplerInputSpanLinks = spanLinks
         }
 
+      let (spanIsRecording, spanContextPostSampling) =
+            case samplingResultDecision samplingResult of
+              SamplingDecisionDrop -> (False, initSpanContext)
+              SamplingDecisionRecordOnly -> (True, initSpanContext)
+              SamplingDecisionRecordAndSample ->
+                ( True
+                , initSpanContext
+                    { spanContextTraceFlags =
+                        setSampledFlag $ spanContextTraceFlags initSpanContext
+                    }
+                )
+
       pure Span
         { spanParent
-        , spanContext
+        , spanContext =
+            spanContextPostSampling
+              { spanContextTraceState = samplingResultTraceState samplingResult
+              }
         , spanName = newSpanSpecName
         , spanStatus = SpanStatusUnset
         , spanStart
         , spanFrozenAt = Nothing
         , spanKind = newSpanSpecKind
-        , spanAttrs = newSpanSpecAttrs
+        , spanAttrs = samplingResultSpanAttrs samplingResult <> newSpanSpecAttrs
         , spanLinks
         , spanEvents = mempty
-        , spanIsRecording = False -- TODO: Sampler
+        , spanIsRecording
         , spanInstrumentationScope = scope
         }
       where
-      spanParentFromSource
-        :: SpanParentSource
-        -> IO SpanParent
-      spanParentFromSource = \case
-        SpanParentSourceExplicit spanParent -> pure spanParent
-        SpanParentSourceImplicit -> do
-          flip runContextT (unSpanBackend ctxBackendSpan) do
-            getAttachedContextKey >>= \case
-              Nothing -> pure SpanParentRoot
-              Just ctxKey -> do
-                parentSpanContext <- fmap spanContext $ getContext ctxKey
-                pure $ SpanParentChildOf parentSpanContext
+      spanParentFromParentContext :: Context -> IO SpanParent
+      spanParentFromParentContext context =
+        case lookupContext spanContextKey context of
+          Nothing -> pure SpanParentRoot
+          Just MutableSpan { unMutableSpan = ref } -> do
+            IORef.atomicModifyIORef' ref \span ->
+              (span, SpanParentChildOf $ spanContext span)
 
-      newSpanContext
-        :: SpanParent
-        -> IO SpanContext
+      newSpanContext :: SpanParent -> IO SpanContext
       newSpanContext spanParent = do
         (spanContextTraceId, spanContextSpanId) <- do
           runIdGeneratorM prngRef logger
@@ -268,16 +271,17 @@ newTracerProviderIO tracerProviderSpec = do
           , spanContextIsRemote = False -- TODO: Populate correctly
           }
 
-    spanUpdater
-      :: ContextKey (Span AttrsBuilder)
-      -> UpdateSpanSpec
-      -> IO (Span Attrs)
-    spanUpdater spanKey updateSpanSpec =
-      flip runContextT (unSpanBackend ctxBackendSpan) do
-        updater <- buildSpanUpdater (liftIO now) updateSpanSpec
-        frozenAt <- liftIO now
-        fmap (freezeSpan frozenAt spanLinkAttrsLimits spanEventAttrsLimits spanAttrsLimits) do
-          updateContext spanKey updater
+    spanUpdater :: MutableSpan -> UpdateSpanSpec -> IO (Span Attrs)
+    spanUpdater mutableSpan updateSpanSpec = do
+      updater <- buildSpanUpdater (liftIO now) updateSpanSpec
+      frozenAt <- liftIO now
+      IORef.atomicModifyIORef' ref \span ->
+        let span' = updater span
+         in ( span'
+            , freezeSpan frozenAt spanLinkAttrsLimits spanEventAttrsLimits spanAttrsLimits span'
+            )
+      where
+      MutableSpan { unMutableSpan = ref } = mutableSpan
 
     spanLinks =
       SpanLinks $ flip fmap (unSpanLinkSpecs newSpanSpecLinks) \spanLinkSpec ->
@@ -288,9 +292,11 @@ newTracerProviderIO tracerProviderSpec = do
               spanLinkSpecAttrs spanLinkSpec
           }
 
+    parentContext = fromMaybe implicitParentContext newSpanSpecParentContext
+
     NewSpanSpec
       { newSpanSpecName
-      , newSpanSpecParentSource
+      , newSpanSpecParentContext
       , newSpanSpecStart
       , newSpanSpecKind
       , newSpanSpecAttrs
@@ -322,7 +328,7 @@ forceFlushTracerProvider = liftIO . tracerProviderForceFlush
 
 data SpanProcessor = SpanProcessor
   { spanProcessorOnSpanStart
-      :: Maybe SpanContext -- Parent span context pulled from the context
+      :: Context -- Parent context
       -> (UpdateSpanSpec -> IO (Span Attrs))
       -> IO ()
   , spanProcessorOnSpanEnd :: Span Attrs -> IO ()
@@ -477,7 +483,7 @@ simpleSpanProcessor simpleSpanProcessorSpec = spanProcessorSpec
 data SpanProcessorSpec = SpanProcessorSpec
   { spanProcessorSpecName :: Text
   , spanProcessorSpecOnSpanStart
-      :: Maybe SpanContext -- Parent span context pulled from the context
+      :: Context -- Parent context
       -> (UpdateSpanSpec -> SpanProcessorM (Span Attrs))
       -> SpanProcessorM ()
   , spanProcessorSpecOnSpanEnd :: Span Attrs -> SpanProcessorM ()
@@ -631,11 +637,6 @@ defaultSpanExporterSpec =
           "exception" .= displayException ex : pairs
     }
 
-newtype Context = Context
-  { contextSpan :: Span AttrsBuilder -- TODO: SHould be plain Attrs?
-  -- TODO: Add baggage
-  }
-
 data Sampler = Sampler
   { samplerName :: Text
   , samplerDescription :: Text
@@ -701,7 +702,7 @@ alwaysOnSampler =
 
 alwaysOffSampler :: SamplerSpec
 alwaysOffSampler =
-  (constDecisionSampler SamplingDecisionRecordAndSample)
+  (constDecisionSampler SamplingDecisionDrop)
     { samplerSpecName = "AlwaysOff"
     , samplerSpecDescription = "AlwaysOffSampler"
     }
@@ -729,10 +730,17 @@ parentBasedSampler parentBasedSamplerSpec =
   defaultSamplerSpec
     { samplerSpecName = "ParentBased"
     , samplerSpecDescription = "ParentBased"
-    , samplerSpecShouldSample = shouldSample
+    , samplerSpecShouldSample = \samplerInput -> do
+        parentSpanContext <- do
+          case lookupContext spanContextKey $ samplerInputContext samplerInput of
+            Nothing -> pure emptySpanContext
+            Just MutableSpan { unMutableSpan = ref } -> do
+              liftIO $ IORef.atomicModifyIORef' ref \span ->
+                (span, spanContext span)
+        shouldSample parentSpanContext samplerInput
     }
   where
-  shouldSample samplerInput
+  shouldSample parentSpanContext samplerInput
     | hasParent && parentIsRemote && parentIsSampled =
         samplerSpecShouldSample onRemoteParentSampled samplerInput
     | hasParent && parentIsRemote && not parentIsSampled =
@@ -747,9 +755,6 @@ parentBasedSampler parentBasedSamplerSpec =
     hasParent = spanContextIsValid parentSpanContext
     parentIsRemote = spanContextIsRemote parentSpanContext
     parentIsSampled = spanContextIsSampled parentSpanContext
-    parentSpanContext = spanContext parentSpan
-    Context { contextSpan = parentSpan } = samplerInputContext
-    SamplerInput { samplerInputContext } = samplerInput
 
   ParentBasedSamplerSpec
     { parentBasedSamplerSpecOnRoot = onRoot
@@ -767,16 +772,20 @@ constDecisionSampler samplingDecision =
     , samplerSpecShouldSample = shouldSample
     }
   where
-  shouldSample samplerInput =
+  shouldSample samplerInput = do
+    samplingResultTraceState <- do
+      case lookupContext spanContextKey samplerInputContext of
+        Nothing -> pure emptyTraceState
+        Just MutableSpan { unMutableSpan = ref } -> do
+          liftIO $ IORef.atomicModifyIORef' ref \span ->
+            (span, spanContextTraceState $ spanContext span)
     pure defaultSamplingResult
       { samplingResultDecision = samplingDecision
       , samplingResultSpanAttrs = mempty
-      , samplingResultTraceState =
-          spanContextTraceState
-            $ spanContext
-            $ contextSpan
-            $ samplerInputContext samplerInput
+      , samplingResultTraceState
       }
+    where
+    SamplerInput { samplerInputContext } = samplerInput
 
   samplingDecisionText =
     case samplingDecision of

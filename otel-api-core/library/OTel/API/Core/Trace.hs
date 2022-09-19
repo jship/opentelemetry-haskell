@@ -5,6 +5,10 @@ module OTel.API.Core.Trace
 
   , Tracer
 
+  , SpanBackend
+  , defaultSpanBackend
+  , spanContextKey
+
   , SpanContext
   , emptySpanContext
   , spanContextTraceId
@@ -145,9 +149,7 @@ module OTel.API.Core.Trace
   , spanInstrumentationScope
   , spanIsRemote
   , spanIsSampled
-  , HasSpan(..)
 
-  , SpanParentSource(..)
   , SpanParent(..)
   , spanParentContext
 

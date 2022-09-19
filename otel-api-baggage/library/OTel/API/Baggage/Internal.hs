@@ -64,7 +64,7 @@ newtype BaggageT m a = BaggageT
       , MonadBaseControl b -- @monad-control@
       , MonadLogger -- @monad-logger@
       , MonadResource -- @resourcet@
-      , MonadTracing ctx, MonadTracingContext ctx, MonadTracingIO ctx -- @otel-api-trace-core@
+      , MonadTracing, MonadTracingContext, MonadTracingIO -- @otel-api-trace-core@
       ) via (ReaderT BaggageBackend m)
     deriving
       ( MonadTrans -- @base@

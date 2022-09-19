@@ -155,7 +155,7 @@ emptyContextBackendRegistry = do
 
 registerContextBackend :: Unique -> ContextBackend a -> ContextBackendRegistry -> IO ()
 registerContextBackend registryKey contextBackend registry = do
-  IORef.atomicModifyIORef' ref $ \contextBackends ->
+  IORef.atomicModifyIORef' ref \contextBackends ->
     ( HashMap.insert registryKey (SomeContextBackend contextBackend) contextBackends
     , ()
     )
