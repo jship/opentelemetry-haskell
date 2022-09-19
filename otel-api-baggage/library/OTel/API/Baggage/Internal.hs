@@ -17,8 +17,6 @@ module OTel.API.Baggage.Internal
 
   , BaggageBackend(..)
   , defaultBaggageBackend
-
-  , baggageContextKey
   ) where
 
 import Control.Exception.Safe (MonadCatch, MonadMask, MonadThrow)
@@ -27,7 +25,7 @@ import Control.Monad.Base (MonadBase)
 import Control.Monad.Cont (MonadCont)
 import Control.Monad.Except (MonadError)
 import Control.Monad.Fix (MonadFix)
-import Control.Monad.IO.Class (MonadIO(liftIO))
+import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.IO.Unlift (MonadUnliftIO)
 import Control.Monad.Logger (MonadLogger)
 import Control.Monad.RWS.Class (MonadRWS)
@@ -41,16 +39,10 @@ import Control.Monad.Trans.Resource (MonadResource)
 import Control.Monad.Writer.Class (MonadWriter)
 import Data.Kind (Type)
 import Data.Monoid (Ap(..))
-import OTel.API.Baggage.Core (MonadBaggage(..), Baggage)
-import OTel.API.Context
-  ( ContextT(..), ContextBackend, ContextKey, attachContextValue, getAttachedContextValue
-  )
-import OTel.API.Context.Core.Internal
-  ( ContextBackend(contextBackendValueKey), unsafeNewContextBackend
-  )
+import OTel.API.Baggage.Core (MonadBaggage(..), Baggage, contextBackendBaggage)
+import OTel.API.Context (ContextT(..), ContextBackend, attachContextValue, getAttachedContextValue)
 import OTel.API.Trace.Core (MonadTracing, MonadTracingContext, MonadTracingIO)
 import Prelude
-import System.IO.Unsafe (unsafePerformIO)
 
 type BaggageT :: (Type -> Type) -> Type -> Type
 newtype BaggageT m a = BaggageT
@@ -108,11 +100,9 @@ newtype BaggageBackend = BaggageBackend
 
 defaultBaggageBackend :: BaggageBackend
 defaultBaggageBackend =
-  unsafePerformIO $ liftIO $ fmap BaggageBackend unsafeNewContextBackend
-{-# NOINLINE defaultBaggageBackend #-}
-
-baggageContextKey :: ContextKey Baggage
-baggageContextKey = contextBackendValueKey $ unBaggageBackend defaultBaggageBackend
+  BaggageBackend
+    { unBaggageBackend = contextBackendBaggage
+    }
 
 -- $disclaimer
 --

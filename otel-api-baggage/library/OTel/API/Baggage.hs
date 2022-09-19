@@ -8,8 +8,6 @@ module OTel.API.Baggage
   , Internal.BaggageBackend
   , Internal.defaultBaggageBackend
 
-  , Internal.baggageContextKey
-
   , module OTel.API.Baggage.Core
   ) where
 

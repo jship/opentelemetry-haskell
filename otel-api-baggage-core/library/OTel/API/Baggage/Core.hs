@@ -16,10 +16,12 @@ module OTel.API.Baggage.Core
   , Internal.toListBaggage
 
   , module OTel.API.Baggage.Core.Builder
+  , module OTel.API.Baggage.Core.Context
   ) where
 
 import OTel.API.Baggage.Core.Builder
 import OTel.API.Baggage.Core.Class
+import OTel.API.Baggage.Core.Context
 import qualified OTel.API.Baggage.Core.Internal as Internal
 
 -- $synopsis
