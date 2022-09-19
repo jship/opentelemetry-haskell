@@ -11,7 +11,9 @@ import Control.Monad.IO.Class (MonadIO(liftIO))
 import Control.Monad.Trans.Class (MonadTrans(lift))
 import Data.Text (Text)
 import OTel.API.Context
-import OTel.API.Context.Core.Internal (unsafeNewContextBackend)
+import OTel.API.Context.Core.Internal
+  ( ContextBackend(contextBackendValueKey), unsafeNewContextBackend
+  )
 import Prelude
 import System.IO.Unsafe (unsafePerformIO)
 import Test.Hspec (HasCallStack, Spec, describe, it)
@@ -21,8 +23,8 @@ spec :: Spec
 spec = do
   describe "ContextT" do
     it "it works" do
-      contextKeyName intContextKey `shouldBe` "int"
-      contextKeyName textContextKey `shouldBe` "text"
+      contextKeyName intContextKey `shouldBe` "Int"
+      contextKeyName textContextKey `shouldBe` "Text"
       flip (runContextT @Int @IO) intContextBackend do
         do
           getAttachedContextValue `shouldReturn` Nothing
@@ -65,20 +67,18 @@ spec = do
           lookupContext textContextKey context `shouldBe` Nothing
 
 intContextBackend :: ContextBackend Int
-intContextBackend = unsafePerformIO $ liftIO $ unsafeNewContextBackend intContextKey
+intContextBackend = unsafePerformIO $ liftIO unsafeNewContextBackend
 {-# NOINLINE intContextBackend #-}
 
 intContextKey :: ContextKey Int
-intContextKey = unsafePerformIO $ liftIO $ newContextKey "int"
-{-# NOINLINE intContextKey #-}
+intContextKey = contextBackendValueKey intContextBackend
 
 textContextBackend :: ContextBackend Text
-textContextBackend = unsafePerformIO $ liftIO $ unsafeNewContextBackend textContextKey
+textContextBackend = unsafePerformIO $ liftIO unsafeNewContextBackend
 {-# NOINLINE textContextBackend #-}
 
 textContextKey :: ContextKey Text
-textContextKey = unsafePerformIO $ liftIO $ newContextKey "text"
-{-# NOINLINE textContextKey #-}
+textContextKey = contextBackendValueKey textContextBackend
 
 shouldReturn :: (HasCallStack, MonadIO m, Show a, Eq a) => m a -> a -> m ()
 shouldReturn action expected = action >>= \x -> x `shouldBe` expected

@@ -15,8 +15,6 @@ module OTel.API.Baggage.Core
   , Internal.foldMapWithKeyBaggage
   , Internal.toListBaggage
 
-  , Internal.HasBaggage(..)
-
   , Internal.BaggageBuilder
   , Internal.buildBaggage
   , Internal.buildBaggagePure

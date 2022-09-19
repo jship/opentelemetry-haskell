@@ -1,23 +1,22 @@
 module OTel.API.Context.Core
   ( -- * Introduction
     -- $intro
-    Context
-  , emptyContext
-  , lookupContext
-  , insertContext
+    Internal.Context
+  , Internal.emptyContext
+  , Internal.lookupContext
+  , Internal.insertContext
 
-  , ContextKey
-  , contextKeyName
-  , newContextKey
+  , Internal.ContextKey
+  , Internal.contextKeyName
 
-  , attachContextValueUsing
-  , getAttachedContextValueUsing
-  , getAttachedContextUsing
+  , Internal.attachContextValueUsing
+  , Internal.getAttachedContextValueUsing
+  , Internal.getAttachedContextUsing
 
-  , ContextBackend
+  , Internal.ContextBackend
   ) where
 
-import OTel.API.Context.Core.Internal
+import qualified OTel.API.Context.Core.Internal as Internal
 
 -- $intro
 --

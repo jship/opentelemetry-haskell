@@ -1,11 +1,16 @@
 module OTel.API.Baggage
   ( -- * Synopsis
     -- $synopsis
-    module OTel.API.Baggage.Core
-
-  , Internal.BaggageT
+    Internal.BaggageT
   , Internal.runBaggageT
   , Internal.mapBaggageT
+
+  , Internal.BaggageBackend
+  , Internal.defaultBaggageBackend
+
+  , Internal.baggageContextKey
+
+  , module OTel.API.Baggage.Core
   ) where
 
 import OTel.API.Baggage.Core

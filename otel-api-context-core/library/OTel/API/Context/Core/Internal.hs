@@ -4,6 +4,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 module OTel.API.Context.Core.Internal
   ( -- * Disclaimer
     -- $disclaimer
@@ -13,7 +14,7 @@ module OTel.API.Context.Core.Internal
   , insertContext
   , ContextKey(..)
   , contextKeyName
-  , newContextKey
+  , unsafeNewContextKey
   , attachContextValueUsing
   , getAttachedContextValueUsing
   , getAttachedContextUsing
@@ -31,7 +32,9 @@ import Control.Monad.Catch (MonadMask, MonadThrow)
 import Control.Monad.IO.Class (MonadIO(liftIO))
 import Data.HashMap.Strict (HashMap)
 import Data.IORef (IORef)
+import Data.Proxy (Proxy(..))
 import Data.Text (Text)
+import Data.Typeable (Typeable)
 import Data.Unique.Really (Unique)
 import Data.Vault.Strict (Vault)
 import Prelude
@@ -39,7 +42,9 @@ import System.IO.Unsafe (unsafePerformIO)
 import qualified Context
 import qualified Data.HashMap.Strict as HashMap
 import qualified Data.IORef as IORef
+import qualified Data.Text as Text
 import qualified Data.Traversable as Traversable
+import qualified Data.Typeable as Typeable
 import qualified Data.Unique.Really as Unique
 import qualified Data.Vault.Strict as Vault
 
@@ -71,8 +76,8 @@ data ContextKey a = ContextKey
 contextKeyName :: ContextKey a -> Text
 contextKeyName = contextKeyDebugName
 
-newContextKey :: forall m a. (MonadIO m) => Text -> m (ContextKey a)
-newContextKey contextKeyDebugName = do
+unsafeNewContextKey :: forall m a. (MonadIO m) => Text -> m (ContextKey a)
+unsafeNewContextKey contextKeyDebugName = do
   contextKeyVaultKey <- liftIO Vault.newKey
   pure ContextKey
     { contextKeyDebugName
@@ -119,15 +124,14 @@ data ContextBackend a = ContextBackend
   , contextBackendRegistry :: ContextBackendRegistry
   }
 
-unsafeNewContextBackend
-  :: forall m a
-   . (MonadIO m)
-  => ContextKey a
-  -> m (ContextBackend a)
-unsafeNewContextBackend contextBackendValueKey = do
+unsafeNewContextBackend :: forall m a. (MonadIO m, Typeable a) => m (ContextBackend a)
+unsafeNewContextBackend = do
   liftIO do
     contextBackend <- do
-      contextBackendStore <- Context.newStore Context.noPropagation $ Just emptyContext
+      contextBackendValueKey <- do
+        unsafeNewContextKey $ Text.pack $ show $ Typeable.typeRep $ Proxy @a
+      contextBackendStore <- do
+        Context.newStore Context.noPropagation $ Just emptyContext
       pure ContextBackend
         { contextBackendStore
         , contextBackendValueKey

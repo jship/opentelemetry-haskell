@@ -5,7 +5,6 @@
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -26,7 +25,6 @@ module OTel.API.Baggage.Core.Internal
   , filterWithKeyBaggage
   , foldMapWithKeyBaggage
   , toListBaggage
-  , HasBaggage(..)
   , BaggageBuilder(..)
   , buildBaggage
   , buildBaggagePure
@@ -42,9 +40,10 @@ module OTel.API.Baggage.Core.Internal
 
 import Control.Applicative (Applicative(..))
 import Control.Exception.Safe (Exception, MonadThrow, throwM)
-import Control.Monad.IO.Unlift (MonadUnliftIO)
+import Control.Monad.IO.Unlift (MonadUnliftIO(withRunInIO))
 import Control.Monad.Logger (LoggingT)
 import Control.Monad.Trans.Class (MonadTrans(lift))
+import Control.Monad.Trans.Control (MonadTransControl(liftWith, restoreT))
 import Control.Monad.Trans.Except (ExceptT)
 import Control.Monad.Trans.Identity (IdentityT(..))
 import Control.Monad.Trans.Maybe (MaybeT)
@@ -68,33 +67,39 @@ import qualified Data.DList as DList
 import qualified Data.HashMap.Strict as HashMap
 import qualified Data.Text as Text
 
-class (Monad m, HasBaggage ctx) => MonadBaggage ctx m | m -> ctx where
+class (Monad m) => MonadBaggage m where
   getBaggage :: m Baggage
-  setBaggage :: Baggage -> m ()
+  setBaggage :: Baggage -> m a -> m a
 
   default getBaggage
-    :: (MonadTrans t, MonadBaggage ctx n, m ~ t n)
+    :: (MonadTrans t, MonadBaggage n, m ~ t n)
     => m Baggage
   getBaggage = lift getBaggage
 
   default setBaggage
-    :: (MonadTrans t, MonadBaggage ctx n, m ~ t n)
+    :: (MonadTransControl t, MonadBaggage n, m ~ t n)
     => Baggage
-    -> m ()
-  setBaggage baggage = lift $ setBaggage baggage
+    -> m a
+    -> m a
+  setBaggage baggage action =
+    restoreT . pure
+      =<< liftWith \run -> setBaggage baggage (run action)
 
-instance (MonadBaggage ctx m) => MonadBaggage ctx (ExceptT e m)
-instance (MonadBaggage ctx m) => MonadBaggage ctx (IdentityT m)
-instance (MonadBaggage ctx m) => MonadBaggage ctx (MaybeT m)
-instance (MonadBaggage ctx m) => MonadBaggage ctx (ReaderT r m)
-instance (MonadBaggage ctx m) => MonadBaggage ctx (State.Lazy.StateT r m)
-instance (MonadBaggage ctx m) => MonadBaggage ctx (State.Strict.StateT r m)
-instance (MonadBaggage ctx m, Monoid w) => MonadBaggage ctx (RWS.Lazy.RWST r w s m)
-instance (MonadBaggage ctx m, Monoid w) => MonadBaggage ctx (RWS.Strict.RWST r w s m)
-instance (MonadBaggage ctx m, Monoid w) => MonadBaggage ctx (Writer.Lazy.WriterT w m)
-instance (MonadBaggage ctx m, Monoid w) => MonadBaggage ctx (Writer.Strict.WriterT w m)
-instance (MonadBaggage ctx m) => MonadBaggage ctx (LoggingT m)
-instance (MonadBaggage ctx m, MonadUnliftIO m) => MonadBaggage ctx (ResourceT m)
+instance (MonadBaggage m) => MonadBaggage (ExceptT e m)
+instance (MonadBaggage m) => MonadBaggage (IdentityT m)
+instance (MonadBaggage m) => MonadBaggage (MaybeT m)
+instance (MonadBaggage m) => MonadBaggage (ReaderT r m)
+instance (MonadBaggage m) => MonadBaggage (State.Lazy.StateT r m)
+instance (MonadBaggage m) => MonadBaggage (State.Strict.StateT r m)
+instance (MonadBaggage m, Monoid w) => MonadBaggage (RWS.Lazy.RWST r w s m)
+instance (MonadBaggage m, Monoid w) => MonadBaggage (RWS.Strict.RWST r w s m)
+instance (MonadBaggage m, Monoid w) => MonadBaggage (Writer.Lazy.WriterT w m)
+instance (MonadBaggage m, Monoid w) => MonadBaggage (Writer.Strict.WriterT w m)
+instance (MonadBaggage m) => MonadBaggage (LoggingT m)
+instance (MonadBaggage m, MonadUnliftIO m) => MonadBaggage (ResourceT m) where
+  setBaggage baggage action = do
+    withRunInIO \runInIO -> do
+      runInIO $ setBaggage baggage action
 
 newtype Baggage = Baggage
   { unBaggage :: HashMap Text Text
@@ -140,12 +145,6 @@ foldMapWithKeyBaggage f baggage =
 
 toListBaggage :: Baggage -> [(Key Text, Text)]
 toListBaggage baggage = foldMapWithKeyBaggage (\k v -> ((k, v) :)) baggage []
-
-class HasBaggage s where
-  _baggage :: forall f. Functor f => (Baggage -> f Baggage) -> s -> f s
-
-instance HasBaggage Baggage where
-  _baggage = id
 
 newtype BaggageBuilder a = BaggageBuilder
   { unBaggageBuilder :: Either (DList BaggageError) a

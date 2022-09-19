@@ -15,11 +15,10 @@ import Data.HashMap.Strict (HashMap)
 import Data.Text (Text)
 import GHC.Exts (IsList)
 import OTel.API.Baggage
+  ( BaggageT(..), MonadBaggage(..), (.@), BaggageBuilder, buildBaggage, defaultBaggageBackend
+  )
 import OTel.API.Baggage.Core.Internal (Baggage(..))
-import OTel.API.Context (ContextBackend)
-import OTel.API.Context.Internal (unsafeNewContextBackend)
 import Prelude
-import System.IO.Unsafe (unsafePerformIO)
 import Test.Hspec (HasCallStack, Spec, describe, it, shouldBe)
 
 spec :: Spec
@@ -29,71 +28,70 @@ spec = do
       runTest TestCase
         { initBaggage = mempty
         , initBaggageBuilder = mempty
-        , nextBaggage = mempty
-        , nextBaggageBuilder = \baggage -> pure baggage
+        , nestedBaggage = mempty
+        , nestedBaggageBuilder = \baggage -> pure baggage
         }
     it "empty to non-empty" do
       runTest TestCase
         { initBaggage = mempty
         , initBaggageBuilder = mempty
-        , nextBaggage = [("a", "1")]
-        , nextBaggageBuilder = \baggage -> "a" .@ "1" <> pure baggage
+        , nestedBaggage = [("a", "1")]
+        , nestedBaggageBuilder = \baggage -> "a" .@ "1" <> pure baggage
         }
     it "non-empty to non-empty" do
       runTest TestCase
         { initBaggage = [("a", "1")]
         , initBaggageBuilder = "a" .@ "1"
-        , nextBaggage = [("a", "1"), ("b", "2")]
-        , nextBaggageBuilder = \baggage -> "b" .@ "2" <> pure baggage
+        , nestedBaggage = [("a", "1"), ("b", "2")]
+        , nestedBaggageBuilder = \baggage -> "b" .@ "2" <> pure baggage
         }
     it "left-biased" do
       runTest TestCase
         { initBaggage = [("a", "1")]
         , initBaggageBuilder = "a" .@ "1"
-        , nextBaggage = [("a", "42")]
-        , nextBaggageBuilder = \baggage -> "a" .@ "42" <> pure baggage
+        , nestedBaggage = [("a", "42")]
+        , nestedBaggageBuilder = \baggage -> "a" .@ "42" <> pure baggage
         }
     it "full replace" do
       runTest TestCase
         { initBaggage = [("a", "1")]
         , initBaggageBuilder = "a" .@ "1"
-        , nextBaggage = [("b", "2")]
-        , nextBaggageBuilder = \_baggage -> "b" .@ "2"
+        , nestedBaggage = [("b", "2")]
+        , nestedBaggageBuilder = \_baggage -> "b" .@ "2"
         }
 
 data TestCase = TestCase
   { initBaggage :: Baggage
   , initBaggageBuilder :: BaggageBuilder Baggage
-  , nextBaggage :: Baggage
-  , nextBaggageBuilder :: Baggage -> BaggageBuilder Baggage
+  , nestedBaggage :: Baggage
+  , nestedBaggageBuilder :: Baggage -> BaggageBuilder Baggage
   }
 
 instance IsTest TestCase where
   runTest testCase = do
-    flip runBaggageT testContextBackend do
-      --getBaggage `shouldReturnLifted` mempty
+    flip runBaggageT defaultBaggageBackend do
+      getBaggage `shouldReturnLifted` mempty
       buildBaggage initBaggageBuilder `shouldReturnLifted` initBaggage
-      setBaggage initBaggage
-      getBaggage `shouldReturnLifted` initBaggage
-      buildBaggage (nextBaggageBuilder initBaggage) `shouldReturnLifted` nextBaggage
-      setBaggage nextBaggage
-      getBaggage `shouldReturnLifted` nextBaggage
+      setBaggage initBaggage do
+        getBaggage `shouldReturnLifted` initBaggage
+        buildBaggage (nestedBaggageBuilder initBaggage)
+          `shouldReturnLifted` nestedBaggage
+        setBaggage nestedBaggage do
+          getBaggage `shouldReturnLifted` nestedBaggage
+        getBaggage `shouldReturnLifted` initBaggage
+      getBaggage `shouldReturnLifted` mempty
     where
     TestCase
       { initBaggage
       , initBaggageBuilder
-      , nextBaggage
-      , nextBaggageBuilder
+      , nestedBaggage
+      , nestedBaggageBuilder
       } = testCase
 
 class IsTest a where
   runTest :: (HasCallStack) => a -> IO ()
 
 deriving via (HashMap Text Text) instance IsList Baggage
-
-testContextBackend :: ContextBackend Baggage
-testContextBackend = unsafePerformIO $ liftIO $ unsafeNewContextBackend mempty
-{-# NOINLINE testContextBackend #-}
 
 shouldReturnLifted :: (HasCallStack, MonadIO m, Show a, Eq a) => m a -> a -> m ()
 shouldReturnLifted action expected = action >>= \x -> liftIO $ x `shouldBe` expected
