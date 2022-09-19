@@ -135,10 +135,6 @@ instance (MonadIO m, MonadMask m) => MonadTracing (TracingT m) where
 
     handler :: Tracer -> MutableSpan -> SomeException -> IO ()
     handler tracer mutableSpan someEx = do
-      -- TODO: Set status to error? Spec docs make it sound like application
-      -- authors set the status, and the API shouldn't set the status.
-      -- https://opentelemetry.io/docs/reference/specification/trace/api/#set-status
-      -- Probably would be convenient if this was a config option.
       spanUpdater <- do
         buildSpanUpdater (liftIO now) $ recordException someEx True TimestampSourceNow mempty
       liftIO $ IORef.atomicModifyIORef' ref \span ->

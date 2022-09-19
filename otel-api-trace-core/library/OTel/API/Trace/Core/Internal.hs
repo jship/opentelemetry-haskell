@@ -991,7 +991,7 @@ buildSpanUpdater getTimestamp updateSpanSpec = do
         { spanName =
             Maybe.fromMaybe (spanName span) updateSpanSpecName
         , spanStatus =
-            Maybe.fromMaybe (spanStatus span) updateSpanSpecStatus
+            Maybe.maybe (spanStatus span) (max $ spanStatus span) updateSpanSpecStatus
         , spanAttrs =
             case updateSpanSpecAttrs of
               Nothing -> spanAttrs span
@@ -1020,6 +1020,11 @@ recordException someEx escaped timestamp attributes =
         Just $ spanEventSpecsFromList
           [ exceptionEvent someEx escaped timestamp attributes
           ]
+    , updateSpanSpecStatus =
+        if not escaped then
+          updateSpanSpecStatus defaultUpdateSpanSpec
+        else
+          Just $ SpanStatusError "Exception escaped enclosing scope"
     }
 
 exceptionEvent
@@ -1201,9 +1206,22 @@ pattern Internal <- SpanKindInternal where
 
 data SpanStatus
   = SpanStatusUnset
-  | SpanStatusOk
   | SpanStatusError Text
+  | SpanStatusOk
   deriving stock (Eq, Show)
+
+instance Ord SpanStatus where
+  compare x y =
+    case (x, y) of
+      (SpanStatusUnset {}, SpanStatusUnset {}) -> EQ
+      (SpanStatusUnset {}, SpanStatusError {}) -> LT
+      (SpanStatusUnset {}, SpanStatusOk {}) -> LT
+      (SpanStatusError {}, SpanStatusUnset {}) -> GT
+      (SpanStatusError {}, SpanStatusError {}) -> EQ
+      (SpanStatusError {}, SpanStatusOk {}) -> LT
+      (SpanStatusOk {}, SpanStatusUnset {}) -> GT
+      (SpanStatusOk {}, SpanStatusError {}) -> GT
+      (SpanStatusOk {}, SpanStatusOk {}) -> EQ
 
 instance ToJSON SpanStatus where
   toJSON = \case
