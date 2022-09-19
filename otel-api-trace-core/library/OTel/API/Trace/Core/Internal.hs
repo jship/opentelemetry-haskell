@@ -28,9 +28,8 @@ module OTel.API.Trace.Core.Internal
 
   , Tracer(..)
 
-  , SpanBackend(..)
-  , defaultSpanBackend
-  , spanContextKey
+  , contextBackendSpan
+  , contextKeySpan
 
   , SpanContext(..)
   , emptySpanContext
@@ -315,23 +314,17 @@ data Tracer = Tracer
   , tracerNow :: IO Timestamp
   , tracerStartSpan :: Context -> NewSpanSpec -> IO MutableSpan
   , tracerProcessSpan :: Span Attrs -> IO ()
-  , tracerSpanBackend :: SpanBackend
   , tracerSpanAttrsLimits :: AttrsLimits 'AttrsForSpan
   , tracerSpanEventAttrsLimits :: AttrsLimits 'AttrsForSpanEvent
   , tracerSpanLinkAttrsLimits :: AttrsLimits 'AttrsForSpanLink
   }
 
-newtype SpanBackend = SpanBackend
-  { unSpanBackend :: ContextBackend MutableSpan
-  }
+contextBackendSpan :: ContextBackend MutableSpan
+contextBackendSpan = unsafePerformIO $ liftIO unsafeNewContextBackend
+{-# NOINLINE contextBackendSpan #-}
 
-defaultSpanBackend :: SpanBackend
-defaultSpanBackend =
-  unsafePerformIO $ liftIO $ fmap SpanBackend unsafeNewContextBackend
-{-# NOINLINE defaultSpanBackend #-}
-
-spanContextKey :: ContextKey MutableSpan
-spanContextKey = contextBackendValueKey $ unSpanBackend defaultSpanBackend
+contextKeySpan :: ContextKey MutableSpan
+contextKeySpan = contextBackendValueKey contextBackendSpan
 
 data SpanContext = SpanContext
   { spanContextTraceId :: TraceId

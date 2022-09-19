@@ -46,13 +46,12 @@ import OTel.API.Core
   )
 import OTel.API.Trace.Core
   ( SpanParent(..), SpanStatus(..), SpanId, SpanKind, SpanName, TraceId, TraceState, UpdateSpanSpec
-  , emptySpanContext, emptyTraceState, setSampledFlag, spanContextIsSampled, spanContextIsValid
-  , spanIdFromWords, spanIsSampled, traceIdFromWords
+  , contextKeySpan, emptySpanContext, emptyTraceState, setSampledFlag, spanContextIsSampled
+  , spanContextIsValid, spanIdFromWords, spanIsSampled, traceIdFromWords
   )
 import OTel.API.Trace.Core.Internal
   ( MutableSpan(..), NewSpanSpec(..), Span(..), SpanContext(..), SpanLink(..), SpanLinkSpec(..)
-  , SpanLinkSpecs(..), SpanLinks(..), Tracer(..), TracerProvider(..), SpanBackend, buildSpanUpdater
-  , defaultSpanBackend, freezeSpan, spanContextKey
+  , SpanLinkSpecs(..), SpanLinks(..), Tracer(..), TracerProvider(..), buildSpanUpdater, freezeSpan
   )
 import Prelude hiding (span)
 import System.Clock (Clock(Realtime), getTime, toNanoSecs)
@@ -73,7 +72,6 @@ data TracerProviderSpec = TracerProviderSpec
   , tracerProviderSpecSpanAttrsLimits :: AttrsLimits 'AttrsForSpan
   , tracerProviderSpecSpanEventAttrsLimits :: AttrsLimits 'AttrsForSpanEvent
   , tracerProviderSpecSpanLinkAttrsLimits :: AttrsLimits 'AttrsForSpanLink
-  , tracerProviderSpecContextBackend :: SpanBackend
   }
 
 defaultTracerProviderSpec :: TracerProviderSpec
@@ -89,7 +87,6 @@ defaultTracerProviderSpec =
     , tracerProviderSpecSpanAttrsLimits = defaultAttrsLimits
     , tracerProviderSpecSpanEventAttrsLimits = defaultAttrsLimits
     , tracerProviderSpecSpanLinkAttrsLimits = defaultAttrsLimits
-    , tracerProviderSpecContextBackend = defaultSpanBackend
     }
 
 withTracerProvider
@@ -149,7 +146,6 @@ newTracerProviderIO tracerProviderSpec = do
       , tracerNow = now
       , tracerStartSpan = startSpan prngRef sampler scope spanProcessor
       , tracerProcessSpan = endSpan spanProcessor
-      , tracerSpanBackend = ctxBackendSpan
       , tracerSpanAttrsLimits = spanAttrsLimits
       , tracerSpanEventAttrsLimits = spanEventAttrsLimits
       , tracerSpanLinkAttrsLimits = spanLinkAttrsLimits
@@ -230,7 +226,7 @@ newTracerProviderIO tracerProviderSpec = do
       where
       spanParentFromParentContext :: Context -> IO SpanParent
       spanParentFromParentContext context =
-        case lookupContext spanContextKey context of
+        case lookupContext contextKeySpan context of
           Nothing -> pure SpanParentRoot
           Just MutableSpan { unMutableSpan = ref } -> do
             IORef.atomicModifyIORef' ref \span ->
@@ -318,7 +314,6 @@ newTracerProviderIO tracerProviderSpec = do
     , tracerProviderSpecSpanAttrsLimits = spanAttrsLimits
     , tracerProviderSpecSpanEventAttrsLimits = spanEventAttrsLimits
     , tracerProviderSpecSpanLinkAttrsLimits = spanLinkAttrsLimits
-    , tracerProviderSpecContextBackend = ctxBackendSpan
     } = tracerProviderSpec
 
 shutdownTracerProvider :: forall m. (MonadIO m) => TracerProvider -> m ()
@@ -733,7 +728,7 @@ parentBasedSampler parentBasedSamplerSpec =
     , samplerSpecDescription = "ParentBased"
     , samplerSpecShouldSample = \samplerInput -> do
         parentSpanContext <- do
-          case lookupContext spanContextKey $ samplerInputContext samplerInput of
+          case lookupContext contextKeySpan $ samplerInputContext samplerInput of
             Nothing -> pure emptySpanContext
             Just MutableSpan { unMutableSpan = ref } -> do
               liftIO $ IORef.atomicModifyIORef' ref \span ->
@@ -775,7 +770,7 @@ constDecisionSampler samplingDecision =
   where
   shouldSample samplerInput = do
     samplingResultTraceState <- do
-      case lookupContext spanContextKey samplerInputContext of
+      case lookupContext contextKeySpan samplerInputContext of
         Nothing -> pure emptyTraceState
         Just MutableSpan { unMutableSpan = ref } -> do
           liftIO $ IORef.atomicModifyIORef' ref \span ->

@@ -3,6 +3,7 @@ module OTel.API.Trace.Core
     -- $synopsis
     module OTel.API.Trace.Core.Attributes
   , module OTel.API.Trace.Core.Class
+  , module OTel.API.Trace.Core.Context
   , module OTel.API.Trace.Core.Span
   , module OTel.API.Trace.Core.SpanContext
   , module OTel.API.Trace.Core.SpanId
@@ -14,6 +15,7 @@ module OTel.API.Trace.Core
 
 import OTel.API.Trace.Core.Attributes
 import OTel.API.Trace.Core.Class
+import OTel.API.Trace.Core.Context
 import OTel.API.Trace.Core.Span
 import OTel.API.Trace.Core.SpanContext
 import OTel.API.Trace.Core.SpanId

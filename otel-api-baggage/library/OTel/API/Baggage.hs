@@ -1,8 +1,7 @@
 module OTel.API.Baggage
   ( -- * Synopsis
     -- $synopsis
-    Internal.BaggageT
-  , Internal.runBaggageT
+    Internal.BaggageT(..)
   , Internal.mapBaggageT
 
   , Internal.BaggageBackend
