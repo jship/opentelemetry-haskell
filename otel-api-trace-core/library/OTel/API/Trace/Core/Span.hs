@@ -16,6 +16,8 @@ module OTel.API.Trace.Core.Span
   , Internal.spanInstrumentationScope
   , Internal.spanIsRemote
   , Internal.spanIsSampled
+  , Internal.spanIsRoot
+  , Internal.spanIsChildOf
 
   , Internal.SpanName(..)
   , Internal.SpanParent(..)

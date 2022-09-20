@@ -58,6 +58,7 @@ tests:
     dependencies:
     - HUnit
     - base
+    - containers
     - hspec
     - monad-logger-aeson
     - otel-api-common

@@ -10,25 +10,30 @@ module Test.OTel.SDK.TraceSpec
   ( spec
   ) where
 
-import Control.Monad.Logger.Aeson
 import Control.Concurrent.STM
 import Control.Concurrent.STM.TMQueue
 import Control.Monad.IO.Class (MonadIO(liftIO))
+import Control.Monad.Logger.Aeson
+import Control.Monad.Trans.State (State)
+import Data.List.NonEmpty (NonEmpty(..))
+import Data.Traversable (for)
+import Data.Tree
+import Data.Word (Word64)
 import OTel.API.Common
 import OTel.API.Trace
 import OTel.API.Trace.Core.Internal
 import OTel.SDK.Trace.Internal
 import Prelude hiding (span)
-import Test.Hspec (Spec, describe, it)
-import Test.Hspec (HasCallStack) -- @hspec@
-import qualified Test.Hspec as Hspec -- @hspec@
 import System.IO (stdout)
-import Data.Word (Word64)
-import Data.Foldable (for_)
+import Test.HUnit (assertFailure)
+import Test.Hspec (HasCallStack, Spec, describe, it)
+import qualified Control.Monad.Trans.State as State
+import qualified Data.List as List
+import qualified Data.List.NonEmpty as NonEmpty
+import qualified Test.Hspec as Hspec
 
 --import Control.Exception (PatternMatchFail(..), evaluate) -- @base@
 --import Control.Exception.Safe (catch) -- @safe-exceptions@
---import Test.HUnit (assertFailure) -- @HUnit@
 
 spec :: Spec
 spec = do
@@ -41,7 +46,7 @@ spec = do
               trace_ "1" do
                 pure ()
         , expectedSpans =
-            [ Span
+            [ pure Span
                 { spanParent = SpanParentRoot
                 , spanContext =
                     emptySpanContext
@@ -63,89 +68,69 @@ spec = do
             ]
         }
 
-    it "multiple spans" do
+    it "couple spans" do
       runTest TestCase
         { action = \tracerProvider -> do
             tracer <- getTracer tracerProvider "testTracer"
             traced tracer defaultSpanBackend do
               trace_ "1" do
                 trace_ "1.1" do
-                  trace_ "1.1.1" do
-                    pure ()
+                  pure ()
         , expectedSpans =
-            [ Span
-                { spanParent = SpanParentRoot
-                , spanContext =
-                    emptySpanContext
-                      { spanContextTraceId = traceIdFromWords 0 0
-                      , spanContextSpanId = spanIdFromWords 0
-                      , spanContextTraceFlags = traceFlagsSampled
+            [ Node
+                { rootLabel =
+                    Span
+                      { spanParent = SpanParentRoot
+                      , spanContext =
+                          emptySpanContext
+                            { spanContextTraceId = traceIdFromWords 0 0
+                            , spanContextSpanId = spanIdFromWords 0
+                            , spanContextTraceFlags = traceFlagsSampled
+                            }
+                      , spanName = "1"
+                      , spanStatus = SpanStatusUnset
+                      , spanStart = timestampFromNanoseconds 0
+                      , spanFrozenAt = timestampFromNanoseconds 3
+                      , spanKind = SpanKindInternal
+                      , spanAttrs = emptyAttrs
+                      , spanLinks = mempty
+                      , spanEvents = mempty
+                      , spanIsRecording = True
+                      , spanInstrumentationScope = "testTracer"
                       }
-                , spanName = "1"
-                , spanStatus = SpanStatusUnset
-                , spanStart = timestampFromNanoseconds 0
-                , spanFrozenAt = timestampFromNanoseconds 5
-                , spanKind = SpanKindInternal
-                , spanAttrs = emptyAttrs
-                , spanLinks = mempty
-                , spanEvents = mempty
-                , spanIsRecording = True
-                , spanInstrumentationScope = "testTracer"
-                }
-            , Span
-                { spanParent =
-                    SpanParentChildOf emptySpanContext
-                      { spanContextTraceId = traceIdFromWords 0 0
-                      , spanContextSpanId = spanIdFromWords 0
-                      , spanContextTraceFlags = traceFlagsSampled
-                      }
-                , spanContext =
-                    emptySpanContext
-                      { spanContextTraceId = traceIdFromWords 0 0
-                      , spanContextSpanId = spanIdFromWords 1
-                      , spanContextTraceFlags = traceFlagsSampled
-                      }
-                , spanName = "1.1"
-                , spanStatus = SpanStatusUnset
-                , spanStart = timestampFromNanoseconds 1
-                , spanFrozenAt = timestampFromNanoseconds 4
-                , spanKind = SpanKindInternal
-                , spanAttrs = emptyAttrs
-                , spanLinks = mempty
-                , spanEvents = mempty
-                , spanIsRecording = True
-                , spanInstrumentationScope = "testTracer"
-                }
-            , Span
-                { spanParent =
-                    SpanParentChildOf emptySpanContext
-                      { spanContextTraceId = traceIdFromWords 0 0
-                      , spanContextSpanId = spanIdFromWords 1
-                      , spanContextTraceFlags = traceFlagsSampled
-                      }
-                , spanContext =
-                    emptySpanContext
-                      { spanContextTraceId = traceIdFromWords 0 0
-                      , spanContextSpanId = spanIdFromWords 2
-                      , spanContextTraceFlags = traceFlagsSampled
-                      }
-                , spanName = "1.1.1"
-                , spanStatus = SpanStatusUnset
-                , spanStart = timestampFromNanoseconds 2
-                , spanFrozenAt = timestampFromNanoseconds 3
-                , spanKind = SpanKindInternal
-                , spanAttrs = emptyAttrs
-                , spanLinks = mempty
-                , spanEvents = mempty
-                , spanIsRecording = True
-                , spanInstrumentationScope = "testTracer"
+                , subForest =
+                    [ pure Span
+                        { spanParent =
+                            SpanParentChildOf emptySpanContext
+                              { spanContextTraceId = traceIdFromWords 0 0
+                              , spanContextSpanId = spanIdFromWords 0
+                              , spanContextTraceFlags = traceFlagsSampled
+                              }
+                        , spanContext =
+                            emptySpanContext
+                              { spanContextTraceId = traceIdFromWords 0 0
+                              , spanContextSpanId = spanIdFromWords 1
+                              , spanContextTraceFlags = traceFlagsSampled
+                              }
+                        , spanName = "1.1"
+                        , spanStatus = SpanStatusUnset
+                        , spanStart = timestampFromNanoseconds 1
+                        , spanFrozenAt = timestampFromNanoseconds 2
+                        , spanKind = SpanKindInternal
+                        , spanAttrs = emptyAttrs
+                        , spanLinks = mempty
+                        , spanEvents = mempty
+                        , spanIsRecording = True
+                        , spanInstrumentationScope = "testTracer"
+                        }
+                    ]
                 }
             ]
         }
 
 data TestCase = TestCase
   { action :: TracerProvider -> IO ()
-  , expectedSpans :: [Span Attrs]
+  , expectedSpans :: Forest (Span Attrs)
   }
 
 instance IsTest TestCase where
@@ -155,9 +140,16 @@ instance IsTest TestCase where
     spanIdRef <- newTVarIO 0
     spanQueue <- newTMQueueIO
     withTracerProviderIO (testTracerProviderSpec nanosRef traceIdRef spanIdRef spanQueue) action
-    for_ (reverse expectedSpans) \expectedSpan -> do
-      atomically (readTMQueue spanQueue) `shouldReturn` Just expectedSpan
+    spans <- drainQueue spanQueue
+    buildSpanForest spans `shouldReturn` expectedSpans
     where
+    drainQueue spanQueue = go []
+      where
+      go spans = do
+        atomically (readTMQueue spanQueue) >>= \case
+          Nothing -> pure spans
+          Just span -> go $ span : spans
+
     TestCase { action, expectedSpans } = testCase
 
 testTracerProviderSpec
@@ -237,3 +229,45 @@ shouldBe x expected = liftIO $ x `Hspec.shouldBe` expected
 --    evaluate (matcher x) `catch` \case
 --      PatternMatchFail err -> do
 --        assertFailure $ "Pattern did not match: " <> err
+
+buildSpanForest
+  :: [Span Attrs]
+  -> IO (Forest (Span Attrs))
+buildSpanForest = forestFromLabels spanIsRoot spanIsChildOf
+
+forestFromLabels
+  :: forall a
+   . (Show a)
+  => (a -> Bool)
+  -> (a -> a -> Bool)
+  -> [a]
+  -> IO (Forest a)
+forestFromLabels isRoot isChildOf labels =
+  case List.partition isRoot labels of
+    ([], []) -> pure []
+    ([], _children) -> assertFailure $ "No roots found amongst labels: " <> show labels
+    (roots, children) ->
+      case forestWithOrphans of
+        (forest, (orphan : orphans)) ->
+          assertFailure $
+            "Found orphans: forest=" <> show forest
+              <> ", orphans=" <> show (orphan :| orphans)
+        (forest, []) ->
+          pure $ NonEmpty.toList forest
+      where
+      forestWithOrphans :: (NonEmpty (Tree a), [a])
+      forestWithOrphans = do
+        flip State.runState children do
+          for (NonEmpty.fromList roots) \rootLabel -> do
+            unfoldTreeM parentChildrenPair rootLabel
+
+      parentChildrenPair :: a -> State [a] (a, [a])
+      parentChildrenPair parent = do
+        (cs, rest) <- fmap partitionChildren State.get
+        State.put rest
+        pure (parent, cs)
+        where
+        partitionChildren :: [a] -> ([a], [a])
+        partitionChildren =
+          List.partition \possibleChild ->
+            possibleChild `isChildOf` parent

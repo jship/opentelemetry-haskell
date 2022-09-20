@@ -117,6 +117,8 @@ module OTel.API.Trace.Core.Internal
   , Span(..)
   , spanIsRemote
   , spanIsSampled
+  , spanIsRoot
+  , spanIsChildOf
   , SpanFrozenAt
   , freezeSpan
   , SpanParent(.., Root, ChildOf)
@@ -1135,6 +1137,13 @@ spanIsSampled span = spanContextIsSampled spanContext
   where
   Span { spanContext } = span
 
+spanIsRoot :: Span attrs -> Bool
+spanIsRoot span = SpanParentRoot == spanParent span
+
+spanIsChildOf :: Span attrs -> Span attrs -> Bool
+spanIsChildOf childSpan parentSpan =
+  SpanParentChildOf (spanContext parentSpan) == spanParent childSpan
+
 type family SpanFrozenAt (attrs :: AttrsFor -> Type) :: Type where
   SpanFrozenAt AttrsBuilder = Maybe Timestamp
   SpanFrozenAt Attrs = Timestamp
@@ -1157,6 +1166,9 @@ freezeSpan defaultSpanFrozenAt spanLinkAttrsLimits spanEventAttrsLimits spanAttr
         freezeAllSpanEventAttrs spanEventAttrsLimits $ spanEvents span
     }
 
+-- TODO: Rename back to SpanLineage? The 'SpanParentChildOf' is confusingly
+-- named, even though it's just that way because of consistency (the SpanParent
+-- prefix).
 data SpanParent
   = SpanParentRoot
   | SpanParentChildOf SpanContext
