@@ -32,13 +32,12 @@ import Control.Monad.Logger.Aeson
   , MonadLogger, SeriesElem, logError
   )
 import Control.Monad.Reader (ReaderT(..))
-import Data.Aeson (object)
-import Data.Functor.Identity (Identity(..))
+import Data.Aeson (ToJSON, object)
+import Data.DList (DList)
 import Data.Kind (Type)
 import Data.Maybe (fromMaybe)
 import Data.Monoid (Ap(..))
 import Data.Text (Text)
-import Data.Vector (Vector)
 import OTel.API.Common
   ( AttrsFor(..), TimestampSource(..), Attrs, AttrsBuilder, AttrsLimits, InstrumentationScope
   , Timestamp, defaultAttrsLimits, timestampFromNanoseconds
@@ -60,7 +59,7 @@ import System.IO.Unsafe (unsafePerformIO)
 import System.Random.MWC (Variate(..), GenIO, Seed, createSystemSeed, fromSeed, initialize, uniform)
 import System.Timeout (timeout)
 import qualified Control.Exception.Safe as Exception
-import qualified Data.Vector as Vector
+import qualified Data.DList as DList
 
 data TracerProviderSpec = TracerProviderSpec
   { tracerProviderSpecNow :: IO Timestamp
@@ -357,10 +356,11 @@ buildSpanProcessor
   -> SpanProcessorSpec
   -> m SpanProcessor
 buildSpanProcessor logger spanProcessorSpec = do
+  spanExporter <- buildSpanExporter logger spanProcessorSpecExporter
   shutdownRef <- liftIO $ newTVarIO False
-  pure $ spanProcessor shutdownRef
+  pure $ spanProcessor shutdownRef spanExporter
   where
-  spanProcessor shutdownRef =
+  spanProcessor shutdownRef spanExporter =
     SpanProcessor
       { spanProcessorOnSpanStart = \mParentSpanContext spanUpdater -> do
           unlessSTM (readTVar shutdownRef) do
@@ -385,9 +385,9 @@ buildSpanProcessor logger spanProcessorSpec = do
               run forceFlushTimeout metaForceFlush do
                 spanProcessorSpecForceFlush
       }
-
-  run :: Int -> [SeriesElem] -> SpanProcessorM () -> IO ()
-  run = runSpanProcessorM logger onTimeout onEx
+    where
+    run :: Int -> [SeriesElem] -> SpanProcessorM () -> IO ()
+    run = runSpanProcessorM spanExporter logger onTimeout onEx
 
   defaultTimeout :: Int
   defaultTimeout = 5_000_000
@@ -407,6 +407,7 @@ buildSpanProcessor logger spanProcessorSpec = do
 
   SpanProcessorSpec
     { spanProcessorSpecName
+    , spanProcessorSpecExporter
     , spanProcessorSpecOnSpanStart
     , spanProcessorSpecOnSpanEnd
     , spanProcessorSpecShutdown
@@ -419,23 +420,23 @@ buildSpanProcessor logger spanProcessorSpec = do
 
 data SimpleSpanProcessorSpec = SimpleSpanProcessorSpec
   { simpleSpanProcessorSpecName :: Text
-  , simpleSpanProcessorSpecExporter :: SpanExporter Identity
-  , simpleSpanProcessorSpecOnSpansExported :: OnSpansExported Identity ()
+  , simpleSpanProcessorSpecExporter :: SpanExporterSpec
+  , simpleSpanProcessorSpecOnSpansExported :: OnSpansExported ()
   }
 
 defaultSimpleSpanProcessorSpec :: SimpleSpanProcessorSpec
 defaultSimpleSpanProcessorSpec =
   SimpleSpanProcessorSpec
-    { simpleSpanProcessorSpecExporter = noopSpanExporter
+    { simpleSpanProcessorSpecExporter = defaultSpanExporterSpec
     , simpleSpanProcessorSpecName = "simple"
     , simpleSpanProcessorSpecOnSpansExported = do
         askSpansExportedResult >>= \case
           SpanExportResultSuccess -> pure ()
           SpanExportResultFailure -> do
-            span <- askSpansExported
+            spans <- askSpansExported
             pairs <- askSpansExportedMetadata
-            logError $ "Exporter failed to export span" :#
-              "span" .= span : pairs
+            logError $ "Exporter failed to export spans" :#
+              "spans" .= spans : pairs
     }
 
 simpleSpanProcessor :: SimpleSpanProcessorSpec -> SpanProcessorSpec
@@ -444,15 +445,15 @@ simpleSpanProcessor simpleSpanProcessorSpec = spanProcessorSpec
   spanProcessorSpec =
     defaultSpanProcessorSpec
       { spanProcessorSpecName = name
+      , spanProcessorSpecExporter = spanExporterSpec
       , spanProcessorSpecOnSpanEnd = \span -> do
           when (spanIsSampled span) do
-            let idSpan = Identity { runIdentity = span }
+            let batch = singletonBatch span
             logger <- askLoggerIO
-            liftIO $ spanExporterExport spanExporter idSpan \spanExportResult -> do
+            spanExporter <- askSpanExporter
+            liftIO $ spanExporterExport spanExporter batch \spanExportResult -> do
               flip runLoggingT logger do
-                runOnSpansExported onSpansExported idSpan spanExportResult metaOnSpanEnd
-      , spanProcessorSpecShutdown = liftIO $ spanExporterShutdown spanExporter
-      , spanProcessorSpecForceFlush = liftIO $ spanExporterForceFlush spanExporter
+                runOnSpansExported onSpansExported batch spanExportResult metaOnSpanEnd
       }
 
   metaOnSpanEnd :: [SeriesElem]
@@ -468,12 +469,13 @@ simpleSpanProcessor simpleSpanProcessorSpec = spanProcessorSpec
 
   SimpleSpanProcessorSpec
     { simpleSpanProcessorSpecName = name
-    , simpleSpanProcessorSpecExporter = spanExporter
+    , simpleSpanProcessorSpecExporter = spanExporterSpec
     , simpleSpanProcessorSpecOnSpansExported = onSpansExported
     } = simpleSpanProcessorSpec
 
 data SpanProcessorSpec = SpanProcessorSpec
   { spanProcessorSpecName :: Text
+  , spanProcessorSpecExporter :: SpanExporterSpec
   , spanProcessorSpecOnSpanStart
       :: Context -- Parent context
       -> (UpdateSpanSpec -> SpanProcessorM (Span Attrs))
@@ -491,11 +493,16 @@ defaultSpanProcessorSpec :: SpanProcessorSpec
 defaultSpanProcessorSpec =
   SpanProcessorSpec
     { spanProcessorSpecName = "default"
+    , spanProcessorSpecExporter = defaultSpanExporterSpec
     , spanProcessorSpecOnSpanStart = mempty
     , spanProcessorSpecOnSpanEnd = mempty
-    , spanProcessorSpecShutdown = mempty
+    , spanProcessorSpecShutdown = do
+        spanExporter <- askSpanExporter
+        liftIO $ spanExporterShutdown spanExporter
     , spanProcessorSpecShutdownTimeout = 30_000_000
-    , spanProcessorSpecForceFlush = mempty
+    , spanProcessorSpecForceFlush = do
+        spanExporter <- askSpanExporter
+        liftIO $ spanExporterForceFlush spanExporter
     , spanProcessorSpecForceFlushTimeout = 30_000_000
     , spanProcessorSpecOnTimeout = do
         timeoutMicros <- askTimeoutMicros
@@ -513,36 +520,21 @@ data SpanExportResult
   = SpanExportResultSuccess
   | SpanExportResultFailure
 
-data SpanExporter (f :: Type -> Type) = SpanExporter
+data SpanExporter = SpanExporter
   { spanExporterExport
-      :: f (Span Attrs)
+      :: Batch (Span Attrs)
       -> (SpanExportResult -> IO ())
       -> IO ()
   , spanExporterShutdown :: IO ()
   , spanExporterForceFlush :: IO ()
   }
 
-noopSpanExporter :: SpanExporter f
-noopSpanExporter =
-  SpanExporter
-    { spanExporterExport = mempty
-    , spanExporterShutdown = mempty
-    , spanExporterForceFlush = mempty
-    }
-
-toSingletonSpanExporter :: SpanExporter Batch -> SpanExporter Identity
-toSingletonSpanExporter spanExporter =
-  spanExporter
-    { spanExporterExport = \Identity { runIdentity = span } onSpansExported -> do
-        spanExporterExport spanExporter (singletonBatch span) onSpansExported
-    }
-
 buildSpanExporter
-  :: forall m f
+  :: forall m
    . (MonadIO m)
   => (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
-  -> SpanExporterSpec f
-  -> m (SpanExporter f)
+  -> SpanExporterSpec
+  -> m SpanExporter
 buildSpanExporter logger spanExporterSpec = do
   shutdownRef <- liftIO $ newTVarIO False
   pure $ spanExporter shutdownRef
@@ -594,10 +586,10 @@ buildSpanExporter logger spanExporterSpec = do
     , spanExporterSpecOnException = onEx
     } = spanExporterSpec
 
-data SpanExporterSpec (f :: Type -> Type) = SpanExporterSpec
+data SpanExporterSpec = SpanExporterSpec
   { spanExporterSpecName :: Text
   , spanExporterSpecExport
-      :: f (Span Attrs)
+      :: Batch (Span Attrs)
       -> (SpanExportResult -> SpanExporterM ())
       -> SpanExporterM ()
   , spanExporterSpecShutdown :: SpanExporterM ()
@@ -608,7 +600,7 @@ data SpanExporterSpec (f :: Type -> Type) = SpanExporterSpec
   , spanExporterSpecOnException :: OnException ()
   }
 
-defaultSpanExporterSpec :: SpanExporterSpec f
+defaultSpanExporterSpec :: SpanExporterSpec
 defaultSpanExporterSpec =
   SpanExporterSpec
     { spanExporterSpecName = "default"
@@ -785,12 +777,6 @@ constDecisionSampler samplingDecision =
       SamplingDecisionRecordOnly -> "RECORD_ONLY"
       SamplingDecisionRecordAndSample -> "RECORD_AND_SAMPLE"
 
--- Context with parent Span. The Span’s SpanContext may be invalid to indicate a root span.
--- TraceId of the Span to be created. If the parent SpanContext contains a valid TraceId, they MUST always match.
--- Name of the Span to be created.
--- SpanKind of the Span to be created.
--- Initial set of Attributes of the Span to be created.
--- Collection of links that will be associated with the Span to be created. Typically useful for batch operations, see Links Between Spans.
 data SamplerInput = SamplerInput
   { samplerInputContext :: Context
   , samplerInputTraceId :: TraceId
@@ -835,30 +821,34 @@ pattern RecordAndSample <- SamplingDecisionRecordAndSample where
 
 type SpanProcessorM :: Type -> Type
 newtype SpanProcessorM a = SpanProcessorM
-  { unSpanProcessorM :: LoggingT IO a
+  { unSpanProcessorM :: SpanExporter -> LoggingT IO a
   } deriving
       ( Applicative, Functor, Monad, MonadIO -- @base@
       , MonadCatch, MonadMask, MonadThrow -- @exceptions@
       , MonadUnliftIO -- @unliftio-core@
       , MonadLogger, MonadLoggerIO -- @monad-logger@
-      ) via (LoggingT IO)
+      ) via (ReaderT SpanExporter (LoggingT IO))
     deriving
       ( Semigroup, Monoid -- @base@
-      ) via (Ap (LoggingT IO) a)
+      ) via (Ap (ReaderT SpanExporter (LoggingT IO)) a)
+
+askSpanExporter :: SpanProcessorM SpanExporter
+askSpanExporter = SpanProcessorM pure
 
 runSpanProcessorM
-  :: (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
+  :: SpanExporter
+  -> (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
   -> OnTimeout a
   -> OnException a
   -> Int
   -> [SeriesElem]
   -> SpanProcessorM a
   -> IO a
-runSpanProcessorM logger onTimeout onEx timeoutMicros pairs action = do
+runSpanProcessorM spanExporter logger onTimeout onEx timeoutMicros pairs action = do
   flip runLoggingT logger do
     mResult <- withRunInIO \runInIO -> do
       timeout timeoutMicros $ runInIO do
-        unSpanProcessorM action `catchAny` \someEx -> do
+        unSpanProcessorM action spanExporter `catchAny` \someEx -> do
           runOnException onEx someEx pairs
     case mResult of
       Just x -> pure x
@@ -1003,40 +993,41 @@ askTimeoutMicros = OnTimeout \timeoutMicros _pairs -> pure timeoutMicros
 askTimeoutMetadata :: OnTimeout [SeriesElem]
 askTimeoutMetadata = OnTimeout \_timeoutMicros pairs -> pure pairs
 
-newtype OnSpansExported f a = OnSpansExported
-  { runOnSpansExported :: f (Span Attrs) -> SpanExportResult -> [SeriesElem] -> LoggingT IO a
+newtype OnSpansExported a = OnSpansExported
+  { runOnSpansExported :: Batch (Span Attrs) -> SpanExportResult -> [SeriesElem] -> LoggingT IO a
   } deriving
       ( Applicative, Functor, Monad, MonadIO -- @base@
       , MonadCatch, MonadMask, MonadThrow -- @exceptions@
       , MonadUnliftIO -- @unliftio-core@
       , MonadLogger, MonadLoggerIO -- @monad-logger@
-      ) via (ReaderT (f (Span Attrs)) (ReaderT SpanExportResult (ReaderT [SeriesElem] (LoggingT IO))))
+      ) via (ReaderT (Batch (Span Attrs)) (ReaderT SpanExportResult (ReaderT [SeriesElem] (LoggingT IO))))
     deriving
       ( Semigroup, Monoid -- @base@
-      ) via (Ap (ReaderT (f (Span Attrs)) (ReaderT SpanExportResult (ReaderT [SeriesElem] (LoggingT IO)))) a)
+      ) via (Ap (ReaderT (Batch (Span Attrs)) (ReaderT SpanExportResult (ReaderT [SeriesElem] (LoggingT IO)))) a)
 
-askSpansExported :: OnSpansExported f (f (Span Attrs))
+askSpansExported :: OnSpansExported (Batch (Span Attrs))
 askSpansExported = OnSpansExported \spans _spanExportResult _pairs -> pure spans
 
-askSpansExportedResult :: OnSpansExported f SpanExportResult
+askSpansExportedResult :: OnSpansExported SpanExportResult
 askSpansExportedResult = OnSpansExported \_spans spanExportResult _pairs -> pure spanExportResult
 
-askSpansExportedMetadata :: OnSpansExported f [SeriesElem]
+askSpansExportedMetadata :: OnSpansExported [SeriesElem]
 askSpansExportedMetadata = OnSpansExported \_spans _spanExportResult pairs -> pure pairs
 
 newtype Batch a = Batch
-  { unBatch :: Vector a
-  } deriving (Eq, Monoid, Semigroup, Show) via (Vector a)
-    deriving (Foldable, Functor, Applicative, Monad) via Vector
+  { unBatch :: DList a
+  } deriving stock (Eq, Show)
+    deriving (Monoid, Semigroup, ToJSON) via (DList a)
+    deriving (Foldable, Functor, Applicative, Monad) via DList
 
 instance Traversable Batch where
   traverse f (Batch xs) = fmap Batch $ traverse f xs
 
 singletonBatch :: a -> Batch a
-singletonBatch = Batch . Vector.singleton
+singletonBatch = Batch . DList.singleton
 
 fromListBatch :: [a] -> Batch a
-fromListBatch = Batch . Vector.fromList
+fromListBatch = Batch . DList.fromList
 
 unlessSTM :: (Monoid a) => STM Bool -> STM (IO a) -> IO a
 unlessSTM isShutdownSTM actionSTM =
