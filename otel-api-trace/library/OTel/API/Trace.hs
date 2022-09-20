@@ -1,7 +1,9 @@
 module OTel.API.Trace
   ( -- * Synopsis
     -- $synopsis
-    Internal.TracingT(..)
+    Internal.traced
+
+  , Internal.TracingT(..)
   , Internal.mapTracingT
 
   , Internal.SpanBackend

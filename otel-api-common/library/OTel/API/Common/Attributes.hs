@@ -1,5 +1,6 @@
 module OTel.API.Common.Attributes
   ( Attrs
+  , emptyAttrs
   , nullAttrs
   , sizeAttrs
   , memberAttrs

@@ -39,6 +39,7 @@ module OTel.API.Common.Internal
 
     -- * Attributes
   , Attrs(..)
+  , emptyAttrs
   , nullAttrs
   , sizeAttrs
   , memberAttrs
@@ -150,7 +151,7 @@ data InstrumentationScope = InstrumentationScope
   { instrumentationScopeName :: InstrumentationScopeName
   , instrumentationScopeVersion :: Maybe Version
   , instrumentationScopeSchemaURL :: Maybe SchemaURL
-  }
+  } deriving stock (Eq, Show)
 
 instance ToJSON InstrumentationScope where
   toJSON instrumentationScope =
@@ -220,6 +221,13 @@ instance ToJSON (Attrs af) where
       ]
     where
     Attrs { attrsMap, attrsDropped } = attrs
+
+emptyAttrs :: Attrs af
+emptyAttrs =
+  Attrs
+    { attrsMap = mempty
+    , attrsDropped = 0
+    }
 
 nullAttrs :: Attrs af -> Bool
 nullAttrs = HashMap.null . attrsMap

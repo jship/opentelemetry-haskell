@@ -21,6 +21,7 @@ module OTel.SDK.Trace.Internal
 import Control.Applicative (Applicative(..))
 import Control.Concurrent (MVar, newMVar, withMVar)
 import Control.Concurrent.STM (STM, atomically, newTVarIO, readTVar, writeTVar)
+import Control.Concurrent.STM.TMQueue
 import Control.Exception.Safe
   ( Exception(..), SomeException(..), MonadCatch, MonadMask, MonadThrow, catchAny
   )
@@ -34,6 +35,7 @@ import Control.Monad.Logger.Aeson
 import Control.Monad.Reader (ReaderT(..))
 import Data.Aeson (ToJSON, object)
 import Data.DList (DList)
+import Data.Foldable
 import Data.Kind (Type)
 import Data.Maybe (fromMaybe)
 import Data.Monoid (Ap(..))
@@ -45,8 +47,9 @@ import OTel.API.Common
 import OTel.API.Context.Core (Context, lookupContext)
 import OTel.API.Trace.Core
   ( SpanParent(..), SpanStatus(..), MutableSpan, SpanId, SpanKind, SpanName, TraceId, TraceState
-  , UpdateSpanSpec, contextKeySpan, emptySpanContext, emptyTraceState, spanContextIsSampled
-  , spanContextIsValid, spanIdFromWords, spanIsSampled, traceFlagsSampled, traceIdFromWords
+  , UpdateSpanSpec, contextKeySpan, emptySpanContext, emptyTraceState, shutdownTracerProvider
+  , spanContextIsSampled, spanContextIsValid, spanIdFromWords, spanIsSampled, traceFlagsSampled
+  , traceIdFromWords
   )
 import OTel.API.Trace.Core.Internal
   ( NewSpanSpec(..), Span(..), SpanContext(..), SpanLink(..), SpanLinkSpec(..), SpanLinkSpecs(..)
@@ -310,12 +313,6 @@ newTracerProviderIO tracerProviderSpec = do
     , tracerProviderSpecSpanEventAttrsLimits = spanEventAttrsLimits
     , tracerProviderSpecSpanLinkAttrsLimits = spanLinkAttrsLimits
     } = tracerProviderSpec
-
-shutdownTracerProvider :: forall m. (MonadIO m) => TracerProvider -> m ()
-shutdownTracerProvider = liftIO . tracerProviderShutdown
-
-forceFlushTracerProvider :: forall m. (MonadIO m) => TracerProvider -> m ()
-forceFlushTracerProvider = liftIO . tracerProviderForceFlush
 
 data SpanProcessor = SpanProcessor
   { spanProcessorOnSpanStart
@@ -585,6 +582,20 @@ buildSpanExporter logger spanExporterSpec = do
     , spanExporterSpecOnTimeout = onTimeout
     , spanExporterSpecOnException = onEx
     } = spanExporterSpec
+
+stmSpanExporter :: TMQueue (Span Attrs) -> SpanExporterSpec
+stmSpanExporter queue = spanExporterSpec
+  where
+  spanExporterSpec =
+    defaultSpanExporterSpec
+      { spanExporterSpecName = "stm"
+      , spanExporterSpecExport = \spans onSpansExported -> do
+          join $ liftIO $ atomically do
+            traverse_ (writeTMQueue queue) spans
+            pure $ onSpansExported SpanExportResultSuccess
+      , spanExporterSpecShutdown = do
+          liftIO $ atomically $ closeTMQueue queue
+      }
 
 data SpanExporterSpec = SpanExporterSpec
   { spanExporterSpecName :: Text
@@ -1031,7 +1042,7 @@ fromListBatch = Batch . DList.fromList
 
 unlessSTM :: (Monoid a) => STM Bool -> STM (IO a) -> IO a
 unlessSTM isShutdownSTM actionSTM =
-  join $ liftIO $ atomically $ isShutdownSTM >>= \case
+  join $ atomically $ isShutdownSTM >>= \case
     True -> pure mempty
     False -> actionSTM
 

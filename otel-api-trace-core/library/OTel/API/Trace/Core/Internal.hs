@@ -24,6 +24,8 @@ module OTel.API.Trace.Core.Internal
 
   , TracerProvider(..)
   , getTracer
+  , shutdownTracerProvider
+  , forceFlushTracerProvider
 
   , Tracer(..)
 
@@ -297,6 +299,12 @@ getTracer
   -> InstrumentationScope
   -> m Tracer
 getTracer tracerProvider = liftIO . tracerProviderGetTracer tracerProvider
+
+shutdownTracerProvider :: forall m. (MonadIO m) => TracerProvider -> m ()
+shutdownTracerProvider = liftIO . tracerProviderShutdown
+
+forceFlushTracerProvider :: forall m. (MonadIO m) => TracerProvider -> m ()
+forceFlushTracerProvider = liftIO . tracerProviderForceFlush
 
 data Tracer = Tracer
   { tracerInstrumentationScope :: InstrumentationScope
@@ -1076,15 +1084,8 @@ data Span (attrs :: AttrsFor -> Type) = Span
   , spanInstrumentationScope :: InstrumentationScope
   }
 
-spanIsRemote :: Span attrs -> Bool
-spanIsRemote span = spanContextIsRemote spanContext
-  where
-  Span { spanContext } = span
-
-spanIsSampled :: Span attrs -> Bool
-spanIsSampled span = spanContextIsSampled spanContext
-  where
-  Span { spanContext } = span
+deriving stock instance Eq (Span Attrs)
+deriving stock instance Show (Span Attrs)
 
 instance ToJSON (Span Attrs) where
   toJSON span =
@@ -1117,6 +1118,16 @@ instance ToJSON (Span Attrs) where
       , spanIsRecording
       , spanInstrumentationScope
       } = span
+
+spanIsRemote :: Span attrs -> Bool
+spanIsRemote span = spanContextIsRemote spanContext
+  where
+  Span { spanContext } = span
+
+spanIsSampled :: Span attrs -> Bool
+spanIsSampled span = spanContextIsSampled spanContext
+  where
+  Span { spanContext } = span
 
 type family SpanFrozenAt (attrs :: AttrsFor -> Type) :: Type where
   SpanFrozenAt AttrsBuilder = Maybe Timestamp

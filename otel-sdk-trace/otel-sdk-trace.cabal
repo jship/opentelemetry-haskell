@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.4.
+-- This file has been generated from package.yaml by hpack version 0.34.6.
 --
 -- see: https://github.com/sol/hpack
 
@@ -49,7 +49,36 @@ library
     , otel-api-trace-core
     , safe-exceptions
     , stm
+    , stm-chans
     , text
     , unliftio-core
     , vector
+  default-language: Haskell2010
+
+test-suite otel-sdk-trace-test-suite
+  type: exitcode-stdio-1.0
+  main-is: Driver.hs
+  other-modules:
+      Test.OTel.SDK.TraceSpec
+  hs-source-dirs:
+      test-suite
+  default-extensions:
+      NoImplicitPrelude
+  ghc-options: -Wall -fwarn-tabs -Wincomplete-uni-patterns -Wredundant-constraints
+  build-tool-depends:
+      hspec-discover:hspec-discover
+  build-depends:
+      HUnit
+    , base
+    , hspec
+    , otel-api-common
+    , otel-api-trace
+    , otel-api-trace-core
+    , otel-sdk-trace
+    , safe-exceptions
+    , stm
+    , stm-chans
+    , text
+    , transformers
+    , unliftio-core
   default-language: Haskell2010

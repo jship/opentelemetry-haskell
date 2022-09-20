@@ -40,6 +40,7 @@ library:
   - otel-api-trace-core
   - safe-exceptions
   - stm
+  - stm-chans
   - text
   - unliftio-core
   - vector
@@ -47,3 +48,27 @@ library:
   when:
   - condition: false
     other-modules: Paths_otel_sdk_trace
+
+tests:
+  otel-sdk-trace-test-suite:
+    source-dirs: test-suite
+    main: Driver.hs
+    build-tools:
+    - hspec-discover
+    dependencies:
+    - HUnit
+    - base
+    - hspec
+    - otel-api-common
+    - otel-api-trace
+    - otel-api-trace-core
+    - otel-sdk-trace
+    - safe-exceptions
+    - stm
+    - stm-chans
+    - text
+    - transformers
+    - unliftio-core
+    when:
+    - condition: false
+      other-modules: Paths_otel_sdk_trace
