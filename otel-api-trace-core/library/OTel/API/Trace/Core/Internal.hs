@@ -309,7 +309,7 @@ forceFlushTracerProvider = liftIO . tracerProviderForceFlush
 data Tracer = Tracer
   { tracerInstrumentationScope :: InstrumentationScope
   , tracerNow :: IO Timestamp
-  , tracerStartSpan :: Context -> NewSpanSpec -> IO MutableSpan
+  , tracerStartSpan :: CallStack -> Context -> NewSpanSpec -> IO MutableSpan
   , tracerProcessSpan :: Span Attrs -> IO ()
   , tracerSpanAttrsLimits :: AttrsLimits 'AttrsForSpan
   , tracerSpanEventAttrsLimits :: AttrsLimits 'AttrsForSpanEvent
@@ -373,7 +373,10 @@ spanContextIsSampled spanContext = isSampledFlagSet spanContextTraceFlags
 data TraceId = TraceId
   { traceIdHi :: Word64
   , traceIdLo :: Word64
-  } deriving stock (Eq, Show)
+  } deriving stock (Eq)
+
+instance Show TraceId where
+  show = show . traceIdToHexText
 
 instance ToJSON TraceId where
   toJSON = toJSON . traceIdToHexText
@@ -412,7 +415,10 @@ traceIdFromWords = TraceId
 
 newtype SpanId = SpanId
   { spanIdLo :: Word64
-  } deriving stock (Eq, Show)
+  } deriving stock (Eq)
+
+instance Show SpanId where
+  show = show . spanIdToHexText
 
 instance ToJSON SpanId where
   toJSON = toJSON . spanIdToHexText

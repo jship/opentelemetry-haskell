@@ -12,6 +12,7 @@
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -Wno-unused-imports #-}
 module OTel.SDK.Trace.Internal
   ( -- * Disclaimer
     -- $disclaimer
@@ -37,16 +38,18 @@ import Data.Kind (Type)
 import Data.Maybe (fromMaybe)
 import Data.Monoid (Ap(..))
 import Data.Text (Text)
+import GHC.Stack (SrcLoc(..), CallStack)
 import OTel.API.Common
-  ( AttrsFor(..), TimestampSource(..), Attrs, AttrsBuilder, AttrsLimits, InstrumentationScope
-  , Timestamp, defaultAttrsLimits, timestampFromNanoseconds
+  ( AttrsFor(..), KV(..), TimestampSource(..), Attrs, AttrsBuilder, AttrsLimits
+  , InstrumentationScope, Timestamp, defaultAttrsLimits, timestampFromNanoseconds
   )
 import OTel.API.Context.Core (Context, lookupContext)
 import OTel.API.Trace.Core
-  ( SpanParent(..), SpanStatus(..), MutableSpan, SpanId, SpanKind, SpanName, TraceId, TraceState
-  , UpdateSpanSpec, contextKeySpan, emptySpanContext, emptyTraceState, shutdownTracerProvider
-  , spanContextIsSampled, spanContextIsValid, spanIdFromWords, spanIsSampled, traceFlagsSampled
-  , traceIdFromWords
+  ( NewSpanSpec(..), Span(spanContext, spanFrozenAt, spanIsRecording), SpanParent(..)
+  , SpanStatus(..), MutableSpan, SpanId, SpanKind, SpanName, TraceId, TraceState, UpdateSpanSpec
+  , contextKeySpan, emptySpanContext, emptyTraceState, shutdownTracerProvider, spanContextIsSampled
+  , spanContextIsValid, spanIdFromWords, spanIsSampled, traceFlagsSampled, traceIdFromWords
+  , pattern CODE_FILEPATH, pattern CODE_FUNCTION, pattern CODE_LINENO, pattern CODE_NAMESPACE
   )
 import OTel.API.Trace.Core.Internal
   ( NewSpanSpec(..), Span(..), SpanContext(..), SpanLink(..), SpanLinkSpec(..), SpanLinkSpecs(..)
@@ -56,12 +59,11 @@ import OTel.API.Trace.Core.Internal
 import Prelude hiding (span)
 import System.Clock (Clock(Realtime), getTime, toNanoSecs)
 import System.IO.Unsafe (unsafePerformIO)
-import System.Random.MWC
-  ( Variate(..), GenIO, Seed, createSystemSeed, fromSeed, initialize, uniform
-  )
+import System.Random.MWC (Variate(..), GenIO, Seed, createSystemSeed, fromSeed, initialize, uniform)
 import System.Timeout (timeout)
 import qualified Control.Exception.Safe as Exception
 import qualified Data.DList as DList
+import qualified GHC.Stack as Stack
 
 data TracerProviderSpec = TracerProviderSpec
   { tracerProviderSpecNow :: IO Timestamp
@@ -73,6 +75,7 @@ data TracerProviderSpec = TracerProviderSpec
   , tracerProviderSpecSpanAttrsLimits :: AttrsLimits 'AttrsForSpan
   , tracerProviderSpecSpanEventAttrsLimits :: AttrsLimits 'AttrsForSpanEvent
   , tracerProviderSpecSpanLinkAttrsLimits :: AttrsLimits 'AttrsForSpanLink
+  , tracerProviderSpecCallStackAttrs :: CallStack -> AttrsBuilder 'AttrsForSpan
   }
 
 defaultTracerProviderSpec :: TracerProviderSpec
@@ -88,6 +91,14 @@ defaultTracerProviderSpec =
     , tracerProviderSpecSpanAttrsLimits = defaultAttrsLimits
     , tracerProviderSpecSpanEventAttrsLimits = defaultAttrsLimits
     , tracerProviderSpecSpanLinkAttrsLimits = defaultAttrsLimits
+    , tracerProviderSpecCallStackAttrs = \cs ->
+        case Stack.getCallStack cs of
+          ((function, srcLoc) : _) ->
+            CODE_FUNCTION .@ function
+              <> CODE_NAMESPACE .@ srcLocModule srcLoc
+              <> CODE_FILEPATH .@ srcLocFile srcLoc
+              <> CODE_LINENO .@ srcLocStartLine srcLoc
+          _ -> mempty
     }
 
 withTracerProvider
@@ -162,10 +173,11 @@ newTracerProviderIO tracerProviderSpec = do
     -> Sampler
     -> InstrumentationScope
     -> SpanProcessor
+    -> CallStack
     -> Context
     -> NewSpanSpec
     -> IO MutableSpan
-  startSpan prngRef sampler scope spanProcessor implicitParentContext newSpanSpec = do
+  startSpan prngRef sampler scope spanProcessor cs implicitParentContext newSpanSpec = do
     span <- buildSpan
     mutableSpan <- unsafeNewMutableSpan span
 
@@ -217,7 +229,10 @@ newTracerProviderIO tracerProviderSpec = do
         , spanStart
         , spanFrozenAt = Nothing
         , spanKind = newSpanSpecKind
-        , spanAttrs = samplingResultSpanAttrs samplingResult <> newSpanSpecAttrs
+        , spanAttrs =
+            samplingResultSpanAttrs samplingResult
+              <> callStackAttrs cs
+              <> newSpanSpecAttrs
         , spanLinks
         , spanEvents = mempty
         , spanIsRecording
@@ -311,6 +326,7 @@ newTracerProviderIO tracerProviderSpec = do
     , tracerProviderSpecSpanAttrsLimits = spanAttrsLimits
     , tracerProviderSpecSpanEventAttrsLimits = spanEventAttrsLimits
     , tracerProviderSpecSpanLinkAttrsLimits = spanLinkAttrsLimits
+    , tracerProviderSpecCallStackAttrs = callStackAttrs
     } = tracerProviderSpec
 
 data SpanProcessor = SpanProcessor

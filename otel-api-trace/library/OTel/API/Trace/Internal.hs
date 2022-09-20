@@ -10,6 +10,7 @@
 {-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -Wno-unused-imports #-}
 module OTel.API.Trace.Internal
   ( -- * Disclaimer
     -- $disclaimer
@@ -40,15 +41,13 @@ import Control.Monad.Trans.Resource (MonadResource)
 import Control.Monad.Writer.Class (MonadWriter)
 import Data.Kind (Type)
 import Data.Monoid (Ap(..))
-import GHC.Stack (SrcLoc(..))
 import OTel.API.Baggage.Core (MonadBaggage)
 import OTel.API.Common (AttrsFor(AttrsForSpan), KV(..), TimestampSource(..), AttrsBuilder)
 import OTel.API.Context (ContextT(..), ContextBackend, attachContextValue, getAttachedContext)
 import OTel.API.Trace.Core
   ( MonadTracing(..), MonadTracingIO(..), NewSpanSpec(..)
   , Span(spanContext, spanFrozenAt, spanIsRecording), MutableSpan, contextBackendSpan
-  , recordException, pattern CODE_FILEPATH, pattern CODE_FUNCTION, pattern CODE_LINENO
-  , pattern CODE_NAMESPACE
+  , recordException
   )
 import OTel.API.Trace.Core.Internal
   ( Tracer(..), buildSpanUpdater, freezeSpan, unsafeModifyMutableSpan, unsafeReadMutableSpan
@@ -112,10 +111,7 @@ instance (MonadIO m, MonadMask m) => MonadTracing (TracingT m) where
     TracingT \tracer spanBackend -> do
       flip runContextT (unSpanBackend spanBackend) do
         parentCtx <- getAttachedContext
-        mutableSpan <- do
-          liftIO $ tracerStartSpan tracer parentCtx newSpanSpec
-            { newSpanSpecAttrs = newSpanSpecAttrs newSpanSpec <> callStackAttrs
-            }
+        mutableSpan <- liftIO $ tracerStartSpan tracer cs parentCtx newSpanSpec
         attachContextValue mutableSpan do
           result <- lift $ runTracingT (action mutableSpan) tracer spanBackend
           liftIO do
@@ -157,16 +153,6 @@ instance (MonadIO m, MonadMask m) => MonadTracing (TracingT m) where
       processSpan tracer mutableSpan
       where
       Tracer { tracerNow = now } = tracer
-
-    callStackAttrs :: AttrsBuilder 'AttrsForSpan
-    callStackAttrs =
-      case Stack.getCallStack cs of
-        ((function, srcLoc) : _) ->
-          CODE_FUNCTION .@ function
-            <> CODE_NAMESPACE .@ srcLocModule srcLoc
-            <> CODE_FILEPATH .@ srcLocFile srcLoc
-            <> CODE_LINENO .@ srcLocStartLine srcLoc
-        _ -> mempty
 
   getSpanContext mutableSpan = do
     liftIO $ fmap spanContext $ unsafeReadMutableSpan mutableSpan
