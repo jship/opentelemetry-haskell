@@ -4,10 +4,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE StrictData #-}
 module Test.OTel.SDK.TraceSpec
   ( spec
   ) where
 
+import Control.Monad.Logger.Aeson
 import Control.Concurrent.STM
 import Control.Concurrent.STM.TMQueue
 import Control.Monad.IO.Class (MonadIO(liftIO))
@@ -19,20 +21,26 @@ import Prelude hiding (span)
 import Test.Hspec (Spec, describe, it)
 import Test.Hspec (HasCallStack) -- @hspec@
 import qualified Test.Hspec as Hspec -- @hspec@
+import System.IO (stdout)
 
 --import Control.Exception (PatternMatchFail(..), evaluate) -- @base@
 --import Control.Exception.Safe (catch) -- @safe-exceptions@
 --import Test.HUnit (assertFailure) -- @HUnit@
+
+logger :: Loc -> LogSource -> LogLevel -> LogStr -> IO ()
+logger = defaultOutput stdout
 
 spec :: Spec
 spec = do
   describe "Spec" do
     it "it works" do
       spanQueue <- newTMQueueIO
-      withTracerProvider (testTracerProviderSpec spanQueue) \tracerProvider -> do
+      withTracerProviderIO (testTracerProviderSpec spanQueue) \tracerProvider -> do
+        flip runLoggingT logger $ logDebug "Acquired provider"
         tracer <- getTracer tracerProvider "testing"
+        flip runLoggingT logger $ logDebug "Acquired tracer"
         traced tracer defaultSpanBackend do
-          trace_ "abc" do
+          trace_ "test1" do
             pure ()
       atomically (readTMQueue spanQueue) `shouldReturn` Just Span
         { spanParent = SpanParentRoot
@@ -53,6 +61,7 @@ testTracerProviderSpec :: TMQueue (Span Attrs) -> TracerProviderSpec
 testTracerProviderSpec spanQueue =
   defaultTracerProviderSpec
     { tracerProviderSpecNow = fmap timestampFromNanoseconds $ pure 0
+    , tracerProviderSpecLogger = logger
     , tracerProviderSpecSpanProcessors =
         [ simpleSpanProcessor defaultSimpleSpanProcessorSpec
             { simpleSpanProcessorSpecExporter = stmSpanExporter spanQueue

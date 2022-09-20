@@ -23,15 +23,12 @@ import Control.Concurrent (MVar, newMVar, withMVar)
 import Control.Concurrent.STM (STM, atomically, newTVarIO, readTVar, writeTVar)
 import Control.Concurrent.STM.TMQueue
 import Control.Exception.Safe
-  ( Exception(..), SomeException(..), MonadCatch, MonadMask, MonadThrow, catchAny
+  ( Exception(..), SomeException(..), MonadCatch, MonadMask, MonadThrow, catchAny, throwM
   )
 import Control.Monad (join, when)
 import Control.Monad.IO.Class (MonadIO(liftIO))
 import Control.Monad.IO.Unlift (MonadUnliftIO(..))
 import Control.Monad.Logger.Aeson
-  ( LoggingT(..), Message(..), MonadLoggerIO(askLoggerIO), (.=), Loc, LogLevel, LogSource, LogStr
-  , MonadLogger, SeriesElem, logError
-  )
 import Control.Monad.Reader (ReaderT(..))
 import Data.Aeson (ToJSON, object)
 import Data.DList (DList)
@@ -59,7 +56,9 @@ import OTel.API.Trace.Core.Internal
 import Prelude hiding (span)
 import System.Clock (Clock(Realtime), getTime, toNanoSecs)
 import System.IO.Unsafe (unsafePerformIO)
-import System.Random.MWC (Variate(..), GenIO, Seed, createSystemSeed, fromSeed, initialize, uniform)
+import System.Random.MWC
+  ( Variate(..), GenIO, Seed, createSystemSeed, fromSeed, initialize, uniform
+  )
 import System.Timeout (timeout)
 import qualified Control.Exception.Safe as Exception
 import qualified Data.DList as DList
@@ -105,9 +104,9 @@ withTracerProviderIO
    . TracerProviderSpec
   -> (TracerProvider -> IO a)
   -> IO a
-withTracerProviderIO tracerProviderSpec f = do
+withTracerProviderIO spec f = do
   Exception.bracket
-    (newTracerProviderIO tracerProviderSpec)
+    (newTracerProviderIO spec)
     shutdownTracerProvider
     f
 
@@ -682,11 +681,7 @@ data SamplerSpec = SamplerSpec
   }
 
 defaultSamplerSpec :: SamplerSpec
-defaultSamplerSpec =
-  alwaysOffSampler
-    { samplerSpecName = "default"
-    , samplerSpecDescription = "default"
-    }
+defaultSamplerSpec = alwaysOffSampler
 
 alwaysOnSampler :: SamplerSpec
 alwaysOnSampler =
@@ -760,10 +755,16 @@ parentBasedSampler parentBasedSamplerSpec =
 
 constDecisionSampler :: SamplingDecision -> SamplerSpec
 constDecisionSampler samplingDecision =
-  defaultSamplerSpec
+  SamplerSpec
     { samplerSpecName = "ConstDecision"
     , samplerSpecDescription = "ConstDecision{" <> samplingDecisionText <> "}"
     , samplerSpecShouldSample = shouldSample
+    , samplerSpecOnException = do
+        SomeException ex <- askException
+        pairs <- askExceptionMetadata
+        logError $ "Rethrowing unhandled exception from sampler" :#
+          "exception" .= displayException ex : pairs
+        throwM ex
     }
   where
   shouldSample samplerInput = do

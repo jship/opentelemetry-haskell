@@ -59,6 +59,7 @@ tests:
     - HUnit
     - base
     - hspec
+    - monad-logger-aeson
     - otel-api-common
     - otel-api-trace
     - otel-api-trace-core
