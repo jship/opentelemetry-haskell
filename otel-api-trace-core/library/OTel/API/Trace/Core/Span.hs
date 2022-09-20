@@ -75,7 +75,6 @@ module OTel.API.Trace.Core.Span
   , Internal.defaultSpanLinkSpec
   , Internal.spanLinkSpecSpanContext
   , Internal.spanLinkSpecAttrs
-
   ) where
 
 import qualified OTel.API.Trace.Core.Internal as Internal

@@ -86,14 +86,14 @@ instance MonadTrans TracingT where
   {-# INLINE lift #-}
 
 instance MonadTransControl TracingT where
-    type StT TracingT a = a
-    liftWith f =
-      TracingT \tracer spanBackend ->
-        f \action ->
-          runTracingT action tracer spanBackend
-    restoreT = lift
-    {-# INLINABLE liftWith #-}
-    {-# INLINABLE restoreT #-}
+  type StT TracingT a = a
+  liftWith f =
+    TracingT \tracer spanBackend ->
+      f \action ->
+        runTracingT action tracer spanBackend
+  restoreT = lift
+  {-# INLINABLE liftWith #-}
+  {-# INLINABLE restoreT #-}
 
 instance (MonadReader r m) => MonadReader r (TracingT m) where
   ask = lift ask
@@ -109,7 +109,7 @@ instance (MonadIO m, MonadMask m) => MonadTracing (TracingT m) where
         parentCtx <- getAttachedContext
         mutableSpan <- do
           liftIO $ tracerStartSpan tracer parentCtx newSpanSpec
-            { newSpanSpecAttrs = callStackAttrs <> newSpanSpecAttrs newSpanSpec
+            { newSpanSpecAttrs = newSpanSpecAttrs newSpanSpec <> callStackAttrs
             }
         attachContextValue mutableSpan do
           result <- lift $ runTracingT (action mutableSpan) tracer spanBackend
@@ -119,19 +119,18 @@ instance (MonadIO m, MonadMask m) => MonadTracing (TracingT m) where
     where
     processSpan :: Tracer -> MutableSpan -> IO ()
     processSpan tracer mutableSpan = do
-      liftIO do
-        span <- unsafeReadMutableSpan mutableSpan
-        timestamp <- now
-        liftIO
-          $ tracerProcessSpan
-          $ freezeSpan
-              timestamp
-              spanLinkAttrsLimits
-              spanEventAttrsLimits
-              spanAttrsLimits
-              span
-        unsafeModifyMutableSpan mutableSpan \s ->
-          (s { spanIsRecording = False, spanFrozenAt = Just timestamp }, ())
+      span <- unsafeReadMutableSpan mutableSpan
+      timestamp <- now
+      liftIO
+        $ tracerProcessSpan
+        $ freezeSpan
+            timestamp
+            spanLinkAttrsLimits
+            spanEventAttrsLimits
+            spanAttrsLimits
+            span
+      unsafeModifyMutableSpan mutableSpan \s ->
+        (s { spanIsRecording = False, spanFrozenAt = Just timestamp }, ())
       where
       Tracer
         { tracerNow = now
@@ -144,8 +143,8 @@ instance (MonadIO m, MonadMask m) => MonadTracing (TracingT m) where
     handler :: Tracer -> MutableSpan -> SomeException -> IO ()
     handler tracer mutableSpan someEx = do
       spanUpdater <- do
-        buildSpanUpdater (liftIO now) $ recordException someEx True TimestampSourceNow mempty
-      liftIO $ unsafeModifyMutableSpan mutableSpan \s ->
+        buildSpanUpdater now $ recordException someEx True TimestampSourceNow mempty
+      unsafeModifyMutableSpan mutableSpan \s ->
         (spanUpdater s, ())
       -- N.B. It is important that we finish the span after recording the
       -- exception and not the other way around, because the span is no longer
@@ -164,14 +163,13 @@ instance (MonadIO m, MonadMask m) => MonadTracing (TracingT m) where
             <> CODE_LINENO .@ srcLocStartLine srcLoc
         _ -> mempty
 
-  getSpanContext mutableSpan =
-    TracingT \_tracer _spanBackend -> do
-      liftIO $ fmap spanContext $ unsafeReadMutableSpan mutableSpan
+  getSpanContext mutableSpan = do
+    liftIO $ fmap spanContext $ unsafeReadMutableSpan mutableSpan
 
   updateSpan mutableSpan updateSpanSpec =
     TracingT \tracer _spanBackend -> do
       liftIO do
-        spanUpdater <- buildSpanUpdater (liftIO $ tracerNow tracer) updateSpanSpec
+        spanUpdater <- buildSpanUpdater (tracerNow tracer) updateSpanSpec
         unsafeModifyMutableSpan mutableSpan \s ->
           (spanUpdater s, ())
 
@@ -184,8 +182,7 @@ mapTracingT
   -> TracingT m a
   -> TracingT n b
 mapTracingT f action =
-  TracingT \tracer spanBackend ->
-    f $ runTracingT action tracer spanBackend
+  TracingT \tracer spanBackend -> f $ runTracingT action tracer spanBackend
 {-# INLINE mapTracingT #-}
 
 newtype SpanBackend = SpanBackend
@@ -193,10 +190,7 @@ newtype SpanBackend = SpanBackend
   }
 
 defaultSpanBackend :: SpanBackend
-defaultSpanBackend =
-  SpanBackend
-    { unSpanBackend = contextBackendSpan
-    }
+defaultSpanBackend = SpanBackend { unSpanBackend = contextBackendSpan }
 
 -- $disclaimer
 --
