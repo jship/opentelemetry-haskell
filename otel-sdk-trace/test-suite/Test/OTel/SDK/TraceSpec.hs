@@ -42,7 +42,7 @@ spec = do
       runTest TestCase
         { action = \tracerProvider -> do
             tracer <- getTracer tracerProvider "testTracer"
-            traced tracer defaultSpanBackend do
+            withTracing tracer defaultSpanBackend do
               trace_ "1" do
                 pure ()
         , expectedSpans =
@@ -72,7 +72,7 @@ spec = do
       runTest TestCase
         { action = \tracerProvider -> do
             tracer <- getTracer tracerProvider "testTracer"
-            traced tracer defaultSpanBackend do
+            withTracing tracer defaultSpanBackend do
               trace_ "1" do
                 trace_ "1.1" do
                   pure ()

@@ -14,7 +14,7 @@
 module OTel.API.Trace.Internal
   ( -- * Disclaimer
     -- $disclaimer
-    traced
+    withTracing
 
   , TracingT(..)
   , mapTracingT
@@ -61,8 +61,8 @@ import Control.Monad.Accum (MonadAccum)
 import Control.Monad.Select (MonadSelect)
 #endif
 
-traced :: Tracer -> SpanBackend -> TracingT m a -> m a
-traced tracer spanBackend action = runTracingT action tracer spanBackend
+withTracing :: Tracer -> SpanBackend -> TracingT m a -> m a
+withTracing tracer spanBackend action = runTracingT action tracer spanBackend
 
 type TracingT :: (Type -> Type) -> Type -> Type
 newtype TracingT m a = TracingT
