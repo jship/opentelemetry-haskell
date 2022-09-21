@@ -58,7 +58,8 @@ spec = do
                 , spanName = "1"
                 , spanStatus = SpanStatusUnset
                 , spanStart = timestampFromNanoseconds 0
-                , spanFrozenAt = timestampFromNanoseconds 1
+                , spanFrozenAt =
+                    SpanFrozenTimestampEnded $ timestampFromNanoseconds 1
                 , spanKind = SpanKindInternal
                 , spanAttrs = emptyAttrs
                 , spanLinks = mempty
@@ -92,7 +93,8 @@ spec = do
                       , spanName = "1"
                       , spanStatus = SpanStatusUnset
                       , spanStart = timestampFromNanoseconds 0
-                      , spanFrozenAt = timestampFromNanoseconds 3
+                      , spanFrozenAt =
+                          SpanFrozenTimestampEnded $ timestampFromNanoseconds 3
                       , spanKind = SpanKindInternal
                       , spanAttrs = emptyAttrs
                       , spanLinks = mempty
@@ -117,7 +119,8 @@ spec = do
                         , spanName = "1.1"
                         , spanStatus = SpanStatusUnset
                         , spanStart = timestampFromNanoseconds 1
-                        , spanFrozenAt = timestampFromNanoseconds 2
+                        , spanFrozenAt =
+                            SpanFrozenTimestampEnded $ timestampFromNanoseconds 2
                         , spanKind = SpanKindInternal
                         , spanAttrs = emptyAttrs
                         , spanLinks = mempty

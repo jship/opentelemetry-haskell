@@ -120,6 +120,7 @@ module OTel.API.Trace.Core.Internal
   , spanIsRoot
   , spanIsChildOf
   , SpanFrozenAt
+  , SpanFrozenTimestamp(..)
   , freezeSpan
   , SpanParent(.., Root, ChildOf)
   , SpanKind(.., Server, Client, Producer, Consumer, Internal)
@@ -1146,7 +1147,25 @@ spanIsChildOf childSpan parentSpan =
 
 type family SpanFrozenAt (attrs :: AttrsFor -> Type) :: Type where
   SpanFrozenAt AttrsBuilder = Maybe Timestamp
-  SpanFrozenAt Attrs = Timestamp
+  SpanFrozenAt Attrs = SpanFrozenTimestamp
+
+data SpanFrozenTimestamp
+  = SpanFrozenTimestampFrozen Timestamp
+  | SpanFrozenTimestampEnded Timestamp
+  deriving stock (Eq, Show)
+
+instance ToJSON SpanFrozenTimestamp where
+  toJSON = \case
+    SpanFrozenTimestampFrozen timestamp ->
+      Aeson.object
+        [ "tag" .= ("frozen" :: Text)
+        , "content" .= toJSON timestamp
+        ]
+    SpanFrozenTimestampEnded timestamp ->
+      Aeson.object
+        [ "tag" .= ("ended" :: Text)
+        , "content" .= toJSON timestamp
+        ]
 
 freezeSpan
   :: Timestamp
@@ -1157,7 +1176,10 @@ freezeSpan
   -> Span Attrs
 freezeSpan defaultSpanFrozenAt spanLinkAttrsLimits spanEventAttrsLimits spanAttrsLimits span =
   span
-    { spanFrozenAt = Maybe.fromMaybe defaultSpanFrozenAt $ spanFrozenAt span
+    { spanFrozenAt =
+        case spanFrozenAt span of
+          Nothing -> SpanFrozenTimestampFrozen defaultSpanFrozenAt
+          Just timestamp -> SpanFrozenTimestampEnded timestamp
     , spanAttrs =
         runAttrsBuilder (spanAttrs span) spanAttrsLimits
     , spanLinks =
