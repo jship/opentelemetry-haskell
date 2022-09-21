@@ -11,6 +11,7 @@
 {-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-unused-imports #-}
 module OTel.SDK.Trace.Internal
@@ -21,23 +22,34 @@ module OTel.SDK.Trace.Internal
 
 import Control.Applicative (Applicative(..))
 import Control.Concurrent (MVar, newMVar, withMVar)
+import Control.Concurrent.Async (Async, waitCatch, withAsync)
 import Control.Concurrent.STM (STM, atomically, newTVarIO, readTVar, writeTVar)
-import Control.Concurrent.STM.TMQueue
+import Control.Concurrent.STM.TBMQueue
+  ( TBMQueue, closeTBMQueue, isClosedTBMQueue, newTBMQueueIO, readTBMQueue, tryWriteTBMQueue
+  )
+import Control.Concurrent.STM.TMQueue (TMQueue, closeTMQueue, writeTMQueue)
+import Control.Exception (evaluate)
 import Control.Exception.Safe
-  ( Exception(..), SomeException(..), MonadCatch, MonadMask, MonadThrow, catchAny, throwM
+  ( Exception(..), SomeException(..), MonadCatch, MonadMask, MonadThrow, catchAny, finally, throwM
   )
 import Control.Monad (join, when)
+import Control.Monad.Cont (cont, runCont)
 import Control.Monad.IO.Class (MonadIO(liftIO))
 import Control.Monad.IO.Unlift (MonadUnliftIO(..))
 import Control.Monad.Logger.Aeson
+  ( LoggingT(..), Message((:#)), MonadLoggerIO(..), (.=), Loc, LogLevel, LogSource, LogStr
+  , MonadLogger, SeriesElem, logDebug, logError
+  )
 import Control.Monad.Reader (ReaderT(..))
 import Data.Aeson (ToJSON, object)
 import Data.DList (DList)
-import Data.Foldable
+import Data.Foldable (Foldable(foldMap), for_, traverse_)
 import Data.Kind (Type)
 import Data.Maybe (fromMaybe)
 import Data.Monoid (Ap(..))
+import Data.Proxy (Proxy(..))
 import Data.Text (Text)
+import Data.Typeable (Typeable, typeRep)
 import GHC.Stack (SrcLoc(..), CallStack)
 import OTel.API.Common
   ( AttrsFor(..), KV(..), TimestampSource(..), Attrs, AttrsBuilder, AttrsLimits
@@ -46,11 +58,10 @@ import OTel.API.Common
 import OTel.API.Context.Core (Context, lookupContext)
 import OTel.API.Trace
   ( NewSpanSpec(..), Span(spanContext, spanFrozenAt, spanIsRecording), SpanParent(..)
-  , SpanStatus(..), MutableSpan, SpanId, SpanKind, SpanName, TraceId, TraceState
-  , UpdateSpanSpec, contextKeySpan, emptySpanContext, emptyTraceState
-  , shutdownTracerProvider, spanContextIsSampled, spanContextIsValid, spanIdFromWords, spanIsSampled
-  , traceFlagsSampled, traceIdFromWords, pattern CODE_FILEPATH, pattern CODE_FUNCTION
-  , pattern CODE_LINENO, pattern CODE_NAMESPACE
+  , SpanStatus(..), MutableSpan, SpanId, SpanKind, SpanName, TraceId, TraceState, UpdateSpanSpec
+  , contextKeySpan, emptySpanContext, emptyTraceState, shutdownTracerProvider, spanContextIsSampled
+  , spanContextIsValid, spanIdFromWords, spanIsSampled, traceFlagsSampled, traceIdFromWords
+  , pattern CODE_FILEPATH, pattern CODE_FUNCTION, pattern CODE_LINENO, pattern CODE_NAMESPACE
   )
 import OTel.API.Trace.Core.Internal
   ( NewSpanSpec(..), Span(..), SpanContext(..), SpanLink(..), SpanLinkSpec(..), SpanLinkSpecs(..)
@@ -1058,6 +1069,123 @@ singletonBatch = Batch . DList.singleton
 fromListBatch :: [a] -> Batch a
 fromListBatch = Batch . DList.fromList
 
+data ConcurrentWorkersSpec item = ConcurrentWorkersSpec
+  { concurrentWorkersSpecQueueSize :: Int
+  , concurrentWorkersSpecWorkerCount :: Int
+  , concurrentWorkersSpecProcessItem :: item -> IO ()
+  , concurrentWorkersSpecLogger :: Loc -> LogSource -> LogLevel -> LogStr -> IO ()
+  , concurrentWorkersSpecLoggingMeta :: [SeriesElem]
+  , concurrentWorkersSpecOnException :: OnException ()
+  }
+
+defaultConcurrentWorkersSpec :: ConcurrentWorkersSpec item
+defaultConcurrentWorkersSpec =
+  ConcurrentWorkersSpec
+    { concurrentWorkersSpecQueueSize = 2048
+    , concurrentWorkersSpecWorkerCount = 5
+    , concurrentWorkersSpecProcessItem = mempty
+    , concurrentWorkersSpecLogger = mempty
+    , concurrentWorkersSpecLoggingMeta = mempty
+    , concurrentWorkersSpecOnException = do
+        SomeException ex <- askException
+        pairs <- askExceptionMetadata
+        logError $ "Concurrent worker ignoring exception from processing item" :#
+          "exception" .= displayException ex : pairs
+    }
+
+data ConcurrentWorkers item = ConcurrentWorkers
+  { concurrentWorkersEnqueueItem :: item -> IO ()
+  , concurrentWorkersStopWorkers :: IO ()
+  }
+
+withConcurrentWorkers
+  :: forall m item a
+   . (MonadUnliftIO m, ToJSON item, Typeable item)
+  => ConcurrentWorkersSpec item
+  -> (ConcurrentWorkers item -> m a)
+  -> m a
+withConcurrentWorkers spec action =
+  withRunInIO \runInIO -> withConcurrentWorkersIO spec (runInIO . action)
+
+withConcurrentWorkersIO
+  :: forall item a
+   . (ToJSON item, Typeable item)
+  => ConcurrentWorkersSpec item
+  -> (ConcurrentWorkers item -> IO a)
+  -> IO a
+withConcurrentWorkersIO concurrentWorkersSpec action = do
+  flip runLoggingT logger do
+    logDebug $ "Starting concurrent workers" :# loggingMeta
+  queue <- newTBMQueueIO queueSize
+  withWorkers queue \workers -> do
+    flip runLoggingT logger do
+      logDebug $ "Concurrent workers started" :# loggingMeta
+    action ConcurrentWorkers
+      { concurrentWorkersEnqueueItem = enqueueItem queue
+      , concurrentWorkersStopWorkers = stopWorkers queue workers
+      }
+  where
+  enqueueItem :: TBMQueue item -> item -> IO ()
+  enqueueItem queue item = do
+    atomically (tryWriteTBMQueue queue item) >>= \case
+      Just True -> pure ()
+      Just False -> do
+        flip runLoggingT logger do
+          logError $ "Dropped item as queue was full" :#
+            "item" .= item : loggingMeta
+      Nothing -> do
+        flip runLoggingT logger do
+          logError $ "Dropped item as queue was closed" :#
+            "item" .= item : loggingMeta
+
+  withWorkers :: TBMQueue item -> ([Async ()] -> IO a) -> IO a
+  withWorkers queue f =
+    withAll (replicate workerCount $ withAsync $ mkWorker queue) \workers -> do
+      f workers `finally` stopWorkers queue workers
+
+  stopWorkers :: TBMQueue item -> [Async ()] -> IO ()
+  stopWorkers queue workers = do
+    unlessSTM (isClosedTBMQueue queue) do
+      closeTBMQueue queue
+      pure do
+        flip runLoggingT logger do
+          logDebug $ "Stopping concurrent workers" :# loggingMeta
+          for_ workers \worker -> do
+            liftIO (waitCatch worker) >>= \case
+              Right () -> pure ()
+              Left (SomeException ex) -> do
+                logError $ "Concurrent worker previously died due to unhandled exception" :#
+                  "exception" .= displayException ex : loggingMeta
+
+  mkWorker :: TBMQueue item -> IO ()
+  mkWorker queue = go
+    where
+    go = do
+      mItem <- atomically $ readTBMQueue queue
+      for_ mItem \item -> do
+        flip runLoggingT logger do
+          logDebug $ "Concurrent worker is processing item" :#
+            "item" .= item : loggingMeta
+          liftIO (evaluate =<< processItem item) `catchAny` \someEx -> do
+              runOnException onEx someEx pairs
+        go
+
+  loggingMeta :: [SeriesElem]
+  loggingMeta =
+    "itemType" .= show (typeRep $ Proxy @item)
+      : "workerCount" .= workerCount
+      : "queueSize" .= queueSize
+      : pairs
+
+  ConcurrentWorkersSpec
+    { concurrentWorkersSpecQueueSize = queueSize
+    , concurrentWorkersSpecWorkerCount = workerCount
+    , concurrentWorkersSpecProcessItem = processItem
+    , concurrentWorkersSpecLogger = logger
+    , concurrentWorkersSpecLoggingMeta = pairs
+    , concurrentWorkersSpecOnException = onEx
+    } = concurrentWorkersSpec
+
 unlessSTM :: (Monoid a) => STM Bool -> STM (IO a) -> IO a
 unlessSTM isShutdownSTM actionSTM =
   join $ atomically $ isShutdownSTM >>= \case
@@ -1067,6 +1195,13 @@ unlessSTM isShutdownSTM actionSTM =
 defaultSystemSeed :: Seed
 defaultSystemSeed = unsafePerformIO createSystemSeed
 {-# NOINLINE defaultSystemSeed #-}
+
+withAll
+  :: forall a b
+   . [(a -> b) -> b]
+  -> ([a] -> b)
+  -> b
+withAll = runCont . mapM cont
 
 -- $disclaimer
 --

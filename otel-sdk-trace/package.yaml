@@ -29,6 +29,7 @@ ghc-options:
 library:
   dependencies:
   - aeson
+  - async
   - base >=4.11.1.0 && <5
   - clock
   - dlist
@@ -58,6 +59,7 @@ tests:
     - hspec-discover
     dependencies:
     - HUnit
+    - aeson
     - base
     - containers
     - hspec

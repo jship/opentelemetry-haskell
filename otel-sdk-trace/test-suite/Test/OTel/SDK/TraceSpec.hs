@@ -5,10 +5,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE StrictData #-}
 module Test.OTel.SDK.TraceSpec
   ( spec
   ) where
+
+-- TODO: Explicit imports
 
 import Control.Concurrent.STM
 import Control.Concurrent.STM.TMQueue
@@ -27,6 +28,7 @@ import Prelude hiding (span)
 import System.IO (stdout)
 import Test.HUnit (assertFailure)
 import Test.Hspec (HasCallStack, Spec, describe, it)
+import Test.OTel.SDK.Common (IsTest(..))
 import qualified Control.Monad.Trans.State as State
 import qualified Data.List as List
 import qualified Data.List.NonEmpty as NonEmpty
@@ -198,9 +200,6 @@ testTracerProviderSpec nanosRef traceIdRef spanIdRef spanQueue =
     , tracerProviderSpecSampler = alwaysOnSampler
     , tracerProviderSpecCallStackAttrs = mempty
     }
-
-class IsTest a where
-  runTest :: (HasCallStack) => a -> IO ()
 
 shouldReturn :: (HasCallStack, MonadIO m, Show a, Eq a) => m a -> a -> m ()
 shouldReturn action expected = action >>= \x -> x `shouldBe` expected

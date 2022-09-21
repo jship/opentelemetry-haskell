@@ -38,6 +38,7 @@ library
   ghc-options: -Wall -fwarn-tabs -Wincomplete-uni-patterns -Wredundant-constraints
   build-depends:
       aeson
+    , async
     , base >=4.11.1.0 && <5
     , clock
     , dlist
@@ -60,6 +61,8 @@ test-suite otel-sdk-trace-test-suite
   type: exitcode-stdio-1.0
   main-is: Driver.hs
   other-modules:
+      Test.OTel.SDK.Common
+      Test.OTel.SDK.Trace.ConcurrentWorkersSpec
       Test.OTel.SDK.TraceSpec
   hs-source-dirs:
       test-suite
@@ -70,6 +73,7 @@ test-suite otel-sdk-trace-test-suite
       hspec-discover:hspec-discover
   build-depends:
       HUnit
+    , aeson
     , base
     , containers
     , hspec
