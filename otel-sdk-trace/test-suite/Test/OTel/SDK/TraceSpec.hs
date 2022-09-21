@@ -41,8 +41,9 @@ spec = do
     it "single span" do
       runTest TestCase
         { action = \tracerProvider -> do
-            tracer <- getTracer tracerProvider "testTracer"
-            withTracing tracer defaultSpanBackend do
+            tracingBackend <- do
+              fmap defaultTracingBackend $ getTracer tracerProvider "testTracer"
+            flip runTracingT tracingBackend do
               trace_ "1" do
                 pure ()
         , expectedSpans =
@@ -71,8 +72,9 @@ spec = do
     it "couple spans" do
       runTest TestCase
         { action = \tracerProvider -> do
-            tracer <- getTracer tracerProvider "testTracer"
-            withTracing tracer defaultSpanBackend do
+            tracingBackend <- do
+              fmap defaultTracingBackend $ getTracer tracerProvider "testTracer"
+            flip runTracingT tracingBackend do
               trace_ "1" do
                 trace_ "1.1" do
                   pure ()

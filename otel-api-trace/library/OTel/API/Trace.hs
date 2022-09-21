@@ -1,13 +1,11 @@
 module OTel.API.Trace
   ( -- * Synopsis
     -- $synopsis
-    Internal.withTracing
-
-  , Internal.TracingT(..)
+    Internal.TracingT(..)
   , Internal.mapTracingT
 
-  , Internal.SpanBackend
-  , Internal.defaultSpanBackend
+  , Internal.TracingBackend
+  , Internal.defaultTracingBackend
 
   , module OTel.API.Trace.Core
   ) where

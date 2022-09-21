@@ -37,6 +37,7 @@ library:
   - mwc-random
   - otel-api-common
   - otel-api-context-core
+  - otel-api-trace
   - otel-api-trace-core
   - safe-exceptions
   - stm

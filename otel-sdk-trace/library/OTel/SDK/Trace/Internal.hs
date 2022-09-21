@@ -44,12 +44,13 @@ import OTel.API.Common
   , InstrumentationScope, Timestamp, defaultAttrsLimits, timestampFromNanoseconds
   )
 import OTel.API.Context.Core (Context, lookupContext)
-import OTel.API.Trace.Core
+import OTel.API.Trace
   ( NewSpanSpec(..), Span(spanContext, spanFrozenAt, spanIsRecording), SpanParent(..)
-  , SpanStatus(..), MutableSpan, SpanId, SpanKind, SpanName, TraceId, TraceState, UpdateSpanSpec
-  , contextKeySpan, emptySpanContext, emptyTraceState, shutdownTracerProvider, spanContextIsSampled
-  , spanContextIsValid, spanIdFromWords, spanIsSampled, traceFlagsSampled, traceIdFromWords
-  , pattern CODE_FILEPATH, pattern CODE_FUNCTION, pattern CODE_LINENO, pattern CODE_NAMESPACE
+  , SpanStatus(..), MutableSpan, SpanId, SpanKind, SpanName, TraceId, TraceState
+  , UpdateSpanSpec, contextKeySpan, emptySpanContext, emptyTraceState
+  , shutdownTracerProvider, spanContextIsSampled, spanContextIsValid, spanIdFromWords, spanIsSampled
+  , traceFlagsSampled, traceIdFromWords, pattern CODE_FILEPATH, pattern CODE_FUNCTION
+  , pattern CODE_LINENO, pattern CODE_NAMESPACE
   )
 import OTel.API.Trace.Core.Internal
   ( NewSpanSpec(..), Span(..), SpanContext(..), SpanLink(..), SpanLinkSpec(..), SpanLinkSpecs(..)
