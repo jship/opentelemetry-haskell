@@ -63,13 +63,13 @@ import Data.Vector (Vector)
 import GHC.Stack (SrcLoc(..), CallStack)
 import Lens.Micro ((&), (.~))
 import Network.HTTP.Client
-  ( HttpException(..), HttpExceptionContent(..), Request(method, requestBody)
+  ( HttpException(..), HttpExceptionContent(..), Request(method, requestBody, requestHeaders)
   , RequestBody(RequestBodyBS), Response(responseHeaders, responseStatus), Manager, httpLbs
   , requestFromURI, setRequestCheckStatus
   )
 import Network.HTTP.Client.TLS (newTlsManager)
 import Network.HTTP.Types (Status(statusCode), serviceUnavailable503, tooManyRequests429)
-import Network.HTTP.Types.Header (hRetryAfter)
+import Network.HTTP.Types.Header (hContentType, hRetryAfter)
 import Network.URI (URI(..), parseURI)
 import OTel.API.Common
   ( Attr(attrType, attrVal)
@@ -92,9 +92,9 @@ import OTel.API.Trace
   , SpanStatus(SpanStatusError, SpanStatusOk, SpanStatusUnset), MutableSpan, SpanId, SpanLinks
   , TraceId, TraceState, Tracer, TracerProvider, UpdateSpanSpec, contextKeySpan, emptySpanContext
   , emptyTraceState, frozenTimestamp, shutdownTracerProvider, spanContextIsSampled
-  , spanContextIsValid, spanEventsToList, spanIdFromWords, spanIdToHexBuilder, spanIsSampled
-  , spanLinksToList, traceFlagsSampled, traceIdFromWords, traceIdToHexBuilder, pattern CODE_FILEPATH
-  , pattern CODE_FUNCTION, pattern CODE_LINENO, pattern CODE_NAMESPACE
+  , spanContextIsValid, spanEventsToList, spanIdFromWords, spanIdToBytesBuilder, spanIsSampled
+  , spanLinksToList, traceFlagsSampled, traceIdFromWords, traceIdToBytesBuilder
+  , pattern CODE_FILEPATH, pattern CODE_FUNCTION, pattern CODE_LINENO, pattern CODE_NAMESPACE
   )
 import OTel.API.Trace.Core.Internal
   ( NewSpanSpec(..), Span(..), SpanContext(..), SpanLinkSpec(..), SpanLinkSpecs(..), SpanLinks(..)
@@ -696,7 +696,11 @@ otlpSpanExporterIO
 otlpSpanExporterIO otlpSpanExporterSpec f = do
   req <- do
     flip fmap (requestFromURI endpoint) \baseReq ->
-      setRequestCheckStatus baseReq { method = "POST" }
+      setRequestCheckStatus baseReq
+        { method = "POST"
+        , requestHeaders =
+            (hContentType, "application/x-protobuf") : requestHeaders baseReq
+        }
   withConcurrentWorkers (concurrentWorkersSpec req) \workers -> do
     f $ spanExporterSpec workers
   where
@@ -733,7 +737,7 @@ otlpSpanExporterIO otlpSpanExporterSpec f = do
                   "spans" .= otlpSpanExporterItemBatch item : loggingMeta
               Just resp -> do
                 logDebug $ "Successfully exported spans" :#
-                  "response" .= pack (show resp)
+                  "response" .= show resp
                     : "spans" .= otlpSpanExporterItemBatch item
                     : loggingMeta
           otlpSpanExporterItemCallback item SpanExportResultSuccess
@@ -848,10 +852,10 @@ otlpSpanExporterIO otlpSpanExporterSpec f = do
     convertSpan :: Span Attrs -> OTLP.Trace.Span
     convertSpan span =
       ProtoLens.defMessage
-        & OTLP.Trace.traceId .~ hexBuilderToBS8 (traceIdToHexBuilder traceId)
-        & OTLP.Trace.spanId .~ hexBuilderToBS8 (spanIdToHexBuilder spanId)
+        & OTLP.Trace.traceId .~ bytesBuilderToBS8 (traceIdToBytesBuilder traceId)
+        & OTLP.Trace.spanId .~ bytesBuilderToBS8 (spanIdToBytesBuilder spanId)
         -- TODO: & OTLP.Trace.traceState .~ undefined
-        & maybe id (\x -> OTLP.Trace.parentSpanId .~ hexBuilderToBS8 (spanIdToHexBuilder x)) mParentSpanId
+        & maybe id (\x -> OTLP.Trace.parentSpanId .~ bytesBuilderToBS8 (spanIdToBytesBuilder x)) mParentSpanId
         & OTLP.Trace.name .~ unSpanName spanName
         & OTLP.Trace.kind .~ convertSpanKind spanKind
         & OTLP.Trace.startTimeUnixNano .~
@@ -906,8 +910,8 @@ otlpSpanExporterIO otlpSpanExporterSpec f = do
     convertSpanLink :: SpanLink Attrs -> OTLP.Trace.Span'Link
     convertSpanLink spanLink =
       ProtoLens.defMessage
-        & OTLP.Trace.traceId .~ hexBuilderToBS8 (traceIdToHexBuilder traceId)
-        & OTLP.Trace.spanId .~ hexBuilderToBS8 (spanIdToHexBuilder spanId)
+        & OTLP.Trace.traceId .~ bytesBuilderToBS8 (traceIdToBytesBuilder traceId)
+        & OTLP.Trace.spanId .~ bytesBuilderToBS8 (spanIdToBytesBuilder spanId)
         -- TODO: & OTLP.Trace.traceState .~ undefined
         & OTLP.Trace.attributes .~ convertAttrKVs attrs
         & OTLP.Trace.droppedAttributesCount .~ fromIntegral (droppedAttrsCount attrs)
@@ -1010,7 +1014,7 @@ otlpSpanExporterIO otlpSpanExporterSpec f = do
         , instrumentationScopeVersion = version
         } = instScope
 
-    hexBuilderToBS8 = ByteString.Char8.toStrict . Builder.toLazyByteString
+    bytesBuilderToBS8 = ByteString.Char8.toStrict . Builder.toLazyByteString
 
   loggingMeta =
     [ "spanExporter" .= object

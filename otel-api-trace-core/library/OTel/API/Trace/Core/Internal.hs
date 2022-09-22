@@ -407,7 +407,7 @@ traceIdToHexBuilder traceId =
 
 traceIdToBytesBuilder :: TraceId -> Builder
 traceIdToBytesBuilder traceId =
-  Builder.word64LE traceIdHi <> Builder.word64LE traceIdLo
+  Builder.word64BE traceIdHi <> Builder.word64BE traceIdLo
   where
   TraceId { traceIdHi, traceIdLo } = traceId
 
@@ -449,7 +449,7 @@ spanIdToHexBuilder spanId =
 
 spanIdToBytesBuilder :: SpanId -> Builder
 spanIdToBytesBuilder spanId =
-  Builder.word64LE spanIdLo
+  Builder.word64BE spanIdLo
   where
   SpanId { spanIdLo } = spanId
 

@@ -67,6 +67,25 @@ library
     , vector
   default-language: Haskell2010
 
+executable otlp-tracing-example
+  main-is: otlp-tracing-example.hs
+  other-modules:
+      Paths_otel_sdk_trace
+  hs-source-dirs:
+      executables
+  default-extensions:
+      NoImplicitPrelude
+  ghc-options: -Wall -fwarn-tabs -Wincomplete-uni-patterns -Wredundant-constraints
+  build-depends:
+      base >=4.11.1.0 && <5
+    , monad-logger-aeson
+    , mwc-random
+    , otel-api-common
+    , otel-api-trace
+    , otel-sdk-trace
+    , text
+  default-language: Haskell2010
+
 test-suite otel-sdk-trace-test-suite
   type: exitcode-stdio-1.0
   main-is: Driver.hs

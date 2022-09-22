@@ -18,8 +18,11 @@ module OTel.API.Trace.Core
   , module OTel.API.Trace.Core.TraceId
   , module OTel.API.Trace.Core.TraceState
   , module OTel.API.Trace.Core.TraceState.Errors
+
+  , (.@)
   ) where
 
+import OTel.API.Common (KV((.@)))
 import OTel.API.Trace.Core.Attributes
 import OTel.API.Trace.Core.Class
 import OTel.API.Trace.Core.Context
@@ -31,7 +34,6 @@ import OTel.API.Trace.Core.TraceId
 import OTel.API.Trace.Core.TraceState
 import OTel.API.Trace.Core.TraceState.Errors
 import qualified OTel.API.Trace.Core.Internal as Internal
-
 
 -- $synopsis
 --

@@ -87,3 +87,16 @@ tests:
     when:
     - condition: false
       other-modules: Paths_otel_sdk_trace
+
+executables:
+  otlp-tracing-example:
+    source-dirs: executables
+    main: otlp-tracing-example.hs
+    dependencies:
+    - base >=4.11.1.0 && <5
+    - monad-logger-aeson
+    - mwc-random
+    - otel-api-common
+    - otel-api-trace
+    - otel-sdk-trace
+    - text
