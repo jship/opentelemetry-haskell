@@ -45,6 +45,7 @@ module OTel.API.Common.Internal
   , memberAttrs
   , lookupAttrs
   , foldMapWithKeyAttrs
+  , droppedAttrsCount
   , AttrsBuilder(..)
   , runAttrsBuilder
   , AttrsAcc(..)
@@ -151,7 +152,7 @@ data InstrumentationScope = InstrumentationScope
   { instrumentationScopeName :: InstrumentationScopeName
   , instrumentationScopeVersion :: Maybe Version
   , instrumentationScopeSchemaURL :: Maybe SchemaURL
-  } deriving stock (Eq, Show)
+  } deriving stock (Eq, Ord, Show)
 
 instance ToJSON InstrumentationScope where
   toJSON instrumentationScope =
@@ -183,7 +184,7 @@ defaultInstrumentationScope =
 
 newtype InstrumentationScopeName = InstrumentationScopeName
   { unInstrumentationScopeName :: Text
-  } deriving stock (Eq, Show)
+  } deriving stock (Eq, Ord, Show)
     deriving (ToJSON) via (Text)
 
 instance IsString InstrumentationScopeName where
@@ -191,7 +192,7 @@ instance IsString InstrumentationScopeName where
 
 newtype Version = Version
   { unVersion :: Text
-  } deriving stock (Eq, Show)
+  } deriving stock (Eq, Ord, Show)
     deriving (ToJSON) via (Text)
 
 instance IsString Version where
@@ -199,7 +200,7 @@ instance IsString Version where
 
 newtype SchemaURL = SchemaURL
   { unSchemaURL :: Text
-  } deriving stock (Eq, Show)
+  } deriving stock (Eq, Ord, Show)
     deriving (ToJSON) via (Text)
 
 schemaURLFromText :: Text -> Either Text SchemaURL
@@ -269,6 +270,9 @@ foldMapWithKeyAttrs f attrs =
   flip HashMap.foldMapWithKey (attrsMap attrs) \keyText someAttr ->
     case someAttr of
       SomeAttr attr -> f (Key keyText) attr
+
+droppedAttrsCount :: Attrs af -> Int
+droppedAttrsCount = attrsDropped
 
 newtype AttrsBuilder (af :: AttrsFor) = AttrsBuilder
   { unAttrsBuilder :: Int -> DList AttrsBuilderElem

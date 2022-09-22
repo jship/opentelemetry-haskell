@@ -1,6 +1,7 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -13,14 +14,13 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# OPTIONS_GHC -Wno-unused-imports #-}
 module OTel.SDK.Trace.Internal
   ( -- * Disclaimer
     -- $disclaimer
     module OTel.SDK.Trace.Internal -- TODO: Explicit exports
   ) where
 
-import Control.Applicative (Applicative(..))
+import Control.Applicative (Alternative(..), Applicative(..))
 import Control.Concurrent (MVar, newMVar, withMVar)
 import Control.Concurrent.Async (Async, waitCatch, withAsync)
 import Control.Concurrent.STM (STM, atomically, newTVarIO, readTVar, writeTVar)
@@ -28,9 +28,10 @@ import Control.Concurrent.STM.TBMQueue
   ( TBMQueue, closeTBMQueue, isClosedTBMQueue, newTBMQueueIO, readTBMQueue, tryWriteTBMQueue
   )
 import Control.Concurrent.STM.TMQueue (TMQueue, closeTMQueue, writeTMQueue)
-import Control.Exception (evaluate)
+import Control.Exception (AsyncException, SomeAsyncException, evaluate)
 import Control.Exception.Safe
-  ( Exception(..), SomeException(..), MonadCatch, MonadMask, MonadThrow, catchAny, finally, throwM
+  ( Exception(..), Handler(..), SomeException(..), MonadCatch, MonadMask, MonadThrow, catchAny
+  , finally, throwM
   )
 import Control.Monad (join, when)
 import Control.Monad.Cont (cont, runCont)
@@ -41,32 +42,64 @@ import Control.Monad.Logger.Aeson
   , MonadLogger, SeriesElem, logDebug, logError
   )
 import Control.Monad.Reader (ReaderT(..))
-import Data.Aeson (ToJSON, object)
-import Data.DList (DList)
-import Data.Foldable (Foldable(foldMap), for_, traverse_)
+import Control.Retry
+  ( RetryAction(..), RetryStatus, applyPolicy, recoveringDynamic, retryPolicyDefault
+  )
+import Data.Aeson (ToJSON(..), object)
+import Data.ByteString.Lazy (ByteString)
+import Data.Foldable (for_, traverse_)
+import Data.Function (on)
+import Data.Int (Int64)
 import Data.Kind (Type)
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromJust, fromMaybe, mapMaybe)
 import Data.Monoid (Ap(..))
 import Data.Proxy (Proxy(..))
-import Data.Text (Text)
-import Data.Typeable (Typeable, typeRep)
-import GHC.Stack (SrcLoc(..), CallStack)
-import OTel.API.Common
-  ( AttrsFor(..), KV(..), TimestampSource(..), Attrs, AttrsBuilder, AttrsLimits
-  , InstrumentationScope, Timestamp, defaultAttrsLimits, timestampFromNanoseconds
+import Data.Text (Text, pack)
+import Data.Time
+  ( NominalDiffTime, UTCTime, defaultTimeLocale, diffUTCTime, getCurrentTime, parseTimeM
   )
+import Data.Typeable (Typeable, typeRep)
+import Data.Vector (Vector)
+import GHC.Stack (SrcLoc(..), CallStack)
+import Lens.Micro ((&), (.~))
+import Network.HTTP.Client
+  ( HttpException(..), HttpExceptionContent(..), Request(method, requestBody)
+  , RequestBody(RequestBodyBS), Response(responseHeaders, responseStatus), Manager, httpLbs
+  , requestFromURI, setRequestCheckStatus
+  )
+import Network.HTTP.Client.TLS (newTlsManager)
+import Network.HTTP.Types (Status(statusCode), serviceUnavailable503, tooManyRequests429)
+import Network.HTTP.Types.Header (hRetryAfter)
+import Network.URI (URI(..), parseURI)
+import OTel.API.Common
+  ( Attr(attrType, attrVal)
+  , AttrType
+    ( AttrTypeBool, AttrTypeBoolArray, AttrTypeDouble, AttrTypeDoubleArray, AttrTypeInt
+    , AttrTypeIntArray, AttrTypeText, AttrTypeTextArray
+    )
+  , AttrsFor(AttrsForSpan, AttrsForSpanEvent, AttrsForSpanLink), InstrumentationScope(..)
+  , InstrumentationScopeName(unInstrumentationScopeName), KV((.@)), Key(unKey)
+  , TimestampSource(TimestampSourceAt, TimestampSourceNow), Version(unVersion), AttrVals, Attrs
+  , AttrsBuilder, AttrsLimits, Timestamp, defaultAttrsLimits, droppedAttrsCount, foldMapWithKeyAttrs
+  , schemaURLToText, timestampFromNanoseconds, timestampToNanoseconds
+  )
+import OTel.API.Common.Internal (AttrVals(..), InstrumentationScope(..))
 import OTel.API.Context.Core (Context, lookupContext)
 import OTel.API.Trace
-  ( NewSpanSpec(..), Span(spanContext, spanFrozenAt, spanIsRecording), SpanParent(..)
-  , SpanStatus(..), MutableSpan, SpanId, SpanKind, SpanName, TraceId, TraceState, UpdateSpanSpec
-  , contextKeySpan, emptySpanContext, emptyTraceState, shutdownTracerProvider, spanContextIsSampled
-  , spanContextIsValid, spanIdFromWords, spanIsSampled, traceFlagsSampled, traceIdFromWords
-  , pattern CODE_FILEPATH, pattern CODE_FUNCTION, pattern CODE_LINENO, pattern CODE_NAMESPACE
+  ( NewSpanSpec(..), Span(..), SpanContext(..), SpanEvent(..), SpanEventName(unSpanEventName)
+  , SpanKind(SpanKindClient, SpanKindConsumer, SpanKindInternal, SpanKindProducer, SpanKindServer)
+  , SpanLink(..), SpanName(unSpanName), SpanParent(SpanParentChildOf, SpanParentRoot)
+  , SpanStatus(SpanStatusError, SpanStatusOk, SpanStatusUnset), MutableSpan, SpanId, SpanLinks
+  , TraceId, TraceState, Tracer, TracerProvider, UpdateSpanSpec, contextKeySpan, emptySpanContext
+  , emptyTraceState, frozenTimestamp, shutdownTracerProvider, spanContextIsSampled
+  , spanContextIsValid, spanEventsToList, spanIdFromWords, spanIdToHexBuilder, spanIsSampled
+  , spanLinksToList, traceFlagsSampled, traceIdFromWords, traceIdToHexBuilder, pattern CODE_FILEPATH
+  , pattern CODE_FUNCTION, pattern CODE_LINENO, pattern CODE_NAMESPACE
   )
 import OTel.API.Trace.Core.Internal
-  ( NewSpanSpec(..), Span(..), SpanContext(..), SpanLink(..), SpanLinkSpec(..), SpanLinkSpecs(..)
-  , SpanLinks(..), Tracer(..), TracerProvider(..), buildSpanUpdater, freezeSpan
-  , unsafeModifyMutableSpan, unsafeNewMutableSpan, unsafeReadMutableSpan
+  ( NewSpanSpec(..), Span(..), SpanContext(..), SpanLinkSpec(..), SpanLinkSpecs(..), SpanLinks(..)
+  , Tracer(..), TracerProvider(..), buildSpanUpdater, freezeSpan, unsafeModifyMutableSpan
+  , unsafeNewMutableSpan, unsafeReadMutableSpan
   )
 import Prelude hiding (span)
 import System.Clock (Clock(Realtime), getTime, toNanoSecs)
@@ -74,8 +107,19 @@ import System.IO.Unsafe (unsafePerformIO)
 import System.Random.MWC (Variate(..), GenIO, Seed, createSystemSeed, fromSeed, initialize, uniform)
 import System.Timeout (timeout)
 import qualified Control.Exception.Safe as Exception
+import qualified Data.ByteString.Builder as Builder
+import qualified Data.ByteString.Char8 as ByteString.Char8
 import qualified Data.DList as DList
+import qualified Data.List as List
+import qualified Data.ProtoLens as ProtLens
+import qualified Data.ProtoLens as ProtoLens
 import qualified GHC.Stack as Stack
+import qualified OTel.SDK.OTLP.Bindings.Collector.Trace.V1.TraceService as OTLP.Collector
+import qualified OTel.SDK.OTLP.Bindings.Collector.Trace.V1.TraceService_Fields as OTLP.Collector
+import qualified OTel.SDK.OTLP.Bindings.Common.V1.Common as OTLP.Common
+import qualified OTel.SDK.OTLP.Bindings.Common.V1.Common_Fields as OTLP.Common
+import qualified OTel.SDK.OTLP.Bindings.Trace.V1.Trace as OTLP.Trace
+import qualified OTel.SDK.OTLP.Bindings.Trace.V1.Trace_Fields as OTLP.Trace
 
 data TracerProviderSpec = TracerProviderSpec
   { tracerProviderSpecNow :: IO Timestamp
@@ -610,6 +654,395 @@ buildSpanExporter logger spanExporterSpec = do
     , spanExporterSpecOnException = onEx
     } = spanExporterSpec
 
+data OTLPSpanExporterSpec = OTLPSpanExporterSpec
+  { otlpSpanExporterSpecManager :: Manager
+  , otlpSpanExporterSpecEndpoint :: URI
+  , otlpSpanExporterSpecTimeout :: Int
+  , otlpSpanExporterSpecProtocol :: OTLPProtocol
+  , otlpSpanExporterSpecLogger :: Loc -> LogSource -> LogLevel -> LogStr -> IO ()
+  , otlpSpanExporterSpecWorkerQueueSize :: Int
+  , otlpSpanExporterSpecWorkerCount :: Int
+  }
+
+-- TODO: Env vars
+defaultOTLPSpanExporterSpec :: OTLPSpanExporterSpec
+defaultOTLPSpanExporterSpec =
+  OTLPSpanExporterSpec
+    { otlpSpanExporterSpecManager = defaultManager
+    , otlpSpanExporterSpecEndpoint = fromJust $ parseURI "http://localhost:4318/v1/traces"
+    , otlpSpanExporterSpecTimeout = 10_000_000
+    , otlpSpanExporterSpecProtocol = httpProtobufProtocol
+    , otlpSpanExporterSpecLogger = mempty
+    , otlpSpanExporterSpecWorkerQueueSize =
+        concurrentWorkersSpecQueueSize defaultConcurrentWorkersSpec
+    , otlpSpanExporterSpecWorkerCount =
+        concurrentWorkersSpecWorkerCount defaultConcurrentWorkersSpec
+    }
+
+otlpSpanExporter
+  :: forall m a
+   . (MonadUnliftIO m)
+  => OTLPSpanExporterSpec
+  -> (SpanExporterSpec -> m a)
+  -> m a
+otlpSpanExporter spec action =
+  withRunInIO \runInIO -> otlpSpanExporterIO spec (runInIO . action)
+
+otlpSpanExporterIO
+  :: forall a
+   . OTLPSpanExporterSpec
+  -> (SpanExporterSpec -> IO a)
+  -> IO a
+otlpSpanExporterIO otlpSpanExporterSpec f = do
+  req <- do
+    flip fmap (requestFromURI endpoint) \baseReq ->
+      setRequestCheckStatus baseReq { method = "POST" }
+  withConcurrentWorkers (concurrentWorkersSpec req) \workers -> do
+    f $ spanExporterSpec workers
+  where
+  spanExporterSpec workers =
+    defaultSpanExporterSpec
+      { spanExporterSpecName = "otlp"
+      , spanExporterSpecExport = \spans onSpansExported -> do
+          liftIO $ concurrentWorkersEnqueueItem workers OTLPSpanExporterItem
+            { otlpSpanExporterItemBatch = spans
+            , otlpSpanExporterItemCallback = onSpansExported
+            }
+      , spanExporterSpecShutdown = do
+          liftIO $ concurrentWorkersStopWorkers workers
+      }
+
+  concurrentWorkersSpec req =
+    defaultConcurrentWorkersSpec
+      { concurrentWorkersSpecQueueSize = queueSize
+      , concurrentWorkersSpecWorkerCount = workerCount
+      , concurrentWorkersSpecProcessItem = \item -> do
+          mResp <- do
+            timeout exportTimeout do
+              send req
+                { requestBody =
+                    RequestBodyBS
+                      $ ProtoLens.encodeMessage
+                      $ exportTraceServiceRequest
+                      $ otlpSpanExporterItemBatch item
+                }
+          flip runLoggingT logger do
+            case mResp of
+              Nothing -> do
+                logError $ "Exporting spans timed out" :#
+                  "spans" .= otlpSpanExporterItemBatch item : loggingMeta
+              Just resp -> do
+                logDebug $ "Successfully exported spans" :#
+                  "response" .= pack (show resp)
+                    : "spans" .= otlpSpanExporterItemBatch item
+                    : loggingMeta
+          otlpSpanExporterItemCallback item SpanExportResultSuccess
+      , concurrentWorkersSpecOnException = \item -> do
+          SomeException ex <- askException
+          pairs <- askExceptionMetadata
+          logError $ "Concurrent worker ignoring exception from exporting batch" :#
+            "exception" .= displayException ex
+              : "batch" .= otlpSpanExporterItemBatch item
+              : pairs
+          liftIO $ otlpSpanExporterItemCallback item SpanExportResultFailure
+      , concurrentWorkersSpecLogger = logger
+      , concurrentWorkersSpecLoggingMeta = loggingMeta
+      }
+
+  send :: Request -> IO (Response ByteString)
+  send req = do
+    recoveringDynamic retryPolicyDefault handlers \_retryStatus -> do
+      httpLbs req manager
+    where
+    handlers :: [RetryStatus -> Handler IO RetryAction]
+    handlers =
+      [ const $ Handler \(_ :: AsyncException) -> pure DontRetry
+      , const $ Handler \(_ :: SomeAsyncException) -> pure DontRetry
+      , \retryStatus -> Handler \case
+          InvalidUrlException {} -> pure DontRetry
+          HttpExceptionRequest _req httpExceptionContent -> do
+            case httpExceptionContent of
+              ConnectionClosed {} -> consult retryStatus "ConnectionClosed" Nothing Nothing
+              ConnectionFailure someEx -> consult retryStatus "ConnectionFailure" (Just someEx) Nothing
+              ConnectionTimeout {} -> consult retryStatus "ConnectionTimeout" Nothing Nothing
+              InternalException someEx -> consult retryStatus "InternalException" (Just someEx) Nothing
+              ResponseTimeout {} -> consult retryStatus "ResponseTimeout" Nothing Nothing
+              StatusCodeException resp _bs
+                | responseStatus resp `elem` [tooManyRequests429, serviceUnavailable503] ->
+                    checkRetryAfterHeader retryStatus resp
+                | otherwise -> pure DontRetry
+              _ -> pure DontRetry
+      ]
+      where
+      checkRetryAfterHeader :: RetryStatus -> Response () -> IO RetryAction
+      checkRetryAfterHeader retryStatus resp = do
+        case lookup hRetryAfter $ responseHeaders resp of
+          Nothing -> consult retryStatus "StatusCodeException" Nothing Nothing
+          Just headerVal -> do
+            case parseRetryAfterHeader $ ByteString.Char8.unpack headerVal of
+              Nothing -> consult retryStatus (pack $ show code) Nothing Nothing
+              Just (Left delay) -> do
+                consult retryStatus (pack $ show code) Nothing $ Just $ ceiling $ 1_000_000 * delay
+              Just (Right httpDate) -> do
+                delay <- fmap (diffUTCTime httpDate) getCurrentTime
+                consult retryStatus (pack $ show code) Nothing $ Just $ ceiling $ 1_000_000 * delay
+        where
+        parseRetryAfterHeader :: String -> Maybe (Either NominalDiffTime UTCTime)
+        parseRetryAfterHeader headerVal =
+          fmap Left parseNominalDiffTime <|> fmap Right parseHttpDate <|> Nothing
+          where
+          parseNominalDiffTime = parseTimeM True defaultTimeLocale "%s" headerVal
+          parseHttpDate = parseTimeM True defaultTimeLocale "%a, %d %b %Y %H:%M:%S GMT" headerVal
+
+        code :: Int
+        code = statusCode $ responseStatus resp
+
+      consult :: RetryStatus -> Text -> Maybe SomeException -> Maybe Int -> IO RetryAction
+      consult retryStatus hint mSomeEx mOverrideDelay =
+        flip runLoggingT logger do
+          applyPolicy retryPolicyDefault retryStatus >>= \case
+            Nothing -> do
+              logError $ "Span export exceeded maximum retries due to exceptions" :# meta
+              pure DontRetry
+            Just {} -> do
+              logDebug $ "Retrying span export due to HTTP client exception" :# meta
+              pure $ maybe ConsultPolicy ConsultPolicyOverrideDelay mOverrideDelay
+        where
+        meta :: [SeriesElem]
+        meta =
+          foldr ($) loggingMeta
+            [ ("hint" .= hint :)
+            , maybe id (\e -> ("exception" .= displayException e :)) mSomeEx
+            ]
+
+  exportTraceServiceRequest
+    :: Batch (Span Attrs)
+    -> OTLP.Collector.ExportTraceServiceRequest
+  exportTraceServiceRequest batch =
+    ProtoLens.defMessage
+      & OTLP.Collector.resourceSpans .~
+          [ ProtLens.defMessage
+              & OTLP.Trace.scopeSpans .~ mapMaybe convertSpanGroup groupedSpans
+          ]
+    where
+    groupedSpans :: [[Span Attrs]]
+    groupedSpans =
+      unBatch batch
+        & List.sortOn spanInstrumentationScope
+        & List.groupBy ((==) `on` spanInstrumentationScope)
+
+    convertSpanGroup :: [Span Attrs] -> Maybe OTLP.Trace.ScopeSpans
+    convertSpanGroup spans =
+      case spans of
+        [] -> Nothing
+        span : _ ->
+          ProtoLens.defMessage
+            & OTLP.Trace.scope .~ convertInstScope instScope
+            & OTLP.Trace.spans .~ fmap convertSpan spans
+            & maybe id (\x -> OTLP.Trace.schemaUrl .~ schemaURLToText x) schemaURL
+            & Just
+          where
+          InstrumentationScope { instrumentationScopeSchemaURL = schemaURL } = instScope
+          instScope = spanInstrumentationScope span
+
+    convertSpan :: Span Attrs -> OTLP.Trace.Span
+    convertSpan span =
+      ProtoLens.defMessage
+        & OTLP.Trace.traceId .~ hexBuilderToBS8 (traceIdToHexBuilder traceId)
+        & OTLP.Trace.spanId .~ hexBuilderToBS8 (spanIdToHexBuilder spanId)
+        -- TODO: & OTLP.Trace.traceState .~ undefined
+        & maybe id (\x -> OTLP.Trace.parentSpanId .~ hexBuilderToBS8 (spanIdToHexBuilder x)) mParentSpanId
+        & OTLP.Trace.name .~ unSpanName spanName
+        & OTLP.Trace.kind .~ convertSpanKind spanKind
+        & OTLP.Trace.startTimeUnixNano .~
+            fromIntegral (timestampToNanoseconds spanStart)
+        & OTLP.Trace.endTimeUnixNano .~
+            fromIntegral (timestampToNanoseconds $ frozenTimestamp spanFrozenAt)
+        & OTLP.Trace.attributes .~ convertAttrKVs spanAttrs
+        & OTLP.Trace.droppedAttributesCount .~ fromIntegral (droppedAttrsCount spanAttrs)
+        & OTLP.Trace.events .~ fmap convertSpanEvent (spanEventsToList spanEvents)
+        & OTLP.Trace.links .~ fmap convertSpanLink (spanLinksToList spanLinks)
+        & OTLP.Trace.status .~ convertSpanStatus spanStatus
+      where
+      mParentSpanId =
+        case spanParent of
+          SpanParentRoot -> Nothing
+          SpanParentChildOf parentSpanContext ->
+            Just $ spanContextSpanId parentSpanContext
+
+
+      Span
+        { spanParent
+        , spanContext =
+            SpanContext
+              { spanContextTraceId = traceId
+              , spanContextSpanId = spanId
+              --, spanContextTraceState = traceState
+              }
+        , spanName
+        , spanStatus
+        , spanStart
+        , spanFrozenAt
+        , spanKind
+        , spanAttrs
+        , spanLinks
+        , spanEvents
+        } = span
+
+    convertSpanEvent :: SpanEvent Attrs -> OTLP.Trace.Span'Event
+    convertSpanEvent spanEvent =
+      ProtoLens.defMessage
+        & OTLP.Trace.timeUnixNano .~ fromIntegral (timestampToNanoseconds timestamp)
+        & OTLP.Trace.name .~ unSpanEventName name
+        & OTLP.Trace.attributes .~ convertAttrKVs attrs
+        & OTLP.Trace.droppedAttributesCount .~ fromIntegral (droppedAttrsCount attrs)
+      where
+      SpanEvent
+        { spanEventName = name
+        , spanEventTimestamp = timestamp
+        , spanEventAttrs = attrs
+        } = spanEvent
+
+    convertSpanLink :: SpanLink Attrs -> OTLP.Trace.Span'Link
+    convertSpanLink spanLink =
+      ProtoLens.defMessage
+        & OTLP.Trace.traceId .~ hexBuilderToBS8 (traceIdToHexBuilder traceId)
+        & OTLP.Trace.spanId .~ hexBuilderToBS8 (spanIdToHexBuilder spanId)
+        -- TODO: & OTLP.Trace.traceState .~ undefined
+        & OTLP.Trace.attributes .~ convertAttrKVs attrs
+        & OTLP.Trace.droppedAttributesCount .~ fromIntegral (droppedAttrsCount attrs)
+      where
+      SpanLink
+        { spanLinkSpanContext =
+            SpanContext
+              { spanContextTraceId = traceId
+              , spanContextSpanId = spanId
+              --, spanContextTraceState = traceState
+              }
+        , spanLinkAttrs = attrs
+        } = spanLink
+
+    convertAttrKVs :: Attrs af -> [OTLP.Common.KeyValue]
+    convertAttrKVs =
+      DList.toList . foldMapWithKeyAttrs \k v -> pure $ convertAttrKV k v
+
+    convertAttrKV :: Key k -> Attr v -> OTLP.Common.KeyValue
+    convertAttrKV k v =
+      ProtoLens.defMessage
+        & OTLP.Common.key .~ unKey k
+        & OTLP.Common.value .~ convertAttrValue v
+
+    convertAttrValue :: Attr v -> OTLP.Common.AnyValue
+    convertAttrValue attr =
+      ProtoLens.defMessage @OTLP.Common.AnyValue
+        & case attrType attr of
+            AttrTypeText -> OTLP.Common.stringValue .~ attrVal attr
+            AttrTypeBool -> OTLP.Common.boolValue .~ attrVal attr
+            AttrTypeInt -> OTLP.Common.intValue .~ attrVal attr
+            AttrTypeDouble -> OTLP.Common.doubleValue .~ attrVal attr
+            AttrTypeTextArray ->
+              OTLP.Common.arrayValue .~
+                ( ProtoLens.defMessage
+                    & OTLP.Common.vec'values .~ convertTextArrayAttrVals (attrVal attr)
+                )
+            AttrTypeBoolArray ->
+              OTLP.Common.arrayValue .~
+                ( ProtoLens.defMessage
+                    & OTLP.Common.vec'values .~ convertBoolArrayAttrVals (attrVal attr)
+                )
+            AttrTypeIntArray ->
+              OTLP.Common.arrayValue .~
+                ( ProtoLens.defMessage
+                    & OTLP.Common.vec'values .~ convertIntArrayAttrVals (attrVal attr)
+                )
+            AttrTypeDoubleArray ->
+              OTLP.Common.arrayValue .~
+                ( ProtoLens.defMessage
+                    & OTLP.Common.vec'values .~ convertDoubleArrayAttrVals (attrVal attr)
+                )
+
+    convertTextArrayAttrVals :: AttrVals Text -> Vector OTLP.Common.AnyValue
+    convertTextArrayAttrVals =
+      fmap (\x -> ProtoLens.defMessage & OTLP.Common.stringValue .~ x) . unAttrVals
+
+    convertBoolArrayAttrVals :: AttrVals Bool -> Vector OTLP.Common.AnyValue
+    convertBoolArrayAttrVals =
+      fmap (\x -> ProtoLens.defMessage & OTLP.Common.boolValue .~ x) . unAttrVals
+
+    convertIntArrayAttrVals :: AttrVals Int64 -> Vector OTLP.Common.AnyValue
+    convertIntArrayAttrVals =
+      fmap (\x -> ProtoLens.defMessage & OTLP.Common.intValue .~ x) . unAttrVals
+
+    convertDoubleArrayAttrVals :: AttrVals Double -> Vector OTLP.Common.AnyValue
+    convertDoubleArrayAttrVals =
+      fmap (\x -> ProtoLens.defMessage & OTLP.Common.doubleValue .~ x) . unAttrVals
+
+    convertSpanStatus :: SpanStatus -> OTLP.Trace.Status
+    convertSpanStatus = \case
+      SpanStatusUnset ->
+        ProtoLens.defMessage
+          & OTLP.Trace.code .~ OTLP.Trace.Status'STATUS_CODE_UNSET
+      SpanStatusOk ->
+        ProtoLens.defMessage
+          & OTLP.Trace.code .~ OTLP.Trace.Status'STATUS_CODE_OK
+      SpanStatusError errText ->
+        ProtoLens.defMessage
+          & OTLP.Trace.code .~ OTLP.Trace.Status'STATUS_CODE_ERROR
+          & OTLP.Trace.message .~ errText
+
+    convertSpanKind :: SpanKind -> OTLP.Trace.Span'SpanKind
+    convertSpanKind = \case
+      SpanKindServer -> OTLP.Trace.Span'SPAN_KIND_SERVER
+      SpanKindClient -> OTLP.Trace.Span'SPAN_KIND_CLIENT
+      SpanKindProducer -> OTLP.Trace.Span'SPAN_KIND_PRODUCER
+      SpanKindConsumer -> OTLP.Trace.Span'SPAN_KIND_CONSUMER
+      SpanKindInternal -> OTLP.Trace.Span'SPAN_KIND_INTERNAL
+
+    convertInstScope :: InstrumentationScope -> OTLP.Common.InstrumentationScope
+    convertInstScope instScope =
+      -- N.B. There are 'attributes' and 'droppedAttributesCount' fields available too.
+      ProtoLens.defMessage
+        & OTLP.Common.name .~ unInstrumentationScopeName name
+        & maybe id (\x -> OTLP.Common.version .~ unVersion x) version
+      where
+      InstrumentationScope
+        { instrumentationScopeName = name
+        , instrumentationScopeVersion = version
+        } = instScope
+
+    hexBuilderToBS8 = ByteString.Char8.toStrict . Builder.toLazyByteString
+
+  loggingMeta =
+    [ "spanExporter" .= object
+        [ "name" .= ("otlp" :: Text)
+        ]
+    ]
+
+  OTLPSpanExporterSpec
+    { otlpSpanExporterSpecManager = manager
+    , otlpSpanExporterSpecEndpoint = endpoint
+    , otlpSpanExporterSpecTimeout = exportTimeout
+    , otlpSpanExporterSpecProtocol = _protocol -- N.B. Only http/protobuf is supported
+    , otlpSpanExporterSpecLogger = logger
+    , otlpSpanExporterSpecWorkerQueueSize = queueSize
+    , otlpSpanExporterSpecWorkerCount = workerCount
+    } = otlpSpanExporterSpec
+
+data OTLPProtocol
+  = OTLPProtocolHTTPProtobuf
+
+httpProtobufProtocol :: OTLPProtocol
+httpProtobufProtocol = OTLPProtocolHTTPProtobuf
+
+-- | Little ad-hoc helper type for use in 'otlpSpanExporterIO'.
+data OTLPSpanExporterItem = OTLPSpanExporterItem
+  { otlpSpanExporterItemBatch :: Batch (Span Attrs)
+  , otlpSpanExporterItemCallback :: SpanExportResult -> IO ()
+  }
+
+instance ToJSON OTLPSpanExporterItem where
+  toJSON = toJSON . otlpSpanExporterItemBatch
+
 stmSpanExporter :: TMQueue (Span Attrs) -> SpanExporterSpec
 stmSpanExporter queue = spanExporterSpec
   where
@@ -619,7 +1052,7 @@ stmSpanExporter queue = spanExporterSpec
       , spanExporterSpecExport = \spans onSpansExported -> do
           join $ liftIO $ atomically do
             traverse_ (writeTMQueue queue) spans
-            pure $ onSpansExported SpanExportResultSuccess
+            pure $ liftIO $ onSpansExported SpanExportResultSuccess
       , spanExporterSpecShutdown = do
           liftIO $ atomically $ closeTMQueue queue
       }
@@ -628,7 +1061,7 @@ data SpanExporterSpec = SpanExporterSpec
   { spanExporterSpecName :: Text
   , spanExporterSpecExport
       :: Batch (Span Attrs)
-      -> (SpanExportResult -> SpanExporterM ())
+      -> (SpanExportResult -> IO ())
       -> SpanExporterM ()
   , spanExporterSpecShutdown :: SpanExporterM ()
   , spanExporterSpecShutdownTimeout :: Int
@@ -1055,19 +1488,19 @@ askSpansExportedMetadata :: OnSpansExported [SeriesElem]
 askSpansExportedMetadata = OnSpansExported \_spans _spanExportResult pairs -> pure pairs
 
 newtype Batch a = Batch
-  { unBatch :: DList a
+  { unBatch :: [a]
   } deriving stock (Eq, Show)
-    deriving (Monoid, Semigroup, ToJSON) via (DList a)
-    deriving (Foldable, Functor, Applicative, Monad) via DList
+    deriving (Monoid, Semigroup, ToJSON) via [a]
+    deriving (Foldable, Functor, Applicative, Monad) via []
 
 instance Traversable Batch where
   traverse f (Batch xs) = fmap Batch $ traverse f xs
 
 singletonBatch :: a -> Batch a
-singletonBatch = Batch . DList.singleton
+singletonBatch = Batch . pure
 
 fromListBatch :: [a] -> Batch a
-fromListBatch = Batch . DList.fromList
+fromListBatch = Batch
 
 data ConcurrentWorkersSpec item = ConcurrentWorkersSpec
   { concurrentWorkersSpecQueueSize :: Int
@@ -1075,7 +1508,7 @@ data ConcurrentWorkersSpec item = ConcurrentWorkersSpec
   , concurrentWorkersSpecProcessItem :: item -> IO ()
   , concurrentWorkersSpecLogger :: Loc -> LogSource -> LogLevel -> LogStr -> IO ()
   , concurrentWorkersSpecLoggingMeta :: [SeriesElem]
-  , concurrentWorkersSpecOnException :: OnException ()
+  , concurrentWorkersSpecOnException :: item -> OnException ()
   }
 
 defaultConcurrentWorkersSpec :: ConcurrentWorkersSpec item
@@ -1086,7 +1519,7 @@ defaultConcurrentWorkersSpec =
     , concurrentWorkersSpecProcessItem = mempty
     , concurrentWorkersSpecLogger = mempty
     , concurrentWorkersSpecLoggingMeta = mempty
-    , concurrentWorkersSpecOnException = do
+    , concurrentWorkersSpecOnException = \_item -> do
         SomeException ex <- askException
         pairs <- askExceptionMetadata
         logError $ "Concurrent worker ignoring exception from processing item" :#
@@ -1167,7 +1600,7 @@ withConcurrentWorkersIO concurrentWorkersSpec action = do
           logDebug $ "Concurrent worker is processing item" :#
             "item" .= item : loggingMeta
           liftIO (evaluate =<< processItem item) `catchAny` \someEx -> do
-              runOnException onEx someEx pairs
+              runOnException (onEx item) someEx pairs
         go
 
   loggingMeta :: [SeriesElem]
@@ -1195,6 +1628,10 @@ unlessSTM isShutdownSTM actionSTM =
 defaultSystemSeed :: Seed
 defaultSystemSeed = unsafePerformIO createSystemSeed
 {-# NOINLINE defaultSystemSeed #-}
+
+defaultManager :: Manager
+defaultManager = unsafePerformIO newTlsManager
+{-# NOINLINE defaultManager #-}
 
 withAll
   :: forall a b

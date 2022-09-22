@@ -31,19 +31,29 @@ library:
   - aeson
   - async
   - base >=4.11.1.0 && <5
+  - bytestring
   - clock
   - dlist
+  - http-client
+  - http-client-tls
+  - http-types
+  - microlens
   - monad-logger-aeson
   - mtl
   - mwc-random
+  - network-uri
   - otel-api-common
   - otel-api-context-core
   - otel-api-trace
   - otel-api-trace-core
+  - otel-sdk-otlp-bindings
+  - proto-lens
+  - retry
   - safe-exceptions
   - stm
   - stm-chans
   - text
+  - time
   - unliftio-core
   - vector
   source-dirs: library

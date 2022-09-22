@@ -25,6 +25,7 @@ module OTel.API.Trace.Core.Span
   , Internal.SpanStatus(..)
   , Internal.SpanFrozenAt
   , Internal.SpanFrozenTimestamp(..)
+  , Internal.frozenTimestamp
 
   , Internal.NewSpanSpec
   , Internal.defaultNewSpanSpec

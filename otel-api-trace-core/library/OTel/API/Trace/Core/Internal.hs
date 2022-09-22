@@ -121,6 +121,7 @@ module OTel.API.Trace.Core.Internal
   , spanIsChildOf
   , SpanFrozenAt
   , SpanFrozenTimestamp(..)
+  , frozenTimestamp
   , freezeSpan
   , SpanParent(.., Root, ChildOf)
   , SpanKind(.., Server, Client, Producer, Consumer, Internal)
@@ -1166,6 +1167,11 @@ instance ToJSON SpanFrozenTimestamp where
         [ "tag" .= ("ended" :: Text)
         , "content" .= toJSON timestamp
         ]
+
+frozenTimestamp :: SpanFrozenTimestamp -> Timestamp
+frozenTimestamp = \case
+  SpanFrozenTimestampFrozen timestamp -> timestamp
+  SpanFrozenTimestampEnded timestamp -> timestamp
 
 freezeSpan
   :: Timestamp
