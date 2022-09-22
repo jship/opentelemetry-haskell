@@ -109,14 +109,22 @@ instance (MonadIO m, MonadMask m) => MonadTracing (TracingT m) where
     processSpan tracer mutableSpan = do
       span <- unsafeReadMutableSpan mutableSpan
       timestamp <- now
+      -- N.B. We set the span's 'spanFrozenAt' field both in the value copy we
+      -- pass to the span processors' on-span-end method and in the mutable
+      -- span. The former is important so that a span processor's on-span-start
+      -- method has a reliable means of understanding if any spans it's tracking
+      -- have ended or not. We could alternatively set the timestamp in the
+      -- mutable span before passing the copy to the span processors, but the
+      -- current flow requires that we only update the reference once, where we
+      -- include both the timestamp and 'spanIsRecording'. Any recording spans
+      -- must be seen as recording for span processors to receive them, so we
+      -- don't set 'spanIsRecording' until after span processors have received
+      -- the span.
       liftIO
         $ tracerProcessSpan
-        $ freezeSpan
-            timestamp
-            spanLinkAttrsLimits
-            spanEventAttrsLimits
-            spanAttrsLimits
-            span
+        $ freezeSpan timestamp spanLinkAttrsLimits spanEventAttrsLimits spanAttrsLimits span
+            { spanFrozenAt = Just timestamp
+            }
       unsafeModifyMutableSpan mutableSpan \s ->
         (s { spanIsRecording = False, spanFrozenAt = Just timestamp }, ())
       where
