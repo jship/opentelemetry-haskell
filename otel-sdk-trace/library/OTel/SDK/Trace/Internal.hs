@@ -8,6 +8,7 @@
 {-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE StrictData #-}
@@ -34,7 +35,7 @@ import Control.Exception.Safe
   , finally, throwM
   )
 import Control.Monad (join, when)
-import Control.Monad.Cont (cont, runCont)
+import Control.Monad.Cont (ContT(..), cont, runCont)
 import Control.Monad.IO.Class (MonadIO(liftIO))
 import Control.Monad.IO.Unlift (MonadUnliftIO(..))
 import Control.Monad.Logger.Aeson
@@ -47,7 +48,7 @@ import Control.Retry
   )
 import Data.Aeson (ToJSON(..), object)
 import Data.ByteString.Lazy (ByteString)
-import Data.Foldable (for_, traverse_)
+import Data.Foldable (fold, for_, traverse_)
 import Data.Function (on)
 import Data.Int (Int64)
 import Data.Kind (Type)
@@ -106,7 +107,6 @@ import System.Clock (Clock(Realtime), getTime, toNanoSecs)
 import System.IO.Unsafe (unsafePerformIO)
 import System.Random.MWC (Variate(..), GenIO, Seed, createSystemSeed, fromSeed, initialize, uniform)
 import System.Timeout (timeout)
-import qualified Control.Exception.Safe as Exception
 import qualified Data.ByteString.Builder as Builder
 import qualified Data.ByteString.Char8 as ByteString.Char8
 import qualified Data.DList as DList
@@ -126,7 +126,7 @@ data TracerProviderSpec = TracerProviderSpec
   , tracerProviderSpecLogger :: Loc -> LogSource -> LogLevel -> LogStr -> IO ()
   , tracerProviderSpecSeed :: Seed
   , tracerProviderSpecIdGenerator :: IdGeneratorSpec
-  , tracerProviderSpecSpanProcessors :: [SpanProcessorSpec]
+  , tracerProviderSpecSpanProcessors :: forall r. [ContT r IO SpanProcessorSpec]
   , tracerProviderSpecSampler :: SamplerSpec
   , tracerProviderSpecSpanAttrsLimits :: AttrsLimits 'AttrsForSpan
   , tracerProviderSpecSpanEventAttrsLimits :: AttrsLimits 'AttrsForSpanEvent
@@ -171,37 +171,33 @@ withTracerProviderIO
    . TracerProviderSpec
   -> (TracerProvider -> IO a)
   -> IO a
-withTracerProviderIO spec f = do
-  Exception.bracket
-    (newTracerProviderIO spec)
-    shutdownTracerProvider
-    f
-
-newTracerProvider
-  :: forall m
-   . (MonadIO m)
-  => TracerProviderSpec
-  -> m TracerProvider
-newTracerProvider = liftIO . newTracerProvider
-
-newTracerProviderIO :: TracerProviderSpec -> IO TracerProvider
-newTracerProviderIO tracerProviderSpec = do
+withTracerProviderIO tracerProviderSpec action = do
   shutdownRef <- newTVarIO False
   prngRef <- newPRNGRef seed
-  spanProcessor <- foldMap (buildSpanProcessor logger) spanProcessorSpecs
   sampler <- buildSampler logger samplerSpec
-  pure TracerProvider
-    { tracerProviderGetTracer =
-        pure . getTracerWith prngRef sampler spanProcessor
-    , tracerProviderShutdown = do
-        unlessSTM (readTVar shutdownRef) do
-          writeTVar shutdownRef True
-          pure $ spanProcessorShutdown spanProcessor
-    , tracerProviderForceFlush = do
-        unlessSTM (readTVar shutdownRef) do
-          pure $ spanProcessorForceFlush spanProcessor
-    }
+  withCompositeSpanProcessor \spanProcessor -> do
+    let tracerProvider =
+          TracerProvider
+            { tracerProviderGetTracer =
+                pure . getTracerWith prngRef sampler spanProcessor
+            , tracerProviderShutdown = do
+                unlessSTM (readTVar shutdownRef) do
+                  writeTVar shutdownRef True
+                  pure $ spanProcessorShutdown spanProcessor
+            , tracerProviderForceFlush = do
+                unlessSTM (readTVar shutdownRef) do
+                  pure $ spanProcessorForceFlush spanProcessor
+            }
+    action tracerProvider `finally` shutdownTracerProvider tracerProvider
   where
+  withCompositeSpanProcessor :: (SpanProcessor -> IO r) -> IO r
+  withCompositeSpanProcessor =
+    runContT do
+      acquiredSpanProcessorSpecs <- sequenceA spanProcessorSpecs
+      acquiredSpanProcessors <- do
+        traverse (buildSpanProcessor logger) acquiredSpanProcessorSpecs
+      pure $ fold acquiredSpanProcessors
+
   getTracerWith
     :: MVar PRNG
     -> Sampler
@@ -418,14 +414,14 @@ instance Monoid SpanProcessor where
       }
 
 buildSpanProcessor
-  :: forall m
-   . (MonadIO m)
-  => (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
+  :: forall r
+   . (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
   -> SpanProcessorSpec
-  -> m SpanProcessor
+  -> ContT r IO SpanProcessor
 buildSpanProcessor logger spanProcessorSpec = do
-  spanExporter <- buildSpanExporter logger spanProcessorSpecExporter
+  spanExporterSpec <- spanProcessorSpecExporter
   shutdownRef <- liftIO $ newTVarIO False
+  spanExporter <- liftIO $ buildSpanExporter logger spanExporterSpec
   pure $ spanProcessor shutdownRef spanExporter
   where
   spanProcessor shutdownRef spanExporter =
@@ -488,14 +484,14 @@ buildSpanProcessor logger spanProcessorSpec = do
 
 data SimpleSpanProcessorSpec = SimpleSpanProcessorSpec
   { simpleSpanProcessorSpecName :: Text
-  , simpleSpanProcessorSpecExporter :: SpanExporterSpec
+  , simpleSpanProcessorSpecExporter :: forall r. ContT r IO SpanExporterSpec
   , simpleSpanProcessorSpecOnSpansExported :: OnSpansExported ()
   }
 
 defaultSimpleSpanProcessorSpec :: SimpleSpanProcessorSpec
 defaultSimpleSpanProcessorSpec =
   SimpleSpanProcessorSpec
-    { simpleSpanProcessorSpecExporter = defaultSpanExporterSpec
+    { simpleSpanProcessorSpecExporter = pure defaultSpanExporterSpec
     , simpleSpanProcessorSpecName = "simple"
     , simpleSpanProcessorSpecOnSpansExported = do
         askSpansExportedResult >>= \case
@@ -507,8 +503,11 @@ defaultSimpleSpanProcessorSpec =
               "spans" .= spans : pairs
     }
 
-simpleSpanProcessor :: SimpleSpanProcessorSpec -> SpanProcessorSpec
-simpleSpanProcessor simpleSpanProcessorSpec = spanProcessorSpec
+simpleSpanProcessor
+  :: forall r
+   . SimpleSpanProcessorSpec
+  -> ContT r IO SpanProcessorSpec
+simpleSpanProcessor simpleSpanProcessorSpec = pure spanProcessorSpec
   where
   spanProcessorSpec =
     defaultSpanProcessorSpec
@@ -541,9 +540,12 @@ simpleSpanProcessor simpleSpanProcessorSpec = spanProcessorSpec
     , simpleSpanProcessorSpecOnSpansExported = onSpansExported
     } = simpleSpanProcessorSpec
 
+--newtype With a = With
+--  { un
+
 data SpanProcessorSpec = SpanProcessorSpec
   { spanProcessorSpecName :: Text
-  , spanProcessorSpecExporter :: SpanExporterSpec
+  , spanProcessorSpecExporter :: forall r. ContT r IO SpanExporterSpec
   , spanProcessorSpecOnSpanStart
       :: Context -- Parent context
       -> (UpdateSpanSpec -> SpanProcessorM (Span Attrs))
@@ -561,7 +563,7 @@ defaultSpanProcessorSpec :: SpanProcessorSpec
 defaultSpanProcessorSpec =
   SpanProcessorSpec
     { spanProcessorSpecName = "default"
-    , spanProcessorSpecExporter = defaultSpanExporterSpec
+    , spanProcessorSpecExporter = pure defaultSpanExporterSpec
     , spanProcessorSpecOnSpanStart = mempty
     , spanProcessorSpecOnSpanEnd = mempty
     , spanProcessorSpecShutdown = do
@@ -598,11 +600,9 @@ data SpanExporter = SpanExporter
   }
 
 buildSpanExporter
-  :: forall m
-   . (MonadIO m)
-  => (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
+  :: (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
   -> SpanExporterSpec
-  -> m SpanExporter
+  -> IO SpanExporter
 buildSpanExporter logger spanExporterSpec = do
   shutdownRef <- liftIO $ newTVarIO False
   pure $ spanExporter shutdownRef
@@ -680,13 +680,10 @@ defaultOTLPSpanExporterSpec =
     }
 
 otlpSpanExporter
-  :: forall m a
-   . (MonadUnliftIO m)
-  => OTLPSpanExporterSpec
-  -> (SpanExporterSpec -> m a)
-  -> m a
-otlpSpanExporter spec action =
-  withRunInIO \runInIO -> otlpSpanExporterIO spec (runInIO . action)
+  :: forall r
+   . OTLPSpanExporterSpec
+  -> ContT r IO SpanExporterSpec
+otlpSpanExporter spec = ContT $ otlpSpanExporterIO spec
 
 otlpSpanExporterIO
   :: forall a
@@ -1047,8 +1044,11 @@ data OTLPSpanExporterItem = OTLPSpanExporterItem
 instance ToJSON OTLPSpanExporterItem where
   toJSON = toJSON . otlpSpanExporterItemBatch
 
-stmSpanExporter :: TMQueue (Span Attrs) -> SpanExporterSpec
-stmSpanExporter queue = spanExporterSpec
+stmSpanExporter
+  :: forall r
+   . TMQueue (Span Attrs)
+  -> ContT r IO SpanExporterSpec
+stmSpanExporter queue = pure spanExporterSpec
   where
   spanExporterSpec =
     defaultSpanExporterSpec
@@ -1642,7 +1642,7 @@ withAll
    . [(a -> b) -> b]
   -> ([a] -> b)
   -> b
-withAll = runCont . mapM cont
+withAll = runCont . traverse cont
 
 -- $disclaimer
 --
