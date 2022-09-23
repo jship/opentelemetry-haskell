@@ -22,8 +22,7 @@ main :: IO ()
 main = do
   gen <- createSystemRandom
   withTracerProvider tracerProviderSpec \tracerProvider -> do
-    tracer <- getTracer tracerProvider "otlp-tracing-example"
-    let tracingBackend = defaultTracingBackend tracer
+    tracingBackend <- getTracingBackend tracerProvider "otlp-tracing-example"
     flip runTracingT tracingBackend do
       trace "1" \mutableSpan -> do
         parentSpanContext <- getSpanContext mutableSpan

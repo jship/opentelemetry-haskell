@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.6.
+-- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
 
@@ -31,6 +31,7 @@ library
   exposed-modules:
       OTel.API.Common
       OTel.API.Common.Attributes
+      OTel.API.Common.CPS
       OTel.API.Common.InstrumentationScope
       OTel.API.Common.Internal
       OTel.API.Common.KV

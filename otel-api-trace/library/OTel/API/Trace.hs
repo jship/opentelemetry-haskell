@@ -5,7 +5,7 @@ module OTel.API.Trace
   , Internal.mapTracingT
 
   , Internal.TracingBackend
-  , Internal.defaultTracingBackend
+  , Internal.toTracingBackend
 
   , module OTel.API.Trace.Core
   ) where

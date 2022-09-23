@@ -18,7 +18,7 @@ module OTel.API.Trace.Internal
   , mapTracingT
 
   , TracingBackend(..)
-  , defaultTracingBackend
+  , toTracingBackend
   ) where
 
 import Control.Exception.Safe (MonadCatch, MonadMask, MonadThrow, SomeException)
@@ -176,8 +176,8 @@ data TracingBackend = TracingBackend
   , tracingBackendContextBackend :: ContextBackend MutableSpan
   }
 
-defaultTracingBackend :: Tracer -> TracingBackend
-defaultTracingBackend tracer =
+toTracingBackend :: Tracer -> TracingBackend
+toTracingBackend tracer =
   TracingBackend
     { tracingBackendTracer = tracer
     , tracingBackendContextBackend = contextBackendSpan

@@ -1,31 +1,31 @@
 module OTel.API.Common.Attributes
-  ( Attrs
-  , emptyAttrs
-  , nullAttrs
-  , sizeAttrs
-  , memberAttrs
-  , lookupAttrs
-  , foldMapWithKeyAttrs
-  , droppedAttrsCount
+  ( Internal.Attrs
+  , Internal.emptyAttrs
+  , Internal.nullAttrs
+  , Internal.sizeAttrs
+  , Internal.memberAttrs
+  , Internal.lookupAttrs
+  , Internal.foldMapWithKeyAttrs
+  , Internal.droppedAttrsCount
 
-  , AttrsBuilder
+  , Internal.AttrsBuilder
 
-  , AttrsFor(..)
+  , Internal.AttrsFor(..)
 
-  , AttrsLimits
-  , attrsLimitsCount
-  , attrsLimitsValueLength
-  , defaultAttrsLimits
+  , Internal.AttrsLimits
+  , Internal.attrsLimitsCount
+  , Internal.attrsLimitsValueLength
+  , Internal.defaultAttrsLimits
 
-  , SomeAttr(..)
-  , Attr(..)
+  , Internal.SomeAttr(..)
+  , Internal.Attr(..)
 
-  , AttrVals
+  , Internal.AttrVals
 
-  , AttrType(..)
+  , Internal.AttrType(..)
 
-  , KnownAttrType(..)
-  , ToAttrVal(..)
+  , Internal.KnownAttrType(..)
+  , Internal.ToAttrVal(..)
   ) where
 
-import OTel.API.Common.Internal
+import qualified OTel.API.Common.Internal as Internal

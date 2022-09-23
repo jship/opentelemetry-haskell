@@ -59,10 +59,13 @@ module OTel.API.Common.Internal
   , AttrType(..)
   , KnownAttrType(..)
   , ToAttrVal(..)
+
+  , with
   ) where
 
 import Data.Aeson (KeyValue((.=)), ToJSON(..))
 import Data.DList (DList)
+import Data.Function ((&))
 import Data.HashMap.Strict (HashMap)
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Kind (Constraint, Type)
@@ -721,6 +724,9 @@ instance ToAttrVal (Seq Word32) (AttrVals Int64) where
 
 instance ToAttrVal (Vector Word32) (AttrVals Int64) where
   toAttrVal = AttrVals . fmap (toAttrVal @Word32 @Int64)
+
+with :: a -> (a -> b) -> b
+with = (&)
 
 -- $disclaimer
 --

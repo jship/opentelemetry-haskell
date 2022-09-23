@@ -23,9 +23,6 @@ module OTel.API.Trace.Core.Internal
   , MonadTracingIO(..)
 
   , TracerProvider(..)
-  , getTracer
-  , shutdownTracerProvider
-  , forceFlushTracerProvider
 
   , Tracer(..)
 
@@ -295,20 +292,6 @@ data TracerProvider = TracerProvider
   , tracerProviderShutdown :: IO ()
   , tracerProviderForceFlush :: IO ()
   }
-
-getTracer
-  :: forall m
-   . (MonadIO m)
-  => TracerProvider
-  -> InstrumentationScope
-  -> m Tracer
-getTracer tracerProvider = liftIO . tracerProviderGetTracer tracerProvider
-
-shutdownTracerProvider :: forall m. (MonadIO m) => TracerProvider -> m ()
-shutdownTracerProvider = liftIO . tracerProviderShutdown
-
-forceFlushTracerProvider :: forall m. (MonadIO m) => TracerProvider -> m ()
-forceFlushTracerProvider = liftIO . tracerProviderForceFlush
 
 data Tracer = Tracer
   { tracerInstrumentationScope :: InstrumentationScope

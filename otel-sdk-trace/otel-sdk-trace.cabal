@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.6.
+-- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
 
@@ -30,7 +30,22 @@ source-repository head
 library
   exposed-modules:
       OTel.SDK.Trace
+      OTel.SDK.Trace.Common
+      OTel.SDK.Trace.Handlers
+      OTel.SDK.Trace.Handlers.OnException
+      OTel.SDK.Trace.Handlers.OnSpansExported
+      OTel.SDK.Trace.Handlers.OnTimeout
+      OTel.SDK.Trace.IdGenerator
       OTel.SDK.Trace.Internal
+      OTel.SDK.Trace.Sampler
+      OTel.SDK.Trace.Sampler.AlwaysOff
+      OTel.SDK.Trace.Sampler.AlwaysOn
+      OTel.SDK.Trace.Sampler.ParentBased
+      OTel.SDK.Trace.SpanExporter
+      OTel.SDK.Trace.SpanExporter.OTLP
+      OTel.SDK.Trace.SpanExporter.STM
+      OTel.SDK.Trace.SpanProcessor
+      OTel.SDK.Trace.SpanProcessor.Simple
   hs-source-dirs:
       library
   default-extensions:

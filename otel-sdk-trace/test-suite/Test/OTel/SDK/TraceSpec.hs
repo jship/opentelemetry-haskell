@@ -34,17 +34,13 @@ import qualified Data.List as List
 import qualified Data.List.NonEmpty as NonEmpty
 import qualified Test.Hspec as Hspec
 
---import Control.Exception (PatternMatchFail(..), evaluate) -- @base@
---import Control.Exception.Safe (catch) -- @safe-exceptions@
-
 spec :: Spec
 spec = do
   describe "Spec" do
     it "single span" do
       runTest TestCase
         { action = \tracerProvider -> do
-            tracingBackend <- do
-              fmap defaultTracingBackend $ getTracer tracerProvider "testTracer"
+            tracingBackend <- getTracingBackend tracerProvider "testTracer"
             flip runTracingT tracingBackend do
               trace_ "1" do
                 pure ()
@@ -75,8 +71,7 @@ spec = do
     it "couple spans" do
       runTest TestCase
         { action = \tracerProvider -> do
-            tracingBackend <- do
-              fmap defaultTracingBackend $ getTracer tracerProvider "testTracer"
+            tracingBackend <- getTracingBackend tracerProvider "testTracer"
             flip runTracingT tracingBackend do
               trace_ "1" do
                 trace_ "1.1" do

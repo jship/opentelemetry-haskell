@@ -22,6 +22,11 @@ module OTel.SDK.Trace.Internal
   , defaultTracerProviderSpec
   , withTracerProvider
   , withTracerProviderIO
+  , getTracingBackend
+  , getTracer
+  , shutdownTracerProvider
+  , forceFlushTracerProvider
+
   , SpanProcessor(..)
   , buildSpanProcessor
   , SimpleSpanProcessorSpec(..)
@@ -29,6 +34,7 @@ module OTel.SDK.Trace.Internal
   , simpleSpanProcessor
   , SpanProcessorSpec(..)
   , defaultSpanProcessorSpec
+
   , SpanExportResult(..)
   , SpanExporter(..)
   , buildSpanExporter
@@ -41,6 +47,7 @@ module OTel.SDK.Trace.Internal
   , stmSpanExporter
   , SpanExporterSpec(..)
   , defaultSpanExporterSpec
+
   , Sampler(..)
   , buildSampler
   , SamplerSpec(..)
@@ -55,13 +62,20 @@ module OTel.SDK.Trace.Internal
   , SamplingResult(..)
   , defaultSamplingResult
   , SamplingDecision(..)
+  , samplingDecisionDrop
+  , samplingDecisionRecordOnly
+  , samplingDecisionRecordAndSample
+
   , SpanProcessorM(..)
   , askSpanExporter
   , runSpanProcessorM
+
   , SpanExporterM(..)
   , runSpanExporterM
+
   , SamplerM(..)
   , runSamplerM
+
   , IdGeneratorM(..)
   , runIdGeneratorM
   , IdGeneratorSpec(..)
@@ -69,29 +83,36 @@ module OTel.SDK.Trace.Internal
   , PRNG(..)
   , genUniform
   , newPRNGRef
+
   , OnException(..)
   , askException
   , askExceptionMetadata
+
   , OnTimeout(..)
   , askTimeoutMicros
   , askTimeoutMetadata
+
   , OnSpansExported(..)
   , askSpansExported
   , askSpansExportedResult
   , askSpansExportedMetadata
+
   , Batch(..)
   , singletonBatch
   , fromListBatch
+
   , ConcurrentWorkersSpec(..)
   , defaultConcurrentWorkersSpec
   , ConcurrentWorkers(..)
   , withConcurrentWorkers
-  , withConcurrentWorkersIO
+
   , unlessSTM
-  , defaultSystemSeed
-  , defaultManager
+
   , with
   , withAll
+
+  , defaultSystemSeed
+  , defaultManager
   ) where
 
 import Control.Applicative (Alternative(..), Applicative(..))
@@ -155,7 +176,7 @@ import OTel.API.Common
   , InstrumentationScopeName(unInstrumentationScopeName), KV((.@)), Key(unKey)
   , TimestampSource(TimestampSourceAt, TimestampSourceNow), Version(unVersion), AttrVals, Attrs
   , AttrsBuilder, AttrsLimits, Timestamp, defaultAttrsLimits, droppedAttrsCount, foldMapWithKeyAttrs
-  , schemaURLToText, timestampFromNanoseconds, timestampToNanoseconds
+  , schemaURLToText, timestampFromNanoseconds, timestampToNanoseconds, with
   )
 import OTel.API.Common.Internal (AttrVals(..), InstrumentationScope(..))
 import OTel.API.Context.Core (Context, lookupContext)
@@ -165,16 +186,17 @@ import OTel.API.Trace
   , SpanLink(..), SpanName(unSpanName), SpanParent(SpanParentChildOf, SpanParentRoot)
   , SpanStatus(SpanStatusError, SpanStatusOk, SpanStatusUnset), MutableSpan, SpanId, SpanLinks
   , TraceId, TraceState, Tracer, TracerProvider, UpdateSpanSpec, contextKeySpan, emptySpanContext
-  , emptyTraceState, frozenTimestamp, shutdownTracerProvider, spanContextIsSampled
-  , spanContextIsValid, spanEventsToList, spanIdFromWords, spanIdToBytesBuilder, spanIsSampled
-  , spanLinksToList, traceFlagsSampled, traceIdFromWords, traceIdToBytesBuilder
-  , pattern CODE_FILEPATH, pattern CODE_FUNCTION, pattern CODE_LINENO, pattern CODE_NAMESPACE
+  , emptyTraceState, frozenTimestamp, spanContextIsSampled, spanContextIsValid, spanEventsToList
+  , spanIdFromWords, spanIdToBytesBuilder, spanIsSampled, spanLinksToList, toTracingBackend
+  , traceFlagsSampled, traceIdFromWords, traceIdToBytesBuilder, pattern CODE_FILEPATH
+  , pattern CODE_FUNCTION, pattern CODE_LINENO, pattern CODE_NAMESPACE
   )
 import OTel.API.Trace.Core.Internal
   ( NewSpanSpec(..), Span(..), SpanContext(..), SpanLinkSpec(..), SpanLinkSpecs(..), SpanLinks(..)
   , Tracer(..), TracerProvider(..), buildSpanUpdater, freezeSpan, unsafeModifyMutableSpan
   , unsafeNewMutableSpan, unsafeReadMutableSpan
   )
+import OTel.API.Trace.Internal (TracingBackend(..))
 import Prelude hiding (span)
 import System.Clock (Clock(Realtime), getTime, toNanoSecs)
 import System.IO.Unsafe (unsafePerformIO)
@@ -454,6 +476,29 @@ withTracerProviderIO tracerProviderSpec action = do
     , tracerProviderSpecCallStackAttrs = callStackAttrs
     } = tracerProviderSpec
 
+getTracingBackend
+  :: forall m
+   . (MonadIO m)
+  => TracerProvider
+  -> InstrumentationScope
+  -> m TracingBackend
+getTracingBackend tracerProvider instScope =
+  fmap toTracingBackend $ getTracer tracerProvider instScope
+
+getTracer
+  :: forall m
+   . (MonadIO m)
+  => TracerProvider
+  -> InstrumentationScope
+  -> m Tracer
+getTracer tracerProvider = liftIO . tracerProviderGetTracer tracerProvider
+
+shutdownTracerProvider :: forall m. (MonadIO m) => TracerProvider -> m ()
+shutdownTracerProvider = liftIO . tracerProviderShutdown
+
+forceFlushTracerProvider :: forall m. (MonadIO m) => TracerProvider -> m ()
+forceFlushTracerProvider = liftIO . tracerProviderForceFlush
+
 data SpanProcessor = SpanProcessor
   { spanProcessorOnSpanStart
       :: Context -- Parent context
@@ -583,21 +628,20 @@ simpleSpanProcessor
    . SimpleSpanProcessorSpec
   -> (SpanProcessorSpec -> IO a)
   -> IO a
-simpleSpanProcessor simpleSpanProcessorSpec = with spanProcessorSpec
+simpleSpanProcessor simpleSpanProcessorSpec =
+  with defaultSpanProcessorSpec
+    { spanProcessorSpecName = name
+    , spanProcessorSpecExporter = spanExporterSpec
+    , spanProcessorSpecOnSpanEnd = \span -> do
+        when (spanIsSampled span) do
+          let batch = singletonBatch span
+          logger <- askLoggerIO
+          spanExporter <- askSpanExporter
+          liftIO $ spanExporterExport spanExporter batch \spanExportResult -> do
+            flip runLoggingT logger do
+              runOnSpansExported onSpansExported batch spanExportResult metaOnSpanEnd
+    }
   where
-  spanProcessorSpec =
-    defaultSpanProcessorSpec
-      { spanProcessorSpecName = name
-      , spanProcessorSpecExporter = spanExporterSpec
-      , spanProcessorSpecOnSpanEnd = \span -> do
-          when (spanIsSampled span) do
-            let batch = singletonBatch span
-            logger <- askLoggerIO
-            spanExporter <- askSpanExporter
-            liftIO $ spanExporterExport spanExporter batch \spanExportResult -> do
-              flip runLoggingT logger do
-                runOnSpansExported onSpansExported batch spanExportResult metaOnSpanEnd
-      }
 
   metaOnSpanEnd :: [SeriesElem]
   metaOnSpanEnd = mkLoggingMeta "onSpanEnd"
@@ -1116,18 +1160,16 @@ stmSpanExporter
    . TMQueue (Span Attrs)
   -> (SpanExporterSpec -> IO a)
   -> IO a
-stmSpanExporter queue = with spanExporterSpec
-  where
-  spanExporterSpec =
-    defaultSpanExporterSpec
-      { spanExporterSpecName = "stm"
-      , spanExporterSpecExport = \spans onSpansExported -> do
-          join $ liftIO $ atomically do
-            traverse_ (writeTMQueue queue) spans
-            pure $ liftIO $ onSpansExported SpanExportResultSuccess
-      , spanExporterSpecShutdown = do
-          liftIO $ atomically $ closeTMQueue queue
-      }
+stmSpanExporter queue =
+  with defaultSpanExporterSpec
+    { spanExporterSpecName = "stm"
+    , spanExporterSpecExport = \spans onSpansExported -> do
+        join $ liftIO $ atomically do
+          traverse_ (writeTMQueue queue) spans
+          pure $ liftIO $ onSpansExported SpanExportResultSuccess
+    , spanExporterSpecShutdown = do
+        liftIO $ atomically $ closeTMQueue queue
+    }
 
 data SpanExporterSpec = SpanExporterSpec
   { spanExporterSpecName :: Text
@@ -1349,6 +1391,15 @@ data SamplingDecision
   = SamplingDecisionDrop
   | SamplingDecisionRecordOnly
   | SamplingDecisionRecordAndSample
+
+samplingDecisionDrop :: SamplingDecision
+samplingDecisionDrop = SamplingDecisionDrop
+
+samplingDecisionRecordOnly :: SamplingDecision
+samplingDecisionRecordOnly = SamplingDecisionRecordOnly
+
+samplingDecisionRecordAndSample :: SamplingDecision
+samplingDecisionRecordAndSample = SamplingDecisionRecordAndSample
 
 type SpanProcessorM :: Type -> Type
 newtype SpanProcessorM a = SpanProcessorM
@@ -1590,21 +1641,12 @@ data ConcurrentWorkers item = ConcurrentWorkers
   }
 
 withConcurrentWorkers
-  :: forall m item a
-   . (MonadUnliftIO m, ToJSON item, Typeable item)
-  => ConcurrentWorkersSpec item
-  -> (ConcurrentWorkers item -> m a)
-  -> m a
-withConcurrentWorkers spec action =
-  withRunInIO \runInIO -> withConcurrentWorkersIO spec (runInIO . action)
-
-withConcurrentWorkersIO
   :: forall item a
    . (ToJSON item, Typeable item)
   => ConcurrentWorkersSpec item
   -> (ConcurrentWorkers item -> IO a)
   -> IO a
-withConcurrentWorkersIO concurrentWorkersSpec action = do
+withConcurrentWorkers concurrentWorkersSpec action = do
   flip runLoggingT logger do
     logDebug $ "Starting concurrent workers" :# loggingMeta
   queue <- newTBMQueueIO queueSize
@@ -1683,6 +1725,13 @@ unlessSTM isShutdownSTM actionSTM =
     True -> pure mempty
     False -> actionSTM
 
+withAll
+  :: forall a b
+   . [(a -> b) -> b]
+  -> ([a] -> b)
+  -> b
+withAll = runCont . traverse cont
+
 defaultSystemSeed :: Seed
 defaultSystemSeed = unsafePerformIO createSystemSeed
 {-# NOINLINE defaultSystemSeed #-}
@@ -1690,16 +1739,6 @@ defaultSystemSeed = unsafePerformIO createSystemSeed
 defaultManager :: Manager
 defaultManager = unsafePerformIO newTlsManager
 {-# NOINLINE defaultManager #-}
-
-with :: a -> (a -> b) -> b
-with = (&)
-
-withAll
-  :: forall a b
-   . [(a -> b) -> b]
-  -> ([a] -> b)
-  -> b
-withAll = runCont . traverse cont
 
 -- $disclaimer
 --

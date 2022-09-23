@@ -1,12 +1,9 @@
 module OTel.API.Trace.Core
   ( -- * Synopsis
     -- $synopsis
-    Internal.Tracer
+    Internal.TracerProvider
 
-  , Internal.TracerProvider
-  , Internal.getTracer
-  , Internal.shutdownTracerProvider
-  , Internal.forceFlushTracerProvider
+  , Internal.Tracer
 
   , module OTel.API.Trace.Core.Attributes
   , module OTel.API.Trace.Core.Class
