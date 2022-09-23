@@ -1,6 +1,6 @@
 {-# LANGUAGE BlockArguments #-}
-{-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE LambdaCase #-}
@@ -18,7 +18,80 @@
 module OTel.SDK.Trace.Internal
   ( -- * Disclaimer
     -- $disclaimer
-    module OTel.SDK.Trace.Internal -- TODO: Explicit exports
+    TracerProviderSpec(..)
+  , defaultTracerProviderSpec
+  , withTracerProvider
+  , withTracerProviderIO
+  , SpanProcessor(..)
+  , buildSpanProcessor
+  , SimpleSpanProcessorSpec(..)
+  , defaultSimpleSpanProcessorSpec
+  , simpleSpanProcessor
+  , SpanProcessorSpec(..)
+  , defaultSpanProcessorSpec
+  , SpanExportResult(..)
+  , SpanExporter(..)
+  , buildSpanExporter
+  , OTLPSpanExporterSpec(..)
+  , defaultOTLPSpanExporterSpec
+  , otlpSpanExporter
+  , OTLPProtocol(..)
+  , httpProtobufProtocol
+  , OTLPSpanExporterItem(..)
+  , stmSpanExporter
+  , SpanExporterSpec(..)
+  , defaultSpanExporterSpec
+  , Sampler(..)
+  , buildSampler
+  , SamplerSpec(..)
+  , defaultSamplerSpec
+  , alwaysOnSampler
+  , alwaysOffSampler
+  , ParentBasedSamplerSpec(..)
+  , defaultParentBasedSamplerSpec
+  , parentBasedSampler
+  , constDecisionSampler
+  , SamplerInput(..)
+  , SamplingResult(..)
+  , defaultSamplingResult
+  , SamplingDecision(..)
+  , SpanProcessorM(..)
+  , askSpanExporter
+  , runSpanProcessorM
+  , SpanExporterM(..)
+  , runSpanExporterM
+  , SamplerM(..)
+  , runSamplerM
+  , IdGeneratorM(..)
+  , runIdGeneratorM
+  , IdGeneratorSpec(..)
+  , defaultIdGeneratorSpec
+  , PRNG(..)
+  , genUniform
+  , newPRNGRef
+  , OnException(..)
+  , askException
+  , askExceptionMetadata
+  , OnTimeout(..)
+  , askTimeoutMicros
+  , askTimeoutMetadata
+  , OnSpansExported(..)
+  , askSpansExported
+  , askSpansExportedResult
+  , askSpansExportedMetadata
+  , Batch(..)
+  , singletonBatch
+  , fromListBatch
+  , ConcurrentWorkersSpec(..)
+  , defaultConcurrentWorkersSpec
+  , ConcurrentWorkers(..)
+  , withConcurrentWorkers
+  , withConcurrentWorkersIO
+  , unlessSTM
+  , defaultSystemSeed
+  , defaultManager
+  , with
+  , withAll
   ) where
 
 import Control.Applicative (Alternative(..), Applicative(..))
@@ -1276,20 +1349,6 @@ data SamplingDecision
   = SamplingDecisionDrop
   | SamplingDecisionRecordOnly
   | SamplingDecisionRecordAndSample
-
-pattern Drop :: SamplingDecision
-pattern Drop <- SamplingDecisionDrop where
-  Drop = SamplingDecisionDrop
-
-pattern RecordOnly :: SamplingDecision
-pattern RecordOnly <- SamplingDecisionRecordOnly where
-  RecordOnly = SamplingDecisionRecordOnly
-
-pattern RecordAndSample :: SamplingDecision
-pattern RecordAndSample <- SamplingDecisionRecordAndSample where
-  RecordAndSample = SamplingDecisionRecordAndSample
-
-{-# COMPLETE Drop, RecordOnly, RecordAndSample :: SamplingDecision #-}
 
 type SpanProcessorM :: Type -> Type
 newtype SpanProcessorM a = SpanProcessorM
