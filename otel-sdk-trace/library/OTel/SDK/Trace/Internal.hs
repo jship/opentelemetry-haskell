@@ -242,9 +242,9 @@ defaultTracerProviderSpec =
         fmap (timestampFromNanoseconds . toNanoSecs) $ getTime Realtime
     , tracerProviderSpecLogger = mempty
     , tracerProviderSpecSeed = defaultSystemSeed
-    , tracerProviderSpecIdGenerator = defaultIdGeneratorSpec
+    , tracerProviderSpecIdGenerator = defaultIdGeneratorSpec -- TODO: This should likely be in CPS for consistency
     , tracerProviderSpecSpanProcessors = mempty
-    , tracerProviderSpecSampler = defaultSamplerSpec
+    , tracerProviderSpecSampler = defaultSamplerSpec -- TODO: This should likely be in CPS for consistency
     , tracerProviderSpecResource =
         fromRight (error "defaultTracerProviderSpec: defaultResource is never a Left") $
           buildResourcePure $ defaultResourceBuilder "unknown_service"
@@ -276,14 +276,21 @@ withTracerProviderIO
   -> (TracerProvider -> IO a)
   -> IO a
 withTracerProviderIO tracerProviderSpec action = do
+  flip runLoggingT logger do
+    logDebug "Acquiring tracer provider"
   shutdownRef <- newTVarIO False
   prngRef <- newPRNGRef seed
+  flip runLoggingT logger do
+    logDebug $ "Building sampler" :#
+      [ "name" .= samplerSpecName samplerSpec
+      , "description" .= samplerSpecDescription samplerSpec
+      ]
   sampler <- buildSampler logger samplerSpec
   withCompositeSpanProcessor \spanProcessor -> do
     let tracerProvider =
           TracerProvider
             { tracerProviderGetTracer =
-                pure . getTracerWith prngRef sampler spanProcessor
+                getTracerWith prngRef sampler spanProcessor
             , tracerProviderShutdown = do
                 unlessSTM (readTVar shutdownRef) do
                   writeTVar shutdownRef True
@@ -292,6 +299,17 @@ withTracerProviderIO tracerProviderSpec action = do
                 unlessSTM (readTVar shutdownRef) do
                   pure $ spanProcessorForceFlush spanProcessor
             }
+    flip runLoggingT logger do
+      logDebug $ "Acquired tracer provider" :#
+        [ "resource" .= res
+        , "limits" .= object
+            [ "attributes" .= object
+                [ "span" .= spanAttrsLimits
+                , "spanEvent" .= spanEventAttrsLimits
+                , "spanLink" .= spanLinkAttrsLimits
+                ]
+            ]
+        ]
     action tracerProvider `finally` shutdownTracerProvider tracerProvider
   where
   withCompositeSpanProcessor :: (SpanProcessor -> IO r) -> IO r
@@ -307,17 +325,19 @@ withTracerProviderIO tracerProviderSpec action = do
     -> Sampler
     -> SpanProcessor
     -> InstrumentationScope
-    -> Tracer
+    -> IO Tracer
   getTracerWith prngRef sampler spanProcessor scope =
-    Tracer
-      { tracerInstrumentationScope = scope
-      , tracerNow = now
-      , tracerStartSpan = startSpan prngRef sampler scope spanProcessor
-      , tracerProcessSpan = endSpan spanProcessor
-      , tracerSpanAttrsLimits = spanAttrsLimits
-      , tracerSpanEventAttrsLimits = spanEventAttrsLimits
-      , tracerSpanLinkAttrsLimits = spanLinkAttrsLimits
-      }
+    flip runLoggingT logger do
+      logDebug $ "Providing tracer" :# [ "instrumentationScope" .= scope ]
+      pure Tracer
+        { tracerInstrumentationScope = scope
+        , tracerNow = now
+        , tracerStartSpan = startSpan prngRef sampler scope spanProcessor
+        , tracerProcessSpan = endSpan spanProcessor
+        , tracerSpanAttrsLimits = spanAttrsLimits
+        , tracerSpanEventAttrsLimits = spanEventAttrsLimits
+        , tracerSpanLinkAttrsLimits = spanLinkAttrsLimits
+        }
 
   endSpan :: SpanProcessor -> Span Attrs -> IO ()
   endSpan spanProcessor endedSpan = do
@@ -552,6 +572,17 @@ buildSpanProcessor res logger spanProcessorSpec = do
   runContT do
     spanExporterSpec <- ContT spanProcessorSpecExporter
     shutdownRef <- liftIO $ newTVarIO False
+    flip runLoggingT logger do
+      logDebug $ "Building span processor" :#
+        [ "name" .= spanProcessorSpecName
+        , "shutdownTimeout" .= shutdownTimeout
+        , "forceFlushTimeout" .= forceFlushTimeout
+        , "spanExporter" .= object
+            [ "name" .= spanExporterSpecName spanExporterSpec
+            , "shutdownTimeout" .= spanExporterSpecShutdownTimeout spanExporterSpec
+            , "forceFlushTimeout" .= spanExporterSpecForceFlushTimeout spanExporterSpec
+            ]
+        ]
     spanExporter <- liftIO $ buildSpanExporter res logger spanExporterSpec
     pure $ spanProcessor shutdownRef spanExporter
   where

@@ -63,7 +63,7 @@ module OTel.API.Common.Internal
   , with
   ) where
 
-import Data.Aeson (KeyValue((.=)), ToJSON(..))
+import Data.Aeson (KeyValue((.=)), ToJSON(..), object)
 import Data.DList (DList)
 import Data.Function ((&))
 import Data.HashMap.Strict (HashMap)
@@ -221,7 +221,7 @@ data Attrs (af :: AttrsFor) = Attrs
 instance ToJSON (Attrs af) where
   toJSON attrs =
     Aeson.object
-      [ "attributes" .= toJSON attrsMap
+      [ "attributePairs" .= toJSON attrsMap
       , "attributesDropped" .= toJSON attrsDropped
       ]
     where
@@ -358,6 +358,15 @@ data AttrsLimits (af :: AttrsFor) = AttrsLimits
   { attrsLimitsCount :: Maybe Int
   , attrsLimitsValueLength :: Maybe Int
   }
+
+instance ToJSON (AttrsLimits af) where
+  toJSON attrsLimits =
+    object
+      [ "count" .= toJSON attrsLimitsCount
+      , "valueLength" .= toJSON attrsLimitsValueLength
+      ]
+    where
+    AttrsLimits { attrsLimitsCount, attrsLimitsValueLength } = attrsLimits
 
 defaultAttrsLimits :: AttrsLimits af
 defaultAttrsLimits =

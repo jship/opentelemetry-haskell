@@ -26,6 +26,7 @@ module OTel.SDK.Resource.Core.Internal
   ) where
 
 import Control.Exception.Safe (Exception, MonadThrow, throwM)
+import Data.Aeson (ToJSON(..), (.=), object)
 import Data.HashMap.Strict (HashMap)
 import Data.Kind (Type)
 import Data.Text (Text)
@@ -45,6 +46,15 @@ data Resource (attrs :: AttrsFor -> Type) = Resource
 
 deriving stock instance Eq (Resource Attrs)
 deriving stock instance Show (Resource Attrs)
+
+instance ToJSON (Resource Attrs) where
+  toJSON resource =
+    object
+      [ "attributes" .= resourceAttrs
+      , "schemaURL" .= resourceSchemaURL
+      ]
+    where
+    Resource { resourceAttrs, resourceSchemaURL } = resource
 
 defaultResourceBuilder :: Text -> ResourceBuilder
 defaultResourceBuilder serviceName =

@@ -13,9 +13,9 @@ module OTel.API.Common.Attributes
   , Internal.AttrsFor(..)
 
   , Internal.AttrsLimits
+  , Internal.defaultAttrsLimits
   , Internal.attrsLimitsCount
   , Internal.attrsLimitsValueLength
-  , Internal.defaultAttrsLimits
 
   , Internal.SomeAttr(..)
   , Internal.Attr(..)
