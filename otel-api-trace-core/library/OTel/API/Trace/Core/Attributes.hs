@@ -12,9 +12,9 @@ import OTel.API.Common.Internal (Key(..), SchemaURL(..), ToAttrVal(..))
 import Prelude (Bool, Double)
 
 -- | The URL of the OpenTelemetry schema for these keys and values.
-pattern SCHEMA_URL :: SchemaURL
-pattern SCHEMA_URL <- SchemaURL "https://opentelemetry.io/schemas/1.12.0" where
-  SCHEMA_URL = SchemaURL "https://opentelemetry.io/schemas/1.12.0"
+pattern TRACE_SCHEMA_URL :: SchemaURL
+pattern TRACE_SCHEMA_URL <- SchemaURL "https://opentelemetry.io/schemas/1.12.0" where
+  TRACE_SCHEMA_URL = SchemaURL "https://opentelemetry.io/schemas/1.12.0"
 
 {-|
 The full invoked ARN as provided on the @Context@ passed to the function (@Lambda-Runtime-Invoked-Function-Arn@ header on the @\/runtime\/invocation\/next@ applicable).

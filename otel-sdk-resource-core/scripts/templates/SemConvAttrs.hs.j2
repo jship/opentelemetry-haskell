@@ -35,9 +35,9 @@ import OTel.API.Common.Internal (Key(..), SchemaURL(..), ToAttrVal(..))
 {%- endmacro %}
 
 -- | The URL of the OpenTelemetry schema for these keys and values.
-pattern SCHEMA_URL :: SchemaURL
-pattern SCHEMA_URL <- SchemaURL "{{schemaUrl}}" where
-  SCHEMA_URL = SchemaURL "{{schemaUrl}}"
+pattern RESOURCE_SCHEMA_URL :: SchemaURL
+pattern RESOURCE_SCHEMA_URL <- SchemaURL "{{schemaUrl}}" where
+  RESOURCE_SCHEMA_URL = SchemaURL "{{schemaUrl}}"
 
 {%- for attribute in attributes if attribute.is_local and not attribute.ref %}
 

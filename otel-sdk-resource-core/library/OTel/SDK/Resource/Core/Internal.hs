@@ -32,7 +32,7 @@ import OTel.API.Common
   , attrsLimitsValueLength, defaultAttrsLimits
   )
 import OTel.API.Common.Internal (runAttrsBuilder)
-import OTel.SDK.Resource.Core.Attributes (pattern SCHEMA_URL, pattern SERVICE_NAME)
+import OTel.SDK.Resource.Core.Attributes (pattern RESOURCE_SCHEMA_URL, pattern SERVICE_NAME)
 import Prelude
 import qualified Data.HashMap.Strict as HashMap
 
@@ -46,7 +46,8 @@ deriving stock instance Show (Resource Attrs)
 
 defaultResource :: ResourceBuilder
 defaultResource =
-  fromSpecificSchema SCHEMA_URL $ SERVICE_NAME .@ ("unknown_service" :: Text)
+  fromSpecificSchema RESOURCE_SCHEMA_URL $
+    SERVICE_NAME .@ ("unknown_service" :: Text)
 
 fromSpecificSchema :: SchemaURL -> ResourceBuilder -> ResourceBuilder
 fromSpecificSchema schemaURL resourceBuilder =

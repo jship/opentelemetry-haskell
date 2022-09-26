@@ -36,9 +36,9 @@ import Prelude (Bool, Double)
 {%- endmacro %}
 
 -- | The URL of the OpenTelemetry schema for these keys and values.
-pattern SCHEMA_URL :: SchemaURL
-pattern SCHEMA_URL <- SchemaURL "{{schemaUrl}}" where
-  SCHEMA_URL = SchemaURL "{{schemaUrl}}"
+pattern TRACE_SCHEMA_URL :: SchemaURL
+pattern TRACE_SCHEMA_URL <- SchemaURL "{{schemaUrl}}" where
+  TRACE_SCHEMA_URL = SchemaURL "{{schemaUrl}}"
 
 {%- for attribute in attributes if attribute.is_local and not attribute.ref %}
 

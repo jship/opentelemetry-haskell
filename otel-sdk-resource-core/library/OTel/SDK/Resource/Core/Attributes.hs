@@ -11,9 +11,9 @@ import OTel.API.Common (AttrVals)
 import OTel.API.Common.Internal (Key(..), SchemaURL(..), ToAttrVal(..))
 
 -- | The URL of the OpenTelemetry schema for these keys and values.
-pattern SCHEMA_URL :: SchemaURL
-pattern SCHEMA_URL <- SchemaURL "https://opentelemetry.io/schemas/1.12.0" where
-  SCHEMA_URL = SchemaURL "https://opentelemetry.io/schemas/1.12.0"
+pattern RESOURCE_SCHEMA_URL :: SchemaURL
+pattern RESOURCE_SCHEMA_URL <- SchemaURL "https://opentelemetry.io/schemas/1.12.0" where
+  RESOURCE_SCHEMA_URL = SchemaURL "https://opentelemetry.io/schemas/1.12.0"
 
 {-|
 Array of brand name and version separated by a space
