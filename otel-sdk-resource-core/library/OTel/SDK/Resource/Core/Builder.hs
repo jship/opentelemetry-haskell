@@ -1,5 +1,9 @@
 module OTel.SDK.Resource.Core.Builder
   ( Internal.ResourceBuilder
+  , Internal.defaultResourceBuilder
+  , Internal.forSpecificSchema
+  , Internal.resourceBuilderFromAttrs
+
   , Internal.buildResource
   , Internal.buildResourcePure
 

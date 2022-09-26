@@ -199,7 +199,7 @@ import OTel.API.Trace.Core.Internal
   , unsafeNewMutableSpan, unsafeReadMutableSpan
   )
 import OTel.API.Trace.Internal (TracingBackend(..))
-import OTel.SDK.Resource.Core (buildResourcePure, defaultResource)
+import OTel.SDK.Resource.Core (buildResourcePure, defaultResourceBuilder)
 import OTel.SDK.Resource.Core.Internal (Resource(..))
 import Prelude hiding (span)
 import System.Clock (Clock(Realtime), getTime, toNanoSecs)
@@ -247,7 +247,7 @@ defaultTracerProviderSpec =
     , tracerProviderSpecSampler = defaultSamplerSpec
     , tracerProviderSpecResource =
         fromRight (error "defaultTracerProviderSpec: defaultResource is never a Left") $
-          buildResourcePure defaultResource
+          buildResourcePure $ defaultResourceBuilder "unknown_service"
     , tracerProviderSpecSpanAttrsLimits = defaultAttrsLimits
     , tracerProviderSpecSpanEventAttrsLimits = defaultAttrsLimits
     , tracerProviderSpecSpanLinkAttrsLimits = defaultAttrsLimits

@@ -82,9 +82,7 @@ main = do
 
 buildTracerProviderSpec :: IO TracerProviderSpec
 buildTracerProviderSpec = do
-  resource <- do
-    buildResource $ fromSpecificSchema RESOURCE_SCHEMA_URL $
-      SERVICE_NAME .@ ("otlp-tracing-example" :: Text)
+  resource <- buildResource $ defaultResourceBuilder "otlp-tracing-example"
   pure defaultTracerProviderSpec
       { tracerProviderSpecSpanProcessors =
           [ simpleSpanProcessor defaultSimpleSpanProcessorSpec

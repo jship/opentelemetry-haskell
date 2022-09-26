@@ -4,6 +4,7 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
@@ -13,8 +14,9 @@ module OTel.SDK.Resource.Core.Internal
   ( -- * Disclaimer
     -- $disclaimer
     Resource(..)
-  , defaultResource
-  , fromSpecificSchema
+  , defaultResourceBuilder
+  , forSpecificSchema
+  , resourceBuilderFromAttrs
 
   , ResourceBuilder(..)
   , buildResource
@@ -44,37 +46,40 @@ data Resource (attrs :: AttrsFor -> Type) = Resource
 deriving stock instance Eq (Resource Attrs)
 deriving stock instance Show (Resource Attrs)
 
-defaultResource :: ResourceBuilder
-defaultResource =
-  fromSpecificSchema RESOURCE_SCHEMA_URL $
-    SERVICE_NAME .@ ("unknown_service" :: Text)
+defaultResourceBuilder :: Text -> ResourceBuilder
+defaultResourceBuilder serviceName =
+  forSpecificSchema RESOURCE_SCHEMA_URL $
+    SERVICE_NAME .@ serviceName
 
-fromSpecificSchema :: SchemaURL -> ResourceBuilder -> ResourceBuilder
-fromSpecificSchema schemaURL resourceBuilder =
+forSpecificSchema :: SchemaURL -> ResourceBuilder -> ResourceBuilder
+forSpecificSchema schemaURL resourceBuilder =
   case unResourceBuilder resourceBuilder of
     Left {} -> resourceBuilder
     Right resource ->
       ResourceBuilder $ Right resource { resourceSchemaURL = Just schemaURL }
 
+resourceBuilderFromAttrs :: AttrsBuilder 'AttrsForResource -> ResourceBuilder
+resourceBuilderFromAttrs resourceAttrs =
+  ResourceBuilder $ Right Resource
+    { resourceAttrs
+    , resourceSchemaURL = Nothing
+    }
+
 newtype ResourceBuilder = ResourceBuilder
   { unResourceBuilder
       :: Either
-           (HashMap SchemaURL (Resource AttrsBuilder))
+           (HashMap SchemaURL (AttrsBuilder 'AttrsForResource))
            (Resource AttrsBuilder)
   }
 
 instance KV ResourceBuilder where
   type KVConstraints ResourceBuilder = ToAttrVal
-  k .@ v =
-    ResourceBuilder $ Right Resource
-      { resourceAttrs = k .@ v
-      , resourceSchemaURL = Nothing
-      }
+  k .@ v = resourceBuilderFromAttrs $ k .@ v
 
 instance Semigroup ResourceBuilder where
   rb1 <> rb2 =
     case (unResourceBuilder rb1, unResourceBuilder rb2) of
-      (Left e1, Left e2) -> ResourceBuilder $ Left $ e1 <> e2
+      (Left e1, Left e2) -> ResourceBuilder $ Left $ unionAppendAttrs e1 e2
       (Left e1, Right {}) -> ResourceBuilder $ Left e1
       (Right {}, Left e2) -> ResourceBuilder $ Left e2
       (Right r1, Right r2)
@@ -84,10 +89,9 @@ instance Semigroup ResourceBuilder where
         | Just s1 <- schema1, Just s2 <- schema2 ->
             ResourceBuilder
               $ Left
-              $ HashMap.unionWith
-                  (\x y -> x { resourceAttrs = resourceAttrs x <> resourceAttrs y })
-                  (HashMap.singleton s1 r1)
-                  (HashMap.singleton s2 r2)
+              $ unionAppendAttrs
+                  (HashMap.singleton s1 $ resourceAttrs r1)
+                  (HashMap.singleton s2 $ resourceAttrs r2)
         where
         res schemaURL =
           ResourceBuilder $ Right Resource
@@ -96,13 +100,11 @@ instance Semigroup ResourceBuilder where
             }
         Resource { resourceAttrs = attrs1 , resourceSchemaURL = schema1 } = r1
         Resource { resourceAttrs = attrs2 , resourceSchemaURL = schema2 } = r2
+    where
+    unionAppendAttrs = HashMap.unionWith (<>)
 
 instance Monoid ResourceBuilder where
-  mempty =
-    ResourceBuilder $ Right Resource
-      { resourceAttrs = mempty
-      , resourceSchemaURL = Nothing
-      }
+  mempty = resourceBuilderFromAttrs mempty
 
 buildResource
   :: forall m
@@ -120,21 +122,20 @@ buildResourcePure
 buildResourcePure resourceBuilder =
   case unResourceBuilder resourceBuilder of
     Left hashMap -> Left $ ResourceMergeError
-      { resourceMergeErrorSchemas = fmap go hashMap
+      { resourceMergeErrorSchemas = fmap build hashMap
       }
     Right resource -> Right $ go resource
   where
-  go resource =
-    resource
-      { resourceAttrs =
-          runAttrsBuilder (resourceAttrs resource) defaultAttrsLimits
-            { attrsLimitsCount = Nothing
-            , attrsLimitsValueLength = Nothing
-            }
+  go resource = resource { resourceAttrs = build $ resourceAttrs resource }
+
+  build attrs =
+    runAttrsBuilder attrs defaultAttrsLimits
+      { attrsLimitsCount = Nothing
+      , attrsLimitsValueLength = Nothing
       }
 
 newtype ResourceMergeError = ResourceMergeError
-  { resourceMergeErrorSchemas :: HashMap SchemaURL (Resource Attrs)
+  { resourceMergeErrorSchemas :: HashMap SchemaURL (Attrs 'AttrsForResource)
   } deriving stock (Eq, Show)
     deriving anyclass (Exception)
 

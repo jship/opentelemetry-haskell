@@ -5,9 +5,6 @@ module OTel.SDK.Resource.Core
   , Internal.resourceAttrs
   , Internal.resourceSchemaURL
 
-  , Internal.defaultResource
-  , Internal.fromSpecificSchema
-
   , module OTel.SDK.Resource.Core.Attributes
   , module OTel.SDK.Resource.Core.Builder
   ) where
