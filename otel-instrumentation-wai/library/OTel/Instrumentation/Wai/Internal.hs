@@ -4,8 +4,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
 module OTel.Instrumentation.Wai.Internal
-  ( buildInstrumentationMiddleware
-  , instrumentationMiddleware
+  ( buildMiddleware
+  , middleware
+  , spanSpecFromRequest
+  , attrsFromRequest
+  , includeReqLengthIfKnown
+  , decodeBytes
   ) where
 
 import Control.Monad (guard)
@@ -35,16 +39,16 @@ import qualified Data.ByteString as ByteString
 import qualified OTel.API.Common as OTel
 import qualified OTel.API.Trace as OTel
 
-buildInstrumentationMiddleware :: TracerProvider -> IO Middleware
-buildInstrumentationMiddleware tracerProvider = do
+buildMiddleware :: TracerProvider -> IO Middleware
+buildMiddleware tracerProvider = do
   tracingBackend <- OTel.getTracingBackend tracerProvider "otel-instrumentation-wai"
     { OTel.instrumentationScopeVersion = Just "0.0.0" -- TODO: Automatically pull package version
     , OTel.instrumentationScopeSchemaURL = Just OTel.TRACE_SCHEMA_URL
     }
-  pure $ instrumentationMiddleware tracingBackend
+  pure $ middleware tracingBackend
 
-instrumentationMiddleware :: TracingBackend -> Middleware
-instrumentationMiddleware tracingBackend app req sendResp = do
+middleware :: TracingBackend -> Middleware
+middleware tracingBackend app req sendResp = do
   flip OTel.runTracingT tracingBackend do
     -- TODO: Need to check if propagation is needed from request when propagator support is added
     OTel.trace (spanSpecFromRequest req) \mutableSpan -> do

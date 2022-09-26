@@ -1,9 +1,10 @@
 module OTel.Instrumentation.Wai
   ( -- * Synopsis
     -- $synopsis
+    Internal.buildMiddleware
   ) where
 
---import qualified OTel.SDK.Trace.Internal as Internal
+import qualified OTel.Instrumentation.Wai.Internal as Internal
 
 -- $synopsis
 --
