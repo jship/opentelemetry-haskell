@@ -2,10 +2,6 @@ module OTel.SDK.Trace
   ( -- * Synopsis
     -- $synopsis
     Internal.withTracerProvider
-  , Internal.getTracingBackend
-  , Internal.getTracer
-  , Internal.shutdownTracerProvider
-  , Internal.forceFlushTracerProvider
 
   , Internal.TracerProviderSpec
   , Internal.defaultTracerProviderSpec

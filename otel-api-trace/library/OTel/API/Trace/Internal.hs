@@ -19,6 +19,11 @@ module OTel.API.Trace.Internal
 
   , TracingBackend(..)
   , toTracingBackend
+
+  , getTracingBackend
+  , getTracer
+  , shutdownTracerProvider
+  , forceFlushTracerProvider
   ) where
 
 import Control.Exception.Safe (MonadCatch, MonadMask, MonadThrow, SomeException)
@@ -40,7 +45,9 @@ import Control.Monad.Writer.Class (MonadWriter)
 import Data.Kind (Type)
 import Data.Monoid (Ap(..))
 import OTel.API.Baggage.Core (MonadBaggage)
-import OTel.API.Common (AttrsFor(AttrsForSpan), KV(..), TimestampSource(..), AttrsBuilder)
+import OTel.API.Common
+  ( AttrsFor(AttrsForSpan), KV(..), TimestampSource(..), AttrsBuilder, InstrumentationScope
+  )
 import OTel.API.Context (ContextT(..), ContextBackend, attachContextValue, getAttachedContext)
 import OTel.API.Trace.Core
   ( MonadTracing(..), MonadTracingIO(..), NewSpanSpec(..)
@@ -48,7 +55,8 @@ import OTel.API.Trace.Core
   , recordException
   )
 import OTel.API.Trace.Core.Internal
-  ( Tracer(..), buildSpanUpdater, freezeSpan, unsafeModifyMutableSpan, unsafeReadMutableSpan
+  ( Tracer(..), TracerProvider(..), buildSpanUpdater, freezeSpan, unsafeModifyMutableSpan
+  , unsafeReadMutableSpan
   )
 import Prelude hiding (span)
 import qualified Control.Exception.Safe as Safe
@@ -182,6 +190,30 @@ toTracingBackend tracer =
     { tracingBackendTracer = tracer
     , tracingBackendContextBackend = contextBackendSpan
     }
+
+getTracingBackend
+  :: forall m
+   . (MonadIO m)
+  => TracerProvider
+  -> InstrumentationScope
+  -> m TracingBackend
+getTracingBackend tracerProvider instScope =
+  fmap toTracingBackend $ getTracer tracerProvider instScope
+
+getTracer
+  :: forall m
+   . (MonadIO m)
+  => TracerProvider
+  -> InstrumentationScope
+  -> m Tracer
+getTracer tracerProvider = liftIO . tracerProviderGetTracer tracerProvider
+
+shutdownTracerProvider :: forall m. (MonadIO m) => TracerProvider -> m ()
+shutdownTracerProvider = liftIO . tracerProviderShutdown
+
+forceFlushTracerProvider :: forall m. (MonadIO m) => TracerProvider -> m ()
+forceFlushTracerProvider = liftIO . tracerProviderForceFlush
+
 
 -- $disclaimer
 --

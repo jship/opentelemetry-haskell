@@ -7,6 +7,7 @@ packages:
 - ./otel-api-context-core
 - ./otel-api-trace
 - ./otel-api-trace-core
+- ./otel-instrumentation-wai
 - ./otel-sdk-otlp-bindings
 - ./otel-sdk-resource-core
 - ./otel-sdk-trace

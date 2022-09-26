@@ -1,0 +1,45 @@
+name: otel-instrumentation-wai
+version: '0.0.0'
+github: "jship/opentelemetry-haskell"
+license: Apache-2.0
+license-file: LICENSE
+copyright: 2022 (c) Jason Shipman
+author: "Jason Shipman"
+maintainer: "Jason Shipman"
+synopsis: STUB
+description: |
+  @otel-instrumentation-wai@ STUB
+category: System
+
+extra-source-files:
+- package.yaml
+- README.md
+- LICENSE
+- CHANGELOG.md
+
+default-extensions:
+- NoImplicitPrelude
+
+ghc-options:
+- -Wall
+- -fwarn-tabs
+- -Wincomplete-uni-patterns
+- -Wredundant-constraints
+
+library:
+  dependencies:
+  - aeson
+  - base >=4.11.1.0 && <5
+  - bytestring
+  - http-types
+  - iproute
+  - network
+  - otel-api-common
+  - otel-api-trace
+  - text
+  - unliftio-core
+  - wai
+  source-dirs: library
+  when:
+  - condition: false
+    other-modules: Paths_otel_instrumentation_wai

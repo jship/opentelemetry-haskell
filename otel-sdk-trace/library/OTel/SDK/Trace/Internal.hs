@@ -22,10 +22,6 @@ module OTel.SDK.Trace.Internal
   , defaultTracerProviderSpec
   , withTracerProvider
   , withTracerProviderIO
-  , getTracingBackend
-  , getTracer
-  , shutdownTracerProvider
-  , forceFlushTracerProvider
 
   , SpanProcessor(..)
   , buildSpanProcessor
@@ -190,16 +186,15 @@ import OTel.API.Trace
   , SpanStatus(SpanStatusError, SpanStatusOk, SpanStatusUnset), MutableSpan, SpanId, SpanLinks
   , TraceId, TraceState, Tracer, TracerProvider, UpdateSpanSpec, contextKeySpan, emptySpanContext
   , emptyTraceState, frozenTimestamp, spanContextIsSampled, spanContextIsValid, spanEventsToList
-  , spanIdFromWords, spanIdToBytesBuilder, spanIsSampled, spanLinksToList, toTracingBackend
-  , traceFlagsSampled, traceIdFromWords, traceIdToBytesBuilder, pattern CODE_FILEPATH
-  , pattern CODE_FUNCTION, pattern CODE_LINENO, pattern CODE_NAMESPACE
+  , spanIdFromWords, spanIdToBytesBuilder, spanIsSampled, spanLinksToList, traceFlagsSampled
+  , traceIdFromWords, traceIdToBytesBuilder, pattern CODE_FILEPATH, pattern CODE_FUNCTION
+  , pattern CODE_LINENO, pattern CODE_NAMESPACE
   )
 import OTel.API.Trace.Core.Internal
   ( NewSpanSpec(..), Span(..), SpanContext(..), SpanLinkSpec(..), SpanLinkSpecs(..), SpanLinks(..)
   , Tracer(..), TracerProvider(..), buildSpanUpdater, freezeSpan, unsafeModifyMutableSpan
   , unsafeNewMutableSpan, unsafeReadMutableSpan
   )
-import OTel.API.Trace.Internal (TracingBackend(..))
 import OTel.SDK.Resource.Core (buildResourcePure, defaultResourceBuilder)
 import OTel.SDK.Resource.Core.Internal (Resource(..))
 import Prelude hiding (span)
@@ -314,7 +309,7 @@ withTracerProviderIO tracerProviderSpec action = do
                 ]
             ]
         ]
-    action tracerProvider `finally` shutdownTracerProvider tracerProvider
+    action tracerProvider `finally` tracerProviderShutdown tracerProvider
   where
   withCompositeSpanProcessor :: (SpanProcessor -> IO r) -> IO r
   withCompositeSpanProcessor =
@@ -510,29 +505,6 @@ withTracerProviderIO tracerProviderSpec action = do
     , tracerProviderSpecCallStackAttrs = callStackAttrs
     , tracerProviderSpecSpanContextMeta = spanContextMeta
     } = tracerProviderSpec
-
-getTracingBackend
-  :: forall m
-   . (MonadIO m)
-  => TracerProvider
-  -> InstrumentationScope
-  -> m TracingBackend
-getTracingBackend tracerProvider instScope =
-  fmap toTracingBackend $ getTracer tracerProvider instScope
-
-getTracer
-  :: forall m
-   . (MonadIO m)
-  => TracerProvider
-  -> InstrumentationScope
-  -> m Tracer
-getTracer tracerProvider = liftIO . tracerProviderGetTracer tracerProvider
-
-shutdownTracerProvider :: forall m. (MonadIO m) => TracerProvider -> m ()
-shutdownTracerProvider = liftIO . tracerProviderShutdown
-
-forceFlushTracerProvider :: forall m. (MonadIO m) => TracerProvider -> m ()
-forceFlushTracerProvider = liftIO . tracerProviderForceFlush
 
 data SpanProcessor = SpanProcessor
   { spanProcessorOnSpanStart

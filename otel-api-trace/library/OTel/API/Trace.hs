@@ -7,6 +7,11 @@ module OTel.API.Trace
   , Internal.TracingBackend
   , Internal.toTracingBackend
 
+  , Internal.getTracingBackend
+  , Internal.getTracer
+  , Internal.shutdownTracerProvider
+  , Internal.forceFlushTracerProvider
+
   , module OTel.API.Trace.Core
   ) where
 
