@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 
-name:           otel-api-common
+name:           otel-sdk-resource-core
 version:        0.0.0
 synopsis:       STUB
-description:    @otel-api-common@ STUB
+description:    @otel-sdk-resource-core@ STUB
 category:       System
 homepage:       https://github.com/jship/opentelemetry-haskell#readme
 bug-reports:    https://github.com/jship/opentelemetry-haskell/issues
@@ -29,13 +29,10 @@ source-repository head
 
 library
   exposed-modules:
-      OTel.API.Common
-      OTel.API.Common.Attributes
-      OTel.API.Common.CPS
-      OTel.API.Common.InstrumentationScope
-      OTel.API.Common.Internal
-      OTel.API.Common.KV
-      OTel.API.Common.Timestamp
+      OTel.SDK.Resource.Core
+      OTel.SDK.Resource.Core.Attributes
+      OTel.SDK.Resource.Core.Builder
+      OTel.SDK.Resource.Core.Internal
   hs-source-dirs:
       library
   default-extensions:
@@ -44,10 +41,9 @@ library
   build-depends:
       aeson
     , base >=4.11.1.0 && <5
-    , containers
     , dlist
-    , hashable
+    , otel-api-common
+    , safe-exceptions
     , text
     , unordered-containers
-    , vector
   default-language: Haskell2010

@@ -1,4 +1,4 @@
-name: otel-api-common
+name: otel-sdk-resource-core
 version: '0.0.0'
 github: "jship/opentelemetry-haskell"
 license: Apache-2.0
@@ -8,7 +8,7 @@ author: "Jason Shipman"
 maintainer: "Jason Shipman"
 synopsis: STUB
 description: |
-  @otel-api-common@ STUB
+  @otel-sdk-resource-core@ STUB
 category: System
 
 extra-source-files:
@@ -21,22 +21,21 @@ default-extensions:
 - NoImplicitPrelude
 
 ghc-options:
-- -Wall
-- -fwarn-tabs
-- -Wincomplete-uni-patterns
-- -Wredundant-constraints
+  - -Wall
+  - -fwarn-tabs
+  - -Wincomplete-uni-patterns
+  - -Wredundant-constraints
 
 library:
   dependencies:
   - aeson
   - base >=4.11.1.0 && <5
-  - containers
   - dlist
-  - hashable
+  - otel-api-common
+  - safe-exceptions
   - text
   - unordered-containers
-  - vector
   source-dirs: library
   when:
   - condition: false
-    other-modules: Paths_otel_api_common
+    other-modules: Paths_otel_sdk_resource_core

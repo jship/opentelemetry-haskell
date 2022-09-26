@@ -67,6 +67,7 @@ import Data.Aeson (KeyValue((.=)), ToJSON(..))
 import Data.DList (DList)
 import Data.Function ((&))
 import Data.HashMap.Strict (HashMap)
+import Data.Hashable (Hashable)
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Kind (Constraint, Type)
 import Data.Proxy (Proxy(..))
@@ -204,7 +205,7 @@ instance IsString Version where
 newtype SchemaURL = SchemaURL
   { unSchemaURL :: Text
   } deriving stock (Eq, Ord, Show)
-    deriving (ToJSON) via (Text)
+    deriving (Hashable, ToJSON) via (Text)
 
 schemaURLFromText :: Text -> Either Text SchemaURL
 schemaURLFromText = Right . SchemaURL
@@ -348,7 +349,8 @@ data AttrsAcc = AttrsAcc
   }
 
 data AttrsFor
-  = AttrsForSpan
+  = AttrsForResource
+  | AttrsForSpan
   | AttrsForSpanEvent
   | AttrsForSpanLink
 
