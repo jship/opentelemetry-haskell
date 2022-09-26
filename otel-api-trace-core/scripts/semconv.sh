@@ -39,6 +39,5 @@ docker run --rm \
   -f /source code \
   --template /templates/SemConvAttrs.hs.j2 \
   --output /output/Attributes.hs \
-  -Dwhat=SemConvAttrs \
   -DschemaUrl=${schemaURL} \
   -Dmodule=OTel.API.Trace.Core.Attributes

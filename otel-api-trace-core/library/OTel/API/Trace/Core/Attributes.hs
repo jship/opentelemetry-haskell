@@ -1460,4 +1460,3 @@ pattern DB_HBASE_NAMESPACE :: Key Text
 pattern DB_HBASE_NAMESPACE <- Key "db.hbase.namespace" where
   DB_HBASE_NAMESPACE = Key "db.hbase.namespace"
 {-# DEPRECATED DB_HBASE_NAMESPACE "This item has been removed as of 1.8.0 of the semantic conventions. Please use DB_NAME instead." #-}
-
