@@ -142,6 +142,7 @@ import Control.Retry
   ( RetryAction(..), RetryStatus, applyPolicy, recoveringDynamic, retryPolicyDefault
   )
 import Data.Aeson (ToJSON(..), object)
+import Data.Aeson.Types (Pair)
 import Data.ByteString.Lazy (ByteString)
 import Data.Either (fromRight)
 import Data.Foldable (fold, for_, traverse_)
@@ -233,6 +234,7 @@ data TracerProviderSpec = TracerProviderSpec
   , tracerProviderSpecSpanEventAttrsLimits :: AttrsLimits 'AttrsForSpanEvent
   , tracerProviderSpecSpanLinkAttrsLimits :: AttrsLimits 'AttrsForSpanLink
   , tracerProviderSpecCallStackAttrs :: CallStack -> AttrsBuilder 'AttrsForSpan
+  , tracerProviderSpecSpanContextMeta :: SpanContext -> [Pair]
   }
 
 defaultTracerProviderSpec :: TracerProviderSpec
@@ -259,6 +261,8 @@ defaultTracerProviderSpec =
               <> CODE_FILEPATH .@ srcLocFile srcLoc
               <> CODE_LINENO .@ srcLocStartLine srcLoc
           _ -> mempty
+    , tracerProviderSpecSpanContextMeta = \spanContext ->
+        [ "spanContext" .= spanContext ]
     }
 
 withTracerProvider
@@ -352,7 +356,7 @@ withTracerProviderIO tracerProviderSpec action = do
     -> CallStack
     -> Context
     -> NewSpanSpec
-    -> IO MutableSpan
+    -> IO (MutableSpan, [Pair])
   startSpan prngRef sampler scope spanProcessor cs implicitParentContext newSpanSpec = do
     span <- buildSpan
     mutableSpan <- unsafeNewMutableSpan span
@@ -361,7 +365,7 @@ withTracerProviderIO tracerProviderSpec action = do
       spanProcessorOnSpanStart spanProcessor parentContext \updateSpanSpec -> do
         spanUpdater mutableSpan updateSpanSpec
 
-    pure mutableSpan
+    pure (mutableSpan, spanContextMeta $ spanContext span)
     where
     buildSpan :: IO (Span AttrsBuilder)
     buildSpan = do
@@ -499,11 +503,12 @@ withTracerProviderIO tracerProviderSpec action = do
           }
     , tracerProviderSpecSpanProcessors = spanProcessorSpecs
     , tracerProviderSpecSampler = samplerSpec
+    , tracerProviderSpecResource = res
     , tracerProviderSpecSpanAttrsLimits = spanAttrsLimits
     , tracerProviderSpecSpanEventAttrsLimits = spanEventAttrsLimits
     , tracerProviderSpecSpanLinkAttrsLimits = spanLinkAttrsLimits
     , tracerProviderSpecCallStackAttrs = callStackAttrs
-    , tracerProviderSpecResource = res
+    , tracerProviderSpecSpanContextMeta = spanContextMeta
     } = tracerProviderSpec
 
 getTracingBackend

@@ -30,7 +30,7 @@ library:
   dependencies:
   - base >=4.11.1.0 && <5
   - monad-control
-  - monad-logger
+  - monad-logger-aeson
   - mtl
   - otel-api-baggage-core
   - otel-api-context

@@ -138,6 +138,7 @@ import Control.Monad.Trans.Maybe (MaybeT)
 import Control.Monad.Trans.Reader (ReaderT(..))
 import Control.Monad.Trans.Resource (ResourceT)
 import Data.Aeson (KeyValue((.=)), ToJSON(..))
+import Data.Aeson.Types (Pair)
 import Data.Bifunctor (Bifunctor(..))
 import Data.Bits (Bits(testBit), Ior(..))
 import Data.ByteString.Builder (Builder)
@@ -295,7 +296,7 @@ data TracerProvider = TracerProvider
 data Tracer = Tracer
   { tracerInstrumentationScope :: InstrumentationScope
   , tracerNow :: IO Timestamp
-  , tracerStartSpan :: CallStack -> Context -> NewSpanSpec -> IO MutableSpan
+  , tracerStartSpan :: CallStack -> Context -> NewSpanSpec -> IO (MutableSpan, [Pair])
   , tracerProcessSpan :: Span Attrs -> IO ()
   , tracerSpanAttrsLimits :: AttrsLimits 'AttrsForSpan
   , tracerSpanEventAttrsLimits :: AttrsLimits 'AttrsForSpanEvent

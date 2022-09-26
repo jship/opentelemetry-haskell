@@ -28,7 +28,7 @@ import Control.Monad.Except (MonadError)
 import Control.Monad.Fix (MonadFix)
 import Control.Monad.IO.Class (MonadIO(liftIO))
 import Control.Monad.IO.Unlift (MonadUnliftIO)
-import Control.Monad.Logger (MonadLogger)
+import Control.Monad.Logger.Aeson (MonadLogger, withThreadContext)
 import Control.Monad.RWS.Class (MonadRWS)
 import Control.Monad.Reader (MonadReader(ask, local, reader))
 import Control.Monad.State (MonadState)
@@ -96,14 +96,14 @@ instance (MonadIO m, MonadMask m) => MonadTracing (TracingT m) where
     TracingT \tracingBackend -> do
       flip runContextT (tracingBackendContextBackend tracingBackend) do
         parentCtx <- getAttachedContext
-        mutableSpan <- do
-          liftIO do
-            tracerStartSpan (tracingBackendTracer tracingBackend) cs parentCtx newSpanSpec
+        (mutableSpan, spanContextMeta) <- do
+          liftIO $ tracerStartSpan (tracingBackendTracer tracingBackend) cs parentCtx newSpanSpec
         attachContextValue mutableSpan do
-          result <- lift $ runTracingT (action mutableSpan) tracingBackend
-          liftIO do
-            result <$ processSpan (tracingBackendTracer tracingBackend) mutableSpan
-              `Safe.withException` handler (tracingBackendTracer tracingBackend) mutableSpan
+          withThreadContext spanContextMeta do
+            result <- lift $ runTracingT (action mutableSpan) tracingBackend
+            liftIO do
+              result <$ processSpan (tracingBackendTracer tracingBackend) mutableSpan
+                `Safe.withException` handler (tracingBackendTracer tracingBackend) mutableSpan
     where
     processSpan :: Tracer -> MutableSpan -> IO ()
     processSpan tracer mutableSpan = do

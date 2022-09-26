@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.4.
+-- This file has been generated from package.yaml by hpack version 0.34.6.
 --
 -- see: https://github.com/sol/hpack
 
@@ -39,7 +39,7 @@ library
   build-depends:
       base >=4.11.1.0 && <5
     , monad-control
-    , monad-logger
+    , monad-logger-aeson
     , mtl
     , otel-api-baggage-core
     , otel-api-common

@@ -20,6 +20,7 @@ module OTel.SDK.Trace
   , Internal.tracerProviderSpecSpanLinkAttrsLimits
   , Internal.tracerProviderSpecCallStackAttrs
   , Internal.tracerProviderSpecResource
+  , Internal.tracerProviderSpecSpanContextMeta
 
   , module OTel.SDK.Trace.Common
   , module OTel.SDK.Trace.Handlers
