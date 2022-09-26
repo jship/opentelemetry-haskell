@@ -365,11 +365,6 @@ withTracerProviderIO tracerProviderSpec action = do
     where
     buildSpan :: IO (Span AttrsBuilder)
     buildSpan = do
-      spanStart <- do
-        case newSpanSpecStart of
-          TimestampSourceAt timestamp -> pure timestamp
-          TimestampSourceNow -> now
-
       spanParent <- spanParentFromParentContext parentContext
       initSpanContext <- newSpanContext spanParent
 
@@ -393,6 +388,11 @@ withTracerProviderIO tracerProviderSpec action = do
                         traceFlagsSampled <>  spanContextTraceFlags initSpanContext
                     }
                 )
+
+      spanStart <- do
+        case newSpanSpecStart of
+          TimestampSourceAt timestamp -> pure timestamp
+          TimestampSourceNow -> now
 
       pure Span
         { spanParent

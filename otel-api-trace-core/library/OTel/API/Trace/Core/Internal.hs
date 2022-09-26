@@ -109,7 +109,6 @@ module OTel.API.Trace.Core.Internal
   , MutableSpan(..)
   , unsafeNewMutableSpan
   , unsafeReadMutableSpan
-  , unsafeWriteMutableSpan
   , unsafeModifyMutableSpan
   , Span(..)
   , spanIsRemote
@@ -1047,11 +1046,6 @@ unsafeReadMutableSpan :: MutableSpan -> IO (Span AttrsBuilder)
 unsafeReadMutableSpan mutableSpan =
   unsafeModifyMutableSpan mutableSpan \s -> (s, s)
 {-# INLINE unsafeReadMutableSpan #-}
-
-unsafeWriteMutableSpan :: MutableSpan -> IO ()
-unsafeWriteMutableSpan mutableSpan =
-  unsafeModifyMutableSpan mutableSpan \s -> (s, ())
-{-# INLINE unsafeWriteMutableSpan #-}
 
 unsafeModifyMutableSpan
   :: MutableSpan
