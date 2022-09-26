@@ -91,7 +91,7 @@ executable otlp-tracing-example
       executables
   default-extensions:
       NoImplicitPrelude
-  ghc-options: -Wall -fwarn-tabs -Wincomplete-uni-patterns -Wredundant-constraints
+  ghc-options: -Wall -fwarn-tabs -Wincomplete-uni-patterns -Wredundant-constraints -threaded
   build-depends:
       base >=4.11.1.0 && <5
     , monad-logger-aeson
