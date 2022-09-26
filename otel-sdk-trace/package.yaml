@@ -47,6 +47,7 @@ library:
   - otel-api-trace
   - otel-api-trace-core
   - otel-sdk-otlp-bindings
+  - otel-sdk-resource-core
   - proto-lens
   - retry
   - safe-exceptions
@@ -98,5 +99,6 @@ executables:
     - mwc-random
     - otel-api-common
     - otel-api-trace
+    - otel-sdk-resource-core
     - otel-sdk-trace
     - text

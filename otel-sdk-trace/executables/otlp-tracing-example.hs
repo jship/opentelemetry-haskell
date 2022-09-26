@@ -13,6 +13,7 @@ import Control.Monad.Logger.Aeson
 import Data.Text (Text)
 import OTel.API.Common
 import OTel.API.Trace
+import OTel.SDK.Resource.Core
 import OTel.SDK.Trace.Internal
 import Prelude
 import System.IO
@@ -21,6 +22,7 @@ import System.Random.MWC
 main :: IO ()
 main = do
   gen <- createSystemRandom
+  tracerProviderSpec <- buildTracerProviderSpec
   withTracerProvider tracerProviderSpec \tracerProvider -> do
     tracingBackend <- getTracingBackend tracerProvider "otlp-tracing-example"
     flip runTracingT tracingBackend do
@@ -78,9 +80,12 @@ main = do
                 Just $ HTTP_METHOD .@ ("POSTEROONI 2" :: Text) <> HTTP_SCHEME .@ ("http" :: Text)
             }
 
-tracerProviderSpec :: TracerProviderSpec
-tracerProviderSpec =
-  defaultTracerProviderSpec
+buildTracerProviderSpec :: IO TracerProviderSpec
+buildTracerProviderSpec = do
+  resource <- do
+    buildResource $ fromSpecificSchema RESOURCE_SCHEMA_URL $
+      SERVICE_NAME .@ ("otlp-tracing-example" :: Text)
+  pure defaultTracerProviderSpec
       { tracerProviderSpecSpanProcessors =
           [ simpleSpanProcessor defaultSimpleSpanProcessorSpec
               { simpleSpanProcessorSpecExporter =
@@ -91,6 +96,7 @@ tracerProviderSpec =
           ]
       , tracerProviderSpecSampler = alwaysOnSampler
       , tracerProviderSpecLogger = defaultOutput stdout
+      , tracerProviderSpecResource = resource
       }
 
 randomDelay :: (MonadIO m) => GenIO -> m ()

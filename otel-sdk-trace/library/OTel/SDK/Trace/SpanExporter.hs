@@ -18,6 +18,7 @@ module OTel.SDK.Trace.SpanExporter
   , Internal.spanExporterSpecOnException
 
   , Internal.SpanExporterM
+  , Internal.askResource
 
   , module OTel.SDK.Trace.SpanExporter.OTLP
   , module OTel.SDK.Trace.SpanExporter.STM

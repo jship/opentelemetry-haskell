@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.4.
+-- This file has been generated from package.yaml by hpack version 0.34.6.
 --
 -- see: https://github.com/sol/hpack
 
@@ -71,6 +71,7 @@ library
     , otel-api-trace
     , otel-api-trace-core
     , otel-sdk-otlp-bindings
+    , otel-sdk-resource-core
     , proto-lens
     , retry
     , safe-exceptions
@@ -97,6 +98,7 @@ executable otlp-tracing-example
     , mwc-random
     , otel-api-common
     , otel-api-trace
+    , otel-sdk-resource-core
     , otel-sdk-trace
     , text
   default-language: Haskell2010

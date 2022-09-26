@@ -71,6 +71,7 @@ module OTel.SDK.Trace.Internal
   , runSpanProcessorM
 
   , SpanExporterM(..)
+  , askResource
   , runSpanExporterM
 
   , SamplerM(..)
@@ -142,6 +143,7 @@ import Control.Retry
   )
 import Data.Aeson (ToJSON(..), object)
 import Data.ByteString.Lazy (ByteString)
+import Data.Either (fromRight)
 import Data.Foldable (fold, for_, traverse_)
 import Data.Function (on)
 import Data.Int (Int64)
@@ -197,6 +199,8 @@ import OTel.API.Trace.Core.Internal
   , unsafeNewMutableSpan, unsafeReadMutableSpan
   )
 import OTel.API.Trace.Internal (TracingBackend(..))
+import OTel.SDK.Resource.Core (buildResourcePure, defaultResource)
+import OTel.SDK.Resource.Core.Internal (Resource(..))
 import Prelude hiding (span)
 import System.Clock (Clock(Realtime), getTime, toNanoSecs)
 import System.IO.Unsafe (unsafePerformIO)
@@ -206,13 +210,14 @@ import qualified Data.ByteString.Builder as Builder
 import qualified Data.ByteString.Char8 as ByteString.Char8
 import qualified Data.DList as DList
 import qualified Data.List as List
-import qualified Data.ProtoLens as ProtLens
 import qualified Data.ProtoLens as ProtoLens
 import qualified GHC.Stack as Stack
 import qualified OTel.SDK.OTLP.Bindings.Collector.Trace.V1.TraceService as OTLP.Collector
 import qualified OTel.SDK.OTLP.Bindings.Collector.Trace.V1.TraceService_Fields as OTLP.Collector
 import qualified OTel.SDK.OTLP.Bindings.Common.V1.Common as OTLP.Common
 import qualified OTel.SDK.OTLP.Bindings.Common.V1.Common_Fields as OTLP.Common
+import qualified OTel.SDK.OTLP.Bindings.Resource.V1.Resource as OTLP.Resource
+import qualified OTel.SDK.OTLP.Bindings.Resource.V1.Resource_Fields as OTLP.Resource
 import qualified OTel.SDK.OTLP.Bindings.Trace.V1.Trace as OTLP.Trace
 import qualified OTel.SDK.OTLP.Bindings.Trace.V1.Trace_Fields as OTLP.Trace
 
@@ -223,6 +228,7 @@ data TracerProviderSpec = TracerProviderSpec
   , tracerProviderSpecIdGenerator :: IdGeneratorSpec
   , tracerProviderSpecSpanProcessors :: forall a. [(SpanProcessorSpec -> IO a) -> IO a]
   , tracerProviderSpecSampler :: SamplerSpec
+  , tracerProviderSpecResource :: Resource Attrs
   , tracerProviderSpecSpanAttrsLimits :: AttrsLimits 'AttrsForSpan
   , tracerProviderSpecSpanEventAttrsLimits :: AttrsLimits 'AttrsForSpanEvent
   , tracerProviderSpecSpanLinkAttrsLimits :: AttrsLimits 'AttrsForSpanLink
@@ -239,6 +245,9 @@ defaultTracerProviderSpec =
     , tracerProviderSpecIdGenerator = defaultIdGeneratorSpec
     , tracerProviderSpecSpanProcessors = mempty
     , tracerProviderSpecSampler = defaultSamplerSpec
+    , tracerProviderSpecResource =
+        fromRight (error "defaultTracerProviderSpec: defaultResource is never a Left") $
+          buildResourcePure defaultResource
     , tracerProviderSpecSpanAttrsLimits = defaultAttrsLimits
     , tracerProviderSpecSpanEventAttrsLimits = defaultAttrsLimits
     , tracerProviderSpecSpanLinkAttrsLimits = defaultAttrsLimits
@@ -290,7 +299,7 @@ withTracerProviderIO tracerProviderSpec action = do
     runContT do
       acquiredSpanProcessorSpecs <- traverse ContT spanProcessorSpecs
       acquiredSpanProcessors <- do
-        traverse (ContT . buildSpanProcessor logger) acquiredSpanProcessorSpecs
+        traverse (ContT . buildSpanProcessor res logger) acquiredSpanProcessorSpecs
       pure $ fold acquiredSpanProcessors
 
   getTracerWith
@@ -474,6 +483,7 @@ withTracerProviderIO tracerProviderSpec action = do
     , tracerProviderSpecSpanEventAttrsLimits = spanEventAttrsLimits
     , tracerProviderSpecSpanLinkAttrsLimits = spanLinkAttrsLimits
     , tracerProviderSpecCallStackAttrs = callStackAttrs
+    , tracerProviderSpecResource = res
     } = tracerProviderSpec
 
 getTracingBackend
@@ -533,15 +543,16 @@ instance Monoid SpanProcessor where
 
 buildSpanProcessor
   :: forall a
-   . (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
+   . Resource Attrs
+  -> (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
   -> SpanProcessorSpec
   -> (SpanProcessor -> IO a)
   -> IO a
-buildSpanProcessor logger spanProcessorSpec = do
+buildSpanProcessor res logger spanProcessorSpec = do
   runContT do
     spanExporterSpec <- ContT spanProcessorSpecExporter
     shutdownRef <- liftIO $ newTVarIO False
-    spanExporter <- liftIO $ buildSpanExporter logger spanExporterSpec
+    spanExporter <- liftIO $ buildSpanExporter res logger spanExporterSpec
     pure $ spanProcessor shutdownRef spanExporter
   where
   spanProcessor shutdownRef spanExporter =
@@ -717,10 +728,11 @@ data SpanExporter = SpanExporter
   }
 
 buildSpanExporter
-  :: (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
+  :: Resource Attrs
+  -> (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
   -> SpanExporterSpec
   -> IO SpanExporter
-buildSpanExporter logger spanExporterSpec = do
+buildSpanExporter res logger spanExporterSpec = do
   shutdownRef <- liftIO $ newTVarIO False
   pure $ spanExporter shutdownRef
   where
@@ -729,19 +741,19 @@ buildSpanExporter logger spanExporterSpec = do
       { spanExporterExport = \spans onSpansExported -> do
           unlessSTM (readTVar shutdownRef) do
             pure do
-              runSpanExporterM logger onTimeout onEx defaultTimeout metaExport do
+              runSpanExporterM res logger onTimeout onEx defaultTimeout metaExport do
                 spanExporterSpecExport spans \spanExportResult -> do
                   liftIO $ onSpansExported spanExportResult
       , spanExporterShutdown = do
           unlessSTM (readTVar shutdownRef) do
             writeTVar shutdownRef True
             pure do
-              runSpanExporterM logger onTimeout onEx shutdownTimeout metaShutdown do
+              runSpanExporterM res logger onTimeout onEx shutdownTimeout metaShutdown do
                 spanExporterSpecShutdown
       , spanExporterForceFlush = do
           unlessSTM (readTVar shutdownRef) do
             pure do
-              runSpanExporterM logger onTimeout onEx forceFlushTimeout metaForceFlush do
+              runSpanExporterM res logger onTimeout onEx forceFlushTimeout metaForceFlush do
                 spanExporterSpecForceFlush
       }
 
@@ -816,9 +828,11 @@ otlpSpanExporter otlpSpanExporterSpec f = do
     defaultSpanExporterSpec
       { spanExporterSpecName = "otlp"
       , spanExporterSpecExport = \spans onSpansExported -> do
+          res <- askResource
           liftIO $ concurrentWorkersEnqueueItem workers OTLPSpanExporterItem
             { otlpSpanExporterItemBatch = spans
             , otlpSpanExporterItemCallback = onSpansExported
+            , otlpSpanExporterResource = res
             }
       , spanExporterSpecShutdown = do
           liftIO $ concurrentWorkersStopWorkers workers
@@ -835,7 +849,7 @@ otlpSpanExporter otlpSpanExporterSpec f = do
                 { requestBody =
                     RequestBodyBS
                       $ ProtoLens.encodeMessage
-                      $ exportTraceServiceRequest
+                      $ exportTraceServiceRequest (otlpSpanExporterResource item)
                       $ otlpSpanExporterItemBatch item
                 }
           flip runLoggingT logger do
@@ -928,15 +942,23 @@ otlpSpanExporter otlpSpanExporterSpec f = do
             ]
 
   exportTraceServiceRequest
-    :: Batch (Span Attrs)
+    :: Resource Attrs
+    -> Batch (Span Attrs)
     -> OTLP.Collector.ExportTraceServiceRequest
-  exportTraceServiceRequest batch =
+  exportTraceServiceRequest res batch =
     ProtoLens.defMessage
       & OTLP.Collector.resourceSpans .~
-          [ ProtLens.defMessage
+          [ ProtoLens.defMessage
+              & maybe id (\x -> OTLP.Trace.schemaUrl .~ schemaURLToText x) (resourceSchemaURL res)
+              & OTLP.Trace.resource .~ convertResourceAttrs
               & OTLP.Trace.scopeSpans .~ mapMaybe convertSpanGroup groupedSpans
           ]
     where
+    convertResourceAttrs :: OTLP.Resource.Resource
+    convertResourceAttrs =
+      ProtoLens.defMessage
+        & OTLP.Resource.attributes .~ convertAttrKVs (resourceAttrs res)
+
     groupedSpans :: [[Span Attrs]]
     groupedSpans =
       unBatch batch
@@ -1150,6 +1172,7 @@ httpProtobufProtocol = OTLPProtocolHTTPProtobuf
 data OTLPSpanExporterItem = OTLPSpanExporterItem
   { otlpSpanExporterItemBatch :: Batch (Span Attrs)
   , otlpSpanExporterItemCallback :: SpanExportResult -> IO ()
+  , otlpSpanExporterResource :: Resource Attrs
   }
 
 instance ToJSON OTLPSpanExporterItem where
@@ -1438,34 +1461,38 @@ runSpanProcessorM spanExporter logger onTimeout onEx timeoutMicros pairs action 
 
 type SpanExporterM :: Type -> Type
 newtype SpanExporterM a = SpanExporterM
-  { unSpanExporterM :: LoggingT IO a
+  { unSpanExporterM :: Resource Attrs -> LoggingT IO a
   } deriving
       ( Applicative, Functor, Monad, MonadIO -- @base@
       , MonadCatch, MonadMask, MonadThrow -- @exceptions@
       , MonadUnliftIO -- @unliftio-core@
       , MonadLogger, MonadLoggerIO -- @monad-logger@
-      ) via (LoggingT IO)
+      ) via (ReaderT (Resource Attrs) (LoggingT IO))
     deriving
       ( Semigroup, Monoid -- @base@
-      ) via (Ap (LoggingT IO) a)
+      ) via (Ap (ReaderT (Resource Attrs) (LoggingT IO)) a)
 
 runSpanExporterM
-  :: (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
+  :: Resource Attrs
+  -> (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
   -> OnTimeout a
   -> OnException a
   -> Int
   -> [SeriesElem]
   -> SpanExporterM a
   -> IO a
-runSpanExporterM logger onTimeout onEx timeoutMicros pairs action = do
+runSpanExporterM res logger onTimeout onEx timeoutMicros pairs action = do
   flip runLoggingT logger do
     mResult <- withRunInIO \runInIO -> do
       timeout timeoutMicros $ runInIO do
-        unSpanExporterM action `catchAny` \someEx -> do
+        unSpanExporterM action res `catchAny` \someEx -> do
           runOnException onEx someEx pairs
     case mResult of
       Just x -> pure x
       Nothing -> runOnTimeout onTimeout timeoutMicros pairs
+
+askResource :: SpanExporterM (Resource Attrs)
+askResource = SpanExporterM pure
 
 type SamplerM :: Type -> Type
 newtype SamplerM a = SamplerM

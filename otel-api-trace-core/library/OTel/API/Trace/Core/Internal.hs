@@ -1060,8 +1060,6 @@ unsafeModifyMutableSpan
 unsafeModifyMutableSpan = IORef.atomicModifyIORef' . unMutableSpan
 {-# INLINE unsafeModifyMutableSpan #-}
 
--- TODO: Add reference to Resource?
--- See https://opentelemetry.io/docs/reference/specification/trace/sdk/#additional-span-interfaces
 data Span (attrs :: AttrsFor -> Type) = Span
   { spanParent :: SpanParent
   , spanContext :: SpanContext
