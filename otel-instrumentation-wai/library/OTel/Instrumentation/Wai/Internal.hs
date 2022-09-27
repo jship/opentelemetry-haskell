@@ -4,7 +4,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
 module OTel.Instrumentation.Wai.Internal
-  ( buildMiddleware
+  ( -- * Disclaimer
+    -- $disclaimer
+    buildMiddleware
   , middleware
   , spanSpecFromRequest
   , attrsFromRequest
@@ -33,7 +35,7 @@ import Network.Wai
   , RequestBodyLength(..), Middleware, requestHeaderHost, responseStatus
   )
 import OTel.API.Common (AttrsFor(..), (.@), AttrsBuilder, Key)
-import OTel.API.Trace (SpanName(..), NewSpanSpec, TracerProvider, TracingBackend)
+import OTel.API.Trace (SpanName(..), SpanSpec, TracerProvider, TracingBackend)
 import Prelude
 import qualified Data.ByteString as ByteString
 import qualified OTel.API.Common as OTel
@@ -64,12 +66,12 @@ middleware tracingBackend app req sendResp = do
             }
           sendResp resp
 
-spanSpecFromRequest :: Request -> NewSpanSpec
+spanSpecFromRequest :: Request -> SpanSpec
 spanSpecFromRequest req =
-  OTel.defaultNewSpanSpec
-    { OTel.newSpanSpecName = SpanName $ decodeBytes $ rawPathInfo req
-    , OTel.newSpanSpecKind = OTel.SpanKindServer
-    , OTel.newSpanSpecAttrs = attrsFromRequest req
+  OTel.defaultSpanSpec
+    { OTel.spanSpecName = SpanName $ decodeBytes $ rawPathInfo req
+    , OTel.spanSpecKind = OTel.SpanKindServer
+    , OTel.spanSpecAttrs = attrsFromRequest req
     }
 
 attrsFromRequest :: Request -> AttrsBuilder 'AttrsForSpan
@@ -114,3 +116,9 @@ includeReqLengthIfKnown req = do
 
 decodeBytes :: ByteString -> Text
 decodeBytes = decodeUtf8With lenientDecode
+
+-- $disclaimer
+--
+-- In general, changes to this module will not be reflected in the library's
+-- version updates. Direct use of this module should be done with utmost care,
+-- otherwise invariants will easily be violated.
