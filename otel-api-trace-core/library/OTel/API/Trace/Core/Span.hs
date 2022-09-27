@@ -27,14 +27,14 @@ module OTel.API.Trace.Core.Span
   , Internal.SpanFrozenTimestamp(..)
   , Internal.frozenTimestamp
 
-  , Internal.NewSpanSpec
-  , Internal.defaultNewSpanSpec
-  , Internal.newSpanSpecName
-  , Internal.newSpanSpecParentContext
-  , Internal.newSpanSpecStart
-  , Internal.newSpanSpecKind
-  , Internal.newSpanSpecAttrs
-  , Internal.newSpanSpecLinks
+  , Internal.SpanSpec
+  , Internal.defaultSpanSpec
+  , Internal.spanSpecName
+  , Internal.spanSpecParentContext
+  , Internal.spanSpecStart
+  , Internal.spanSpecKind
+  , Internal.spanSpecAttrs
+  , Internal.spanSpecLinks
 
   , Internal.UpdateSpanSpec
   , Internal.defaultUpdateSpanSpec

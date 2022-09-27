@@ -50,7 +50,7 @@ import OTel.API.Common
   )
 import OTel.API.Context (ContextT(..), ContextBackend, attachContextValue, getAttachedContext)
 import OTel.API.Trace.Core
-  ( MonadTracing(..), MonadTracingIO(..), NewSpanSpec(..)
+  ( MonadTracing(..), MonadTracingIO(..), SpanSpec(..)
   , Span(spanContext, spanFrozenAt, spanIsRecording), MutableSpan, contextBackendSpan
   , recordException
   )
@@ -100,12 +100,12 @@ instance (MonadReader r m) => MonadReader r (TracingT m) where
 instance (MonadRWS r w s m) => MonadRWS r w s (TracingT m)
 
 instance (MonadIO m, MonadMask m) => MonadTracing (TracingT m) where
-  traceCS cs newSpanSpec action =
+  traceCS cs spanSpec action =
     TracingT \tracingBackend -> do
       flip runContextT (tracingBackendContextBackend tracingBackend) do
         parentCtx <- getAttachedContext
         (mutableSpan, spanContextMeta) <- do
-          liftIO $ tracerStartSpan (tracingBackendTracer tracingBackend) cs parentCtx newSpanSpec
+          liftIO $ tracerStartSpan (tracingBackendTracer tracingBackend) cs parentCtx spanSpec
         attachContextValue mutableSpan do
           withThreadContext spanContextMeta do
             result <- lift $ runTracingT (action mutableSpan) tracingBackend

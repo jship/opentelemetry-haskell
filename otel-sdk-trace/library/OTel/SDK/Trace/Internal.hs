@@ -180,7 +180,7 @@ import OTel.API.Common
 import OTel.API.Common.Internal (AttrVals(..), InstrumentationScope(..))
 import OTel.API.Context.Core (Context, lookupContext)
 import OTel.API.Trace
-  ( NewSpanSpec(..), Span(..), SpanContext(..), SpanEvent(..), SpanEventName(unSpanEventName)
+  ( SpanSpec(..), Span(..), SpanContext(..), SpanEvent(..), SpanEventName(unSpanEventName)
   , SpanKind(SpanKindClient, SpanKindConsumer, SpanKindInternal, SpanKindProducer, SpanKindServer)
   , SpanLink(..), SpanName(unSpanName), SpanParent(SpanParentChildOf, SpanParentRoot)
   , SpanStatus(SpanStatusError, SpanStatusOk, SpanStatusUnset), MutableSpan, SpanId, SpanLinks
@@ -191,7 +191,7 @@ import OTel.API.Trace
   , pattern CODE_LINENO, pattern CODE_NAMESPACE
   )
 import OTel.API.Trace.Core.Internal
-  ( NewSpanSpec(..), Span(..), SpanContext(..), SpanLinkSpec(..), SpanLinkSpecs(..), SpanLinks(..)
+  ( SpanSpec(..), Span(..), SpanContext(..), SpanLinkSpec(..), SpanLinkSpecs(..), SpanLinks(..)
   , Tracer(..), TracerProvider(..), buildSpanUpdater, freezeSpan, unsafeModifyMutableSpan
   , unsafeNewMutableSpan, unsafeReadMutableSpan
   )
@@ -350,9 +350,9 @@ withTracerProviderIO tracerProviderSpec action = do
     -> SpanProcessor
     -> CallStack
     -> Context
-    -> NewSpanSpec
+    -> SpanSpec
     -> IO (MutableSpan, [Pair])
-  startSpan prngRef sampler scope spanProcessor cs implicitParentContext newSpanSpec = do
+  startSpan prngRef sampler scope spanProcessor cs implicitParentContext spanSpec = do
     span <- buildSpan
     mutableSpan <- unsafeNewMutableSpan span
 
@@ -370,9 +370,9 @@ withTracerProviderIO tracerProviderSpec action = do
       samplingResult <- samplerShouldSample sampler SamplerInput
         { samplerInputContext = parentContext
         , samplerInputTraceId = spanContextTraceId initSpanContext
-        , samplerInputSpanName = newSpanSpecName
-        , samplerInputSpanKind = newSpanSpecKind
-        , samplerInputSpanAttrs = newSpanSpecAttrs
+        , samplerInputSpanName = spanSpecName
+        , samplerInputSpanKind = spanSpecKind
+        , samplerInputSpanAttrs = spanSpecAttrs
         , samplerInputSpanLinks = spanLinks
         }
 
@@ -389,7 +389,7 @@ withTracerProviderIO tracerProviderSpec action = do
                 )
 
       spanStart <- do
-        case newSpanSpecStart of
+        case spanSpecStart of
           TimestampSourceAt timestamp -> pure timestamp
           TimestampSourceNow -> now
 
@@ -399,15 +399,15 @@ withTracerProviderIO tracerProviderSpec action = do
             spanContextPostSampling
               { spanContextTraceState = samplingResultTraceState samplingResult
               }
-        , spanName = newSpanSpecName
+        , spanName = spanSpecName
         , spanStatus = SpanStatusUnset
         , spanStart
         , spanFrozenAt = Nothing
-        , spanKind = newSpanSpecKind
+        , spanKind = spanSpecKind
         , spanAttrs =
             samplingResultSpanAttrs samplingResult
               <> callStackAttrs cs
-              <> newSpanSpecAttrs
+              <> spanSpecAttrs
         , spanLinks
         , spanEvents = mempty
         , spanIsRecording
@@ -468,7 +468,7 @@ withTracerProviderIO tracerProviderSpec action = do
             )
 
     spanLinks =
-      SpanLinks $ flip fmap (unSpanLinkSpecs newSpanSpecLinks) \spanLinkSpec ->
+      SpanLinks $ flip fmap (unSpanLinkSpecs spanSpecLinks) \spanLinkSpec ->
         SpanLink
           { spanLinkSpanContext =
               spanLinkSpecSpanContext spanLinkSpec
@@ -476,16 +476,16 @@ withTracerProviderIO tracerProviderSpec action = do
               spanLinkSpecAttrs spanLinkSpec
           }
 
-    parentContext = fromMaybe implicitParentContext newSpanSpecParentContext
+    parentContext = fromMaybe implicitParentContext spanSpecParentContext
 
-    NewSpanSpec
-      { newSpanSpecName
-      , newSpanSpecParentContext
-      , newSpanSpecStart
-      , newSpanSpecKind
-      , newSpanSpecAttrs
-      , newSpanSpecLinks
-      } = newSpanSpec
+    SpanSpec
+      { spanSpecName
+      , spanSpecParentContext
+      , spanSpecStart
+      , spanSpecKind
+      , spanSpecAttrs
+      , spanSpecLinks
+      } = spanSpec
 
   TracerProviderSpec
     { tracerProviderSpecNow = now

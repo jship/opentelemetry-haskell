@@ -98,8 +98,8 @@ module OTel.API.Trace.Core.Internal
   , SpanLinkName(..)
   , SpanLinkSpec(..)
   , defaultSpanLinkSpec
-  , NewSpanSpec(..)
-  , defaultNewSpanSpec
+  , SpanSpec(..)
+  , defaultSpanSpec
   , UpdateSpanSpec(..)
   , defaultUpdateSpanSpec
   , buildSpanUpdater
@@ -199,32 +199,32 @@ import qualified Data.Vector.Unboxed as Unboxed
 
 trace_
   :: (MonadTracing m, HasCallStack)
-  => NewSpanSpec
+  => SpanSpec
   -> m a
   -> m a
-trace_ newSpanSpec = traceCS callStack newSpanSpec . const
+trace_ spanSpec = traceCS callStack spanSpec . const
 
 trace
   :: (MonadTracing m, HasCallStack)
-  => NewSpanSpec
+  => SpanSpec
   -> (MutableSpan -> m a)
   -> m a
 trace = traceCS callStack
 
 class (Monad m) => MonadTracing m where
-  traceCS :: CallStack -> NewSpanSpec -> (MutableSpan -> m a) -> m a
+  traceCS :: CallStack -> SpanSpec -> (MutableSpan -> m a) -> m a
   getSpanContext :: MutableSpan -> m SpanContext
   updateSpan :: MutableSpan -> UpdateSpanSpec -> m ()
 
   default traceCS
     :: (MonadTransControl t, MonadTracing n, m ~ t n)
     => CallStack
-    -> NewSpanSpec
+    -> SpanSpec
     -> (MutableSpan -> m a)
     -> m a
-  traceCS cs newSpanSpec f = do
+  traceCS cs spanSpec f = do
     restoreT . pure
-      =<< liftWith \run -> traceCS cs newSpanSpec (run . f)
+      =<< liftWith \run -> traceCS cs spanSpec (run . f)
 
   default getSpanContext
     :: (MonadTrans t, MonadTracing n, m ~ t n)
@@ -251,9 +251,9 @@ instance (MonadTracing m, Monoid w) => MonadTracing (Writer.Lazy.WriterT w m)
 instance (MonadTracing m, Monoid w) => MonadTracing (Writer.Strict.WriterT w m)
 instance (MonadTracing m) => MonadTracing (LoggingT m)
 instance (MonadTracing m, MonadUnliftIO m) => MonadTracing (ResourceT m) where
-  traceCS cs newSpanSpec f = do
+  traceCS cs spanSpec f = do
     withRunInIO \runInIO -> do
-      runInIO $ traceCS cs newSpanSpec f
+      runInIO $ traceCS cs spanSpec f
 
   getSpanContext mutableSpan = do
     withRunInIO \runInIO -> do
@@ -296,7 +296,7 @@ data TracerProvider = TracerProvider
 data Tracer = Tracer
   { tracerInstrumentationScope :: InstrumentationScope
   , tracerNow :: IO Timestamp
-  , tracerStartSpan :: CallStack -> Context -> NewSpanSpec -> IO (MutableSpan, [Pair])
+  , tracerStartSpan :: CallStack -> Context -> SpanSpec -> IO (MutableSpan, [Pair])
   , tracerProcessSpan :: Span Attrs -> IO ()
   , tracerSpanAttrsLimits :: AttrsLimits 'AttrsForSpan
   , tracerSpanEventAttrsLimits :: AttrsLimits 'AttrsForSpanEvent
@@ -903,30 +903,30 @@ defaultSpanLinkSpec =
     , spanLinkSpecAttrs = mempty
     }
 
-data NewSpanSpec = NewSpanSpec
-  { newSpanSpecName :: SpanName
-  , newSpanSpecParentContext :: Maybe Context
-  , newSpanSpecStart :: TimestampSource
-  , newSpanSpecKind :: SpanKind
-  , newSpanSpecAttrs :: AttrsBuilder 'AttrsForSpan
-  , newSpanSpecLinks :: SpanLinkSpecs
+data SpanSpec = SpanSpec
+  { spanSpecName :: SpanName
+  , spanSpecParentContext :: Maybe Context
+  , spanSpecStart :: TimestampSource
+  , spanSpecKind :: SpanKind
+  , spanSpecAttrs :: AttrsBuilder 'AttrsForSpan
+  , spanSpecLinks :: SpanLinkSpecs
   }
 
-instance IsString (NewSpanSpec) where
+instance IsString (SpanSpec) where
   fromString s =
-    defaultNewSpanSpec
-      { newSpanSpecName = fromString s
+    defaultSpanSpec
+      { spanSpecName = fromString s
       }
 
-defaultNewSpanSpec :: NewSpanSpec
-defaultNewSpanSpec =
-  NewSpanSpec
-    { newSpanSpecName = ""
-    , newSpanSpecParentContext = Nothing
-    , newSpanSpecStart = TimestampSourceNow
-    , newSpanSpecKind = SpanKindInternal
-    , newSpanSpecAttrs = mempty
-    , newSpanSpecLinks = mempty
+defaultSpanSpec :: SpanSpec
+defaultSpanSpec =
+  SpanSpec
+    { spanSpecName = ""
+    , spanSpecParentContext = Nothing
+    , spanSpecStart = TimestampSourceNow
+    , spanSpecKind = SpanKindInternal
+    , spanSpecAttrs = mempty
+    , spanSpecLinks = mempty
     }
 
 data UpdateSpanSpec = UpdateSpanSpec

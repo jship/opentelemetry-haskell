@@ -50,7 +50,7 @@ main = do
                       , CLOUDEVENTS_EVENT_SOURCE .@ ("dummy-event-source" :: Text)
                       ]
                 }
-        trace_ "1.2" { newSpanSpecAttrs = attrs, newSpanSpecLinks = links, newSpanSpecKind = SpanKindServer } do
+        trace_ "1.2" { spanSpecAttrs = attrs, spanSpecLinks = links, spanSpecKind = SpanKindServer } do
           randomDelay gen
         trace_ "1.3" do
           randomDelay gen
