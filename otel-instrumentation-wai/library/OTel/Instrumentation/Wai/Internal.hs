@@ -103,7 +103,7 @@ includeIfNotNull
   -> Maybe (AttrsBuilder 'AttrsForSpan)
 includeIfNotNull req key selector = do
   val <- selector req
-  guard $ ByteString.null val
+  guard $ not $ ByteString.null val
   pure $ key .@ decodeBytes val
 
 includeReqLengthIfKnown :: Request -> Maybe (AttrsBuilder 'AttrsForSpan)
