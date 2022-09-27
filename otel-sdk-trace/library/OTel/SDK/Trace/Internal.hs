@@ -135,7 +135,8 @@ import Control.Monad.Logger.Aeson
   )
 import Control.Monad.Reader (ReaderT(..))
 import Control.Retry
-  ( RetryAction(..), RetryStatus, applyPolicy, recoveringDynamic, retryPolicyDefault
+  ( RetryAction(..), RetryPolicyM, RetryStatus, applyPolicy, fullJitterBackoff, limitRetries
+  , recoveringDynamic
   )
 import Data.Aeson (ToJSON(..), object)
 import Data.Aeson.Types (Pair)
@@ -885,9 +886,12 @@ otlpSpanExporter otlpSpanExporterSpec f = do
 
   send :: Request -> IO (Response ByteString)
   send req = do
-    recoveringDynamic retryPolicyDefault handlers \_retryStatus -> do
+    recoveringDynamic retryPolicy handlers \_retryStatus -> do
       httpLbs req manager
     where
+    retryPolicy :: RetryPolicyM IO
+    retryPolicy = fullJitterBackoff 5_000 <> limitRetries 10
+
     handlers :: [RetryStatus -> Handler IO RetryAction]
     handlers =
       [ const $ Handler \(_ :: AsyncException) -> pure DontRetry
@@ -934,7 +938,7 @@ otlpSpanExporter otlpSpanExporterSpec f = do
       consult :: RetryStatus -> Text -> Maybe SomeException -> Maybe Int -> IO RetryAction
       consult retryStatus hint mSomeEx mOverrideDelay =
         flip runLoggingT logger do
-          applyPolicy retryPolicyDefault retryStatus >>= \case
+          liftIO (applyPolicy retryPolicy retryStatus) >>= \case
             Nothing -> do
               logError $ "Span export exceeded maximum retries due to exceptions" :# meta
               pure DontRetry
