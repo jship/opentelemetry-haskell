@@ -102,7 +102,6 @@ setNewRunBefore tracingBackend hooks = do
       let spanName = SpanName $ "BEGIN TRANSACTION" <> maybe "" isoLevelText mIsoLevel
       OTel.trace_ (mkSpanSpec spanName mempty sqlBackend) do
         lift $ oldRunBefore sqlBackend mIsoLevel
-
   where
   isoLevelText = \case
     Serializable -> " ISOLATION LEVEL SERIALIZABLE"
@@ -175,14 +174,9 @@ mkSpanSpec spanSpecName additionalAttrs sqlBackend =
 unsafeTracedAcquire :: TracingBackend -> SpanSpec -> Acquire a -> Acquire a
 unsafeTracedAcquire tracingBackend spanSpec (Acquire f) =
   Acquire \restore -> do
-    Allocated x free <- do
-      flip runTracingT tracingBackend do
-        OTel.trace_ spanSpec do
-          liftIO $ f restore
-    return $! Allocated x \releaseType -> do
-      flip runTracingT tracingBackend do
-        OTel.trace_ spanSpec do
-          liftIO $ free releaseType
+    flip runTracingT tracingBackend do
+      OTel.trace_ spanSpec do
+        liftIO $ f restore
 
 persistValuesToAttrs :: [PersistValue] -> AttrsBuilder 'AttrsForSpan
 persistValuesToAttrs persistValues =
