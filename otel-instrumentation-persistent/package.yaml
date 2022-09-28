@@ -29,10 +29,12 @@ ghc-options:
 library:
   dependencies:
   - base >=4.11.1.0 && <5
+  - bytestring
   - exceptions
   - otel-api-common
   - otel-api-trace
   - persistent
+  - resourcet
   - text
   - transformers
   source-dirs: library

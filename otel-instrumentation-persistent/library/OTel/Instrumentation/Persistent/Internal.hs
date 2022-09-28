@@ -1,6 +1,7 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -15,19 +16,29 @@ module OTel.Instrumentation.Persistent.Internal
   , setNewRunOnException
   , modifyRunOnException
   , modifyGetStatement
+  , unsafeTracedAcquire
+  , persistValuesToAttrs
+  , Bytes(..)
   ) where
 
 import Control.Exception (SomeException)
 import Control.Monad.Catch (MonadMask)
 import Control.Monad.IO.Class (MonadIO(..))
 import Control.Monad.Trans.Class (MonadTrans(..))
-import Data.Text (Text)
+import Data.Acquire.Internal
+import Data.ByteString (ByteString)
+import Data.Foldable (fold)
+import Data.Text (Text, pack)
+import Data.Text.Encoding (decodeUtf8With)
+import Data.Text.Encoding.Error (lenientDecode)
+import Database.Persist (LiteralType(..), PersistValue(..))
 import Database.Persist.Sql (IsolationLevel(..), SqlBackend, Statement)
 import Database.Persist.SqlBackend (SqlBackendHooks, getConnHooks, getRDBMS, setConnHooks)
 import Database.Persist.SqlBackend.Internal (hookGetStatement)
 import Database.Persist.SqlBackend.Internal.SqlPoolHooks (runOnException)
+import Database.Persist.SqlBackend.Internal.Statement (Statement(..))
 import Database.Persist.SqlBackend.SqlPoolHooks
-import OTel.API.Common (AttrsFor(..), (.@), AttrsBuilder)
+import OTel.API.Common (AttrsFor(..), Key(..), ToAttrVal(..), (.@), AttrsBuilder)
 import OTel.API.Trace (SpanName(..), TracingT(..), SpanSpec, TracerProvider, TracingBackend)
 import Prelude
 import qualified OTel.API.Common as OTel
@@ -66,10 +77,18 @@ setNewAlterBackend tracingBackend hooks = do
   where
   setNewBackendHooks backendHooks =
     modifyGetStatement backendHooks \oldGetStatement sqlBackend sqlText statement -> do
-      flip runTracingT tracingBackend do
-        let attrs = OTel.DB_STATEMENT .@ sqlText
-        OTel.trace_ (spanSpec (SpanName $ getRDBMS sqlBackend) attrs sqlBackend) do
-          liftIO $ oldGetStatement sqlBackend sqlText statement
+      oldGetStatement sqlBackend sqlText statement
+        { stmtQuery = \persistValues -> do
+            let attrs = OTel.DB_STATEMENT .@ sqlText <> persistValuesToAttrs persistValues
+            let spanSpec = mkSpanSpec (SpanName $ getRDBMS sqlBackend) attrs sqlBackend
+            unsafeTracedAcquire tracingBackend spanSpec do
+              stmtQuery statement persistValues
+        , stmtExecute = \persistValues -> do
+            let attrs = OTel.DB_STATEMENT .@ sqlText <> persistValuesToAttrs persistValues
+            flip runTracingT tracingBackend do
+              OTel.trace_ (mkSpanSpec (SpanName $ getRDBMS sqlBackend) attrs sqlBackend) do
+                liftIO $ stmtExecute statement persistValues
+        }
 
 setNewRunBefore
   :: forall m
@@ -81,7 +100,7 @@ setNewRunBefore tracingBackend hooks = do
   modifyRunBefore hooks \oldRunBefore sqlBackend mIsoLevel -> do
     flip runTracingT tracingBackend do
       let spanName = SpanName $ "BEGIN TRANSACTION" <> maybe "" isoLevelText mIsoLevel
-      OTel.trace_ (spanSpec spanName mempty sqlBackend) do
+      OTel.trace_ (mkSpanSpec spanName mempty sqlBackend) do
         lift $ oldRunBefore sqlBackend mIsoLevel
 
   where
@@ -101,7 +120,7 @@ setNewRunAfter tracingBackend hooks = do
   modifyRunAfter hooks \oldRunAfter sqlBackend mIsoLevel -> do
     flip runTracingT tracingBackend do
       let attrs = mempty
-      OTel.trace_ (spanSpec "COMMIT TRANSACTION" attrs sqlBackend) do
+      OTel.trace_ (mkSpanSpec "COMMIT TRANSACTION" attrs sqlBackend) do
         lift $ oldRunAfter sqlBackend mIsoLevel
 
 setNewRunOnException
@@ -114,7 +133,7 @@ setNewRunOnException tracingBackend hooks =
   modifyRunOnException hooks \oldRunOnException sqlBackend mIsoLevel someEx -> do
     flip runTracingT tracingBackend do
       let attrs = mempty
-      OTel.trace (spanSpec "ROLLBACK TRANSACTION" attrs sqlBackend) \mutableSpan -> do
+      OTel.trace (mkSpanSpec "ROLLBACK TRANSACTION" attrs sqlBackend) \mutableSpan -> do
         OTel.updateSpan mutableSpan $ OTel.recordException someEx False OTel.Now mempty
         lift $ oldRunOnException sqlBackend mIsoLevel someEx
 
@@ -139,8 +158,8 @@ modifyGetStatement
 modifyGetStatement hooks f =
   hooks { hookGetStatement = f $ hookGetStatement hooks }
 
-spanSpec :: SpanName -> AttrsBuilder 'AttrsForSpan -> SqlBackend -> SpanSpec
-spanSpec spanSpecName additionalAttrs sqlBackend =
+mkSpanSpec :: SpanName -> AttrsBuilder 'AttrsForSpan -> SqlBackend -> SpanSpec
+mkSpanSpec spanSpecName additionalAttrs sqlBackend =
   OTel.defaultSpanSpec
     { OTel.spanSpecKind = OTel.SpanKindClient
     , OTel.spanSpecName
@@ -152,6 +171,49 @@ spanSpec spanSpecName additionalAttrs sqlBackend =
         -- "OTel.API.Trace.Core.Attributes".
         OTel.DB_SYSTEM .@ getRDBMS sqlBackend <> additionalAttrs
     }
+
+unsafeTracedAcquire :: TracingBackend -> SpanSpec -> Acquire a -> Acquire a
+unsafeTracedAcquire tracingBackend spanSpec (Acquire f) =
+  Acquire \restore -> do
+    Allocated x free <- do
+      flip runTracingT tracingBackend do
+        OTel.trace_ spanSpec do
+          liftIO $ f restore
+    return $! Allocated x \releaseType -> do
+      flip runTracingT tracingBackend do
+        OTel.trace_ spanSpec do
+          liftIO $ free releaseType
+
+persistValuesToAttrs :: [PersistValue] -> AttrsBuilder 'AttrsForSpan
+persistValuesToAttrs persistValues =
+  fold $ flip fmap (zip [0 :: Int ..] persistValues) \(i, persistValue) ->
+    case persistValue of
+      PersistText text -> mkKey i .@ toAttrVal text
+      PersistByteString bytes -> mkKey i .@ Bytes bytes
+      PersistInt64 int -> mkKey i .@ toAttrVal int
+      PersistDouble double -> mkKey i .@ toAttrVal double
+      PersistRational rational -> mkKey i .@ toAttrVal rational
+      PersistBool bool -> mkKey i .@ toAttrVal bool
+      PersistDay day -> mkKey i .@ toAttrVal (show day)
+      PersistTimeOfDay timeOfDay -> mkKey i .@ toAttrVal (show timeOfDay)
+      PersistUTCTime utcTime -> mkKey i .@ toAttrVal (show utcTime)
+      PersistNull -> mkKey i .@ ("(null)" :: Text)
+      PersistList innerPersistValues -> mkKey i .@ show innerPersistValues -- TODO: 'show' isn't ideal
+      PersistMap assocList -> mkKey i .@ show assocList -- TODO: 'show' isn't ideal
+      PersistObjectId bytes -> mkKey i .@ Bytes bytes
+      PersistArray innerPersistValues -> mkKey i .@ show innerPersistValues -- TODO: 'show' isn't ideal
+      PersistLiteral_ Escaped bytes -> mkKey i .@ Bytes bytes
+      PersistLiteral_ Unescaped bytes -> mkKey i .@ Bytes bytes
+      PersistLiteral_ DbSpecific bytes -> mkKey i .@ Bytes bytes
+  where
+  mkKey i = Key $ "persistent.param." <> pack (show i)
+
+newtype Bytes = Bytes
+  { unBytes :: ByteString
+  }
+
+instance ToAttrVal Bytes Text where
+  toAttrVal = decodeUtf8With lenientDecode . unBytes
 
 -- $disclaimer
 --
