@@ -37,7 +37,7 @@ buildSqlPoolHooks
   :: forall m
    . (MonadIO m, MonadMask m)
   => TracerProvider
-  -> m (SqlPoolHooks m SqlBackend)
+  -> IO (SqlPoolHooks m SqlBackend)
 buildSqlPoolHooks tracerProvider = do
   tracingBackend <- OTel.getTracingBackend tracerProvider "otel-instrumentation-persistent"
     { OTel.instrumentationScopeVersion = Just "0.0.0" -- TODO: Automatically pull package version
