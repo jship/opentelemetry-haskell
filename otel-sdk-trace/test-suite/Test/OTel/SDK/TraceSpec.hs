@@ -4,26 +4,39 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
 module Test.OTel.SDK.TraceSpec
   ( spec
   ) where
 
--- TODO: Explicit imports
-
-import Control.Concurrent.STM
-import Control.Concurrent.STM.TMQueue
+import Control.Concurrent.STM (TVar, atomically, modifyTVar', newTVarIO, readTVar)
+import Control.Concurrent.STM.TMQueue (TMQueue, newTMQueueIO, readTMQueue)
 import Control.Monad.IO.Class (MonadIO(liftIO))
-import Control.Monad.Logger.Aeson
+import Control.Monad.Logger.Aeson (defaultOutput)
 import Control.Monad.Trans.State (State)
 import Data.List.NonEmpty (NonEmpty(..))
 import Data.Traversable (for)
-import Data.Tree
+import Data.Tree (Tree(..), Forest, unfoldTreeM)
 import Data.Word (Word64)
-import OTel.API.Common
+import OTel.API.Common (Attrs, emptyAttrs, timestampFromNanoseconds, with)
 import OTel.API.Trace
-import OTel.API.Trace.Core.Internal
+  ( Span(..), SpanContext(spanContextSpanId, spanContextTraceFlags, spanContextTraceId)
+  , SpanFrozenTimestamp(SpanFrozenTimestampEnded), SpanKind(SpanKindInternal)
+  , SpanLineage(SpanLineageChildOf, SpanLineageRoot), SpanStatus(SpanStatusUnset)
+  , TracingT(runTracingT), TracerProvider, emptySpanContext, getTracingBackend, spanIdFromWords
+  , spanIsChildOf, spanIsRoot, traceFlagsSampled, traceIdFromWords, trace_
+  )
+import OTel.API.Trace.Core.Internal (Span(Span))
 import OTel.SDK.Trace.Internal
+  ( IdGeneratorSpec(IdGeneratorSpec, idGeneratorSpecGenSpanId, idGeneratorSpecGenTraceId, idGeneratorSpecName)
+  , SimpleSpanProcessorSpec(simpleSpanProcessorSpecExporter, simpleSpanProcessorSpecOnSpansExported)
+  , SpanExportResult(SpanExportResultFailure, SpanExportResultSuccess)
+  , TracerProviderSpec
+    ( tracerProviderSpecCallStackAttrs, tracerProviderSpecIdGenerator, tracerProviderSpecLogger
+    , tracerProviderSpecNow, tracerProviderSpecSampler, tracerProviderSpecSpanProcessors
+    )
+  , alwaysOnSampler, askSpansExported, askSpansExportedResult, defaultSimpleSpanProcessorSpec
+  , defaultTracerProviderSpec, simpleSpanProcessor, stmSpanExporter, withTracerProviderIO
+  )
 import Prelude hiding (span)
 import System.IO (stdout)
 import Test.HUnit (assertFailure)
@@ -202,33 +215,6 @@ shouldReturn action expected = action >>= \x -> x `shouldBe` expected
 
 shouldBe :: (HasCallStack, MonadIO m, Show a, Eq a) => a -> a -> m ()
 shouldBe x expected = liftIO $ x `Hspec.shouldBe` expected
-
---shouldMatchJustM
---  :: forall m a
---   . (HasCallStack, MonadIO m)
---  => m (Maybe a)
---  -> m a
---shouldMatchJustM mx = shouldMatchPatternM mx \case Just y -> y
---
---shouldMatchNothingM
---  :: forall m a
---   . (HasCallStack, MonadIO m)
---  => m (Maybe a)
---  -> m ()
---shouldMatchNothingM mx = shouldMatchPatternM mx \case Nothing -> ()
---
---shouldMatchPatternM
---  :: forall m a b
---   . (HasCallStack, MonadIO m)
---  => m a
---  -> (a -> b)
---  -> m b
---shouldMatchPatternM mx matcher = do
---  x <- mx
---  liftIO do
---    evaluate (matcher x) `catch` \case
---      PatternMatchFail err -> do
---        assertFailure $ "Pattern did not match: " <> err
 
 buildSpanForest
   :: [Span Attrs]
