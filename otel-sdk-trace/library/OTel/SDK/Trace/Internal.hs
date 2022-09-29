@@ -75,6 +75,8 @@ module OTel.SDK.Trace.Internal
 
   , IdGeneratorM(..)
   , runIdGeneratorM
+  , IdGenerator(..)
+  , buildIdGenerator
   , IdGeneratorSpec(..)
   , defaultIdGeneratorSpec
   , PRNG(..)
@@ -222,7 +224,7 @@ data TracerProviderSpec = TracerProviderSpec
   { tracerProviderSpecNow :: IO Timestamp
   , tracerProviderSpecLogger :: Loc -> LogSource -> LogLevel -> LogStr -> IO ()
   , tracerProviderSpecSeed :: Seed
-  , tracerProviderSpecIdGenerator :: IdGeneratorSpec
+  , tracerProviderSpecIdGenerator :: forall a. (IdGeneratorSpec -> IO a) -> IO a
   , tracerProviderSpecSpanProcessors :: forall a. [(SpanProcessorSpec -> IO a) -> IO a]
   , tracerProviderSpecSampler :: forall a. (SamplerSpec -> IO a) -> IO a
   , tracerProviderSpecResource :: Resource Attrs
@@ -240,7 +242,7 @@ defaultTracerProviderSpec =
         fmap (timestampFromNanoseconds . toNanoSecs) $ getTime Realtime
     , tracerProviderSpecLogger = mempty
     , tracerProviderSpecSeed = defaultSystemSeed
-    , tracerProviderSpecIdGenerator = defaultIdGeneratorSpec -- TODO: This should likely be in CPS for consistency
+    , tracerProviderSpecIdGenerator = with defaultIdGeneratorSpec -- TODO: This should likely be in CPS for consistency
     , tracerProviderSpecSpanProcessors = mempty
     , tracerProviderSpecSampler = with defaultSamplerSpec
     , tracerProviderSpecResource =
@@ -280,33 +282,41 @@ withTracerProviderIO tracerProviderSpec action = do
     logDebug "Acquiring tracer provider"
   shutdownRef <- newTVarIO False
   prngRef <- newPRNGRef seed
-  withSampler \sampler -> do
-    withCompositeSpanProcessor \spanProcessor -> do
-      let tracerProvider =
-            TracerProvider
-              { tracerProviderGetTracer =
-                  getTracerWith prngRef sampler spanProcessor
-              , tracerProviderShutdown = do
-                  unlessSTM (readTVar shutdownRef) do
-                    writeTVar shutdownRef True
-                    pure $ spanProcessorShutdown spanProcessor
-              , tracerProviderForceFlush = do
-                  unlessSTM (readTVar shutdownRef) do
-                    pure $ spanProcessorForceFlush spanProcessor
-              }
-      flip runLoggingT logger do
-        logDebug $ "Acquired tracer provider" :#
-          [ "resource" .= res
-          , "limits" .= object
-              [ "attributes" .= object
-                  [ "span" .= spanAttrsLimits
-                  , "spanEvent" .= spanEventAttrsLimits
-                  , "spanLink" .= spanLinkAttrsLimits
-                  ]
-              ]
-          ]
-      action tracerProvider `finally` tracerProviderShutdown tracerProvider
+  defIdGenerator <- buildIdGenerator mempty defaultIdGeneratorSpec
+  withIdGenerator \idGenerator -> do
+    withSampler \sampler -> do
+      withCompositeSpanProcessor \spanProcessor -> do
+        let tracerProvider =
+              TracerProvider
+                { tracerProviderGetTracer =
+                    getTracerWith prngRef defIdGenerator idGenerator sampler spanProcessor
+                , tracerProviderShutdown = do
+                    unlessSTM (readTVar shutdownRef) do
+                      writeTVar shutdownRef True
+                      pure $ spanProcessorShutdown spanProcessor
+                , tracerProviderForceFlush = do
+                    unlessSTM (readTVar shutdownRef) do
+                      pure $ spanProcessorForceFlush spanProcessor
+                }
+        flip runLoggingT logger do
+          logDebug $ "Acquired tracer provider" :#
+            [ "resource" .= res
+            , "limits" .= object
+                [ "attributes" .= object
+                    [ "span" .= spanAttrsLimits
+                    , "spanEvent" .= spanEventAttrsLimits
+                    , "spanLink" .= spanLinkAttrsLimits
+                    ]
+                ]
+            ]
+        action tracerProvider `finally` tracerProviderShutdown tracerProvider
   where
+  withIdGenerator :: (IdGenerator -> IO r) -> IO r
+  withIdGenerator =
+    runContT do
+      acquiredIdGenerator <- ContT idGeneratorSpec
+      liftIO $ buildIdGenerator logger acquiredIdGenerator
+
   withSampler :: (Sampler -> IO r) -> IO r
   withSampler =
     runContT do
@@ -323,17 +333,19 @@ withTracerProviderIO tracerProviderSpec action = do
 
   getTracerWith
     :: MVar PRNG
+    -> IdGenerator
+    -> IdGenerator
     -> Sampler
     -> SpanProcessor
     -> InstrumentationScope
     -> IO Tracer
-  getTracerWith prngRef sampler spanProcessor scope =
+  getTracerWith prngRef defIdGenerator idGenerator sampler spanProcessor scope =
     flip runLoggingT logger do
       logDebug $ "Providing tracer" :# [ "instrumentationScope" .= scope ]
       pure Tracer
         { tracerInstrumentationScope = scope
         , tracerNow = now
-        , tracerStartSpan = startSpan prngRef sampler scope spanProcessor
+        , tracerStartSpan = startSpan prngRef defIdGenerator idGenerator sampler scope spanProcessor
         , tracerProcessSpan = endSpan spanProcessor
         , tracerSpanAttrsLimits = spanAttrsLimits
         , tracerSpanEventAttrsLimits = spanEventAttrsLimits
@@ -347,6 +359,8 @@ withTracerProviderIO tracerProviderSpec action = do
 
   startSpan
     :: MVar PRNG
+    -> IdGenerator
+    -> IdGenerator
     -> Sampler
     -> InstrumentationScope
     -> SpanProcessor
@@ -354,7 +368,7 @@ withTracerProviderIO tracerProviderSpec action = do
     -> Context
     -> SpanSpec
     -> IO (MutableSpan, [Pair])
-  startSpan prngRef sampler scope spanProcessor cs implicitParentContext spanSpec = do
+  startSpan prngRef defIdGenerator idGenerator sampler scope spanProcessor cs implicitParentContext spanSpec = do
     span <- buildSpan
     mutableSpan <- unsafeNewMutableSpan span
 
@@ -426,29 +440,31 @@ withTracerProviderIO tracerProviderSpec action = do
       newSpanContext :: SpanLineage -> IO SpanContext
       newSpanContext spanLineage = do
         (spanContextTraceId, spanContextSpanId) <- do
-          runIdGeneratorM prngRef logger
+          withMVar prngRef \prng -> do
             case spanLineage of
               SpanLineageRoot ->
-                liftA2 (,) genTraceId genSpanId
+                liftA2 (,) (genTraceId prng) (genSpanId prng)
                   `catchAny` \(SomeException ex) -> do
-                    traceId <- idGeneratorSpecGenTraceId defaultIdGeneratorSpec
-                    spanId <- idGeneratorSpecGenSpanId defaultIdGeneratorSpec
-                    logError $ "Fell back to default trace/span ID gen due to exception" :#
-                      [ "exception" .= displayException ex
-                      , "traceId" .= traceId
-                      , "spanId" .= spanId
-                      ]
+                    traceId <- idGeneratorGenTraceId defIdGenerator prng
+                    spanId <- idGeneratorGenSpanId defIdGenerator prng
+                    flip runLoggingT logger do
+                      logError $ "Fell back to default trace/span ID gen due to exception" :#
+                        [ "exception" .= displayException ex
+                        , "traceId" .= traceId
+                        , "spanId" .= spanId
+                        ]
                     pure (traceId, spanId)
               SpanLineageChildOf scParent ->
-                fmap (spanContextTraceId scParent,) genSpanId
+                fmap (spanContextTraceId scParent,) (genSpanId prng)
                   `catchAny` \(SomeException ex) -> do
                     let traceId = spanContextTraceId scParent
-                    spanId <- idGeneratorSpecGenSpanId defaultIdGeneratorSpec
-                    logError $ "Fell back to default trace/span ID gen due to exception" :#
-                      [ "exception" .= displayException ex
-                      , "traceId" .= traceId
-                      , "spanId" .= spanId
-                      ]
+                    spanId <- idGeneratorGenSpanId defIdGenerator prng
+                    flip runLoggingT logger do
+                      logError $ "Fell back to default trace/span ID gen due to exception" :#
+                        [ "exception" .= displayException ex
+                        , "traceId" .= traceId
+                        , "spanId" .= spanId
+                        ]
                     pure (traceId, spanId)
 
         pure emptySpanContext
@@ -480,6 +496,11 @@ withTracerProviderIO tracerProviderSpec action = do
 
     parentContext = fromMaybe implicitParentContext spanSpecParentContext
 
+    IdGenerator
+      { idGeneratorGenTraceId = genTraceId
+      , idGeneratorGenSpanId = genSpanId
+      } = idGenerator
+
     SpanSpec
       { spanSpecName
       , spanSpecParentContext
@@ -493,11 +514,7 @@ withTracerProviderIO tracerProviderSpec action = do
     { tracerProviderSpecNow = now
     , tracerProviderSpecLogger = logger
     , tracerProviderSpecSeed = seed
-    , tracerProviderSpecIdGenerator =
-        IdGeneratorSpec
-          { idGeneratorSpecGenTraceId = genTraceId
-          , idGeneratorSpecGenSpanId = genSpanId
-          }
+    , tracerProviderSpecIdGenerator = idGeneratorSpec
     , tracerProviderSpecSpanProcessors = spanProcessorSpecs
     , tracerProviderSpecSampler = samplerSpec
     , tracerProviderSpecResource = res
@@ -1263,17 +1280,14 @@ buildSampler logger samplerSpec = do
       [ "name" .= samplerSpecName
       , "description" .= samplerSpecDescription
       ]
-  pure sampler
+  pure Sampler
+    { samplerName = samplerSpecName
+    , samplerDescription = samplerSpecDescription
+    , samplerShouldSample = \samplerInput -> do
+        runSamplerM logger onEx metaShouldSample do
+          samplerSpecShouldSample samplerInput
+    }
   where
-  sampler =
-    Sampler
-      { samplerName = samplerSpecName
-      , samplerDescription = samplerSpecDescription
-      , samplerShouldSample = \samplerInput -> do
-          runSamplerM logger onEx metaShouldSample do
-            samplerSpecShouldSample samplerInput
-      }
-
   metaShouldSample = mkLoggingMeta "shouldSample"
 
   mkLoggingMeta :: Text -> [SeriesElem]
@@ -1553,24 +1567,54 @@ newtype IdGeneratorM a = IdGeneratorM
       ) via (Ap (ReaderT PRNG (LoggingT IO)) a)
 
 runIdGeneratorM
-  :: MVar PRNG
+  :: PRNG
   -> (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
   -> IdGeneratorM a
   -> IO a
-runIdGeneratorM prngRef logger action = do
-  withMVar prngRef \prng -> do
-    flip runLoggingT logger do
-      unIdGeneratorM action prng
+runIdGeneratorM prng logger action = do
+  flip runLoggingT logger do
+    unIdGeneratorM action prng
+
+data IdGenerator = IdGenerator
+  { idGeneratorGenTraceId :: PRNG -> IO TraceId
+  , idGeneratorGenSpanId :: PRNG -> IO SpanId
+  }
+
+buildIdGenerator
+  :: forall m
+   . (MonadIO m)
+  => (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
+  -> IdGeneratorSpec
+  -> m IdGenerator
+buildIdGenerator logger idGeneratorSpec = do
+  flip runLoggingT logger do
+    logDebug $ "Building ID generator" :#
+      [ "name" .= name
+      ]
+  pure IdGenerator
+    { idGeneratorGenTraceId = \prng -> do
+        runIdGeneratorM prng logger genTraceId
+    , idGeneratorGenSpanId = \prng -> do
+        runIdGeneratorM prng logger genSpanId
+    }
+  where
+  IdGeneratorSpec
+    { idGeneratorSpecName = name
+    , idGeneratorSpecGenTraceId = genTraceId
+    , idGeneratorSpecGenSpanId = genSpanId
+    } = idGeneratorSpec
 
 data IdGeneratorSpec = IdGeneratorSpec
-  { idGeneratorSpecGenTraceId :: IdGeneratorM TraceId
+  { idGeneratorSpecName :: Text
+  , idGeneratorSpecGenTraceId :: IdGeneratorM TraceId
   , idGeneratorSpecGenSpanId :: IdGeneratorM SpanId
   }
 
 defaultIdGeneratorSpec :: IdGeneratorSpec
 defaultIdGeneratorSpec =
   IdGeneratorSpec
-    { idGeneratorSpecGenTraceId = liftA2 traceIdFromWords genUniform genUniform
+    { idGeneratorSpecName = "default"
+    , idGeneratorSpecGenTraceId = liftA2 traceIdFromWords genUniform genUniform
     , idGeneratorSpecGenSpanId = fmap spanIdFromWords genUniform
     }
 

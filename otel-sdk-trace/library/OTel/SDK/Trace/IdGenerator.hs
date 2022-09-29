@@ -1,6 +1,9 @@
 module OTel.SDK.Trace.IdGenerator
-  ( Internal.IdGeneratorSpec
+  ( Internal.IdGenerator
+
+  , Internal.IdGeneratorSpec
   , Internal.defaultIdGeneratorSpec
+  , Internal.idGeneratorSpecName
   , Internal.idGeneratorSpecGenTraceId
   , Internal.idGeneratorSpecGenSpanId
 

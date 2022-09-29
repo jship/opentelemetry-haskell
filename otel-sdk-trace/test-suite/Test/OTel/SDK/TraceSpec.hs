@@ -169,8 +169,9 @@ testTracerProviderSpec nanosRef traceIdRef spanIdRef spanQueue =
           pure $ timestampFromNanoseconds x
     , tracerProviderSpecLogger = defaultOutput stdout
     , tracerProviderSpecIdGenerator =
-        IdGeneratorSpec
-          { idGeneratorSpecGenTraceId =
+        with IdGeneratorSpec
+          { idGeneratorSpecName = "test"
+          , idGeneratorSpecGenTraceId =
               liftIO $ atomically do
                 x <- readTVar traceIdRef
                 modifyTVar' traceIdRef succ

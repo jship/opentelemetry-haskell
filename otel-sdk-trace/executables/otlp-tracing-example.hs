@@ -92,7 +92,7 @@ buildTracerProviderSpec = do
                     }
               }
           ]
-      , tracerProviderSpecSampler = alwaysOnSampler
+      , tracerProviderSpecSampler = with alwaysOnSampler
       , tracerProviderSpecLogger = defaultOutput stdout
       , tracerProviderSpecResource = resource
       }
