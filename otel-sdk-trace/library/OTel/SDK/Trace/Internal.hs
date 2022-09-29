@@ -163,7 +163,7 @@ import Network.HTTP.Client
   , requestFromURI, setRequestCheckStatus
   )
 import Network.HTTP.Client.TLS (newTlsManager)
-import Network.HTTP.Types (Status(statusCode), serviceUnavailable503, tooManyRequests429)
+import Network.HTTP.Types (Status(statusCode), Header, serviceUnavailable503, tooManyRequests429)
 import Network.HTTP.Types.Header (hContentType, hRetryAfter)
 import Network.URI (URI(..), parseURI)
 import OTel.API.Common
@@ -181,9 +181,9 @@ import OTel.API.Common
 import OTel.API.Common.Internal (AttrVals(..), InstrumentationScope(..))
 import OTel.API.Context.Core (Context, lookupContext)
 import OTel.API.Trace
-  ( SpanSpec(..), Span(..), SpanContext(..), SpanEvent(..), SpanEventName(unSpanEventName)
+  ( Span(..), SpanContext(..), SpanEvent(..), SpanEventName(unSpanEventName)
   , SpanKind(SpanKindClient, SpanKindConsumer, SpanKindInternal, SpanKindProducer, SpanKindServer)
-  , SpanLink(..), SpanName(unSpanName), SpanParent(SpanParentChildOf, SpanParentRoot)
+  , SpanLink(..), SpanName(unSpanName), SpanParent(SpanParentChildOf, SpanParentRoot), SpanSpec(..)
   , SpanStatus(SpanStatusError, SpanStatusOk, SpanStatusUnset), MutableSpan, SpanId, SpanLinks
   , TraceId, TraceState, Tracer, TracerProvider, UpdateSpanSpec, contextKeySpan, emptySpanContext
   , emptyTraceState, frozenTimestamp, spanContextIsSampled, spanContextIsValid, spanEventsToList
@@ -192,7 +192,7 @@ import OTel.API.Trace
   , pattern CODE_LINENO, pattern CODE_NAMESPACE
   )
 import OTel.API.Trace.Core.Internal
-  ( SpanSpec(..), Span(..), SpanContext(..), SpanLinkSpec(..), SpanLinkSpecs(..), SpanLinks(..)
+  ( Span(..), SpanContext(..), SpanLinkSpec(..), SpanLinkSpecs(..), SpanLinks(..), SpanSpec(..)
   , Tracer(..), TracerProvider(..), buildSpanUpdater, freezeSpan, unsafeModifyMutableSpan
   , unsafeNewMutableSpan, unsafeReadMutableSpan
   )
@@ -797,6 +797,7 @@ data OTLPSpanExporterSpec = OTLPSpanExporterSpec
   , otlpSpanExporterSpecEndpoint :: URI
   , otlpSpanExporterSpecTimeout :: Int
   , otlpSpanExporterSpecProtocol :: OTLPProtocol
+  , otlpSpanExporterSpecHeaders :: [Header]
   , otlpSpanExporterSpecLogger :: Loc -> LogSource -> LogLevel -> LogStr -> IO ()
   , otlpSpanExporterSpecWorkerQueueSize :: Int
   , otlpSpanExporterSpecWorkerCount :: Int
@@ -810,6 +811,7 @@ defaultOTLPSpanExporterSpec =
     , otlpSpanExporterSpecEndpoint = fromJust $ parseURI "http://localhost:4318/v1/traces"
     , otlpSpanExporterSpecTimeout = 10_000_000
     , otlpSpanExporterSpecProtocol = httpProtobufProtocol
+    , otlpSpanExporterSpecHeaders = mempty
     , otlpSpanExporterSpecLogger = mempty
     , otlpSpanExporterSpecWorkerQueueSize =
         concurrentWorkersSpecQueueSize defaultConcurrentWorkersSpec
@@ -828,7 +830,11 @@ otlpSpanExporter otlpSpanExporterSpec f = do
       setRequestCheckStatus baseReq
         { method = "POST"
         , requestHeaders =
-            (hContentType, "application/x-protobuf") : requestHeaders baseReq
+            DList.toList $ mconcat
+              [ DList.singleton (hContentType, "application/x-protobuf")
+              , DList.fromList headers
+              , DList.fromList $ requestHeaders baseReq
+              ]
         }
   withConcurrentWorkers (concurrentWorkersSpec req) \workers -> do
     f $ spanExporterSpec workers
@@ -1169,6 +1175,7 @@ otlpSpanExporter otlpSpanExporterSpec f = do
     , otlpSpanExporterSpecEndpoint = endpoint
     , otlpSpanExporterSpecTimeout = exportTimeout
     , otlpSpanExporterSpecProtocol = _protocol -- N.B. Only http/protobuf is supported
+    , otlpSpanExporterSpecHeaders = headers
     , otlpSpanExporterSpecLogger = logger
     , otlpSpanExporterSpecWorkerQueueSize = queueSize
     , otlpSpanExporterSpecWorkerCount = workerCount
