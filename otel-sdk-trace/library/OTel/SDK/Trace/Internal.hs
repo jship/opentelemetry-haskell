@@ -183,7 +183,7 @@ import OTel.API.Context.Core (Context, lookupContext)
 import OTel.API.Trace
   ( Span(..), SpanContext(..), SpanEvent(..), SpanEventName(unSpanEventName)
   , SpanKind(SpanKindClient, SpanKindConsumer, SpanKindInternal, SpanKindProducer, SpanKindServer)
-  , SpanLink(..), SpanName(unSpanName), SpanParent(SpanParentChildOf, SpanParentRoot), SpanSpec(..)
+  , SpanLink(..), SpanName(unSpanName), SpanLineage(SpanLineageChildOf, SpanLineageRoot), SpanSpec(..)
   , SpanStatus(SpanStatusError, SpanStatusOk, SpanStatusUnset), MutableSpan, SpanId, SpanLinks
   , TraceId, TraceState, Tracer, TracerProvider, UpdateSpanSpec, contextKeySpan, emptySpanContext
   , emptyTraceState, frozenTimestamp, spanContextIsSampled, spanContextIsValid, spanEventsToList
@@ -365,8 +365,8 @@ withTracerProviderIO tracerProviderSpec action = do
     where
     buildSpan :: IO (Span AttrsBuilder)
     buildSpan = do
-      spanParent <- spanParentFromParentContext parentContext
-      initSpanContext <- newSpanContext spanParent
+      spanLineage <- spanLineageFromParentContext parentContext
+      initSpanContext <- newSpanContext spanLineage
 
       samplingResult <- samplerShouldSample sampler SamplerInput
         { samplerInputContext = parentContext
@@ -395,7 +395,7 @@ withTracerProviderIO tracerProviderSpec action = do
           TimestampSourceNow -> now
 
       pure Span
-        { spanParent
+        { spanLineage
         , spanContext =
             spanContextPostSampling
               { spanContextTraceState = samplingResultTraceState samplingResult
@@ -415,19 +415,19 @@ withTracerProviderIO tracerProviderSpec action = do
         , spanInstrumentationScope = scope
         }
       where
-      spanParentFromParentContext :: Context -> IO SpanParent
-      spanParentFromParentContext context =
+      spanLineageFromParentContext :: Context -> IO SpanLineage
+      spanLineageFromParentContext context =
         case lookupContext contextKeySpan context of
-          Nothing -> pure SpanParentRoot
+          Nothing -> pure SpanLineageRoot
           Just mutableSpan -> do
-            fmap (SpanParentChildOf . spanContext) $ unsafeReadMutableSpan mutableSpan
+            fmap (SpanLineageChildOf . spanContext) $ unsafeReadMutableSpan mutableSpan
 
-      newSpanContext :: SpanParent -> IO SpanContext
-      newSpanContext spanParent = do
+      newSpanContext :: SpanLineage -> IO SpanContext
+      newSpanContext spanLineage = do
         (spanContextTraceId, spanContextSpanId) <- do
           runIdGeneratorM prngRef logger
-            case spanParent of
-              SpanParentRoot ->
+            case spanLineage of
+              SpanLineageRoot ->
                 liftA2 (,) genTraceId genSpanId
                   `catchAny` \(SomeException ex) -> do
                     traceId <- idGeneratorSpecGenTraceId defaultIdGeneratorSpec
@@ -438,7 +438,7 @@ withTracerProviderIO tracerProviderSpec action = do
                       , "spanId" .= spanId
                       ]
                     pure (traceId, spanId)
-              SpanParentChildOf scParent ->
+              SpanLineageChildOf scParent ->
                 fmap (spanContextTraceId scParent,) genSpanId
                   `catchAny` \(SomeException ex) -> do
                     let traceId = spanContextTraceId scParent
@@ -1013,14 +1013,14 @@ otlpSpanExporter otlpSpanExporterSpec f = do
         & OTLP.Trace.status .~ convertSpanStatus spanStatus
       where
       mParentSpanId =
-        case spanParent of
-          SpanParentRoot -> Nothing
-          SpanParentChildOf parentSpanContext ->
+        case spanLineage of
+          SpanLineageRoot -> Nothing
+          SpanLineageChildOf parentSpanContext ->
             Just $ spanContextSpanId parentSpanContext
 
 
       Span
-        { spanParent
+        { spanLineage
         , spanContext =
             SpanContext
               { spanContextTraceId = traceId

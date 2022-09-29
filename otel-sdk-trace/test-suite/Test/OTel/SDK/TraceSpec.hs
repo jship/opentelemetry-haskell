@@ -46,7 +46,7 @@ spec = do
                 pure ()
         , expectedSpans =
             [ pure Span
-                { spanParent = SpanParentRoot
+                { spanLineage = SpanLineageRoot
                 , spanContext =
                     emptySpanContext
                       { spanContextTraceId = traceIdFromWords 0 0
@@ -80,7 +80,7 @@ spec = do
             [ Node
                 { rootLabel =
                     Span
-                      { spanParent = SpanParentRoot
+                      { spanLineage = SpanLineageRoot
                       , spanContext =
                           emptySpanContext
                             { spanContextTraceId = traceIdFromWords 0 0
@@ -101,8 +101,8 @@ spec = do
                       }
                 , subForest =
                     [ pure Span
-                        { spanParent =
-                            SpanParentChildOf emptySpanContext
+                        { spanLineage =
+                            SpanLineageChildOf emptySpanContext
                               { spanContextTraceId = traceIdFromWords 0 0
                               , spanContextSpanId = spanIdFromWords 0
                               , spanContextTraceFlags = traceFlagsSampled

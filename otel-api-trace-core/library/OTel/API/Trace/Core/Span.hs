@@ -2,7 +2,7 @@ module OTel.API.Trace.Core.Span
   ( Internal.MutableSpan
 
   , Internal.Span
-  , Internal.spanParent
+  , Internal.spanLineage
   , Internal.spanContext
   , Internal.spanName
   , Internal.spanStatus
@@ -20,7 +20,7 @@ module OTel.API.Trace.Core.Span
   , Internal.spanIsChildOf
 
   , Internal.SpanName(..)
-  , Internal.SpanParent(..)
+  , Internal.SpanLineage(..)
   , Internal.SpanKind(..)
   , Internal.SpanStatus(..)
   , Internal.SpanFrozenAt

@@ -119,7 +119,7 @@ module OTel.API.Trace.Core.Internal
   , SpanFrozenTimestamp(..)
   , frozenTimestamp
   , freezeSpan
-  , SpanParent(.., Root, ChildOf)
+  , SpanLineage(.., Root, ChildOf)
   , SpanKind(.., Server, Client, Producer, Consumer, Internal)
   , SpanStatus(.., Unset, OK, Error)
   ) where
@@ -1056,7 +1056,7 @@ unsafeModifyMutableSpan = IORef.atomicModifyIORef' . unMutableSpan
 {-# INLINE unsafeModifyMutableSpan #-}
 
 data Span (attrs :: AttrsFor -> Type) = Span
-  { spanParent :: SpanParent
+  { spanLineage :: SpanLineage
   , spanContext :: SpanContext
   , spanName :: SpanName
   , spanStatus :: SpanStatus
@@ -1076,7 +1076,7 @@ deriving stock instance Show (Span Attrs)
 instance ToJSON (Span Attrs) where
   toJSON span =
     Aeson.object
-      [ "parent" .= spanParent
+      [ "parent" .= spanLineage
       , "spanContext" .= spanContext
       , "name" .= spanName
       , "status" .= spanStatus
@@ -1091,7 +1091,7 @@ instance ToJSON (Span Attrs) where
       ]
     where
     Span
-      { spanParent
+      { spanLineage
       , spanContext
       , spanName
       , spanStatus
@@ -1116,11 +1116,11 @@ spanIsSampled span = spanContextIsSampled spanContext
   Span { spanContext } = span
 
 spanIsRoot :: Span attrs -> Bool
-spanIsRoot span = SpanParentRoot == spanParent span
+spanIsRoot span = SpanLineageRoot == spanLineage span
 
 spanIsChildOf :: Span attrs -> Span attrs -> Bool
 spanIsChildOf childSpan parentSpan =
-  SpanParentChildOf (spanContext parentSpan) == spanParent childSpan
+  SpanLineageChildOf (spanContext parentSpan) == spanLineage childSpan
 
 type family SpanFrozenAt (attrs :: AttrsFor -> Type) :: Type where
   SpanFrozenAt AttrsBuilder = Maybe Timestamp
@@ -1170,35 +1170,32 @@ freezeSpan defaultSpanFrozenAt spanLinkAttrsLimits spanEventAttrsLimits spanAttr
         freezeAllSpanEventAttrs spanEventAttrsLimits $ spanEvents span
     }
 
--- TODO: Rename back to SpanLineage? The 'SpanParentChildOf' is confusingly
--- named, even though it's just that way because of consistency (the SpanParent
--- prefix).
-data SpanParent
-  = SpanParentRoot
-  | SpanParentChildOf SpanContext
+data SpanLineage
+  = SpanLineageRoot
+  | SpanLineageChildOf SpanContext
   deriving stock (Eq, Show)
 
-instance ToJSON SpanParent where
+instance ToJSON SpanLineage where
   toJSON = \case
-    SpanParentRoot ->
+    SpanLineageRoot ->
       Aeson.object
         [ "tag" .= ("root" :: Text)
         ]
-    SpanParentChildOf spanContext ->
+    SpanLineageChildOf spanContext ->
       Aeson.object
         [ "tag" .= ("childOf" :: Text)
         , "content" .= toJSON spanContext
         ]
 
-pattern Root :: SpanParent
-pattern Root <- SpanParentRoot where
-  Root = SpanParentRoot
+pattern Root :: SpanLineage
+pattern Root <- SpanLineageRoot where
+  Root = SpanLineageRoot
 
-pattern ChildOf :: SpanContext -> SpanParent
-pattern ChildOf sc <- SpanParentChildOf sc where
-  ChildOf sc = SpanParentChildOf sc
+pattern ChildOf :: SpanContext -> SpanLineage
+pattern ChildOf sc <- SpanLineageChildOf sc where
+  ChildOf sc = SpanLineageChildOf sc
 
-{-# COMPLETE Root, ChildOf :: SpanParent #-}
+{-# COMPLETE Root, ChildOf :: SpanLineage #-}
 
 data SpanKind
   = SpanKindServer
