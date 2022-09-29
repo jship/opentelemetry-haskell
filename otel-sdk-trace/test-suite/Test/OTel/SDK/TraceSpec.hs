@@ -193,7 +193,7 @@ testTracerProviderSpec nanosRef traceIdRef spanIdRef spanQueue =
                     liftIO $ Hspec.expectationFailure $ "Export of spans failed: " <> show spans
             }
         ]
-    , tracerProviderSpecSampler = with alwaysOnSampler
+    , tracerProviderSpecSampler = alwaysOnSampler
     , tracerProviderSpecCallStackAttrs = mempty
     }
 

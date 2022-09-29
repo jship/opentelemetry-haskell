@@ -1314,17 +1314,29 @@ data SamplerSpec = SamplerSpec
   }
 
 defaultSamplerSpec :: SamplerSpec
-defaultSamplerSpec = alwaysOffSampler
+defaultSamplerSpec = alwaysOffSampler'
 
-alwaysOnSampler :: SamplerSpec
-alwaysOnSampler =
+alwaysOnSampler
+  :: forall a
+   . (SamplerSpec -> IO a)
+  -> IO a
+alwaysOnSampler = with alwaysOnSampler'
+
+alwaysOnSampler' :: SamplerSpec
+alwaysOnSampler' =
   (constDecisionSampler SamplingDecisionRecordAndSample)
     { samplerSpecName = "AlwaysOn"
     , samplerSpecDescription = "AlwaysOnSampler"
     }
 
-alwaysOffSampler :: SamplerSpec
-alwaysOffSampler =
+alwaysOffSampler
+  :: forall a
+   . (SamplerSpec -> IO a)
+  -> IO a
+alwaysOffSampler = with alwaysOffSampler'
+
+alwaysOffSampler' :: SamplerSpec
+alwaysOffSampler' =
   (constDecisionSampler SamplingDecisionDrop)
     { samplerSpecName = "AlwaysOff"
     , samplerSpecDescription = "AlwaysOffSampler"
@@ -1342,15 +1354,19 @@ defaultParentBasedSamplerSpec :: ParentBasedSamplerSpec
 defaultParentBasedSamplerSpec =
   ParentBasedSamplerSpec
     { parentBasedSamplerSpecOnRoot = defaultSamplerSpec
-    , parentBasedSamplerSpecOnRemoteParentSampled = alwaysOnSampler
-    , parentBasedSamplerSpecOnRemoteParentNotSampled = alwaysOffSampler
-    , parentBasedSamplerSpecOnLocalParentSampled = alwaysOnSampler
-    , parentBasedSamplerSpecOnLocalParentNotSampled = alwaysOffSampler
+    , parentBasedSamplerSpecOnRemoteParentSampled = alwaysOnSampler'
+    , parentBasedSamplerSpecOnRemoteParentNotSampled = alwaysOffSampler'
+    , parentBasedSamplerSpecOnLocalParentSampled = alwaysOnSampler'
+    , parentBasedSamplerSpecOnLocalParentNotSampled = alwaysOffSampler'
     }
 
-parentBasedSampler :: ParentBasedSamplerSpec -> SamplerSpec
+parentBasedSampler
+  :: forall a
+   . ParentBasedSamplerSpec
+  -> (SamplerSpec -> IO a)
+  -> IO a
 parentBasedSampler parentBasedSamplerSpec =
-  defaultSamplerSpec
+  with defaultSamplerSpec
     { samplerSpecName = "ParentBased"
     , samplerSpecDescription = "ParentBased"
     , samplerSpecShouldSample = \samplerInput -> do
