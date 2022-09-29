@@ -5,6 +5,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 module OTel.Instrumentation.Persistent.Internal
   ( -- * Disclaimer
     -- $disclaimer
@@ -26,8 +27,8 @@ import Control.Monad.Catch (MonadMask)
 import Control.Monad.IO.Class (MonadIO(..))
 import Control.Monad.Trans.Class (MonadTrans(..))
 import Data.Acquire.Internal (Acquire(..))
+import Data.Bifunctor (Bifunctor(..))
 import Data.ByteString (ByteString)
-import Data.Foldable (fold)
 import Data.Text (Text, pack)
 import Data.Text.Encoding (decodeUtf8With)
 import Data.Text.Encoding.Error (lenientDecode)
@@ -181,28 +182,41 @@ unsafeTracedAcquire tracingBackend spanSpec (Acquire f) =
         liftIO $ f restore
 
 persistValuesToAttrs :: [PersistValue] -> AttrsBuilder 'AttrsForSpan
-persistValuesToAttrs persistValues =
-  fold $ flip fmap (zip [0 :: Int ..] persistValues) \(i, persistValue) ->
-    case persistValue of
-      PersistText text -> mkKey i .@ toAttrVal text
-      PersistByteString bytes -> mkKey i .@ Bytes bytes
-      PersistInt64 int -> mkKey i .@ toAttrVal int
-      PersistDouble double -> mkKey i .@ toAttrVal double
-      PersistRational rational -> mkKey i .@ toAttrVal rational
-      PersistBool bool -> mkKey i .@ toAttrVal bool
-      PersistDay day -> mkKey i .@ toAttrVal (show day)
-      PersistTimeOfDay timeOfDay -> mkKey i .@ toAttrVal (show timeOfDay)
-      PersistUTCTime utcTime -> mkKey i .@ toAttrVal (show utcTime)
-      PersistNull -> mkKey i .@ ("(null)" :: Text)
-      PersistList innerPersistValues -> mkKey i .@ show innerPersistValues -- TODO: 'show' isn't ideal
-      PersistMap assocList -> mkKey i .@ show assocList -- TODO: 'show' isn't ideal
-      PersistObjectId bytes -> mkKey i .@ Bytes bytes
-      PersistArray innerPersistValues -> mkKey i .@ show innerPersistValues -- TODO: 'show' isn't ideal
-      PersistLiteral_ Escaped bytes -> mkKey i .@ Bytes bytes
-      PersistLiteral_ Unescaped bytes -> mkKey i .@ Bytes bytes
-      PersistLiteral_ DbSpecific bytes -> mkKey i .@ Bytes bytes
+persistValuesToAttrs =
+  go $ fmap (\i -> "persistent.param." <> pack (show @Int i)) [0..]
   where
-  mkKey i = Key $ "persistent.param." <> pack (show i)
+  go :: [Text] -> [PersistValue] -> AttrsBuilder 'AttrsForSpan
+  go keyTexts persistValues = mconcat $ zipWith zipFunc keyTexts persistValues
+
+  zipFunc :: Text -> PersistValue -> AttrsBuilder 'AttrsForSpan
+  zipFunc keyText = \case
+    PersistText text -> Key keyText .@ toAttrVal text
+    PersistByteString bytes -> Key keyText .@ Bytes bytes
+    PersistInt64 int -> Key keyText .@ toAttrVal int
+    PersistDouble double -> Key keyText .@ toAttrVal double
+    PersistRational rational -> Key keyText .@ toAttrVal rational
+    PersistBool bool -> Key keyText .@ toAttrVal bool
+    PersistDay day -> Key keyText .@ toAttrVal (show day)
+    PersistTimeOfDay timeOfDay -> Key keyText .@ toAttrVal (show timeOfDay)
+    PersistUTCTime utcTime -> Key keyText .@ toAttrVal (show utcTime)
+    PersistNull -> Key keyText .@ ("(null)" :: Text)
+    PersistList innerPersistValues
+      | null innerPersistValues -> Key keyText .@ ("(empty list)" :: Text)
+      | otherwise ->
+          go (fmap (\i -> keyText <> "." <> pack (show @Int i)) [0..]) innerPersistValues
+    PersistMap assocList
+      | null assocList -> Key keyText .@ ("(empty map)" :: Text)
+      | otherwise -> go keys vals
+          where
+          (keys, vals) = first (fmap \k -> keyText <> "." <> k) $ unzip assocList
+    PersistObjectId bytes -> Key keyText .@ Bytes bytes
+    PersistArray innerPersistValues
+      | null innerPersistValues -> Key keyText .@ ("(empty array)" :: Text)
+      | otherwise ->
+          go (fmap (\i -> keyText <> "." <> pack (show @Int i)) [0..]) innerPersistValues
+    PersistLiteral_ Escaped bytes -> Key keyText .@ Bytes bytes
+    PersistLiteral_ Unescaped bytes -> Key keyText .@ Bytes bytes
+    PersistLiteral_ DbSpecific bytes -> Key keyText .@ Bytes bytes
 
 newtype Bytes = Bytes
   { unBytes :: ByteString
