@@ -25,7 +25,7 @@ import Control.Exception (SomeException)
 import Control.Monad.Catch (MonadMask)
 import Control.Monad.IO.Class (MonadIO(..))
 import Control.Monad.Trans.Class (MonadTrans(..))
-import Data.Acquire.Internal
+import Data.Acquire.Internal (Acquire(..))
 import Data.ByteString (ByteString)
 import Data.Foldable (fold)
 import Data.Text (Text, pack)
@@ -38,6 +38,8 @@ import Database.Persist.SqlBackend.Internal (hookGetStatement)
 import Database.Persist.SqlBackend.Internal.SqlPoolHooks (runOnException)
 import Database.Persist.SqlBackend.Internal.Statement (Statement(..))
 import Database.Persist.SqlBackend.SqlPoolHooks
+  ( SqlPoolHooks, defaultSqlPoolHooks, modifyAlterBackend, modifyRunAfter, modifyRunBefore
+  )
 import OTel.API.Common (AttrsFor(..), Key(..), ToAttrVal(..), (.@), AttrsBuilder)
 import OTel.API.Trace (SpanName(..), TracingT(..), SpanSpec, TracerProvider, TracingBackend)
 import Prelude
