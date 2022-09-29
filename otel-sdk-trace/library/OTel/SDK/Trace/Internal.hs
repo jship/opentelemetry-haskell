@@ -183,13 +183,13 @@ import OTel.API.Context.Core (Context, lookupContext)
 import OTel.API.Trace
   ( Span(..), SpanContext(..), SpanEvent(..), SpanEventName(unSpanEventName)
   , SpanKind(SpanKindClient, SpanKindConsumer, SpanKindInternal, SpanKindProducer, SpanKindServer)
-  , SpanLink(..), SpanName(unSpanName), SpanLineage(SpanLineageChildOf, SpanLineageRoot), SpanSpec(..)
-  , SpanStatus(SpanStatusError, SpanStatusOk, SpanStatusUnset), MutableSpan, SpanId, SpanLinks
-  , TraceId, TraceState, Tracer, TracerProvider, UpdateSpanSpec, contextKeySpan, emptySpanContext
-  , emptyTraceState, frozenTimestamp, spanContextIsSampled, spanContextIsValid, spanEventsToList
-  , spanIdFromWords, spanIdToBytesBuilder, spanIsSampled, spanLinksToList, traceFlagsSampled
-  , traceIdFromWords, traceIdToBytesBuilder, pattern CODE_FILEPATH, pattern CODE_FUNCTION
-  , pattern CODE_LINENO, pattern CODE_NAMESPACE
+  , SpanLineage(SpanLineageChildOf, SpanLineageRoot), SpanLink(..), SpanName(unSpanName)
+  , SpanSpec(..), SpanStatus(SpanStatusError, SpanStatusOk, SpanStatusUnset), MutableSpan, SpanId
+  , SpanLinks, TraceId, TraceState, Tracer, TracerProvider, UpdateSpanSpec, contextKeySpan
+  , emptySpanContext, emptyTraceState, frozenTimestamp, spanContextIsSampled, spanContextIsValid
+  , spanEventsToList, spanIdFromWords, spanIdToBytesBuilder, spanIsSampled, spanLinksToList
+  , traceFlagsSampled, traceIdFromWords, traceIdToBytesBuilder, pattern CODE_FILEPATH
+  , pattern CODE_FUNCTION, pattern CODE_LINENO, pattern CODE_NAMESPACE
   )
 import OTel.API.Trace.Core.Internal
   ( Span(..), SpanContext(..), SpanLinkSpec(..), SpanLinkSpecs(..), SpanLinks(..), SpanSpec(..)
@@ -224,7 +224,7 @@ data TracerProviderSpec = TracerProviderSpec
   , tracerProviderSpecSeed :: Seed
   , tracerProviderSpecIdGenerator :: IdGeneratorSpec
   , tracerProviderSpecSpanProcessors :: forall a. [(SpanProcessorSpec -> IO a) -> IO a]
-  , tracerProviderSpecSampler :: SamplerSpec
+  , tracerProviderSpecSampler :: forall a. (SamplerSpec -> IO a) -> IO a
   , tracerProviderSpecResource :: Resource Attrs
   , tracerProviderSpecSpanAttrsLimits :: AttrsLimits 'AttrsForSpan
   , tracerProviderSpecSpanEventAttrsLimits :: AttrsLimits 'AttrsForSpanEvent
@@ -242,7 +242,7 @@ defaultTracerProviderSpec =
     , tracerProviderSpecSeed = defaultSystemSeed
     , tracerProviderSpecIdGenerator = defaultIdGeneratorSpec -- TODO: This should likely be in CPS for consistency
     , tracerProviderSpecSpanProcessors = mempty
-    , tracerProviderSpecSampler = defaultSamplerSpec -- TODO: This should likely be in CPS for consistency
+    , tracerProviderSpecSampler = with defaultSamplerSpec
     , tracerProviderSpecResource =
         fromRight (error "defaultTracerProviderSpec: defaultResource is never a Left") $
           buildResourcePure $ defaultResourceBuilder "unknown_service"
@@ -280,38 +280,39 @@ withTracerProviderIO tracerProviderSpec action = do
     logDebug "Acquiring tracer provider"
   shutdownRef <- newTVarIO False
   prngRef <- newPRNGRef seed
-  flip runLoggingT logger do
-    logDebug $ "Building sampler" :#
-      [ "name" .= samplerSpecName samplerSpec
-      , "description" .= samplerSpecDescription samplerSpec
-      ]
-  sampler <- buildSampler logger samplerSpec
-  withCompositeSpanProcessor \spanProcessor -> do
-    let tracerProvider =
-          TracerProvider
-            { tracerProviderGetTracer =
-                getTracerWith prngRef sampler spanProcessor
-            , tracerProviderShutdown = do
-                unlessSTM (readTVar shutdownRef) do
-                  writeTVar shutdownRef True
-                  pure $ spanProcessorShutdown spanProcessor
-            , tracerProviderForceFlush = do
-                unlessSTM (readTVar shutdownRef) do
-                  pure $ spanProcessorForceFlush spanProcessor
-            }
-    flip runLoggingT logger do
-      logDebug $ "Acquired tracer provider" :#
-        [ "resource" .= res
-        , "limits" .= object
-            [ "attributes" .= object
-                [ "span" .= spanAttrsLimits
-                , "spanEvent" .= spanEventAttrsLimits
-                , "spanLink" .= spanLinkAttrsLimits
-                ]
-            ]
-        ]
-    action tracerProvider `finally` tracerProviderShutdown tracerProvider
+  withSampler \sampler -> do
+    withCompositeSpanProcessor \spanProcessor -> do
+      let tracerProvider =
+            TracerProvider
+              { tracerProviderGetTracer =
+                  getTracerWith prngRef sampler spanProcessor
+              , tracerProviderShutdown = do
+                  unlessSTM (readTVar shutdownRef) do
+                    writeTVar shutdownRef True
+                    pure $ spanProcessorShutdown spanProcessor
+              , tracerProviderForceFlush = do
+                  unlessSTM (readTVar shutdownRef) do
+                    pure $ spanProcessorForceFlush spanProcessor
+              }
+      flip runLoggingT logger do
+        logDebug $ "Acquired tracer provider" :#
+          [ "resource" .= res
+          , "limits" .= object
+              [ "attributes" .= object
+                  [ "span" .= spanAttrsLimits
+                  , "spanEvent" .= spanEventAttrsLimits
+                  , "spanLink" .= spanLinkAttrsLimits
+                  ]
+              ]
+          ]
+      action tracerProvider `finally` tracerProviderShutdown tracerProvider
   where
+  withSampler :: (Sampler -> IO r) -> IO r
+  withSampler =
+    runContT do
+      acquiredSamplerSpec <- ContT samplerSpec
+      liftIO $ buildSampler logger acquiredSamplerSpec
+
   withCompositeSpanProcessor :: (SpanProcessor -> IO r) -> IO r
   withCompositeSpanProcessor =
     runContT do
@@ -1257,6 +1258,11 @@ buildSampler
   -> SamplerSpec
   -> m Sampler
 buildSampler logger samplerSpec = do
+  flip runLoggingT logger do
+    logDebug $ "Building sampler" :#
+      [ "name" .= samplerSpecName
+      , "description" .= samplerSpecDescription
+      ]
   pure sampler
   where
   sampler =
