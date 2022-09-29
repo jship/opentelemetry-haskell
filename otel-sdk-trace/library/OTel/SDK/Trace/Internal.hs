@@ -869,14 +869,10 @@ otlpSpanExporter otlpSpanExporterSpec f = do
                 }
           flip runLoggingT logger do
             case mResp of
+              Just _resp -> pure ()
               Nothing -> do
                 logError $ "Exporting spans timed out" :#
                   "spans" .= otlpSpanExporterItemBatch item : loggingMeta
-              Just resp -> do
-                logDebug $ "Successfully exported spans" :#
-                  "response" .= show resp
-                    : "spans" .= otlpSpanExporterItemBatch item
-                    : loggingMeta
           otlpSpanExporterItemCallback item SpanExportResultSuccess
       , concurrentWorkersSpecOnException = \item -> do
           SomeException ex <- askException
@@ -1743,8 +1739,6 @@ withConcurrentWorkers concurrentWorkersSpec action = do
       mItem <- atomically $ readTBMQueue queue
       for_ mItem \item -> do
         flip runLoggingT logger do
-          logDebug $ "Concurrent worker is processing item" :#
-            "item" .= item : loggingMeta
           liftIO (evaluate =<< processItem item) `catchAny` \someEx -> do
               runOnException (onEx item) someEx pairs
         go
