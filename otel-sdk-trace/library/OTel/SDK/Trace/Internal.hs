@@ -242,7 +242,7 @@ defaultTracerProviderSpec =
         fmap (timestampFromNanoseconds . toNanoSecs) $ getTime Realtime
     , tracerProviderSpecLogger = mempty
     , tracerProviderSpecSeed = defaultSystemSeed
-    , tracerProviderSpecIdGenerator = with defaultIdGeneratorSpec -- TODO: This should likely be in CPS for consistency
+    , tracerProviderSpecIdGenerator = with defaultIdGeneratorSpec
     , tracerProviderSpecSpanProcessors = mempty
     , tracerProviderSpecSampler = with defaultSamplerSpec
     , tracerProviderSpecResource =
