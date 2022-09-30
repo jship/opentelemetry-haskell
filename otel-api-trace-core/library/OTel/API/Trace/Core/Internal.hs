@@ -912,7 +912,7 @@ data SpanSpec = SpanSpec
   , spanSpecLinks :: SpanLinkSpecs
   }
 
-instance IsString (SpanSpec) where
+instance IsString SpanSpec where
   fromString s =
     defaultSpanSpec
       { spanSpecName = fromString s
