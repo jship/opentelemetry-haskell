@@ -41,7 +41,6 @@ library
   build-depends:
       aeson
     , base >=4.11.1.0 && <5
-    , dlist
     , otel-api-common
     , safe-exceptions
     , text

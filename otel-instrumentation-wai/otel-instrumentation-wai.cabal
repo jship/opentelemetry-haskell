@@ -37,8 +37,7 @@ library
       NoImplicitPrelude
   ghc-options: -Wall -fwarn-tabs -Wincomplete-uni-patterns -Wredundant-constraints
   build-depends:
-      aeson
-    , base >=4.11.1.0 && <5
+      base >=4.11.1.0 && <5
     , bytestring
     , http-types
     , iproute
