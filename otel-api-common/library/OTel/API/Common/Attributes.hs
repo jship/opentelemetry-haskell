@@ -7,6 +7,7 @@ module OTel.API.Common.Attributes
   , Internal.lookupAttrs
   , Internal.foldMapWithKeyAttrs
   , Internal.filterWithKeyAttrs
+  , Internal.mapWithKeyAttrs
   , Internal.droppedAttrsCount
 
   , Internal.AttrsBuilder

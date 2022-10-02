@@ -46,6 +46,7 @@ module OTel.API.Common.Internal
   , lookupAttrs
   , foldMapWithKeyAttrs
   , filterWithKeyAttrs
+  , mapWithKeyAttrs
   , droppedAttrsCount
   , AttrsBuilder(..)
   , runAttrsBuilder
@@ -277,6 +278,19 @@ filterWithKeyAttrs f attrs =
         flip HashMap.filterWithKey (attrsMap attrs) \keyText someAttr ->
           case someAttr of
             SomeAttr attr -> f (Key keyText) attr
+    }
+
+mapWithKeyAttrs
+  :: forall af
+   . (forall a. Key a -> Attr a -> Attr a)
+  -> Attrs af
+  -> Attrs af
+mapWithKeyAttrs f attrs =
+  attrs
+    { attrsMap =
+        flip HashMap.mapWithKey (attrsMap attrs) \keyText someAttr ->
+          case someAttr of
+            SomeAttr attr -> SomeAttr $ f (Key keyText) attr
     }
 
 droppedAttrsCount :: Attrs af -> Int
