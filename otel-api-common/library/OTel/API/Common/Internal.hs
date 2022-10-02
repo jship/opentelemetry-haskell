@@ -363,7 +363,6 @@ runAttrsBuilder attrsBuilder attrsLimits =
 
   AttrsLimits { attrsLimitsCount, attrsLimitsValueLength } = attrsLimits
 
--- N.B. Numbers get mapped to attribute values via 'Data.Scientific.toRealFloat'.
 jsonAttrs :: forall a af. (ToJSON a) => Text -> a -> AttrsBuilder af
 jsonAttrs initKeyText = go initKeyText . toJSON
   where
