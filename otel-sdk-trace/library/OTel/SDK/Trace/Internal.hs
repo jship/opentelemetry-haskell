@@ -1092,13 +1092,13 @@ otlpSpanExporter otlpSpanExporterSpec f = do
     convertAttrKVs =
       DList.toList . foldMapWithKeyAttrs \k v -> pure $ convertAttrKV k v
 
-    convertAttrKV :: Key k -> Attr v -> OTLP.Common.KeyValue
+    convertAttrKV :: Key typ -> Attr typ -> OTLP.Common.KeyValue
     convertAttrKV k v =
       ProtoLens.defMessage
         & OTLP.Common.key .~ unKey k
         & OTLP.Common.value .~ convertAttrValue v
 
-    convertAttrValue :: Attr v -> OTLP.Common.AnyValue
+    convertAttrValue :: Attr typ -> OTLP.Common.AnyValue
     convertAttrValue attr =
       ProtoLens.defMessage @OTLP.Common.AnyValue
         & case attrType attr of
