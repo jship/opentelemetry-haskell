@@ -136,7 +136,7 @@ setNewRunOnException tracingBackend hooks =
     flip runTracingT tracingBackend do
       let attrs = mempty
       OTel.trace (mkSpanSpec "ROLLBACK TRANSACTION" attrs sqlBackend) \mutableSpan -> do
-        OTel.updateSpan mutableSpan $ OTel.recordException someEx False OTel.Now mempty
+        OTel.updateSpan mutableSpan $ OTel.recordException someEx False OTel.TimestampSourceNow mempty
         lift $ oldRunOnException sqlBackend mIsoLevel someEx
 
 -- TODO: This function exists in "Database.Persist.SqlBackend.SqlPoolHooks" but

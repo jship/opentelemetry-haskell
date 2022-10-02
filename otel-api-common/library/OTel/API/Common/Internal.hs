@@ -27,7 +27,7 @@ module OTel.API.Common.Internal
   , Timestamp(..)
   , timestampFromNanoseconds
   , timestampToNanoseconds
-  , TimestampSource(.., Now, At)
+  , TimestampSource(..)
 
   , InstrumentationScope(..)
   , defaultInstrumentationScope
@@ -142,16 +142,6 @@ data TimestampSource
   = TimestampSourceNow
   | TimestampSourceAt Timestamp
   deriving stock (Eq, Show)
-
-pattern Now :: TimestampSource
-pattern Now <- TimestampSourceNow where
-  Now = TimestampSourceNow
-
-pattern At :: Timestamp -> TimestampSource
-pattern At timestamp <- TimestampSourceAt timestamp where
-  At timestamp = TimestampSourceAt timestamp
-
-{-# COMPLETE Now, At :: TimestampSource #-}
 
 data InstrumentationScope = InstrumentationScope
   { instrumentationScopeName :: InstrumentationScopeName

@@ -119,9 +119,9 @@ module OTel.API.Trace.Core.Internal
   , SpanFrozenTimestamp(..)
   , frozenTimestamp
   , freezeSpan
-  , SpanLineage(.., Root, ChildOf)
-  , SpanKind(.., Server, Client, Producer, Consumer, Internal)
-  , SpanStatus(.., Unset, OK, Error)
+  , SpanLineage(..)
+  , SpanKind(..)
+  , SpanStatus(..)
   ) where
 
 import Control.Applicative (Applicative(..))
@@ -1187,16 +1187,6 @@ instance ToJSON SpanLineage where
         , "content" .= toJSON spanContext
         ]
 
-pattern Root :: SpanLineage
-pattern Root <- SpanLineageRoot where
-  Root = SpanLineageRoot
-
-pattern ChildOf :: SpanContext -> SpanLineage
-pattern ChildOf sc <- SpanLineageChildOf sc where
-  ChildOf sc = SpanLineageChildOf sc
-
-{-# COMPLETE Root, ChildOf :: SpanLineage #-}
-
 data SpanKind
   = SpanKindServer
   | SpanKindClient
@@ -1212,28 +1202,6 @@ instance ToJSON SpanKind where
     SpanKindProducer -> Aeson.object ["tag" .= ("producer" :: Text)]
     SpanKindConsumer -> Aeson.object ["tag" .= ("consumer" :: Text)]
     SpanKindInternal -> Aeson.object ["tag" .= ("internal" :: Text)]
-
-pattern Server :: SpanKind
-pattern Server <- SpanKindServer where
-  Server = SpanKindServer
-
-pattern Client :: SpanKind
-pattern Client <- SpanKindClient where
-  Client = SpanKindClient
-
-pattern Producer :: SpanKind
-pattern Producer <- SpanKindProducer where
-  Producer = SpanKindProducer
-
-pattern Consumer :: SpanKind
-pattern Consumer <- SpanKindConsumer where
-  Consumer = SpanKindConsumer
-
-pattern Internal :: SpanKind
-pattern Internal <- SpanKindInternal where
-  Internal = SpanKindInternal
-
-{-# COMPLETE Server, Client, Producer, Consumer, Internal :: SpanKind #-}
 
 data SpanStatus
   = SpanStatusUnset
@@ -1269,20 +1237,6 @@ instance ToJSON SpanStatus where
         [ "tag" .= ("error" :: Text)
         , "content" .= toJSON errText
         ]
-
-pattern Unset :: SpanStatus
-pattern Unset <- SpanStatusUnset where
-  Unset = SpanStatusUnset
-
-pattern OK :: SpanStatus
-pattern OK <- SpanStatusOk where
-  OK = SpanStatusOk
-
-pattern Error :: Text -> SpanStatus
-pattern Error errText <- SpanStatusError errText where
-  Error errText = SpanStatusError errText
-
-{-# COMPLETE Unset, OK, Error :: SpanStatus #-}
 
 -- $disclaimer
 --
