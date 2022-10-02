@@ -33,6 +33,7 @@ library:
   - containers
   - dlist
   - hashable
+  - scientific
   - text
   - unordered-containers
   - vector
@@ -40,3 +41,20 @@ library:
   when:
   - condition: false
     other-modules: Paths_otel_api_common
+
+tests:
+  otel-api-common-test-suite:
+    source-dirs: test-suite
+    main: Driver.hs
+    build-tools:
+    - hspec-discover
+    dependencies:
+    - aeson
+    - base
+    - hspec
+    - otel-api-common
+    - scientific
+    - text
+    when:
+    - condition: false
+      other-modules: Paths_otel_api_common

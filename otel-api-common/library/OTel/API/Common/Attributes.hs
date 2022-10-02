@@ -11,6 +11,7 @@ module OTel.API.Common.Attributes
   , Internal.droppedAttrsCount
 
   , Internal.AttrsBuilder
+  , Internal.jsonAttrs
 
   , Internal.AttrsFor(..)
 

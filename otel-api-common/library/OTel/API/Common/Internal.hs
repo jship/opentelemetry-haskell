@@ -50,6 +50,7 @@ module OTel.API.Common.Internal
   , droppedAttrsCount
   , AttrsBuilder(..)
   , runAttrsBuilder
+  , jsonAttrs
   , AttrsAcc(..)
   , AttrsBuilderElem(..)
   , AttrsFor(..)
@@ -65,7 +66,7 @@ module OTel.API.Common.Internal
   , with
   ) where
 
-import Data.Aeson (KeyValue((.=)), ToJSON(..), object)
+import Data.Aeson (KeyValue((.=)), ToJSON(..), Value(..), object)
 import Data.DList (DList)
 import Data.Function ((&))
 import Data.HashMap.Strict (HashMap)
@@ -81,9 +82,12 @@ import Data.Word (Word16, Word32, Word8)
 import GHC.Float (float2Double)
 import Prelude hiding (span)
 import qualified Data.Aeson as Aeson
+import qualified Data.Aeson.Key as Aeson.Key
+import qualified Data.Aeson.KeyMap as Aeson.KeyMap
 import qualified Data.Foldable as Foldable
 import qualified Data.HashMap.Strict as HashMap
 import qualified Data.Maybe as Maybe
+import qualified Data.Scientific as Scientific
 import qualified Data.Text as Text
 import qualified Data.Text.Lazy as Text.Lazy
 import qualified Data.Vector as Vector
@@ -358,6 +362,36 @@ runAttrsBuilder attrsBuilder attrsLimits =
   countLimit = Maybe.fromMaybe (maxBound @Int) attrsLimitsCount
 
   AttrsLimits { attrsLimitsCount, attrsLimitsValueLength } = attrsLimits
+
+-- N.B. Numbers get mapped to attribute values via 'Data.Scientific.toRealFloat'.
+jsonAttrs :: forall a af. (ToJSON a) => Text -> a -> AttrsBuilder af
+jsonAttrs initKeyText = go initKeyText . toJSON
+  where
+  go :: Text -> Value -> AttrsBuilder af
+  go keyText = \case
+    Null -> Key keyText .@ ("(null)" :: Text)
+    Bool x -> Key keyText .@ x
+    String x -> Key keyText .@ x
+    Number x
+      | Just i <- Scientific.toBoundedInteger x ->
+          Key keyText .@ (i :: Int64)
+      | Right d <- Scientific.toBoundedRealFloat x ->
+          Key keyText .@ (d :: Double)
+      | otherwise ->
+          Key keyText .@ show x
+    Array xs
+      | null xs -> Key keyText .@ ("(empty array)" :: Text)
+      | otherwise ->
+          Vector.ifoldl'
+            (\acc i x -> acc <> go (keyText <> "." <> Text.pack (show @Int i)) x)
+            mempty
+            xs
+    Object kvs
+      | null kvs -> Key keyText .@ ("(empty object)" :: Text)
+      | otherwise ->
+          Aeson.KeyMap.foldMapWithKey
+            (\k v -> go (keyText <> "." <> Aeson.Key.toText k) v)
+            kvs
 
 -- N.B. Little ad-hoc type for use in 'runAttrsBuilder'.
 data AttrsAcc = AttrsAcc
