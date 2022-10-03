@@ -37,6 +37,7 @@ module OTel.API.Common.Internal
   , schemaURLToText
 
     -- * Attributes
+  , WithAttrs(..)
   , Attrs(..)
   , emptyAttrs
   , nullAttrs
@@ -209,6 +210,12 @@ schemaURLFromText = Right . SchemaURL
 
 schemaURLToText :: SchemaURL -> Text
 schemaURLToText = unSchemaURL
+
+class WithAttrs (a :: Type) where
+  type WithAttrsAttrType a :: AttrsFor
+  (.:@) :: a -> AttrsBuilder (WithAttrsAttrType a) -> a
+
+infixr 6 .:@
 
 data Attrs (af :: AttrsFor) = Attrs
   { attrsMap :: HashMap Text SomeAttr

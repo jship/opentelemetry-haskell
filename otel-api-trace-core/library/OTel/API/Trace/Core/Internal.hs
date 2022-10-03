@@ -153,7 +153,7 @@ import Data.Word (Word64, Word8)
 import GHC.Stack (CallStack, HasCallStack, callStack)
 import OTel.API.Common
   ( AttrsFor(..), KV(..), Key(..), TimestampSource(..), Attrs, AttrsBuilder, AttrsLimits
-  , InstrumentationScope, IsTextKV, Timestamp
+  , InstrumentationScope, IsTextKV, Timestamp, WithAttrs(..)
   )
 import OTel.API.Common.Internal (runAttrsBuilder)
 import OTel.API.Context.Core (Context, ContextBackend, ContextKey)
@@ -793,6 +793,17 @@ data SpanEventSpec = SpanEventSpec
   , spanEventSpecAttrs :: AttrsBuilder 'AttrsForSpanEvent
   }
 
+instance IsString SpanEventSpec where
+  fromString s =
+    defaultSpanEventSpec
+      { spanEventSpecName = fromString s
+      }
+
+instance WithAttrs SpanEventSpec where
+  type WithAttrsAttrType SpanEventSpec = 'AttrsForSpanEvent
+  spanEventSpec .:@ attrs =
+    spanEventSpec { spanEventSpecAttrs = attrs <> spanEventSpecAttrs spanEventSpec }
+
 defaultSpanEventSpec :: SpanEventSpec
 defaultSpanEventSpec =
   SpanEventSpec
@@ -800,12 +811,6 @@ defaultSpanEventSpec =
     , spanEventSpecTimestamp = TimestampSourceNow
     , spanEventSpecAttrs = mempty
     }
-
-instance IsString SpanEventSpec where
-  fromString s =
-    defaultSpanEventSpec
-      { spanEventSpecName = fromString s
-      }
 
 newtype SpanEventName = SpanEventName
   { unSpanEventName :: Text
@@ -896,6 +901,11 @@ data SpanLinkSpec = SpanLinkSpec
   , spanLinkSpecAttrs :: AttrsBuilder 'AttrsForSpanLink
   }
 
+instance WithAttrs SpanLinkSpec where
+  type WithAttrsAttrType SpanLinkSpec = 'AttrsForSpanLink
+  spanLinkSpec .:@ attrs =
+    spanLinkSpec { spanLinkSpecAttrs = attrs <> spanLinkSpecAttrs spanLinkSpec }
+
 defaultSpanLinkSpec :: SpanLinkSpec
 defaultSpanLinkSpec =
   SpanLinkSpec
@@ -918,6 +928,11 @@ instance IsString SpanSpec where
       { spanSpecName = fromString s
       }
 
+instance WithAttrs SpanSpec where
+  type WithAttrsAttrType SpanSpec = 'AttrsForSpan
+  spanSpec .:@ attrs =
+    spanSpec { spanSpecAttrs = attrs <> spanSpecAttrs spanSpec }
+
 defaultSpanSpec :: SpanSpec
 defaultSpanSpec =
   SpanSpec
@@ -935,6 +950,17 @@ data UpdateSpanSpec = UpdateSpanSpec
   , updateSpanSpecAttrs :: Maybe (AttrsBuilder 'AttrsForSpan)
   , updateSpanSpecEvents :: Maybe SpanEventSpecs
   }
+
+instance IsString UpdateSpanSpec where
+  fromString s =
+    defaultUpdateSpanSpec
+      { updateSpanSpecName = Just $ fromString s
+      }
+
+instance WithAttrs UpdateSpanSpec where
+  type WithAttrsAttrType UpdateSpanSpec = 'AttrsForSpan
+  updateSpanSpec .:@ attrs =
+    updateSpanSpec { updateSpanSpecAttrs = Just attrs <> updateSpanSpecAttrs updateSpanSpec }
 
 defaultUpdateSpanSpec :: UpdateSpanSpec
 defaultUpdateSpanSpec =
