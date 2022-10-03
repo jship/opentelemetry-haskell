@@ -185,7 +185,7 @@ unsafeTracedAcquire tracingBackend spanSpec (Acquire f) =
 
 persistValuesToAttrs :: [PersistValue] -> AttrsBuilder 'AttrsForSpan
 persistValuesToAttrs =
-  go $ fmap (\i -> "persistent.param." <> pack (show @Int i)) [0..]
+  go $ fmap (\i -> "persistent.param." <> pack (show @Int i)) [1..]
   where
   go :: [Text] -> [PersistValue] -> AttrsBuilder 'AttrsForSpan
   go keyTexts persistValues = mconcat $ zipWith zipFunc keyTexts persistValues
@@ -205,7 +205,7 @@ persistValuesToAttrs =
     PersistList innerPersistValues
       | null innerPersistValues -> Key keyText .@ ("(empty list)" :: Text)
       | otherwise ->
-          go (fmap (\i -> keyText <> "." <> pack (show @Int i)) [0..]) innerPersistValues
+          go (fmap (\i -> keyText <> "." <> pack (show @Int i)) [1..]) innerPersistValues
     PersistMap assocList
       | null assocList -> Key keyText .@ ("(empty map)" :: Text)
       | otherwise -> go keys vals
@@ -215,7 +215,7 @@ persistValuesToAttrs =
     PersistArray innerPersistValues
       | null innerPersistValues -> Key keyText .@ ("(empty array)" :: Text)
       | otherwise ->
-          go (fmap (\i -> keyText <> "." <> pack (show @Int i)) [0..]) innerPersistValues
+          go (fmap (\i -> keyText <> "." <> pack (show @Int i)) [1..]) innerPersistValues
     PersistLiteral_ Escaped bytes -> Key keyText .@ Bytes bytes
     PersistLiteral_ Unescaped bytes -> Key keyText .@ Bytes bytes
     PersistLiteral_ DbSpecific bytes -> Key keyText .@ Bytes bytes
