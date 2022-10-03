@@ -8,6 +8,7 @@ module OTel.API.Common.Attributes
   , Internal.foldMapWithKeyAttrs
   , Internal.filterWithKeyAttrs
   , Internal.mapWithKeyAttrs
+  , Internal.convertWithKeyAttrs
   , Internal.droppedAttrsCount
 
   , Internal.AttrsBuilder
@@ -22,6 +23,7 @@ module OTel.API.Common.Attributes
 
   , Internal.SomeAttr(..)
   , Internal.Attr(..)
+  , Internal.asTextAttr
 
   , Internal.AttrVals
 

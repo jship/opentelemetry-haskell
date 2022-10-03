@@ -7,7 +7,6 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
@@ -47,6 +46,7 @@ module OTel.API.Common.Internal
   , foldMapWithKeyAttrs
   , filterWithKeyAttrs
   , mapWithKeyAttrs
+  , convertWithKeyAttrs
   , droppedAttrsCount
   , AttrsBuilder(..)
   , runAttrsBuilder
@@ -58,6 +58,7 @@ module OTel.API.Common.Internal
   , defaultAttrsLimits
   , SomeAttr(..)
   , Attr(..)
+  , asTextAttr
   , AttrVals(..)
   , AttrType(..)
   , KnownAttrType(..)
@@ -289,12 +290,24 @@ mapWithKeyAttrs
    . (forall a. Key a -> Attr a -> Attr a)
   -> Attrs af
   -> Attrs af
-mapWithKeyAttrs f attrs =
+mapWithKeyAttrs f = convertWithKeyAttrs go
+  where
+  go :: Key a -> Attr a -> SomeAttr
+  go k v = SomeAttr $ f k v
+
+-- | Equivalent to 'mapWithKeyAttrs' but allows for changing both the type and
+-- value of each attribute rather than just the value of the attribute.
+convertWithKeyAttrs
+  :: forall af
+   . (forall a. Key a -> Attr a -> SomeAttr)
+  -> Attrs af
+  -> Attrs af
+convertWithKeyAttrs f attrs =
   attrs
     { attrsMap =
         flip HashMap.mapWithKey (attrsMap attrs) \keyText someAttr ->
           case someAttr of
-            SomeAttr attr -> SomeAttr $ f (Key keyText) attr
+            SomeAttr attr -> f (Key keyText) attr
     }
 
 droppedAttrsCount :: Attrs af -> Int
@@ -505,6 +518,33 @@ data Attr a = Attr
   { attrType :: AttrType a
   , attrVal :: a
   } deriving stock (Eq, Show)
+
+-- | Convert an attribute to a text attribute.
+--
+-- This function is identity if the attribute already is a text attribute.
+-- Otherwise, the attribute value is passed to 'show'.
+asTextAttr :: Attr a -> Attr Text
+asTextAttr attr =
+  case attrType attr of
+    AttrTypeText -> attr
+    AttrTypeBool ->
+      Attr { attrType = AttrTypeText, attrVal = packShow $ attrVal attr }
+    AttrTypeDouble ->
+      Attr { attrType = AttrTypeText, attrVal = packShow $ attrVal attr }
+    AttrTypeInt ->
+      Attr { attrType = AttrTypeText, attrVal = packShow $ attrVal attr }
+    AttrTypeTextArray ->
+      Attr { attrType = AttrTypeText, attrVal = packShow $ attrVal attr }
+    AttrTypeBoolArray ->
+      Attr { attrType = AttrTypeText, attrVal = packShow $ attrVal attr }
+    AttrTypeDoubleArray ->
+      Attr { attrType = AttrTypeText, attrVal = packShow $ attrVal attr }
+    AttrTypeIntArray ->
+      Attr { attrType = AttrTypeText, attrVal = packShow $ attrVal attr }
+  where
+  packShow :: (Show v) => v -> Text
+  packShow = Text.pack . show
+
 
 newtype AttrVals a = AttrVals
   { unAttrVals :: Vector a
