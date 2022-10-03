@@ -83,13 +83,11 @@ setNewAlterBackend tracingBackend hooks = do
       oldGetStatement sqlBackend sqlText statement
         { stmtQuery = \persistValues -> do
             let attrs = OTel.DB_STATEMENT .@ sqlText <> persistValuesToAttrs persistValues
-                          <> "persistent.param.DEBUG" .@ show persistValues -- TODO: Remove later - just for debugging
             let spanSpec = mkSpanSpec (SpanName $ getRDBMS sqlBackend) attrs sqlBackend
             unsafeTracedAcquire tracingBackend spanSpec do
               stmtQuery statement persistValues
         , stmtExecute = \persistValues -> do
             let attrs = OTel.DB_STATEMENT .@ sqlText <> persistValuesToAttrs persistValues
-                          <> "persistent.param.DEBUG" .@ show persistValues -- TODO: Remove later - just for debugging
             flip runTracingT tracingBackend do
               OTel.trace_ (mkSpanSpec (SpanName $ getRDBMS sqlBackend) attrs sqlBackend) do
                 liftIO $ stmtExecute statement persistValues
