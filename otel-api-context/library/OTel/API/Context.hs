@@ -2,26 +2,19 @@ module OTel.API.Context
   ( -- * Introduction
     -- $intro
     -- * @ContextT@ monad transformer
-    ContextT(..)
-  , mapContextT
+    Internal.ContextT(..)
+  , Internal.mapContextT
 
     -- * Context operations
-  , updateContext
-  , getContext
-  , attachContext
-  , getAttachedContextKey
+  , Internal.attachContextValue
+  , Internal.getAttachedContextValue
+  , Internal.getAttachedContext
 
-    -- * Context backend
-  , ContextBackend
-  , withContextBackend
-
-    -- * Supporting types
-  , ContextKey
-  , ContextSnapshot(..)
-  , ContextStatus(..)
+  , module OTel.API.Context.Core
   ) where
 
-import OTel.API.Context.Internal
+import OTel.API.Context.Core
+import qualified OTel.API.Context.Internal as Internal
 
 -- $intro
 --

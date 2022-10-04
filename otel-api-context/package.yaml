@@ -29,13 +29,35 @@ ghc-options:
 library:
   dependencies:
   - base >=4.11.1.0 && <5
-  - context >=0.2.0.0 && <0.3
   - exceptions
   - monad-control
   - monad-logger
-  - mtl >=2.3
+  - mtl
+  - otel-api-context-core
   - resourcet
+  - text
   - transformers
   - transformers-base
   - unliftio-core
   source-dirs: library
+  when:
+  - condition: false
+    other-modules: Paths_otel_api_context
+
+tests:
+  otel-api-context-test-suite:
+    source-dirs: test-suite
+    main: Driver.hs
+    build-tools:
+    - hspec-discover
+    dependencies:
+    - base
+    - hspec
+    - otel-api-context
+    - otel-api-context-core
+    - text
+    - transformers
+    - unliftio-core
+    when:
+    - condition: false
+      other-modules: Paths_otel_api_context

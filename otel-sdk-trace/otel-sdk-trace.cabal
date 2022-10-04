@@ -1,0 +1,137 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.34.6.
+--
+-- see: https://github.com/sol/hpack
+
+name:           otel-sdk-trace
+version:        0.0.0
+synopsis:       STUB
+description:    @otel-sdk-trace@ STUB
+category:       System
+homepage:       https://github.com/jship/opentelemetry-haskell#readme
+bug-reports:    https://github.com/jship/opentelemetry-haskell/issues
+author:         Jason Shipman
+maintainer:     Jason Shipman
+copyright:      2022 (c) Jason Shipman
+license:        Apache-2.0
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    package.yaml
+    README.md
+    LICENSE
+    CHANGELOG.md
+
+source-repository head
+  type: git
+  location: https://github.com/jship/opentelemetry-haskell
+
+library
+  exposed-modules:
+      OTel.SDK.Trace
+      OTel.SDK.Trace.Common
+      OTel.SDK.Trace.Handlers
+      OTel.SDK.Trace.Handlers.OnException
+      OTel.SDK.Trace.Handlers.OnSpansExported
+      OTel.SDK.Trace.Handlers.OnTimeout
+      OTel.SDK.Trace.IdGenerator
+      OTel.SDK.Trace.Internal
+      OTel.SDK.Trace.Sampler
+      OTel.SDK.Trace.Sampler.AlwaysOff
+      OTel.SDK.Trace.Sampler.AlwaysOn
+      OTel.SDK.Trace.Sampler.ParentBased
+      OTel.SDK.Trace.SpanExporter
+      OTel.SDK.Trace.SpanExporter.OTLP
+      OTel.SDK.Trace.SpanExporter.STM
+      OTel.SDK.Trace.SpanProcessor
+      OTel.SDK.Trace.SpanProcessor.Simple
+  hs-source-dirs:
+      library
+  default-extensions:
+      NoImplicitPrelude
+  ghc-options: -Wall -fwarn-tabs -Wincomplete-uni-patterns -Wredundant-constraints
+  build-depends:
+      aeson
+    , async
+    , base >=4.11.1.0 && <5
+    , bytestring
+    , clock
+    , dlist
+    , http-client
+    , http-client-tls
+    , http-types
+    , microlens
+    , monad-logger-aeson
+    , mtl
+    , mwc-random
+    , network-uri
+    , otel-api-common
+    , otel-api-context-core
+    , otel-api-trace
+    , otel-api-trace-core
+    , otel-sdk-otlp-bindings
+    , otel-sdk-resource-core
+    , proto-lens
+    , retry
+    , safe-exceptions
+    , stm
+    , stm-chans
+    , text
+    , time
+    , unliftio-core
+    , vector
+  default-language: Haskell2010
+
+executable otlp-tracing-example
+  main-is: otlp-tracing-example.hs
+  other-modules:
+      Paths_otel_sdk_trace
+  hs-source-dirs:
+      executables
+  default-extensions:
+      NoImplicitPrelude
+  ghc-options: -Wall -fwarn-tabs -Wincomplete-uni-patterns -Wredundant-constraints -threaded
+  build-depends:
+      base >=4.11.1.0 && <5
+    , monad-logger-aeson
+    , mwc-random
+    , otel-api-common
+    , otel-api-trace
+    , otel-sdk-resource-core
+    , otel-sdk-trace
+    , text
+  default-language: Haskell2010
+
+test-suite otel-sdk-trace-test-suite
+  type: exitcode-stdio-1.0
+  main-is: Driver.hs
+  other-modules:
+      Test.OTel.SDK.Common
+      Test.OTel.SDK.Trace.ConcurrentWorkersSpec
+      Test.OTel.SDK.TraceSpec
+  hs-source-dirs:
+      test-suite
+  default-extensions:
+      NoImplicitPrelude
+  ghc-options: -Wall -fwarn-tabs -Wincomplete-uni-patterns -Wredundant-constraints
+  build-tool-depends:
+      hspec-discover:hspec-discover
+  build-depends:
+      HUnit
+    , aeson
+    , base
+    , containers
+    , hspec
+    , monad-logger-aeson
+    , otel-api-common
+    , otel-api-trace
+    , otel-api-trace-core
+    , otel-sdk-trace
+    , safe-exceptions
+    , stm
+    , stm-chans
+    , text
+    , transformers
+    , unliftio-core
+  default-language: Haskell2010

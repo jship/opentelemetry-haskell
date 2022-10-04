@@ -1,0 +1,56 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.34.4.
+--
+-- see: https://github.com/sol/hpack
+
+name:           otel-sdk-otlp-bindings
+version:        0.0.0
+synopsis:       STUB
+description:    @otel-sdk-otlp-bindings@ STUB
+category:       System
+homepage:       https://github.com/jship/opentelemetry-haskell#readme
+bug-reports:    https://github.com/jship/opentelemetry-haskell/issues
+author:         Jason Shipman
+maintainer:     Jason Shipman
+copyright:      2022 (c) Jason Shipman
+license:        Apache-2.0
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    package.yaml
+    README.md
+    LICENSE
+    CHANGELOG.md
+
+source-repository head
+  type: git
+  location: https://github.com/jship/opentelemetry-haskell
+
+library
+  exposed-modules:
+      OTel.SDK.OTLP.Bindings.Collector.Logs.V1.LogsService
+      OTel.SDK.OTLP.Bindings.Collector.Logs.V1.LogsService_Fields
+      OTel.SDK.OTLP.Bindings.Collector.Metrics.V1.MetricsService
+      OTel.SDK.OTLP.Bindings.Collector.Metrics.V1.MetricsService_Fields
+      OTel.SDK.OTLP.Bindings.Collector.Trace.V1.TraceService
+      OTel.SDK.OTLP.Bindings.Collector.Trace.V1.TraceService_Fields
+      OTel.SDK.OTLP.Bindings.Common.V1.Common
+      OTel.SDK.OTLP.Bindings.Common.V1.Common_Fields
+      OTel.SDK.OTLP.Bindings.Logs.V1.Logs
+      OTel.SDK.OTLP.Bindings.Logs.V1.Logs_Fields
+      OTel.SDK.OTLP.Bindings.Metrics.V1.Metrics
+      OTel.SDK.OTLP.Bindings.Metrics.V1.Metrics_Fields
+      OTel.SDK.OTLP.Bindings.Resource.V1.Resource
+      OTel.SDK.OTLP.Bindings.Resource.V1.Resource_Fields
+      OTel.SDK.OTLP.Bindings.Trace.V1.Trace
+      OTel.SDK.OTLP.Bindings.Trace.V1.Trace_Fields
+  hs-source-dirs:
+      library
+  default-extensions:
+      NoImplicitPrelude
+  ghc-options: -Wall -fwarn-tabs -Wincomplete-uni-patterns -Wredundant-constraints
+  build-depends:
+      base >=4.11.1.0 && <5
+    , proto-lens-runtime
+  default-language: Haskell2010

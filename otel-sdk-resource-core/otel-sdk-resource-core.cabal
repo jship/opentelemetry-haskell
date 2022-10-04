@@ -1,0 +1,48 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.34.6.
+--
+-- see: https://github.com/sol/hpack
+
+name:           otel-sdk-resource-core
+version:        0.0.0
+synopsis:       STUB
+description:    @otel-sdk-resource-core@ STUB
+category:       System
+homepage:       https://github.com/jship/opentelemetry-haskell#readme
+bug-reports:    https://github.com/jship/opentelemetry-haskell/issues
+author:         Jason Shipman
+maintainer:     Jason Shipman
+copyright:      2022 (c) Jason Shipman
+license:        Apache-2.0
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    package.yaml
+    README.md
+    LICENSE
+    CHANGELOG.md
+
+source-repository head
+  type: git
+  location: https://github.com/jship/opentelemetry-haskell
+
+library
+  exposed-modules:
+      OTel.SDK.Resource.Core
+      OTel.SDK.Resource.Core.Attributes
+      OTel.SDK.Resource.Core.Builder
+      OTel.SDK.Resource.Core.Internal
+  hs-source-dirs:
+      library
+  default-extensions:
+      NoImplicitPrelude
+  ghc-options: -Wall -fwarn-tabs -Wincomplete-uni-patterns -Wredundant-constraints
+  build-depends:
+      aeson
+    , base >=4.11.1.0 && <5
+    , otel-api-common
+    , safe-exceptions
+    , text
+    , unordered-containers
+  default-language: Haskell2010

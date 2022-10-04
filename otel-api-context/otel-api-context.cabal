@@ -31,8 +31,6 @@ library
   exposed-modules:
       OTel.API.Context
       OTel.API.Context.Internal
-  other-modules:
-      Paths_otel_api_context
   hs-source-dirs:
       library
   default-extensions:
@@ -40,13 +38,36 @@ library
   ghc-options: -Wall -fwarn-tabs -Wincomplete-uni-patterns -Wredundant-constraints
   build-depends:
       base >=4.11.1.0 && <5
-    , context >=0.2.0.0 && <0.3
     , exceptions
     , monad-control
     , monad-logger
-    , mtl >=2.3
+    , mtl
+    , otel-api-context-core
     , resourcet
+    , text
     , transformers
     , transformers-base
+    , unliftio-core
+  default-language: Haskell2010
+
+test-suite otel-api-context-test-suite
+  type: exitcode-stdio-1.0
+  main-is: Driver.hs
+  other-modules:
+      Test.OTel.API.ContextSpec
+  hs-source-dirs:
+      test-suite
+  default-extensions:
+      NoImplicitPrelude
+  ghc-options: -Wall -fwarn-tabs -Wincomplete-uni-patterns -Wredundant-constraints
+  build-tool-depends:
+      hspec-discover:hspec-discover
+  build-depends:
+      base
+    , hspec
+    , otel-api-context
+    , otel-api-context-core
+    , text
+    , transformers
     , unliftio-core
   default-language: Haskell2010

@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.4.
+-- This file has been generated from package.yaml by hpack version 0.34.6.
 --
 -- see: https://github.com/sol/hpack
 
@@ -31,8 +31,6 @@ library
   exposed-modules:
       OTel.API.Trace
       OTel.API.Trace.Internal
-  other-modules:
-      Paths_otel_api_trace
   hs-source-dirs:
       library
   default-extensions:
@@ -41,10 +39,11 @@ library
   build-depends:
       base >=4.11.1.0 && <5
     , monad-control
-    , monad-logger
-    , mtl >=2.3
+    , monad-logger-aeson
+    , mtl
+    , otel-api-baggage-core
+    , otel-api-common
     , otel-api-context
-    , otel-api-core
     , otel-api-trace-core
     , resourcet
     , safe-exceptions

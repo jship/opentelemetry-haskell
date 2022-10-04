@@ -1,0 +1,74 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.34.4.
+--
+-- see: https://github.com/sol/hpack
+
+name:           otel-api-baggage
+version:        0.0.0
+synopsis:       STUB
+description:    @otel-api-baggage@ STUB
+category:       System
+homepage:       https://github.com/jship/opentelemetry-haskell#readme
+bug-reports:    https://github.com/jship/opentelemetry-haskell/issues
+author:         Jason Shipman
+maintainer:     Jason Shipman
+copyright:      2022 (c) Jason Shipman
+license:        Apache-2.0
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    package.yaml
+    README.md
+    LICENSE
+    CHANGELOG.md
+
+source-repository head
+  type: git
+  location: https://github.com/jship/opentelemetry-haskell
+
+library
+  exposed-modules:
+      OTel.API.Baggage
+      OTel.API.Baggage.Internal
+  hs-source-dirs:
+      library
+  default-extensions:
+      NoImplicitPrelude
+  ghc-options: -Wall -fwarn-tabs -Wincomplete-uni-patterns -Wredundant-constraints
+  build-depends:
+      base >=4.11.1.0 && <5
+    , monad-control
+    , monad-logger
+    , mtl
+    , otel-api-baggage-core
+    , otel-api-context
+    , otel-api-trace-core
+    , resourcet
+    , safe-exceptions
+    , transformers
+    , transformers-base
+    , unliftio-core
+  default-language: Haskell2010
+
+test-suite otel-api-baggage-test-suite
+  type: exitcode-stdio-1.0
+  main-is: Driver.hs
+  other-modules:
+      Test.OTel.API.BaggageSpec
+  hs-source-dirs:
+      test-suite
+  default-extensions:
+      NoImplicitPrelude
+  ghc-options: -Wall -fwarn-tabs -Wincomplete-uni-patterns -Wredundant-constraints
+  build-tool-depends:
+      hspec-discover:hspec-discover
+  build-depends:
+      base
+    , hspec
+    , otel-api-baggage
+    , otel-api-baggage-core
+    , otel-api-context
+    , text
+    , unordered-containers
+  default-language: Haskell2010

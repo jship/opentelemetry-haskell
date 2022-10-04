@@ -1,0 +1,106 @@
+name: otel-sdk-trace
+version: '0.0.0'
+github: "jship/opentelemetry-haskell"
+license: Apache-2.0
+license-file: LICENSE
+copyright: 2022 (c) Jason Shipman
+author: "Jason Shipman"
+maintainer: "Jason Shipman"
+synopsis: STUB
+description: |
+  @otel-sdk-trace@ STUB
+category: System
+
+extra-source-files:
+- package.yaml
+- README.md
+- LICENSE
+- CHANGELOG.md
+
+default-extensions:
+- NoImplicitPrelude
+
+ghc-options:
+- -Wall
+- -fwarn-tabs
+- -Wincomplete-uni-patterns
+- -Wredundant-constraints
+
+library:
+  dependencies:
+  - aeson
+  - async
+  - base >=4.11.1.0 && <5
+  - bytestring
+  - clock
+  - dlist
+  - http-client
+  - http-client-tls
+  - http-types
+  - microlens
+  - monad-logger-aeson
+  - mtl
+  - mwc-random
+  - network-uri
+  - otel-api-common
+  - otel-api-context-core
+  - otel-api-trace
+  - otel-api-trace-core
+  - otel-sdk-otlp-bindings
+  - otel-sdk-resource-core
+  - proto-lens
+  - retry
+  - safe-exceptions
+  - stm
+  - stm-chans
+  - text
+  - time
+  - unliftio-core
+  - vector
+  source-dirs: library
+  when:
+  - condition: false
+    other-modules: Paths_otel_sdk_trace
+
+tests:
+  otel-sdk-trace-test-suite:
+    source-dirs: test-suite
+    main: Driver.hs
+    build-tools:
+    - hspec-discover
+    dependencies:
+    - HUnit
+    - aeson
+    - base
+    - containers
+    - hspec
+    - monad-logger-aeson
+    - otel-api-common
+    - otel-api-trace
+    - otel-api-trace-core
+    - otel-sdk-trace
+    - safe-exceptions
+    - stm
+    - stm-chans
+    - text
+    - transformers
+    - unliftio-core
+    when:
+    - condition: false
+      other-modules: Paths_otel_sdk_trace
+
+executables:
+  otlp-tracing-example:
+    source-dirs: executables
+    main: otlp-tracing-example.hs
+    dependencies:
+    - base >=4.11.1.0 && <5
+    - monad-logger-aeson
+    - mwc-random
+    - otel-api-common
+    - otel-api-trace
+    - otel-sdk-resource-core
+    - otel-sdk-trace
+    - text
+    ghc-options:
+    - -threaded

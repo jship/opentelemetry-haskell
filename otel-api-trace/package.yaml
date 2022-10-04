@@ -30,10 +30,11 @@ library:
   dependencies:
   - base >=4.11.1.0 && <5
   - monad-control
-  - monad-logger
-  - mtl >=2.3
-  - otel-api-core
+  - monad-logger-aeson
+  - mtl
+  - otel-api-baggage-core
   - otel-api-context
+  - otel-api-common
   - otel-api-trace-core
   - resourcet
   - safe-exceptions
@@ -41,3 +42,6 @@ library:
   - transformers-base
   - unliftio-core
   source-dirs: library
+  when:
+  - condition: false
+    other-modules: Paths_otel_api_trace
