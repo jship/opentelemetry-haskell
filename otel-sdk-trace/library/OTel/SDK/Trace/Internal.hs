@@ -1774,8 +1774,7 @@ withConcurrentWorkers concurrentWorkersSpec action = do
       Just True -> pure ()
       Just False -> do
         flip runLoggingT logger do
-          logError $ "Dropped item as queue was full" :#
-            "item" .= item : loggingMeta
+          logError $ "Dropped item as queue was full" :# loggingMeta
       Nothing -> do
         flip runLoggingT logger do
           logError $ "Dropped item as queue was closed" :#
