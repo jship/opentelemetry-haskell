@@ -26,7 +26,7 @@ module OTel.API.Trace.Internal
   , forceFlushTracerProvider
   ) where
 
-import Control.Exception.Safe (MonadCatch, MonadMask, MonadThrow, SomeException)
+import Control.Exception.Safe (MonadCatch, MonadMask, MonadThrow, SomeException, withException)
 import Control.Monad.Base (MonadBase)
 import Control.Monad.Cont (MonadCont)
 import Control.Monad.Except (MonadError)
@@ -108,10 +108,11 @@ instance (MonadIO m, MonadMask m) => MonadTracing (TracingT m) where
           liftIO $ tracerStartSpan (tracingBackendTracer tracingBackend) cs parentCtx spanSpec
         attachContextValue mutableSpan do
           withThreadContext spanContextMeta do
-            result <- lift $ runTracingT (action mutableSpan) tracingBackend
-            liftIO do
-              result <$ processSpan (tracingBackendTracer tracingBackend) mutableSpan
-                `Safe.withException` handler (tracingBackendTracer tracingBackend) mutableSpan
+            result <- do
+              lift (runTracingT (action mutableSpan) tracingBackend) `withException` \e -> do
+                liftIO $ handler (tracingBackendTracer tracingBackend) mutableSpan e
+            liftIO $ processSpan (tracingBackendTracer tracingBackend) mutableSpan
+            pure result
     where
     processSpan :: Tracer -> MutableSpan -> IO ()
     processSpan tracer mutableSpan = do
