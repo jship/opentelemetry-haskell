@@ -112,6 +112,8 @@ module OTel.SDK.Trace.Internal
 
   , defaultSystemSeed
   , defaultManager
+
+  , spanSummary
   ) where
 
 import Control.Applicative (Alternative(..), Applicative(..))
@@ -140,7 +142,7 @@ import Control.Retry
   ( RetryAction(..), RetryPolicyM, RetryStatus, applyPolicy, fullJitterBackoff, limitRetries
   , recoveringDynamic
   )
-import Data.Aeson (ToJSON(..), object)
+import Data.Aeson (ToJSON(..), object, Value)
 import Data.Aeson.Types (Pair)
 import Data.ByteString.Lazy (ByteString)
 import Data.Either (fromRight)
@@ -658,7 +660,7 @@ defaultSimpleSpanProcessorSpec =
             spans <- askSpansExported
             pairs <- askSpansExportedMetadata
             logError $ "Exporter failed to export spans" :#
-              "spans" .= spans : pairs
+              "spans" .= fmap spanSummary spans : pairs
     }
 
 simpleSpanProcessor
@@ -890,14 +892,14 @@ otlpSpanExporter otlpSpanExporterSpec f = do
               Just _resp -> pure ()
               Nothing -> do
                 logError $ "Exporting spans timed out" :#
-                  "spans" .= otlpSpanExporterItemBatch item : loggingMeta
+                  "spans" .= fmap spanSummary (otlpSpanExporterItemBatch item) : loggingMeta
           otlpSpanExporterItemCallback item SpanExportResultSuccess
       , concurrentWorkersSpecOnException = \item -> do
           SomeException ex <- askException
           pairs <- askExceptionMetadata
           logError $ "Concurrent worker ignoring exception from exporting batch" :#
             "exception" .= displayException ex
-              : "batch" .= otlpSpanExporterItemBatch item
+              : "batch" .= fmap spanSummary (otlpSpanExporterItemBatch item)
               : pairs
           liftIO $ otlpSpanExporterItemCallback item SpanExportResultFailure
       , concurrentWorkersSpecLogger = logger
@@ -1845,6 +1847,14 @@ defaultSystemSeed = unsafePerformIO createSystemSeed
 defaultManager :: Manager
 defaultManager = unsafePerformIO newTlsManager
 {-# NOINLINE defaultManager #-}
+
+spanSummary :: Span attrs -> Value
+spanSummary s =
+  object
+    [ "lineage" .= spanLineage s
+    , "spanContext" .= spanContext s
+    , "name" .= spanName s
+    ]
 
 -- $disclaimer
 --
