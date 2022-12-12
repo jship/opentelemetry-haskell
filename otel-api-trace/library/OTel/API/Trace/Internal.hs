@@ -5,7 +5,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -26,11 +25,12 @@ module OTel.API.Trace.Internal
   , forceFlushTracerProvider
   ) where
 
+import Control.Applicative (Alternative)
 import Control.Exception.Safe (MonadCatch, MonadMask, MonadThrow, SomeException, withException)
+import Control.Monad (MonadPlus)
 import Control.Monad.Base (MonadBase)
 import Control.Monad.Cont (MonadCont)
 import Control.Monad.Except (MonadError)
-import Control.Monad.Fix (MonadFix)
 import Control.Monad.IO.Class (MonadIO(liftIO))
 import Control.Monad.IO.Unlift (MonadUnliftIO)
 import Control.Monad.Logger.Aeson (MonadLogger, withThreadContext)
@@ -71,7 +71,8 @@ type TracingT :: (Type -> Type) -> Type -> Type
 newtype TracingT m a = TracingT
   { runTracingT :: TracingBackend -> m a
   } deriving
-      ( Applicative, Functor, Monad, MonadFail, MonadFix, MonadIO -- @base@
+      ( Applicative, Functor, Monad, MonadFail, MonadIO -- @base@
+      , Alternative, MonadPlus -- @base@
       , MonadCont, MonadError e, MonadState s, MonadWriter w -- @mtl@
 #if MIN_VERSION_mtl(2,3,0)
       , MonadAccum w, MonadSelect r -- @mtl@

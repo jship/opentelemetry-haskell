@@ -5,7 +5,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -20,11 +19,12 @@ module OTel.API.Baggage.Internal
   , defaultBaggageBackend
   ) where
 
+import Control.Applicative (Alternative)
 import Control.Exception.Safe (MonadCatch, MonadMask, MonadThrow)
+import Control.Monad (MonadPlus)
 import Control.Monad.Base (MonadBase)
 import Control.Monad.Cont (MonadCont)
 import Control.Monad.Except (MonadError)
-import Control.Monad.Fix (MonadFix)
 import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.IO.Unlift (MonadUnliftIO)
 import Control.Monad.Logger (MonadLogger)
@@ -52,7 +52,8 @@ type BaggageT :: (Type -> Type) -> Type -> Type
 newtype BaggageT m a = BaggageT
   { runBaggageT :: BaggageBackend -> m a
   } deriving
-      ( Applicative, Functor, Monad, MonadFail, MonadFix, MonadIO -- @base@
+      ( Applicative, Functor, Monad, MonadFail, MonadIO -- @base@
+      , Alternative, MonadPlus -- @base@
       , MonadCont, MonadError e, MonadState s, MonadWriter w -- @mtl@
 #if MIN_VERSION_mtl(2,3,0)
       , MonadAccum w, MonadSelect r -- @mtl@

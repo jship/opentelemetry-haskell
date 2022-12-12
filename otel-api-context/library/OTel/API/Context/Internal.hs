@@ -21,11 +21,12 @@ module OTel.API.Context.Internal
   , getAttachedContext
   ) where
 
+import Control.Applicative (Alternative)
+import Control.Monad (MonadPlus)
 import Control.Monad.Base (MonadBase)
 import Control.Monad.Catch (MonadCatch, MonadMask, MonadThrow)
 import Control.Monad.Cont (MonadCont)
 import Control.Monad.Except (MonadError)
-import Control.Monad.Fix (MonadFix)
 import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.IO.Unlift (MonadUnliftIO)
 import Control.Monad.Logger (MonadLogger)
@@ -55,7 +56,8 @@ type ContextT :: Type -> (Type -> Type) -> Type -> Type
 newtype ContextT c m a = ContextT
   { runContextT :: ContextBackend c -> m a
   } deriving
-      ( Applicative, Functor, Monad, MonadFail, MonadFix, MonadIO -- @base@
+      ( Applicative, Functor, Monad, MonadFail, MonadIO -- @base@
+      , Alternative, MonadPlus -- @base@
       , MonadCont, MonadError e, MonadState s, MonadWriter w -- @mtl@
 #if MIN_VERSION_mtl(2,3,0)
       , MonadAccum w, MonadSelect r -- @mtl@
