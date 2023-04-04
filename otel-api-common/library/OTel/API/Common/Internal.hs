@@ -10,6 +10,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -66,6 +67,14 @@ module OTel.API.Common.Internal
   , ToAttrVal(..)
 
   , with
+
+  , OnException(..)
+  , askException
+  , askExceptionMetadata
+
+  , OnTimeout(..)
+  , askTimeoutMicros
+  , askTimeoutMetadata
   ) where
 
 import Data.Aeson (KeyValue((.=)), ToJSON(..), Value(..), object)
@@ -93,6 +102,12 @@ import qualified Data.Scientific as Scientific
 import qualified Data.Text as Text
 import qualified Data.Text.Lazy as Text.Lazy
 import qualified Data.Vector as Vector
+import Control.Exception.Safe (SomeException, MonadCatch, MonadMask, MonadThrow)
+import Control.Monad.Logger.Aeson (SeriesElem, LoggingT, MonadLogger, MonadLoggerIO)
+import Control.Monad.IO.Class (MonadIO)
+import Control.Monad.Trans.Reader (ReaderT(..))
+import Data.Monoid (Ap(..))
+import Control.Monad.IO.Unlift (MonadUnliftIO)
 
 class KV (kv :: Type) where
   type KVConstraints kv :: Type -> Type -> Constraint
@@ -836,6 +851,43 @@ instance ToAttrVal (Vector Word32) (AttrVals Int64) where
 
 with :: a -> (a -> b) -> b
 with = (&)
+
+type OnException :: Type -> Type
+newtype OnException a = OnException
+  { runOnException :: SomeException -> [SeriesElem] -> LoggingT IO a
+  } deriving
+      ( Applicative, Functor, Monad, MonadIO -- @base@
+      , MonadCatch, MonadMask, MonadThrow -- @exceptions@
+      , MonadUnliftIO -- @unliftio-core@
+      , MonadLogger, MonadLoggerIO -- @monad-logger@
+      ) via (ReaderT SomeException (ReaderT [SeriesElem] (LoggingT IO)))
+    deriving
+      ( Semigroup, Monoid -- @base@
+      ) via (Ap (ReaderT SomeException (ReaderT [SeriesElem] (LoggingT IO))) a)
+
+askException :: OnException SomeException
+askException = OnException \someEx _pairs -> pure someEx
+
+askExceptionMetadata :: OnException [SeriesElem]
+askExceptionMetadata = OnException \_someEx pairs -> pure pairs
+
+newtype OnTimeout a = OnTimeout
+  { runOnTimeout :: Int -> [SeriesElem] -> LoggingT IO a
+  } deriving
+      ( Applicative, Functor, Monad, MonadIO -- @base@
+      , MonadCatch, MonadMask, MonadThrow -- @exceptions@
+      , MonadUnliftIO -- @unliftio-core@
+      , MonadLogger, MonadLoggerIO -- @monad-logger@
+      ) via (ReaderT Int (ReaderT [SeriesElem] (LoggingT IO)))
+    deriving
+      ( Semigroup, Monoid -- @base@
+      ) via (Ap (ReaderT Int (ReaderT [SeriesElem] (LoggingT IO))) a)
+
+askTimeoutMicros :: OnTimeout Int
+askTimeoutMicros = OnTimeout \timeoutMicros _pairs -> pure timeoutMicros
+
+askTimeoutMetadata :: OnTimeout [SeriesElem]
+askTimeoutMetadata = OnTimeout \_timeoutMicros pairs -> pure pairs
 
 -- $disclaimer
 --

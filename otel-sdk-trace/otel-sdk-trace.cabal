@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.6.
+-- This file has been generated from package.yaml by hpack version 0.35.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -32,9 +32,7 @@ library
       OTel.SDK.Trace
       OTel.SDK.Trace.Common
       OTel.SDK.Trace.Handlers
-      OTel.SDK.Trace.Handlers.OnException
       OTel.SDK.Trace.Handlers.OnSpansExported
-      OTel.SDK.Trace.Handlers.OnTimeout
       OTel.SDK.Trace.IdGenerator
       OTel.SDK.Trace.Internal
       OTel.SDK.Trace.Sampler
