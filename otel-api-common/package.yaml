@@ -28,13 +28,19 @@ ghc-options:
 
 library:
   dependencies:
+  - async
   - aeson
   - base >=4.11.1.0 && <5
+  - bytestring
   - containers
   - dlist
   - hashable
+  - monad-logger-aeson
+  - safe-exceptions
   - scientific
   - text
+  - transformers
+  - unliftio-core
   - unordered-containers
   - vector
   source-dirs: library
@@ -52,8 +58,10 @@ tests:
     - aeson
     - base
     - hspec
+    - monad-logger-aeson
     - otel-api-common
     - scientific
+    - stm
     - text
     when:
     - condition: false

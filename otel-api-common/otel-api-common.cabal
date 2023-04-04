@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.6.
+-- This file has been generated from package.yaml by hpack version 0.35.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -32,9 +32,13 @@ library
       OTel.API.Common
       OTel.API.Common.Attributes
       OTel.API.Common.CPS
+      OTel.API.Common.Handlers
+      OTel.API.Common.Handlers.OnException
+      OTel.API.Common.Handlers.OnTimeout
       OTel.API.Common.InstrumentationScope
       OTel.API.Common.Internal
       OTel.API.Common.KV
+      OTel.API.Common.Logging
       OTel.API.Common.Timestamp
   hs-source-dirs:
       library
@@ -43,12 +47,18 @@ library
   ghc-options: -Wall -fwarn-tabs -Wincomplete-uni-patterns -Wredundant-constraints
   build-depends:
       aeson
+    , async
     , base >=4.11.1.0 && <5
+    , bytestring
     , containers
     , dlist
     , hashable
+    , monad-logger-aeson
+    , safe-exceptions
     , scientific
     , text
+    , transformers
+    , unliftio-core
     , unordered-containers
     , vector
   default-language: Haskell2010
@@ -59,6 +69,7 @@ test-suite otel-api-common-test-suite
   other-modules:
       Test.OTel.API.Common.AttributesSpec
       Test.OTel.API.Common.IsTest
+      Test.OTel.API.Common.LoggingSpec
   hs-source-dirs:
       test-suite
   default-extensions:
@@ -70,7 +81,9 @@ test-suite otel-api-common-test-suite
       aeson
     , base
     , hspec
+    , monad-logger-aeson
     , otel-api-common
     , scientific
+    , stm
     , text
   default-language: Haskell2010

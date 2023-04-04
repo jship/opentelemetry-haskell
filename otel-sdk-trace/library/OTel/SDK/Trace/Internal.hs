@@ -179,10 +179,13 @@ import OTel.API.Common
   , AttrsFor(AttrsForSpan, AttrsForSpanEvent, AttrsForSpanLink), InstrumentationScope(..)
   , InstrumentationScopeName(unInstrumentationScopeName), KV((.@)), Key(unKey)
   , TimestampSource(TimestampSourceAt, TimestampSourceNow), Version(unVersion), AttrVals, Attrs
-  , AttrsBuilder, AttrsLimits, Timestamp, defaultAttrsLimits, droppedAttrsCount, foldMapWithKeyAttrs
-  , schemaURLToText, timestampFromNanoseconds, timestampToNanoseconds, with
+  , AttrsBuilder, AttrsLimits, Timestamp, askException, askExceptionMetadata, askTimeoutMetadata
+  , askTimeoutMicros, defaultAttrsLimits, droppedAttrsCount, foldMapWithKeyAttrs, schemaURLToText
+  , timestampFromNanoseconds, timestampToNanoseconds, with
   )
-import OTel.API.Common.Internal (AttrVals(..), InstrumentationScope(..))
+import OTel.API.Common.Internal
+  ( AttrVals(..), InstrumentationScope(..), OnException(..), OnTimeout(..)
+  )
 import OTel.API.Context.Core (Context, lookupContext)
 import OTel.API.Trace
   ( Span(..), SpanContext(..), SpanEvent(..), SpanEventName(unSpanEventName)
@@ -1648,42 +1651,6 @@ newPRNGRef :: Seed -> IO (MVar PRNG)
 newPRNGRef seed = do
   prng <- fmap PRNG $ initialize $ fromSeed seed
   newMVar prng
-
-newtype OnException a = OnException
-  { runOnException :: SomeException -> [SeriesElem] -> LoggingT IO a
-  } deriving
-      ( Applicative, Functor, Monad, MonadIO -- @base@
-      , MonadCatch, MonadMask, MonadThrow -- @exceptions@
-      , MonadUnliftIO -- @unliftio-core@
-      , MonadLogger, MonadLoggerIO -- @monad-logger@
-      ) via (ReaderT SomeException (ReaderT [SeriesElem] (LoggingT IO)))
-    deriving
-      ( Semigroup, Monoid -- @base@
-      ) via (Ap (ReaderT SomeException (ReaderT [SeriesElem] (LoggingT IO))) a)
-
-askException :: OnException SomeException
-askException = OnException \someEx _pairs -> pure someEx
-
-askExceptionMetadata :: OnException [SeriesElem]
-askExceptionMetadata = OnException \_someEx pairs -> pure pairs
-
-newtype OnTimeout a = OnTimeout
-  { runOnTimeout :: Int -> [SeriesElem] -> LoggingT IO a
-  } deriving
-      ( Applicative, Functor, Monad, MonadIO -- @base@
-      , MonadCatch, MonadMask, MonadThrow -- @exceptions@
-      , MonadUnliftIO -- @unliftio-core@
-      , MonadLogger, MonadLoggerIO -- @monad-logger@
-      ) via (ReaderT Int (ReaderT [SeriesElem] (LoggingT IO)))
-    deriving
-      ( Semigroup, Monoid -- @base@
-      ) via (Ap (ReaderT Int (ReaderT [SeriesElem] (LoggingT IO))) a)
-
-askTimeoutMicros :: OnTimeout Int
-askTimeoutMicros = OnTimeout \timeoutMicros _pairs -> pure timeoutMicros
-
-askTimeoutMetadata :: OnTimeout [SeriesElem]
-askTimeoutMetadata = OnTimeout \_timeoutMicros pairs -> pure pairs
 
 newtype OnSpansExported a = OnSpansExported
   { runOnSpansExported :: Batch (Span Attrs) -> SpanExportResult -> [SeriesElem] -> LoggingT IO a

@@ -6,11 +6,14 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE StrictData #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -66,15 +69,50 @@ module OTel.API.Common.Internal
   , ToAttrVal(..)
 
   , with
+
+  , OnException(..)
+  , askException
+  , askExceptionMetadata
+
+  , OnTimeout(..)
+  , askTimeoutMicros
+  , askTimeoutMetadata
+
+  , BufferedLoggerSpec(..)
+  , defaultBufferedLoggerSpec
+  , includeLogAggregateViaAeson
+  , withBufferedLogger
+  , withBufferedLoggerIO
+  , BufferedLogs
+  , insertBufferedLog
+  , insertBufferedLogWithAgg
+  , BufferedLog(..)
+  , toBufferedLog
+  , BufferedLogAgg(..)
   ) where
 
-import Data.Aeson (KeyValue((.=)), ToJSON(..), Value(..), object)
+import Control.Exception.Safe
+  ( SomeException(..), MonadCatch, MonadMask, MonadThrow, catchAny, displayException, finally
+  )
+import Control.Monad.IO.Class (MonadIO(..))
+import Control.Monad.IO.Unlift (MonadUnliftIO(..))
+import Control.Monad.Logger.Aeson
+  ( Loc(..), LogLevel(..), LoggingT(..), Message(..), ToLogStr(..), LogSource, LogStr, MonadLogger
+  , MonadLoggerIO, SeriesElem, fromLogStr, logError
+  )
+import Control.Monad.Trans.Reader (ReaderT(..))
+import Data.Aeson (KeyValue((.=)), ToJSON(..), Value(..), (.:), (.:?), object)
+import Data.Aeson.KeyMap (KeyMap)
+import Data.Aeson.Types (Parser)
+import Data.ByteString (ByteString)
 import Data.DList (DList)
 import Data.Function ((&))
 import Data.HashMap.Strict (HashMap)
-import Data.Hashable (Hashable)
+import Data.Hashable (Hashable(..))
+import Data.IORef (IORef)
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Kind (Constraint, Type)
+import Data.Monoid (Ap(..))
 import Data.Proxy (Proxy(..))
 import Data.Sequence (Seq)
 import Data.String (IsString(fromString))
@@ -83,16 +121,25 @@ import Data.Vector (Vector)
 import Data.Word (Word16, Word32, Word8)
 import GHC.Float (float2Double)
 import Prelude hiding (span)
+import qualified Control.Concurrent as Concurrent
+import qualified Control.Concurrent.Async as Async
+import qualified Control.Monad as Monad
 import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Key as Aeson.Key
 import qualified Data.Aeson.KeyMap as Aeson.KeyMap
+import qualified Data.Aeson.Parser as Aeson.Parser
+import qualified Data.Aeson.Types as Aeson.Types
+import qualified Data.DList as DList
 import qualified Data.Foldable as Foldable
 import qualified Data.HashMap.Strict as HashMap
+import qualified Data.IORef as IORef
 import qualified Data.Maybe as Maybe
 import qualified Data.Scientific as Scientific
 import qualified Data.Text as Text
 import qualified Data.Text.Lazy as Text.Lazy
 import qualified Data.Vector as Vector
+import qualified System.Timeout as Timeout
+import qualified Data.Text.Encoding as Text.Encoding
 
 class KV (kv :: Type) where
   type KVConstraints kv :: Type -> Type -> Constraint
@@ -836,6 +883,415 @@ instance ToAttrVal (Vector Word32) (AttrVals Int64) where
 
 with :: a -> (a -> b) -> b
 with = (&)
+
+type OnException :: Type -> Type
+newtype OnException a = OnException
+  { runOnException :: SomeException -> [SeriesElem] -> LoggingT IO a
+  } deriving
+      ( Applicative, Functor, Monad, MonadIO -- @base@
+      , MonadCatch, MonadMask, MonadThrow -- @exceptions@
+      , MonadUnliftIO -- @unliftio-core@
+      , MonadLogger, MonadLoggerIO -- @monad-logger@
+      ) via (ReaderT SomeException (ReaderT [SeriesElem] (LoggingT IO)))
+    deriving
+      ( Semigroup, Monoid -- @base@
+      ) via (Ap (ReaderT SomeException (ReaderT [SeriesElem] (LoggingT IO))) a)
+
+askException :: OnException SomeException
+askException = OnException \someEx _pairs -> pure someEx
+
+askExceptionMetadata :: OnException [SeriesElem]
+askExceptionMetadata = OnException \_someEx pairs -> pure pairs
+
+type OnTimeout :: Type -> Type
+newtype OnTimeout a = OnTimeout
+  { runOnTimeout :: Int -> [SeriesElem] -> LoggingT IO a
+  } deriving
+      ( Applicative, Functor, Monad, MonadIO -- @base@
+      , MonadCatch, MonadMask, MonadThrow -- @exceptions@
+      , MonadUnliftIO -- @unliftio-core@
+      , MonadLogger, MonadLoggerIO -- @monad-logger@
+      ) via (ReaderT Int (ReaderT [SeriesElem] (LoggingT IO)))
+    deriving
+      ( Semigroup, Monoid -- @base@
+      ) via (Ap (ReaderT Int (ReaderT [SeriesElem] (LoggingT IO))) a)
+
+askTimeoutMicros :: OnTimeout Int
+askTimeoutMicros = OnTimeout \timeoutMicros _pairs -> pure timeoutMicros
+
+askTimeoutMetadata :: OnTimeout [SeriesElem]
+askTimeoutMetadata = OnTimeout \_timeoutMicros pairs -> pure pairs
+
+data BufferedLoggerSpec = BufferedLoggerSpec
+  { -- | Predicate that determines if a log message should be buffered. The
+    -- default is no buffering, so all log messages are logged immediately.
+    bufferedLoggerSpecShouldBuffer
+      :: Loc -> LogSource -> LogLevel -> LogStr -> Bool
+    -- | The logger to wrap. For all unbuffered log messages, these
+    -- are passed to 'bufferedLoggerSpecLogger' immediately. For
+    -- buffered log messages, aggregates will eventually be passed
+    -- to 'bufferedLoggerSpecLogger' on the configured period (see
+    -- 'bufferedLoggerSpecFlushPeriod').
+  , bufferedLoggerSpecLogger
+      :: Loc -> LogSource -> LogLevel -> LogStr -> IO ()
+    -- | Buffered logs are regularly flushed from internal storage on this
+    -- period (in microseconds). The default is 5 minutes.
+  , bufferedLoggerSpecFlushPeriod :: Int
+    -- | Max amount of time allowed for flushing buffered logs (in
+    -- microseconds). The default is 10 seconds.
+  , bufferedLoggerSpecFlushTimeout :: Int
+    -- | Handler that is run if flushing buffered logs takes longer than
+    -- 'bufferedLoggerSpecFlushTimeout'. The default is to log the timeout using
+    -- 'bufferedLoggerSpecOnFlushExceptionLogger'. This may be overridden if the
+    -- timeout needs to be reported or dealt with via some means other than
+    -- logging. Note that if the handler throws a synchronous exception, that
+    -- exception will be caught and ignored.
+    --
+    -- The input argument is all remaining buffered logs that were unable to
+    -- be flushed within the timeout.
+  , bufferedLoggerSpecOnFlushTimeout
+      :: BufferedLogs -> OnTimeout ()
+    -- | Handler that is run if a synchronous exception is encountered during
+    -- log flushing. The default is to log the exception using
+    -- 'bufferedLoggerSpecOnFlushExceptionLogger'. This may be overridden if the
+    -- exception needs to be reported or dealt with via some means other than
+    -- logging. Note that if the handler rethrows the exception, the exception
+    -- will be caught and ignored.
+    --
+    -- The input arguments are the specific buffered log and aggregate
+    -- that encountered an exception during flushing.
+  , bufferedLoggerSpecOnFlushException
+      :: BufferedLog -> BufferedLogAgg -> OnException ()
+    -- | The 'bufferedLoggerSpecOnFlushTimeout' and
+    -- 'bufferedLoggerSpecOnFlushException' handlers are run using this logger.
+    -- This logger is intentionally different from 'bufferedLoggerSpecLogger',
+    -- as 'bufferedLoggerSpecLogger' may have ultimately been what triggered
+    -- running either handler in the first place.
+  , bufferedLoggerSpecOnFlushExceptionLogger
+      :: Loc -> LogSource -> LogLevel -> LogStr -> IO ()
+    -- | The internal storage tracks a count of each buffered log message's
+    -- occurrences (rather than tracking each occurrence) and each occurrence's
+    -- metadata (convenience for @monad-logger-aeson@ users). This function
+    -- enables including this aggregate info in the log message when it is
+    -- eventually logged. The default is to not include the aggregate info.
+    --
+    -- @monad-logger-aeson@ users may find it convenient to set this function
+    -- to @includeLogAggregateViaAeson Just@. This will include the aggregate in
+    -- full. If there is a risk that a buffered log's aggregated metadata may
+    -- exceed a logging system's max payload per message, 'Just' can be replaced
+    -- with a function that more carefully summarizes the metadata. For example,
+    -- to ignore the metadata altogether and instead only log the count of
+    -- aggregated messages, the following could be used:
+    --
+    -- @
+    -- 'includeLogAggregateViaAeson' \\bufferedLogAgg ->
+    --   'Just' $ 'object' ["count" '.=' 'bufferedLogAggCount' bufferedLogAgg]
+    -- @
+  , bufferedLoggerSpecIncludeLogAggregate
+      :: BufferedLog -> BufferedLogAgg -> [SeriesElem] -> LogStr
+  }
+
+defaultBufferedLoggerSpec :: BufferedLoggerSpec
+defaultBufferedLoggerSpec =
+  BufferedLoggerSpec
+    { bufferedLoggerSpecShouldBuffer = \_loc _logSource _logLevel _logStr ->
+        False
+    , bufferedLoggerSpecLogger = mempty
+    , bufferedLoggerSpecFlushPeriod = 300_000_000 -- 5 minutes
+    , bufferedLoggerSpecFlushTimeout = 10_000_000 -- 10 seconds
+    , bufferedLoggerSpecOnFlushTimeout = \unflushedLogs -> do
+        timeoutMicros <- askTimeoutMicros
+        pairs <- askTimeoutMetadata
+        logError $ "Flushing buffered logs took too long" :#
+          "timeoutMicros" .= timeoutMicros
+            : "unflushedLogs" .=
+                fmap
+                  ( \(bufferedLog, bufferedLogAgg) ->
+                      object
+                        [ "bufferedLog" .= bufferedLog
+                        , "bufferedLogAgg" .= bufferedLogAgg
+                        ]
+                  )
+                  (HashMap.toList unflushedLogs)
+            : pairs
+    , bufferedLoggerSpecOnFlushException = \bufferedLog bufferedLogAgg -> do
+        SomeException ex <- askException
+        pairs <- askExceptionMetadata
+        logError $ "Ignoring exception from flushing buffered log" :#
+          "exception" .= displayException ex
+            : "bufferedLog" .= bufferedLog
+            : "bufferedLogAgg" .= bufferedLogAgg
+            : pairs
+    , bufferedLoggerSpecOnFlushExceptionLogger = mempty
+    , bufferedLoggerSpecIncludeLogAggregate =
+        includeLogAggregateViaAeson $ const $ Nothing @BufferedLogAgg
+    }
+
+includeLogAggregateViaAeson
+  :: forall a
+   . (ToJSON a)
+  => (BufferedLogAgg -> Maybe a) -- ^ Summarizes the aggregated info
+  -> BufferedLog
+  -> BufferedLogAgg
+  -> [SeriesElem]
+  -> LogStr
+includeLogAggregateViaAeson summarizeAgg bufferedLog bufferedLogAgg pairs =
+  case logStrBytesOrMsgText of
+    Left logStrBytes -> toLogStr logStrBytes
+    Right msgText ->
+      toLogStr $ msgText :#
+        "bufferedLogAgg" .= summarizeAgg bufferedLogAgg : pairs
+  where
+  BufferedLog
+    { bufferedLogLogStr = logStrBytesOrMsgText
+    } = bufferedLog
+
+withBufferedLogger
+  :: forall m a
+   . (MonadUnliftIO m)
+  => BufferedLoggerSpec
+  -> ((Loc -> LogSource -> LogLevel -> LogStr -> IO ()) -> m a)
+  -> m a
+withBufferedLogger bufferedLoggerSpec action =
+  withRunInIO \runInIO ->
+    withBufferedLoggerIO bufferedLoggerSpec (runInIO . action)
+
+withBufferedLoggerIO
+  :: forall a
+   . BufferedLoggerSpec
+  -> ((Loc -> LogSource -> LogLevel -> LogStr -> IO ()) -> IO a)
+  -> IO a
+withBufferedLoggerIO bufferedLoggerSpec action = do
+  bufferedLogsRef <- IORef.newIORef mempty
+  Async.withAsync (mkWorker bufferedLogsRef) $ const do
+    action (logger' bufferedLogsRef) `finally` flush bufferedLogsRef
+  where
+  logger'
+    :: IORef BufferedLogs
+    -> Loc
+    -> LogSource
+    -> LogLevel
+    -> LogStr
+    -> IO ()
+  logger' bufferedLogsRef loc logSource logLevel logStr = do
+    if shouldBuffer loc logSource logLevel logStr then do
+      uncurry (buffer bufferedLogsRef) $ toBufferedLog loc logSource logLevel logStr
+    else do
+      logger loc logSource logLevel logStr
+
+  mkWorker :: IORef BufferedLogs -> IO ()
+  mkWorker bufferedLogsRef = do
+    Monad.forever do
+      Concurrent.threadDelay period
+      flush bufferedLogsRef
+
+  buffer :: IORef BufferedLogs -> BufferedLog -> KeyMap Value -> IO ()
+  buffer bufferedLogsRef bufferedLog meta = do
+    IORef.atomicModifyIORef' bufferedLogsRef \bufferedLogs ->
+      (insertBufferedLog bufferedLog meta bufferedLogs, ())
+
+  flush :: IORef BufferedLogs -> IO ()
+  flush bufferedLogsRef = do
+    flushedLogsRef <- IORef.newIORef mempty
+    bufferedLogs <- IORef.atomicModifyIORef' bufferedLogsRef (mempty,)
+    flip runLoggingT onFlushExLogger do
+      mResult <- withRunInIO \runInIO -> do
+        Timeout.timeout timeoutMicros $ runInIO do
+          Foldable.for_ (HashMap.toList bufferedLogs) \(bufferedLog, bufferedLogAgg) -> do
+            liftIO (flushElem flushedLogsRef bufferedLog bufferedLogAgg) `catchAny` \someEx -> do
+              runOnException (onFlushEx bufferedLog bufferedLogAgg) someEx loggingMeta `catchAny` \_ ->
+                -- If the custom handler throws a synchronous exception, we
+                -- ignore it, as we don't want to kill the async worker.
+                pure ()
+      flushedLogElems <- liftIO $ IORef.readIORef flushedLogsRef
+      let unflushedLogs = bufferedLogs `HashMap.difference` flushedLogElems
+      case mResult of
+        Just () -> pure ()
+        Nothing ->
+          runOnTimeout (onFlushTimeout unflushedLogs) timeoutMicros loggingMeta `catchAny` \_ ->
+            -- If the custom handler throws a synchronous exception, we ignore
+            -- it, as we don't want to kill the async worker.
+            pure ()
+
+  flushElem :: IORef BufferedLogs -> BufferedLog -> BufferedLogAgg -> IO ()
+  flushElem flushedLogsRef bufferedLog bufferedLogAgg = do
+    logger loc logSource logLevel $ includeLogAgg bufferedLog bufferedLogAgg loggingMeta
+    IORef.atomicModifyIORef' flushedLogsRef \flushedLogs ->
+      (insertBufferedLogWithAgg bufferedLog bufferedLogAgg flushedLogs, ())
+    where
+    BufferedLog
+      { bufferedLogLoc = loc
+      , bufferedLogLogSource = logSource
+      , bufferedLogLogLevel = logLevel
+      } = bufferedLog
+
+  loggingMeta :: [SeriesElem]
+  loggingMeta =
+    [ "bufferedLogger" .= object
+        [ "flushPeriod" .= period
+        , "flushTimeout" .= timeoutMicros
+        ]
+    ]
+
+  BufferedLoggerSpec
+    { bufferedLoggerSpecShouldBuffer = shouldBuffer
+    , bufferedLoggerSpecLogger = logger
+    , bufferedLoggerSpecFlushPeriod = period
+    , bufferedLoggerSpecFlushTimeout = timeoutMicros
+    , bufferedLoggerSpecOnFlushTimeout = onFlushTimeout
+    , bufferedLoggerSpecOnFlushException = onFlushEx
+    , bufferedLoggerSpecOnFlushExceptionLogger = onFlushExLogger
+    , bufferedLoggerSpecIncludeLogAggregate = includeLogAgg
+    } = bufferedLoggerSpec
+
+type BufferedLogs = HashMap BufferedLog BufferedLogAgg
+
+insertBufferedLog
+  :: BufferedLog
+  -> KeyMap Value
+  -> BufferedLogs
+  -> BufferedLogs
+insertBufferedLog bufferedLog meta =
+  insertBufferedLogWithAgg bufferedLog
+    BufferedLogAgg
+      { bufferedLogAggCount = 1
+      , bufferedLogAggMetas =
+          if Aeson.KeyMap.null meta then
+            mempty
+          else
+            DList.singleton meta
+      }
+
+insertBufferedLogWithAgg
+  :: BufferedLog
+  -> BufferedLogAgg
+  -> BufferedLogs
+  -> BufferedLogs
+insertBufferedLogWithAgg = HashMap.insertWith (<>)
+
+data BufferedLog = BufferedLog
+  { bufferedLogLoc :: Loc
+  , bufferedLogLogSource :: LogSource
+  , bufferedLogLogLevel :: LogLevel
+    -- | 'Right' when the log message was parsed as a 'Message', 'Left'
+    -- otherwise.
+  , bufferedLogLogStr :: Either ByteString Text
+  } deriving stock (Eq)
+
+instance Hashable BufferedLog where
+  hashWithSalt salt bufferedLog =
+    salt
+      `hashWithSalt` loc_filename
+      `hashWithSalt` loc_package
+      `hashWithSalt` loc_module
+      `hashWithSalt` loc_start
+      `hashWithSalt` logSource
+      `hashWithSalt` show logLevel
+      `hashWithSalt` logStrBytesOrMsgText
+    where
+    BufferedLog
+      { bufferedLogLoc =
+          Loc { loc_filename, loc_package, loc_module, loc_start }
+      , bufferedLogLogSource = logSource
+      , bufferedLogLogLevel = logLevel
+      , bufferedLogLogStr = logStrBytesOrMsgText
+      } = bufferedLog
+
+instance ToJSON BufferedLog where
+  toJSON bufferedLog =
+    object
+      [ "loc" .=
+          object
+            [ "package" .= loc_package
+            , "module" .= loc_module
+            , "file" .= loc_filename
+            , "line" .= fst loc_start
+            , "char" .= snd loc_start
+            ]
+      , "source" .= logSource
+      , "level" .=
+          case logLevel of
+            LevelDebug -> "debug"
+            LevelInfo -> "info"
+            LevelWarn -> "warn"
+            LevelError -> "error"
+            LevelOther otherLevel -> otherLevel
+      , "text" .=
+          case logStrBytesOrMsgText of
+            Left logStrBytes ->
+              case Text.Encoding.decodeUtf8' logStrBytes of
+                Left _unicodeEx -> "Log message could not be decoded via UTF-8"
+                Right text -> text
+            Right msgText -> msgText
+      ]
+    where
+    BufferedLog
+      { bufferedLogLoc =
+          Loc { loc_filename, loc_package, loc_module, loc_start }
+      , bufferedLogLogSource = logSource
+      , bufferedLogLogLevel = logLevel
+      , bufferedLogLogStr = logStrBytesOrMsgText
+      } = bufferedLog
+
+toBufferedLog
+  :: Loc
+  -> LogSource
+  -> LogLevel
+  -> LogStr
+  -> (BufferedLog, KeyMap Value)
+toBufferedLog loc logSource logLevel logStr =
+  ( BufferedLog
+      { bufferedLogLoc = loc
+      , bufferedLogLogSource = logSource
+      , bufferedLogLogLevel = logLevel
+      , bufferedLogLogStr
+      }
+  , meta
+  )
+  where
+  (bufferedLogLogStr, meta) =
+    case runAesonParser parseMessage logStrBytes of
+      Nothing -> (Left logStrBytes, mempty)
+      Just (text, keyMap) -> (Right text, keyMap)
+
+  logStrBytes = fromLogStr logStr
+
+  parseMessage :: Value -> Parser (Text, KeyMap Value)
+  parseMessage = Aeson.withObject "Message" \obj ->
+    (,) <$> obj .: "text" <*> (parsePairs =<< obj .:? "meta")
+
+  parsePairs :: Maybe Value -> Parser (KeyMap Value)
+  parsePairs = \case
+    Nothing -> pure mempty
+    Just value -> flip (Aeson.withObject "[Pair]") value \obj -> do
+      pure obj
+
+  runAesonParser :: (Value -> Parser a) -> ByteString -> Maybe a
+  runAesonParser parser =
+    Aeson.Parser.decodeStrictWith Aeson.json' (Aeson.Types.parse parser)
+
+data BufferedLogAgg = BufferedLogAgg
+  { bufferedLogAggCount :: Int
+  , bufferedLogAggMetas :: DList (KeyMap Value)
+  } deriving stock (Eq)
+
+instance Semigroup BufferedLogAgg where
+  (<>) x y =
+    BufferedLogAgg
+      { bufferedLogAggCount = bufferedLogAggCount x + bufferedLogAggCount y
+      , bufferedLogAggMetas = bufferedLogAggMetas x <> bufferedLogAggMetas y
+      }
+
+instance ToJSON BufferedLogAgg where
+  toJSON bufferedLogAgg =
+    object
+      $ "count" .= count
+      : ["metas" .= DList.toList metas | not $ null metas]
+    where
+    BufferedLogAgg
+      { bufferedLogAggCount = count
+      , bufferedLogAggMetas = metas
+      } = bufferedLogAgg
 
 -- $disclaimer
 --

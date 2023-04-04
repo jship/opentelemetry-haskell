@@ -1,7 +1,7 @@
-module OTel.SDK.Trace.Handlers.OnTimeout
+module OTel.API.Common.Handlers.OnTimeout
   ( Internal.OnTimeout
   , Internal.askTimeoutMicros
   , Internal.askTimeoutMetadata
   ) where
 
-import qualified OTel.SDK.Trace.Internal as Internal
+import qualified OTel.API.Common.Internal as Internal
