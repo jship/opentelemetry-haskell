@@ -55,6 +55,7 @@ library
     , base >=4.11.1.0 && <5
     , bytestring
     , clock
+    , containers
     , dlist
     , http-client
     , http-client-tls

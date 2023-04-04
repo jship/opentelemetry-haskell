@@ -114,6 +114,8 @@ module OTel.SDK.Trace.Internal
   , defaultManager
 
   , spanSummary
+
+  , redactHttpExceptionHeaders
   ) where
 
 import Control.Applicative (Alternative(..), Applicative(..))
@@ -142,7 +144,7 @@ import Control.Retry
   ( RetryAction(..), RetryPolicyM, RetryStatus, applyPolicy, fullJitterBackoff, limitRetries
   , recoveringDynamic
   )
-import Data.Aeson (ToJSON(..), object, Value)
+import Data.Aeson (ToJSON(..), Value, object)
 import Data.Aeson.Types (Pair)
 import Data.ByteString.Lazy (ByteString)
 import Data.Either (fromRight)
@@ -153,6 +155,7 @@ import Data.Kind (Type)
 import Data.Maybe (fromJust, fromMaybe, mapMaybe)
 import Data.Monoid (Ap(..))
 import Data.Proxy (Proxy(..))
+import Data.Set (Set)
 import Data.Text (Text, pack)
 import Data.Time
   ( NominalDiffTime, UTCTime, defaultTimeLocale, diffUTCTime, getCurrentTime, parseTimeM
@@ -168,7 +171,7 @@ import Network.HTTP.Client
   )
 import Network.HTTP.Client.TLS (newTlsManager)
 import Network.HTTP.Types (Status(statusCode), Header, serviceUnavailable503, tooManyRequests429)
-import Network.HTTP.Types.Header (hContentType, hRetryAfter)
+import Network.HTTP.Types.Header (HeaderName, hContentType, hRetryAfter)
 import Network.URI (URI(..), parseURI)
 import OTel.API.Common
   ( Attr(attrType, attrVal)
@@ -215,6 +218,7 @@ import qualified Data.ByteString.Char8 as ByteString.Char8
 import qualified Data.DList as DList
 import qualified Data.List as List
 import qualified Data.ProtoLens as ProtoLens
+import qualified Data.Set as Set
 import qualified GHC.Stack as Stack
 import qualified OTel.SDK.OTLP.Bindings.Collector.Trace.V1.TraceService as OTLP.Collector
 import qualified OTel.SDK.OTLP.Bindings.Collector.Trace.V1.TraceService_Fields as OTLP.Collector
@@ -820,7 +824,42 @@ data OTLPSpanExporterSpec = OTLPSpanExporterSpec
   , otlpSpanExporterSpecEndpoint :: URI
   , otlpSpanExporterSpecTimeout :: Int
   , otlpSpanExporterSpecProtocol :: OTLPProtocol
+    -- | A list of headers to include when communicating with the observability
+    -- backend (e.g. Honeycomb) over HTTP.
+    --
+    -- Use this list to include the necessary secrets for talking with your
+    -- observability backend(s).
   , otlpSpanExporterSpecHeaders :: [Header]
+    -- | A list of sensitive header names that will be redacted before a
+    -- 'Request' is displayed. Note that the only time a 'Request' is displayed
+    -- is when the span exporter encounters an 'HttpException' when
+    -- communicating with the observability backend (e.g. Honeycomb). The
+    -- default is 'mempty'.
+    --
+    -- Use this list to avoid leaking sensitive data like API keys into your
+    -- logs:
+    --
+    -- @
+    -- 'defaultOTLPSpanExporterSpec'
+    --   { 'otlpSpanExporterSpecRedactedRequestHeaders' = ["x-honeycomb-team"]
+    --   }
+    -- @
+  , otlpSpanExporterSpecRedactedRequestHeaders :: [HeaderName]
+    -- | A list of sensitive header names that will be redacted before a
+    -- 'Response' is displayed. Note that the only time a 'Response' is
+    -- displayed is when the span exporter encounters an 'HttpException' when
+    -- communicating with the observability backend (e.g. Honeycomb). The
+    -- default is 'mempty'.
+    --
+    -- Use this list to avoid leaking sensitive data like API keys into your
+    -- logs.
+    --
+    -- @
+    -- 'defaultOTLPSpanExporterSpec'
+    --   { 'otlpSpanExporterSpecRedactedResponseHeaders' = ["x-honeycomb-team"]
+    --   }
+    -- @
+  , otlpSpanExporterSpecRedactedResponseHeaders :: [HeaderName]
   , otlpSpanExporterSpecLogger :: Loc -> LogSource -> LogLevel -> LogStr -> IO ()
   , otlpSpanExporterSpecWorkerQueueSize :: Int
   , otlpSpanExporterSpecWorkerCount :: Int
@@ -835,6 +874,8 @@ defaultOTLPSpanExporterSpec =
     , otlpSpanExporterSpecTimeout = 10_000_000
     , otlpSpanExporterSpecProtocol = httpProtobufProtocol
     , otlpSpanExporterSpecHeaders = mempty
+    , otlpSpanExporterSpecRedactedRequestHeaders = mempty
+    , otlpSpanExporterSpecRedactedResponseHeaders = mempty
     , otlpSpanExporterSpecLogger = mempty
     , otlpSpanExporterSpecWorkerQueueSize =
         concurrentWorkersSpecQueueSize defaultConcurrentWorkersSpec
@@ -898,7 +939,8 @@ otlpSpanExporter otlpSpanExporterSpec f = do
                   "spans" .= fmap spanSummary (otlpSpanExporterItemBatch item) : loggingMeta
           otlpSpanExporterItemCallback item SpanExportResultSuccess
       , concurrentWorkersSpecOnException = \item -> do
-          SomeException ex <- askException
+          SomeException ex <- do
+            redactHttpExceptionHeaders redactedReqHeaders redactedRespHeaders <$> askException
           pairs <- askExceptionMetadata
           logError $ "Concurrent worker ignoring exception from exporting batch" :#
             "exception" .= displayException ex
@@ -1189,12 +1231,17 @@ otlpSpanExporter otlpSpanExporterSpec f = do
         ]
     ]
 
+  redactedReqHeaders = Set.fromList redactedReqHeadersList
+  redactedRespHeaders = Set.fromList redactedRespHeadersList
+
   OTLPSpanExporterSpec
     { otlpSpanExporterSpecManager = manager
     , otlpSpanExporterSpecEndpoint = endpoint
     , otlpSpanExporterSpecTimeout = exportTimeout
     , otlpSpanExporterSpecProtocol = _protocol -- N.B. Only http/protobuf is supported
     , otlpSpanExporterSpecHeaders = headers
+    , otlpSpanExporterSpecRedactedRequestHeaders = redactedReqHeadersList
+    , otlpSpanExporterSpecRedactedResponseHeaders = redactedRespHeadersList
     , otlpSpanExporterSpecLogger = logger
     , otlpSpanExporterSpecWorkerQueueSize = queueSize
     , otlpSpanExporterSpecWorkerCount = workerCount
@@ -1821,6 +1868,56 @@ spanSummary s =
     , "spanContext" .= spanContext s
     , "name" .= spanName s
     ]
+
+redactHttpExceptionHeaders
+  :: Set HeaderName
+  -> Set HeaderName
+  -> SomeException
+  -> SomeException
+redactHttpExceptionHeaders redactsForReq redactsForResp someEx =
+  fromMaybe someEx do
+    HttpExceptionRequest req content <- fromException someEx
+    pure $ toException $ go req content
+  where
+  go
+    :: Request
+    -> HttpExceptionContent
+    -> HttpException
+  go req content =
+    HttpExceptionRequest (redactReqHeaders req)
+      case content of
+        StatusCodeException resp bs ->
+          StatusCodeException (redactRespHeaders resp) bs
+        TooManyRedirects resps ->
+          TooManyRedirects $ fmap redactRespHeaders resps
+        x -> x
+
+  redactReqHeaders :: Request -> Request
+  redactReqHeaders req =
+    req
+      { requestHeaders =
+          redactSensitiveHeader redactsForReq <$> requestHeaders req
+      }
+
+  redactRespHeaders :: Response a -> Response a
+  redactRespHeaders resp =
+    resp
+      { responseHeaders =
+          redactSensitiveHeader redactsForResp <$> responseHeaders resp
+      }
+
+  -- This function exists in @Network.HTTP.Client.Types@ but is not exported. We
+  -- inline it here and use it rather than relying on the user having
+  -- @http-client.0.7.13@ which would let us use @redactHeaders@ on the request
+  -- directly. There also isn't a @Response@ analogue of @redactHeaders@, so
+  -- we'd need a more general-purpose function like @redactSensitiveHeader@
+  -- anyways.
+  redactSensitiveHeader :: Set HeaderName -> Header -> Header
+  redactSensitiveHeader toRedact h@(name, _) =
+    if name `Set.member` toRedact then
+      (name, "<REDACTED>")
+    else
+      h
 
 -- $disclaimer
 --
