@@ -1,4 +1,4 @@
-resolver: nightly-2022-09-19
+resolver: lts-20.12
 packages:
 - ../otel-api-baggage
 - ../otel-api-baggage-core
