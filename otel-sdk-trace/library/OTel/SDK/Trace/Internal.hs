@@ -169,6 +169,7 @@ import Network.HTTP.Client
   , RequestBody(RequestBodyBS), Response(responseHeaders, responseStatus), Manager, httpLbs
   , requestFromURI, setRequestCheckStatus
   )
+import Network.HTTP.Client.Internal (responseOriginalRequest)
 import Network.HTTP.Client.TLS (newTlsManager)
 import Network.HTTP.Types (Status(statusCode), Header, serviceUnavailable503, tooManyRequests429)
 import Network.HTTP.Types.Header (HeaderName, hContentType, hRetryAfter)
@@ -1904,6 +1905,11 @@ redactHttpExceptionHeaders redactsForReq redactsForResp someEx =
     resp
       { responseHeaders =
           redactSensitiveHeader redactsForResp <$> responseHeaders resp
+      , responseOriginalRequest =
+          (responseOriginalRequest resp)
+            { requestHeaders =
+                redactSensitiveHeader redactsForReq <$> requestHeaders (responseOriginalRequest resp)
+            }
       }
 
   -- This function exists in @Network.HTTP.Client.Types@ but is not exported. We
