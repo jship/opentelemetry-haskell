@@ -73,12 +73,17 @@ tests:
     - HUnit
     - aeson
     - base
+    - bytestring
     - containers
     - hspec
+    - http-client
+    - http-types
     - monad-logger-aeson
+    - network-uri
     - otel-api-common
     - otel-api-trace
     - otel-api-trace-core
+    - otel-sdk-resource-core
     - otel-sdk-trace
     - safe-exceptions
     - stm
@@ -86,9 +91,14 @@ tests:
     - text
     - transformers
     - unliftio-core
+    - wai
+    - warp
     when:
     - condition: false
       other-modules: Paths_otel_sdk_trace
+    ghc-options:
+    - -threaded
+    - '"-with-rtsopts=-N"'
 
 executables:
   otlp-tracing-example:

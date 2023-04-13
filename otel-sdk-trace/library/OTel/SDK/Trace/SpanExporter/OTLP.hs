@@ -13,6 +13,7 @@ module OTel.SDK.Trace.SpanExporter.OTLP
   , Internal.otlpSpanExporterSpecLogger
   , Internal.otlpSpanExporterSpecWorkerQueueSize
   , Internal.otlpSpanExporterSpecWorkerCount
+  , Internal.otlpSpanExporterSpecRetryPolicy
 
   , Internal.OTLPProtocol
   , Internal.httpProtobufProtocol

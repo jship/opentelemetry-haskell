@@ -31,7 +31,7 @@ import OTel.API.Common.Logging
   )
 import Prelude
 import System.Timeout (timeout)
-import Test.Hspec (HasCallStack, Spec, describe, expectationFailure, it, shouldBe)
+import Test.Hspec (HasCallStack, Spec, describe, expectationFailure, it)
 
 testLogging
   :: forall m
@@ -255,7 +255,7 @@ expectedQueueElems shouldIgnoreLoc queue expectedElems = do
       -- convenient to temporarily change the @expectationFailure@ to the
       -- following:
       --
-      actualElems `shouldBe` expectedElems'
+      -- actualElems `shouldBe` expectedElems'
       expectationFailure $
         "expectedQueueElems timed out: "
           <> "expected=" <> show expectedElems' <> ", "

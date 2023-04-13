@@ -171,7 +171,10 @@ import Network.HTTP.Client
   )
 import Network.HTTP.Client.Internal (responseOriginalRequest)
 import Network.HTTP.Client.TLS (newTlsManager)
-import Network.HTTP.Types (Status(statusCode), Header, serviceUnavailable503, tooManyRequests429)
+import Network.HTTP.Types
+  ( Status(statusCode), Header, badGateway502, gatewayTimeout504, serviceUnavailable503
+  , tooManyRequests429
+  )
 import Network.HTTP.Types.Header (HeaderName, hContentType, hRetryAfter)
 import Network.URI (URI(..), parseURI)
 import OTel.API.Common
@@ -754,6 +757,7 @@ defaultSpanProcessorSpec =
 data SpanExportResult
   = SpanExportResultSuccess
   | SpanExportResultFailure
+  deriving stock (Eq, Show)
 
 data SpanExporter = SpanExporter
   { spanExporterExport
@@ -864,6 +868,34 @@ data OTLPSpanExporterSpec = OTLPSpanExporterSpec
   , otlpSpanExporterSpecLogger :: Loc -> LogSource -> LogLevel -> LogStr -> IO ()
   , otlpSpanExporterSpecWorkerQueueSize :: Int
   , otlpSpanExporterSpecWorkerCount :: Int
+    -- | The retry policy to use when communicating with the observability
+    -- backend produces an exception.
+    --
+    -- The default is defined as follows:
+    --
+    -- @
+    -- 'fullJitterBackoff' 10_000 <> 'limitRetries' 10
+    -- @
+    --
+    -- 'Control.Retry.simulatePolicyPP' can be used to get an idea of the retry
+    -- policy's iterations and total cumulative delay:
+    --
+    -- > ghci> simulatePolicyPP 10 $ fullJitterBackoff 10000 <> limitRetries 10
+    -- > 0: 6.659ms
+    -- > 1: 12.302ms
+    -- > 2: 21.228ms
+    -- > 3: 45.048ms
+    -- > 4: 128.142ms
+    -- > 5: 274.269ms
+    -- > 6: 351.933ms
+    -- > 7: 688.239ms
+    -- > 8: 1313.14ms
+    -- > 9: 4806.224ms
+    -- > 10: Inhibit
+    -- > Total cumulative delay would be: 7647.184ms
+    --
+    -- For more info on defining custom retry policies, see "Control.Retry".
+  , otlpSpanExporterSpecRetryPolicy :: RetryPolicyM IO
   }
 
 -- TODO: Env vars
@@ -882,6 +914,8 @@ defaultOTLPSpanExporterSpec =
         concurrentWorkersSpecQueueSize defaultConcurrentWorkersSpec
     , otlpSpanExporterSpecWorkerCount =
         concurrentWorkersSpecWorkerCount defaultConcurrentWorkersSpec
+    , otlpSpanExporterSpecRetryPolicy =
+        fullJitterBackoff 10_000 <> limitRetries 10
     }
 
 otlpSpanExporter
@@ -957,9 +991,6 @@ otlpSpanExporter otlpSpanExporterSpec f = do
     recoveringDynamic retryPolicy handlers \_retryStatus -> do
       httpLbs req manager
     where
-    retryPolicy :: RetryPolicyM IO
-    retryPolicy = fullJitterBackoff 5_000 <> limitRetries 10
-
     handlers :: [RetryStatus -> Handler IO RetryAction]
     handlers =
       [ const $ Handler \(_ :: AsyncException) -> pure DontRetry
@@ -974,24 +1005,32 @@ otlpSpanExporter otlpSpanExporterSpec f = do
               InternalException someEx -> consult retryStatus "InternalException" (Just someEx) Nothing
               ResponseTimeout {} -> consult retryStatus "ResponseTimeout" Nothing Nothing
               StatusCodeException resp _bs
-                | responseStatus resp `elem` [tooManyRequests429, serviceUnavailable503] ->
+                | status == tooManyRequests429 || status == serviceUnavailable503 ->
                     checkRetryAfterHeader retryStatus resp
+                | status == badGateway502 || status == gatewayTimeout504 ->
+                    consult retryStatus statusCodeText Nothing Nothing
                 | otherwise -> pure DontRetry
+                where
+                statusCodeText :: Text
+                statusCodeText = pack $ show $ statusCode $ responseStatus resp
+
+                status :: Status
+                status = responseStatus resp
               _ -> pure DontRetry
       ]
       where
       checkRetryAfterHeader :: RetryStatus -> Response () -> IO RetryAction
       checkRetryAfterHeader retryStatus resp = do
         case lookup hRetryAfter $ responseHeaders resp of
-          Nothing -> consult retryStatus "StatusCodeException" Nothing Nothing
+          Nothing -> consult retryStatus statusCodeText Nothing Nothing
           Just headerVal -> do
             case parseRetryAfterHeader $ ByteString.Char8.unpack headerVal of
-              Nothing -> consult retryStatus (pack $ show code) Nothing Nothing
+              Nothing -> consult retryStatus statusCodeText Nothing Nothing
               Just (Left delay) -> do
-                consult retryStatus (pack $ show code) Nothing $ Just $ ceiling $ 1_000_000 * delay
+                consult retryStatus statusCodeText Nothing $ Just $ ceiling $ 1_000_000 * delay
               Just (Right httpDate) -> do
                 delay <- fmap (diffUTCTime httpDate) getCurrentTime
-                consult retryStatus (pack $ show code) Nothing $ Just $ ceiling $ 1_000_000 * delay
+                consult retryStatus statusCodeText Nothing $ Just $ ceiling $ 1_000_000 * delay
         where
         parseRetryAfterHeader :: String -> Maybe (Either NominalDiffTime UTCTime)
         parseRetryAfterHeader headerVal =
@@ -1000,25 +1039,33 @@ otlpSpanExporter otlpSpanExporterSpec f = do
           parseNominalDiffTime = parseTimeM True defaultTimeLocale "%s" headerVal
           parseHttpDate = parseTimeM True defaultTimeLocale "%a, %d %b %Y %H:%M:%S GMT" headerVal
 
-        code :: Int
-        code = statusCode $ responseStatus resp
+        statusCodeText :: Text
+        statusCodeText = pack $ show $ statusCode $ responseStatus resp
 
       consult :: RetryStatus -> Text -> Maybe SomeException -> Maybe Int -> IO RetryAction
       consult retryStatus hint mSomeEx mOverrideDelay =
         flip runLoggingT logger do
           liftIO (applyPolicy retryPolicy retryStatus) >>= \case
             Nothing -> do
-              logError $ "Span export exceeded maximum retries due to exceptions" :# meta
+              logError $ "Span export exceeded maximum retries" :# meta
               pure DontRetry
             Just {} -> do
-              logDebug $ "Retrying span export due to HTTP client exception" :# meta
-              pure $ maybe ConsultPolicy ConsultPolicyOverrideDelay mOverrideDelay
+              case mOverrideDelay of
+                Nothing -> do
+                  logDebug $ "Retrying span export with policy delay" :# meta
+                  pure ConsultPolicy
+                Just overrideDelay -> do
+                  logDebug $ "Retrying span export with overridden delay" :#
+                    "delayMicros" .= overrideDelay : meta
+                  pure $ ConsultPolicyOverrideDelay overrideDelay
         where
         meta :: [SeriesElem]
         meta =
           foldr ($) loggingMeta
             [ ("hint" .= hint :)
-            , maybe id (\e -> ("exception" .= displayException e :)) mSomeEx
+            , fold do
+                someEx <- redactHttpExceptionHeaders redactedReqHeaders redactedRespHeaders <$> mSomeEx
+                pure ("exception" .= displayException someEx :)
             ]
 
   exportTraceServiceRequest
@@ -1246,10 +1293,12 @@ otlpSpanExporter otlpSpanExporterSpec f = do
     , otlpSpanExporterSpecLogger = logger
     , otlpSpanExporterSpecWorkerQueueSize = queueSize
     , otlpSpanExporterSpecWorkerCount = workerCount
+    , otlpSpanExporterSpecRetryPolicy = retryPolicy
     } = otlpSpanExporterSpec
 
 data OTLPProtocol
   = OTLPProtocolHTTPProtobuf
+  deriving stock (Eq, Show)
 
 httpProtobufProtocol :: OTLPProtocol
 httpProtobufProtocol = OTLPProtocolHTTPProtobuf
@@ -1518,6 +1567,7 @@ data SamplingDecision
   = SamplingDecisionDrop
   | SamplingDecisionRecordOnly
   | SamplingDecisionRecordAndSample
+  deriving stock (Eq, Show)
 
 samplingDecisionDrop :: SamplingDecision
 samplingDecisionDrop = SamplingDecisionDrop
