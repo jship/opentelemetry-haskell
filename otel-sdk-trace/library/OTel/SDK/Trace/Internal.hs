@@ -107,7 +107,6 @@ module OTel.SDK.Trace.Internal
 
   , unlessSTM
 
-  , with
   , withAll
 
   , defaultSystemSeed
@@ -133,11 +132,10 @@ import Control.Exception.Safe
   )
 import Control.Monad (join, when)
 import Control.Monad.Cont (ContT(..), cont, runCont)
-import Control.Monad.IO.Class (MonadIO(liftIO))
+import Control.Monad.IO.Class (MonadIO(..))
 import Control.Monad.IO.Unlift (MonadUnliftIO(..))
 import Control.Monad.Logger.Aeson
-  ( LoggingT(..), Message((:#)), MonadLoggerIO(..), (.=), Loc, LogLevel, LogSource, LogStr
-  , MonadLogger, SeriesElem, logDebug, logError
+  ( LoggingT(..), Message(..), MonadLoggerIO(..), (.=), MonadLogger, SeriesElem, logDebug, logError
   )
 import Control.Monad.Reader (ReaderT(..))
 import Control.Retry
@@ -160,50 +158,42 @@ import Data.Text (Text, pack)
 import Data.Time
   ( NominalDiffTime, UTCTime, defaultTimeLocale, diffUTCTime, getCurrentTime, parseTimeM
   )
+import Data.Traversable (for)
 import Data.Typeable (Typeable, typeRep)
 import Data.Vector (Vector)
 import GHC.Stack (SrcLoc(..), CallStack)
 import Lens.Micro ((&), (.~))
 import Network.HTTP.Client
-  ( HttpException(..), HttpExceptionContent(..), Request(method, requestBody, requestHeaders)
-  , RequestBody(RequestBodyBS), Response(responseHeaders, responseStatus), Manager, httpLbs
-  , requestFromURI, setRequestCheckStatus
+  ( HttpException(..), HttpExceptionContent(..), Request(..), RequestBody(..), Response(..), Manager
+  , httpLbs, requestFromURI, setRequestCheckStatus
   )
 import Network.HTTP.Client.Internal (responseOriginalRequest)
 import Network.HTTP.Client.TLS (newTlsManager)
 import Network.HTTP.Types
-  ( Status(statusCode), Header, badGateway502, gatewayTimeout504, serviceUnavailable503
-  , tooManyRequests429
+  ( Status(..), Header, badGateway502, gatewayTimeout504, serviceUnavailable503, tooManyRequests429
   )
 import Network.HTTP.Types.Header (HeaderName, hContentType, hRetryAfter)
 import Network.URI (URI(..), parseURI)
 import OTel.API.Common
-  ( Attr(attrType, attrVal)
-  , AttrType
-    ( AttrTypeBool, AttrTypeBoolArray, AttrTypeDouble, AttrTypeDoubleArray, AttrTypeInt
-    , AttrTypeIntArray, AttrTypeText, AttrTypeTextArray
-    )
-  , AttrsFor(AttrsForSpan, AttrsForSpanEvent, AttrsForSpanLink), InstrumentationScope(..)
-  , InstrumentationScopeName(unInstrumentationScopeName), KV((.@)), Key(unKey)
-  , TimestampSource(TimestampSourceAt, TimestampSourceNow), Version(unVersion), AttrVals, Attrs
-  , AttrsBuilder, AttrsLimits, Timestamp, askException, askExceptionMetadata, askTimeoutMetadata
-  , askTimeoutMicros, defaultAttrsLimits, droppedAttrsCount, foldMapWithKeyAttrs, schemaURLToText
-  , timestampFromNanoseconds, timestampToNanoseconds, with
+  ( Attr(..), AttrType(..), AttrsFor(..), InstrumentationScope(..)
+  , InstrumentationScopeName(unInstrumentationScopeName), KV((.@)), Key(unKey), TimestampSource(..)
+  , Version(..), AttrVals, Attrs, AttrsBuilder, AttrsLimits, Logger, Timestamp, askException
+  , askExceptionMetadata, askTimeoutMetadata, askTimeoutMicros, defaultAttrsLimits
+  , droppedAttrsCount, foldMapWithKeyAttrs, schemaURLToText, timestampFromNanoseconds
+  , timestampToNanoseconds, with
   )
 import OTel.API.Common.Internal
   ( AttrVals(..), InstrumentationScope(..), OnException(..), OnTimeout(..)
   )
 import OTel.API.Context.Core (Context, lookupContext)
 import OTel.API.Trace
-  ( Span(..), SpanContext(..), SpanEvent(..), SpanEventName(unSpanEventName)
-  , SpanKind(SpanKindClient, SpanKindConsumer, SpanKindInternal, SpanKindProducer, SpanKindServer)
-  , SpanLineage(SpanLineageChildOf, SpanLineageRoot), SpanLink(..), SpanName(unSpanName)
-  , SpanSpec(..), SpanStatus(SpanStatusError, SpanStatusOk, SpanStatusUnset), MutableSpan, SpanId
-  , SpanLinks, TraceId, TraceState, Tracer, TracerProvider, UpdateSpanSpec, contextKeySpan
-  , emptySpanContext, emptyTraceState, frozenTimestamp, spanContextIsSampled, spanContextIsValid
-  , spanEventsToList, spanIdFromWords, spanIdToBytesBuilder, spanIsSampled, spanLinksToList
-  , traceFlagsSampled, traceIdFromWords, traceIdToBytesBuilder, pattern CODE_FILEPATH
-  , pattern CODE_FUNCTION, pattern CODE_LINENO, pattern CODE_NAMESPACE
+  ( Span(..), SpanContext(..), SpanEvent(..), SpanEventName(..), SpanKind(..), SpanLineage(..)
+  , SpanLink(..), SpanName(unSpanName), SpanSpec(..), SpanStatus(..), MutableSpan, SpanId, SpanLinks
+  , TraceId, TraceState, Tracer, TracerProvider, UpdateSpanSpec, contextKeySpan, emptySpanContext
+  , emptyTraceState, frozenTimestamp, spanContextIsSampled, spanContextIsValid, spanEventsToList
+  , spanIdFromWords, spanIdToBytesBuilder, spanIsSampled, spanLinksToList, traceFlagsSampled
+  , traceIdFromWords, traceIdToBytesBuilder, pattern CODE_FILEPATH, pattern CODE_FUNCTION
+  , pattern CODE_LINENO, pattern CODE_NAMESPACE
   )
 import OTel.API.Trace.Core.Internal
   ( Span(..), SpanContext(..), SpanLinkSpec(..), SpanLinkSpecs(..), SpanLinks(..), SpanSpec(..)
@@ -235,11 +225,14 @@ import qualified OTel.SDK.OTLP.Bindings.Trace.V1.Trace_Fields as OTLP.Trace
 
 data TracerProviderSpec = TracerProviderSpec
   { tracerProviderSpecNow :: IO Timestamp
-  , tracerProviderSpecLogger :: Loc -> LogSource -> LogLevel -> LogStr -> IO ()
+  , tracerProviderSpecLogger :: Logger
   , tracerProviderSpecSeed :: Seed
-  , tracerProviderSpecIdGenerator :: forall a. (IdGeneratorSpec -> IO a) -> IO a
-  , tracerProviderSpecSpanProcessors :: forall a. [(SpanProcessorSpec -> IO a) -> IO a]
-  , tracerProviderSpecSampler :: forall a. (SamplerSpec -> IO a) -> IO a
+  , tracerProviderSpecIdGenerator
+      :: forall a. Logger -> (IdGeneratorSpec -> IO a) -> IO a
+  , tracerProviderSpecSpanProcessors
+      :: forall a. [Logger -> (SpanProcessorSpec -> IO a) -> IO a]
+  , tracerProviderSpecSampler
+      :: forall a. Logger -> (SamplerSpec -> IO a) -> IO a
   , tracerProviderSpecResource :: Resource Attrs
   , tracerProviderSpecSpanAttrsLimits :: AttrsLimits 'AttrsForSpan
   , tracerProviderSpecSpanEventAttrsLimits :: AttrsLimits 'AttrsForSpanEvent
@@ -255,9 +248,9 @@ defaultTracerProviderSpec =
         fmap (timestampFromNanoseconds . toNanoSecs) $ getTime Realtime
     , tracerProviderSpecLogger = mempty
     , tracerProviderSpecSeed = defaultSystemSeed
-    , tracerProviderSpecIdGenerator = with defaultIdGeneratorSpec
+    , tracerProviderSpecIdGenerator = \_logger -> with defaultIdGeneratorSpec
     , tracerProviderSpecSpanProcessors = mempty
-    , tracerProviderSpecSampler = with defaultSamplerSpec
+    , tracerProviderSpecSampler = \_logger -> with defaultSamplerSpec
     , tracerProviderSpecResource =
         fromRight (error "defaultTracerProviderSpec: defaultResource is never a Left") $
           buildResourcePure $ defaultResourceBuilder "unknown_service"
@@ -327,19 +320,21 @@ withTracerProviderIO tracerProviderSpec action = do
   withIdGenerator :: (IdGenerator -> IO r) -> IO r
   withIdGenerator =
     runContT do
-      acquiredIdGenerator <- ContT idGeneratorSpec
+      acquiredIdGenerator <- ContT $ idGeneratorSpec logger
       liftIO $ buildIdGenerator logger acquiredIdGenerator
 
   withSampler :: (Sampler -> IO r) -> IO r
   withSampler =
     runContT do
-      acquiredSamplerSpec <- ContT samplerSpec
+      acquiredSamplerSpec <- ContT $ samplerSpec logger
       liftIO $ buildSampler logger acquiredSamplerSpec
 
   withCompositeSpanProcessor :: (SpanProcessor -> IO r) -> IO r
   withCompositeSpanProcessor =
     runContT do
-      acquiredSpanProcessorSpecs <- traverse ContT spanProcessorSpecs
+      acquiredSpanProcessorSpecs <-
+        for spanProcessorSpecs \spanProcessorSpec ->
+          ContT $ spanProcessorSpec logger
       acquiredSpanProcessors <- do
         traverse (ContT . buildSpanProcessor res logger) acquiredSpanProcessorSpecs
       pure $ fold acquiredSpanProcessors
@@ -573,13 +568,13 @@ instance Monoid SpanProcessor where
 buildSpanProcessor
   :: forall a
    . Resource Attrs
-  -> (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
+  -> Logger
   -> SpanProcessorSpec
   -> (SpanProcessor -> IO a)
   -> IO a
 buildSpanProcessor res logger spanProcessorSpec = do
   runContT do
-    spanExporterSpec <- ContT spanProcessorSpecExporter
+    spanExporterSpec <- ContT $ spanProcessorSpecExporter logger
     shutdownRef <- liftIO $ newTVarIO False
     flip runLoggingT logger do
       logDebug $ "Building span processor" :#
@@ -655,14 +650,15 @@ buildSpanProcessor res logger spanProcessorSpec = do
 
 data SimpleSpanProcessorSpec = SimpleSpanProcessorSpec
   { simpleSpanProcessorSpecName :: Text
-  , simpleSpanProcessorSpecExporter :: forall a. (SpanExporterSpec -> IO a) -> IO a
+  , simpleSpanProcessorSpecExporter
+      :: forall a. Logger -> (SpanExporterSpec -> IO a) -> IO a
   , simpleSpanProcessorSpecOnSpansExported :: OnSpansExported ()
   }
 
 defaultSimpleSpanProcessorSpec :: SimpleSpanProcessorSpec
 defaultSimpleSpanProcessorSpec =
   SimpleSpanProcessorSpec
-    { simpleSpanProcessorSpecExporter = with defaultSpanExporterSpec
+    { simpleSpanProcessorSpecExporter = \_logger -> with defaultSpanExporterSpec
     , simpleSpanProcessorSpecName = "simple"
     , simpleSpanProcessorSpecOnSpansExported = do
         askSpansExportedResult >>= \case
@@ -677,23 +673,22 @@ defaultSimpleSpanProcessorSpec =
 simpleSpanProcessor
   :: forall a
    . SimpleSpanProcessorSpec
+  -> Logger
   -> (SpanProcessorSpec -> IO a)
   -> IO a
-simpleSpanProcessor simpleSpanProcessorSpec =
+simpleSpanProcessor simpleSpanProcessorSpec logger =
   with defaultSpanProcessorSpec
     { spanProcessorSpecName = name
     , spanProcessorSpecExporter = spanExporterSpec
     , spanProcessorSpecOnSpanEnd = \span -> do
         when (spanIsSampled span) do
           let batch = singletonBatch span
-          logger <- askLoggerIO
           spanExporter <- askSpanExporter
           liftIO $ spanExporterExport spanExporter batch \spanExportResult -> do
             flip runLoggingT logger do
               runOnSpansExported onSpansExported batch spanExportResult metaOnSpanEnd
     }
   where
-
   metaOnSpanEnd :: [SeriesElem]
   metaOnSpanEnd = mkLoggingMeta "onSpanEnd"
 
@@ -713,7 +708,8 @@ simpleSpanProcessor simpleSpanProcessorSpec =
 
 data SpanProcessorSpec = SpanProcessorSpec
   { spanProcessorSpecName :: Text
-  , spanProcessorSpecExporter :: forall a. (SpanExporterSpec -> IO a) -> IO a
+  , spanProcessorSpecExporter
+      :: forall a. Logger -> (SpanExporterSpec -> IO a) -> IO a
   , spanProcessorSpecOnSpanStart
       :: Context -- Parent context
       -> (UpdateSpanSpec -> SpanProcessorM (Span Attrs))
@@ -731,7 +727,7 @@ defaultSpanProcessorSpec :: SpanProcessorSpec
 defaultSpanProcessorSpec =
   SpanProcessorSpec
     { spanProcessorSpecName = "default"
-    , spanProcessorSpecExporter = with defaultSpanExporterSpec
+    , spanProcessorSpecExporter = \_logger -> with defaultSpanExporterSpec
     , spanProcessorSpecOnSpanStart = mempty
     , spanProcessorSpecOnSpanEnd = mempty
     , spanProcessorSpecShutdown = do
@@ -770,7 +766,7 @@ data SpanExporter = SpanExporter
 
 buildSpanExporter
   :: Resource Attrs
-  -> (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
+  -> Logger
   -> SpanExporterSpec
   -> IO SpanExporter
 buildSpanExporter res logger spanExporterSpec = do
@@ -865,7 +861,6 @@ data OTLPSpanExporterSpec = OTLPSpanExporterSpec
     --   }
     -- @
   , otlpSpanExporterSpecRedactedResponseHeaders :: [HeaderName]
-  , otlpSpanExporterSpecLogger :: Loc -> LogSource -> LogLevel -> LogStr -> IO ()
   , otlpSpanExporterSpecWorkerQueueSize :: Int
   , otlpSpanExporterSpecWorkerCount :: Int
     -- | The retry policy to use when communicating with the observability
@@ -909,7 +904,6 @@ defaultOTLPSpanExporterSpec =
     , otlpSpanExporterSpecHeaders = mempty
     , otlpSpanExporterSpecRedactedRequestHeaders = mempty
     , otlpSpanExporterSpecRedactedResponseHeaders = mempty
-    , otlpSpanExporterSpecLogger = mempty
     , otlpSpanExporterSpecWorkerQueueSize =
         concurrentWorkersSpecQueueSize defaultConcurrentWorkersSpec
     , otlpSpanExporterSpecWorkerCount =
@@ -921,9 +915,10 @@ defaultOTLPSpanExporterSpec =
 otlpSpanExporter
   :: forall a
    . OTLPSpanExporterSpec
+  -> Logger
   -> (SpanExporterSpec -> IO a)
   -> IO a
-otlpSpanExporter otlpSpanExporterSpec f = do
+otlpSpanExporter otlpSpanExporterSpec logger f = do
   req <- do
     flip fmap (requestFromURI endpoint) \baseReq ->
       setRequestCheckStatus baseReq
@@ -1290,7 +1285,6 @@ otlpSpanExporter otlpSpanExporterSpec f = do
     , otlpSpanExporterSpecHeaders = headers
     , otlpSpanExporterSpecRedactedRequestHeaders = redactedReqHeadersList
     , otlpSpanExporterSpecRedactedResponseHeaders = redactedRespHeadersList
-    , otlpSpanExporterSpecLogger = logger
     , otlpSpanExporterSpecWorkerQueueSize = queueSize
     , otlpSpanExporterSpecWorkerCount = workerCount
     , otlpSpanExporterSpecRetryPolicy = retryPolicy
@@ -1316,9 +1310,10 @@ instance ToJSON OTLPSpanExporterItem where
 stmSpanExporter
   :: forall a
    . TMQueue (Span Attrs)
+  -> Logger
   -> (SpanExporterSpec -> IO a)
   -> IO a
-stmSpanExporter queue =
+stmSpanExporter queue _logger =
   with defaultSpanExporterSpec
     { spanExporterSpecName = "stm"
     , spanExporterSpecExport = \spans onSpansExported -> do
@@ -1373,7 +1368,7 @@ data Sampler = Sampler
 buildSampler
   :: forall m
    . (MonadIO m)
-  => (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
+  => Logger
   -> SamplerSpec
   -> m Sampler
 buildSampler logger samplerSpec = do
@@ -1420,9 +1415,10 @@ defaultSamplerSpec = alwaysOffSampler'
 
 alwaysOnSampler
   :: forall a
-   . (SamplerSpec -> IO a)
+   . Logger
+  -> (SamplerSpec -> IO a)
   -> IO a
-alwaysOnSampler = with alwaysOnSampler'
+alwaysOnSampler _logger = with alwaysOnSampler'
 
 alwaysOnSampler' :: SamplerSpec
 alwaysOnSampler' =
@@ -1433,9 +1429,10 @@ alwaysOnSampler' =
 
 alwaysOffSampler
   :: forall a
-   . (SamplerSpec -> IO a)
+   . Logger
+  -> (SamplerSpec -> IO a)
   -> IO a
-alwaysOffSampler = with alwaysOffSampler'
+alwaysOffSampler _logger = with alwaysOffSampler'
 
 alwaysOffSampler' :: SamplerSpec
 alwaysOffSampler' =
@@ -1445,63 +1442,76 @@ alwaysOffSampler' =
     }
 
 data ParentBasedSamplerSpec = ParentBasedSamplerSpec
-  { parentBasedSamplerSpecOnRoot :: SamplerSpec
-  , parentBasedSamplerSpecOnRemoteParentSampled :: SamplerSpec
-  , parentBasedSamplerSpecOnRemoteParentNotSampled :: SamplerSpec
-  , parentBasedSamplerSpecOnLocalParentSampled :: SamplerSpec
-  , parentBasedSamplerSpecOnLocalParentNotSampled :: SamplerSpec
+  { parentBasedSamplerSpecOnRoot
+      :: forall a. Logger -> (SamplerSpec -> IO a) -> IO a
+  , parentBasedSamplerSpecOnRemoteParentSampled
+      :: forall a. Logger -> (SamplerSpec -> IO a) -> IO a
+  , parentBasedSamplerSpecOnRemoteParentNotSampled
+      :: forall a. Logger -> (SamplerSpec -> IO a) -> IO a
+  , parentBasedSamplerSpecOnLocalParentSampled
+      :: forall a. Logger -> (SamplerSpec -> IO a) -> IO a
+  , parentBasedSamplerSpecOnLocalParentNotSampled
+      :: forall a. Logger -> (SamplerSpec -> IO a) -> IO a
   }
 
 defaultParentBasedSamplerSpec :: ParentBasedSamplerSpec
 defaultParentBasedSamplerSpec =
   ParentBasedSamplerSpec
-    { parentBasedSamplerSpecOnRoot = defaultSamplerSpec
-    , parentBasedSamplerSpecOnRemoteParentSampled = alwaysOnSampler'
-    , parentBasedSamplerSpecOnRemoteParentNotSampled = alwaysOffSampler'
-    , parentBasedSamplerSpecOnLocalParentSampled = alwaysOnSampler'
-    , parentBasedSamplerSpecOnLocalParentNotSampled = alwaysOffSampler'
+    { parentBasedSamplerSpecOnRoot = alwaysOffSampler
+    , parentBasedSamplerSpecOnRemoteParentSampled = alwaysOnSampler
+    , parentBasedSamplerSpecOnRemoteParentNotSampled = alwaysOffSampler
+    , parentBasedSamplerSpecOnLocalParentSampled = alwaysOnSampler
+    , parentBasedSamplerSpecOnLocalParentNotSampled = alwaysOffSampler
     }
 
 parentBasedSampler
   :: forall a
    . ParentBasedSamplerSpec
+  -> Logger
   -> (SamplerSpec -> IO a)
   -> IO a
-parentBasedSampler parentBasedSamplerSpec =
-  with defaultSamplerSpec
-    { samplerSpecName = "ParentBased"
-    , samplerSpecDescription = "ParentBased"
-    , samplerSpecShouldSample = \samplerInput -> do
-        parentSpanContext <- do
-          case lookupContext contextKeySpan $ samplerInputContext samplerInput of
-            Nothing -> pure emptySpanContext
-            Just mutableSpan -> do
-              liftIO $ fmap spanContext $ unsafeReadMutableSpan mutableSpan
-        shouldSample parentSpanContext samplerInput
-    }
-  where
-  shouldSample parentSpanContext samplerInput
-    | hasParent && parentIsRemote && parentIsSampled =
-        samplerSpecShouldSample onRemoteParentSampled samplerInput
-    | hasParent && parentIsRemote && not parentIsSampled =
-        samplerSpecShouldSample onRemoteParentNotSampled samplerInput
-    | hasParent && not parentIsRemote && parentIsSampled =
-        samplerSpecShouldSample onLocalParentSampled samplerInput
-    | hasParent && not parentIsRemote && not parentIsSampled =
-        samplerSpecShouldSample onLocalParentNotSampled samplerInput
-    | otherwise =
-        samplerSpecShouldSample onRoot samplerInput
-    where
-    hasParent = spanContextIsValid parentSpanContext
-    parentIsRemote = spanContextIsRemote parentSpanContext
-    parentIsSampled = spanContextIsSampled parentSpanContext
+parentBasedSampler parentBasedSamplerSpec logger =
+  runContT do
+    onRoot <- ContT $ withOnRoot logger
+    onRemoteParentSampled <- ContT $ withOnRemoteParentSampled logger
+    onRemoteParentNotSampled <- ContT $ withOnRemoteParentNotSampled logger
+    onLocalParentSampled <- ContT $ withOnLocalParentSampled logger
+    onLocalParentNotSampled <- ContT $ withOnLocalParentNotSampled logger
 
+    let shouldSample parentSpanContext samplerInput
+          | hasParent && parentIsRemote && parentIsSampled =
+              samplerSpecShouldSample onRemoteParentSampled samplerInput
+          | hasParent && parentIsRemote && not parentIsSampled =
+              samplerSpecShouldSample onRemoteParentNotSampled samplerInput
+          | hasParent && not parentIsRemote && parentIsSampled =
+              samplerSpecShouldSample onLocalParentSampled samplerInput
+          | hasParent && not parentIsRemote && not parentIsSampled =
+              samplerSpecShouldSample onLocalParentNotSampled samplerInput
+          | otherwise =
+              samplerSpecShouldSample onRoot samplerInput
+          where
+          hasParent = spanContextIsValid parentSpanContext
+          parentIsRemote = spanContextIsRemote parentSpanContext
+          parentIsSampled = spanContextIsSampled parentSpanContext
+
+    pure defaultSamplerSpec
+      { samplerSpecName = "ParentBased"
+      , samplerSpecDescription = "ParentBased"
+      , samplerSpecShouldSample = \samplerInput -> do
+          parentSpanContext <- do
+            case lookupContext contextKeySpan $ samplerInputContext samplerInput of
+              Nothing -> pure emptySpanContext
+              Just mutableSpan -> do
+                liftIO $ spanContext <$> unsafeReadMutableSpan mutableSpan
+          shouldSample parentSpanContext samplerInput
+      }
+  where
   ParentBasedSamplerSpec
-    { parentBasedSamplerSpecOnRoot = onRoot
-    , parentBasedSamplerSpecOnRemoteParentSampled = onRemoteParentSampled
-    , parentBasedSamplerSpecOnRemoteParentNotSampled = onRemoteParentNotSampled
-    , parentBasedSamplerSpecOnLocalParentSampled = onLocalParentSampled
-    , parentBasedSamplerSpecOnLocalParentNotSampled = onLocalParentNotSampled
+    { parentBasedSamplerSpecOnRoot = withOnRoot
+    , parentBasedSamplerSpecOnRemoteParentSampled = withOnRemoteParentSampled
+    , parentBasedSamplerSpecOnRemoteParentNotSampled = withOnRemoteParentNotSampled
+    , parentBasedSamplerSpecOnLocalParentSampled = withOnLocalParentSampled
+    , parentBasedSamplerSpecOnLocalParentNotSampled = withOnLocalParentNotSampled
     } = parentBasedSamplerSpec
 
 constDecisionSampler :: SamplingDecision -> SamplerSpec
@@ -1596,7 +1606,7 @@ askSpanExporter = SpanProcessorM pure
 
 runSpanProcessorM
   :: SpanExporter
-  -> (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
+  -> Logger
   -> OnTimeout a
   -> OnException a
   -> Int
@@ -1628,7 +1638,7 @@ newtype SpanExporterM a = SpanExporterM
 
 runSpanExporterM
   :: Resource Attrs
-  -> (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
+  -> Logger
   -> OnTimeout a
   -> OnException a
   -> Int
@@ -1662,7 +1672,7 @@ newtype SamplerM a = SamplerM
       ) via (Ap (LoggingT IO) a)
 
 runSamplerM
-  :: (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
+  :: Logger
   -> OnException a
   -> [SeriesElem]
   -> SamplerM a
@@ -1687,7 +1697,7 @@ newtype IdGeneratorM a = IdGeneratorM
 
 runIdGeneratorM
   :: PRNG
-  -> (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
+  -> Logger
   -> IdGeneratorM a
   -> IO a
 runIdGeneratorM prng logger action = do
@@ -1702,7 +1712,7 @@ data IdGenerator = IdGenerator
 buildIdGenerator
   :: forall m
    . (MonadIO m)
-  => (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
+  => Logger
   -> IdGeneratorSpec
   -> m IdGenerator
 buildIdGenerator logger idGeneratorSpec = do
@@ -1790,7 +1800,7 @@ data ConcurrentWorkersSpec item = ConcurrentWorkersSpec
   { concurrentWorkersSpecQueueSize :: Int
   , concurrentWorkersSpecWorkerCount :: Int
   , concurrentWorkersSpecProcessItem :: item -> IO ()
-  , concurrentWorkersSpecLogger :: Loc -> LogSource -> LogLevel -> LogStr -> IO ()
+  , concurrentWorkersSpecLogger :: Logger
   , concurrentWorkersSpecLoggingMeta :: [SeriesElem]
   , concurrentWorkersSpecOnException :: item -> OnException ()
   }

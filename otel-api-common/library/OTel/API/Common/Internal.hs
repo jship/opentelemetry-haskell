@@ -89,6 +89,7 @@ module OTel.API.Common.Internal
   , BufferedLog(..)
   , toBufferedLog
   , BufferedLogAgg(..)
+  , Logger
   ) where
 
 import Control.Exception.Safe
@@ -932,8 +933,7 @@ data BufferedLoggerSpec = BufferedLoggerSpec
     -- buffered log messages, aggregates will eventually be passed
     -- to 'bufferedLoggerSpecLogger' on the configured period (see
     -- 'bufferedLoggerSpecFlushPeriod').
-  , bufferedLoggerSpecLogger
-      :: Loc -> LogSource -> LogLevel -> LogStr -> IO ()
+  , bufferedLoggerSpecLogger :: Logger
     -- | Buffered logs are regularly flushed from internal storage on this
     -- period (in microseconds). The default is 5 minutes.
   , bufferedLoggerSpecFlushPeriod :: Int
@@ -967,8 +967,7 @@ data BufferedLoggerSpec = BufferedLoggerSpec
     -- This logger is intentionally different from 'bufferedLoggerSpecLogger',
     -- as 'bufferedLoggerSpecLogger' may have ultimately been what triggered
     -- running either handler in the first place.
-  , bufferedLoggerSpecOnFlushExceptionLogger
-      :: Loc -> LogSource -> LogLevel -> LogStr -> IO ()
+  , bufferedLoggerSpecOnFlushExceptionLogger :: Logger
     -- | The internal storage tracks a count of each buffered log message's
     -- occurrences (rather than tracking each occurrence) and each occurrence's
     -- metadata (convenience for @monad-logger-aeson@ users). This function
@@ -1050,7 +1049,7 @@ withBufferedLogger
   :: forall m a
    . (MonadUnliftIO m)
   => BufferedLoggerSpec
-  -> ((Loc -> LogSource -> LogLevel -> LogStr -> IO ()) -> m a)
+  -> (Logger -> m a)
   -> m a
 withBufferedLogger bufferedLoggerSpec action =
   withRunInIO \runInIO ->
@@ -1059,7 +1058,7 @@ withBufferedLogger bufferedLoggerSpec action =
 withBufferedLoggerIO
   :: forall a
    . BufferedLoggerSpec
-  -> ((Loc -> LogSource -> LogLevel -> LogStr -> IO ()) -> IO a)
+  -> (Logger -> IO a)
   -> IO a
 withBufferedLoggerIO bufferedLoggerSpec action = do
   bufferedLogsRef <- IORef.newIORef mempty
@@ -1292,6 +1291,8 @@ instance ToJSON BufferedLogAgg where
       { bufferedLogAggCount = count
       , bufferedLogAggMetas = metas
       } = bufferedLogAgg
+
+type Logger = Loc -> LogSource -> LogLevel -> LogStr -> IO ()
 
 -- $disclaimer
 --

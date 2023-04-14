@@ -1,5 +1,7 @@
 module OTel.API.Common.Logging
-  ( Internal.withBufferedLogger
+  ( Internal.Logger
+
+  , Internal.withBufferedLogger
 
   , Internal.BufferedLoggerSpec
   , Internal.defaultBufferedLoggerSpec

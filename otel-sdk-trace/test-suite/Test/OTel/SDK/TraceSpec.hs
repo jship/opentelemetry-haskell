@@ -181,7 +181,7 @@ testTracerProviderSpec nanosRef traceIdRef spanIdRef spanQueue =
           modifyTVar' nanosRef succ
           pure $ timestampFromNanoseconds x
     , tracerProviderSpecLogger = defaultOutput stdout
-    , tracerProviderSpecIdGenerator =
+    , tracerProviderSpecIdGenerator = \_logger ->
         with IdGeneratorSpec
           { idGeneratorSpecName = "test"
           , idGeneratorSpecGenTraceId =

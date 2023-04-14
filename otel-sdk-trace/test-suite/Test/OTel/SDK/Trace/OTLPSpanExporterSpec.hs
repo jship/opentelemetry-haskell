@@ -41,7 +41,7 @@ import OTel.API.Trace.Core.Internal (Span(..))
 import OTel.SDK.Resource.Core (buildResource, defaultResourceBuilder)
 import OTel.SDK.Trace
   ( OTLPSpanExporterSpec(..), SpanExportResult(..), SpanExporter(..), Batch
-  , defaultOTLPSpanExporterSpec, otlpSpanExporter, otlpSpanExporterSpecLogger
+  , defaultOTLPSpanExporterSpec, otlpSpanExporter
   )
 import OTel.SDK.Trace.Internal (buildSpanExporter)
 import Prelude
@@ -247,7 +247,7 @@ instance IsTest RetriesTestCase where
     logQueue <- newTQueueIO
     let logger = stmLogger logQueue
 
-    otlpSpanExporter (otlpSpanExporterSpec logger manager) \spanExporterSpec -> do
+    otlpSpanExporter (otlpSpanExporterSpec manager) logger \spanExporterSpec -> do
       spanExporter <- buildSpanExporter resource logger spanExporterSpec
       go (spanExporterExport spanExporter) `finally` spanExporterShutdown spanExporter
       checkLogs updateMeta logQueue expectedLogs
@@ -274,15 +274,11 @@ instance IsTest RetriesTestCase where
         , spanInstrumentationScope = "foo"
         }
 
-    otlpSpanExporterSpec
-      :: (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
-      -> Manager
-      -> OTLPSpanExporterSpec
-    otlpSpanExporterSpec logger manager =
+    otlpSpanExporterSpec :: Manager -> OTLPSpanExporterSpec
+    otlpSpanExporterSpec manager =
       defaultOTLPSpanExporterSpec
         { otlpSpanExporterSpecEndpoint =
             fromJust $ parseURI $ "http://localhost:" <> show serverPort
-        , otlpSpanExporterSpecLogger = logger
         , otlpSpanExporterSpecManager = manager
         }
 
