@@ -88,8 +88,6 @@ buildTracerProviderSpec = do
           [ simpleSpanProcessor defaultSimpleSpanProcessorSpec
               { simpleSpanProcessorSpecExporter =
                   otlpSpanExporter defaultOTLPSpanExporterSpec
-                    { otlpSpanExporterSpecLogger = defaultOutput stdout
-                    }
               }
           ]
       , tracerProviderSpecSampler = alwaysOnSampler

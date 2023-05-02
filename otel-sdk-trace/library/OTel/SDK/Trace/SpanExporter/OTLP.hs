@@ -10,7 +10,6 @@ module OTel.SDK.Trace.SpanExporter.OTLP
   , Internal.otlpSpanExporterSpecHeaders
   , Internal.otlpSpanExporterSpecRedactedRequestHeaders
   , Internal.otlpSpanExporterSpecRedactedResponseHeaders
-  , Internal.otlpSpanExporterSpecLogger
   , Internal.otlpSpanExporterSpecWorkerQueueSize
   , Internal.otlpSpanExporterSpecWorkerCount
   , Internal.otlpSpanExporterSpecRetryPolicy
