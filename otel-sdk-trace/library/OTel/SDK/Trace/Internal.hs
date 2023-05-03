@@ -992,18 +992,18 @@ otlpSpanExporter otlpSpanExporterSpec logger f = do
       , const $ Handler \(_ :: SomeAsyncException) -> pure DontRetry
       , \retryStatus -> Handler \case
           InvalidUrlException {} -> pure DontRetry
-          HttpExceptionRequest _req httpExceptionContent -> do
+          httpEx@(HttpExceptionRequest _req httpExceptionContent) -> do
             case httpExceptionContent of
-              ConnectionClosed {} -> consult retryStatus "ConnectionClosed" Nothing Nothing
+              ConnectionClosed {} -> consult retryStatus "ConnectionClosed" mSomeHttpEx Nothing
               ConnectionFailure someEx -> consult retryStatus "ConnectionFailure" (Just someEx) Nothing
-              ConnectionTimeout {} -> consult retryStatus "ConnectionTimeout" Nothing Nothing
+              ConnectionTimeout {} -> consult retryStatus "ConnectionTimeout" mSomeHttpEx Nothing
               InternalException someEx -> consult retryStatus "InternalException" (Just someEx) Nothing
-              ResponseTimeout {} -> consult retryStatus "ResponseTimeout" Nothing Nothing
+              ResponseTimeout {} -> consult retryStatus "ResponseTimeout" mSomeHttpEx Nothing
               StatusCodeException resp _bs
                 | status == tooManyRequests429 || status == serviceUnavailable503 ->
-                    checkRetryAfterHeader retryStatus resp
+                    checkRetryAfterHeader httpEx retryStatus resp
                 | status == badGateway502 || status == gatewayTimeout504 ->
-                    consult retryStatus statusCodeText Nothing Nothing
+                    consult retryStatus statusCodeText mSomeHttpEx Nothing
                 | otherwise -> pure DontRetry
                 where
                 statusCodeText :: Text
@@ -1012,20 +1012,23 @@ otlpSpanExporter otlpSpanExporterSpec logger f = do
                 status :: Status
                 status = responseStatus resp
               _ -> pure DontRetry
+              where
+              mSomeHttpEx :: Maybe SomeException
+              mSomeHttpEx = Just $ toException httpEx
       ]
       where
-      checkRetryAfterHeader :: RetryStatus -> Response () -> IO RetryAction
-      checkRetryAfterHeader retryStatus resp = do
+      checkRetryAfterHeader :: HttpException -> RetryStatus -> Response () -> IO RetryAction
+      checkRetryAfterHeader httpEx retryStatus resp = do
         case lookup hRetryAfter $ responseHeaders resp of
-          Nothing -> consult retryStatus statusCodeText Nothing Nothing
+          Nothing -> consult retryStatus statusCodeText mSomeHttpEx Nothing
           Just headerVal -> do
             case parseRetryAfterHeader $ ByteString.Char8.unpack headerVal of
-              Nothing -> consult retryStatus statusCodeText Nothing Nothing
+              Nothing -> consult retryStatus statusCodeText mSomeHttpEx Nothing
               Just (Left delay) -> do
-                consult retryStatus statusCodeText Nothing $ Just $ ceiling $ 1_000_000 * delay
+                consult retryStatus statusCodeText mSomeHttpEx $ Just $ ceiling $ 1_000_000 * delay
               Just (Right httpDate) -> do
                 delay <- fmap (diffUTCTime httpDate) getCurrentTime
-                consult retryStatus statusCodeText Nothing $ Just $ ceiling $ 1_000_000 * delay
+                consult retryStatus statusCodeText mSomeHttpEx $ Just $ ceiling $ 1_000_000 * delay
         where
         parseRetryAfterHeader :: String -> Maybe (Either NominalDiffTime UTCTime)
         parseRetryAfterHeader headerVal =
@@ -1036,6 +1039,9 @@ otlpSpanExporter otlpSpanExporterSpec logger f = do
 
         statusCodeText :: Text
         statusCodeText = pack $ show $ statusCode $ responseStatus resp
+
+        mSomeHttpEx :: Maybe SomeException
+        mSomeHttpEx = Just $ toException httpEx
 
       consult :: RetryStatus -> Text -> Maybe SomeException -> Maybe Int -> IO RetryAction
       consult retryStatus hint mSomeEx mOverrideDelay =

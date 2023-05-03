@@ -356,14 +356,19 @@ msgRetryingWithPolicyDelay :: Text -> (LogLevel, Message)
 msgRetryingWithPolicyDelay hint =
   ( LevelDebug
   , "Retrying span export with policy delay" :#
-      ["hint" .= hint]
+      [ "hint" .= hint
+      , "exception" .= ("SOME-IGNORED-EXCEPTION" :: Text)
+      ]
   )
 
 msgRetryingWithOverriddenDelay :: Text -> Int -> (LogLevel, Message)
 msgRetryingWithOverriddenDelay hint delayMicros =
   ( LevelDebug
   , "Retrying span export with overridden delay" :#
-      ["hint" .= hint, "delayMicros" .= delayMicros]
+      [ "hint" .= hint
+      , "delayMicros" .= delayMicros
+      , "exception" .= ("SOME-IGNORED-EXCEPTION" :: Text)
+      ]
   )
 
 msgConcurrentWorkerIgnoringEx :: (LogLevel, Message)
@@ -375,8 +380,23 @@ msgConcurrentWorkerIgnoringEx =
 -- the test output to report the exception. That's why the exception key is
 -- included here.
 filterMeta :: KeyMap Value -> KeyMap Value
-filterMeta = Aeson.KeyMap.filterWithKey \k _v ->
-  k `elem` ["hint", "exception", "delayMicros"]
+filterMeta = mapped . filtered
+  where
+  mapped =
+    Aeson.KeyMap.foldMapWithKey \k v ->
+      Aeson.KeyMap.singleton k $
+        -- The tests don't check that the key map contains a specific exception,
+        -- just that it contains an exception. Here we override the shown
+        -- exception text with a dummy string we check for in
+        -- @msgRetryingWithPolicyDelay@ and @msgRetryingWithOverriddenDelay@
+        if k == "exception" then
+          "SOME-IGNORED-EXCEPTION"
+        else
+          v
+
+  filtered =
+    Aeson.KeyMap.filterWithKey \k _v ->
+      k `elem` ["hint", "exception", "delayMicros"]
 
 ignoredRetryAfter :: Maybe Int
 ignoredRetryAfter = Just 42
