@@ -1,0 +1,618 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-comment">{- This file was auto-generated from opentelemetry/proto/resource/v1/resource.proto by the proto-lens-protoc program. -}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE ScopedTypeVariables, DataKinds, TypeFamilies, UndecidableInstances, GeneralizedNewtypeDeriving, MultiParamTypeClasses, FlexibleContexts, FlexibleInstances, PatternSynonyms, MagicHash, NoImplicitPrelude, DataKinds, BangPatterns, TypeApplications, OverloadedStrings, DerivingStrategies#-}</span><span>
+</span><span id="line-3"></span><span class="hs-pragma">{-# OPTIONS_GHC -Wno-unused-imports#-}</span><span>
+</span><span id="line-4"></span><span class="hs-pragma">{-# OPTIONS_GHC -Wno-duplicate-exports#-}</span><span>
+</span><span id="line-5"></span><span class="hs-pragma">{-# OPTIONS_GHC -Wno-dodgy-exports#-}</span><span>
+</span><span id="line-6"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">OTel.SDK.OTLP.Bindings.Resource.V1.Resource</span><span> </span><span class="hs-special">(</span><span>
+</span><span id="line-7"></span><span>        </span><span class="annot"><a href="OTel.SDK.OTLP.Bindings.Resource.V1.Resource.html#Resource"><span class="hs-identifier">Resource</span></a></span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><span id="line-8"></span><span>    </span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-9"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ProtoLens.Runtime.Control.DeepSeq</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Control.DeepSeq</span></span><span>
+</span><span id="line-10"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ProtoLens.Runtime.Data.ProtoLens.Prism</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Data.ProtoLens.Prism</span></span><span>
+</span><span id="line-11"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ProtoLens.Runtime.Prelude</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Prelude</span></span><span>
+</span><span id="line-12"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ProtoLens.Runtime.Data.Int</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Data.Int</span></span><span>
+</span><span id="line-13"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ProtoLens.Runtime.Data.Monoid</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Data.Monoid</span></span><span>
+</span><span id="line-14"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ProtoLens.Runtime.Data.Word</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Data.Word</span></span><span>
+</span><span id="line-15"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ProtoLens.Runtime.Data.ProtoLens</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Data.ProtoLens</span></span><span>
+</span><span id="line-16"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ProtoLens.Runtime.Data.ProtoLens.Encoding.Bytes</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Data.ProtoLens.Encoding.Bytes</span></span><span>
+</span><span id="line-17"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ProtoLens.Runtime.Data.ProtoLens.Encoding.Growing</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Data.ProtoLens.Encoding.Growing</span></span><span>
+</span><span id="line-18"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ProtoLens.Runtime.Data.ProtoLens.Encoding.Parser.Unsafe</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Data.ProtoLens.Encoding.Parser.Unsafe</span></span><span>
+</span><span id="line-19"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ProtoLens.Runtime.Data.ProtoLens.Encoding.Wire</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Data.ProtoLens.Encoding.Wire</span></span><span>
+</span><span id="line-20"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ProtoLens.Runtime.Data.ProtoLens.Field</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Data.ProtoLens.Field</span></span><span>
+</span><span id="line-21"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ProtoLens.Runtime.Data.ProtoLens.Message.Enum</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Data.ProtoLens.Message.Enum</span></span><span>
+</span><span id="line-22"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ProtoLens.Runtime.Data.ProtoLens.Service.Types</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Data.ProtoLens.Service.Types</span></span><span>
+</span><span id="line-23"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ProtoLens.Runtime.Lens.Family2</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Lens.Family2</span></span><span>
+</span><span id="line-24"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ProtoLens.Runtime.Lens.Family2.Unchecked</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Lens.Family2.Unchecked</span></span><span>
+</span><span id="line-25"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ProtoLens.Runtime.Data.Text</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span>
+</span><span id="line-26"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ProtoLens.Runtime.Data.Map</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Data.Map</span></span><span>
+</span><span id="line-27"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ProtoLens.Runtime.Data.ByteString</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Data.ByteString</span></span><span>
+</span><span id="line-28"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ProtoLens.Runtime.Data.ByteString.Char8</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Data.ByteString.Char8</span></span><span>
+</span><span id="line-29"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ProtoLens.Runtime.Data.Text.Encoding</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text.Encoding</span></span><span>
+</span><span id="line-30"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ProtoLens.Runtime.Data.Vector</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Data.Vector</span></span><span>
+</span><span id="line-31"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ProtoLens.Runtime.Data.Vector.Generic</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Data.Vector.Generic</span></span><span>
+</span><span id="line-32"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ProtoLens.Runtime.Data.Vector.Unboxed</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Data.Vector.Unboxed</span></span><span>
+</span><span id="line-33"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ProtoLens.Runtime.Text.Read</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Text.Read</span></span><span>
+</span><span id="line-34"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="OTel.SDK.OTLP.Bindings.Common.V1.Common.html"><span class="hs-identifier">OTel.SDK.OTLP.Bindings.Common.V1.Common</span></a></span><span>
+</span><span id="line-35"></span><span class="hs-comment">{- | Fields :
+     
+         * 'OTel.SDK.OTLP.Bindings.Resource.V1.Resource_Fields.attributes' @:: Lens' Resource [OTel.SDK.OTLP.Bindings.Common.V1.Common.KeyValue]@
+         * 'OTel.SDK.OTLP.Bindings.Resource.V1.Resource_Fields.vec'attributes' @:: Lens' Resource (Data.Vector.Vector OTel.SDK.OTLP.Bindings.Common.V1.Common.KeyValue)@
+         * 'OTel.SDK.OTLP.Bindings.Resource.V1.Resource_Fields.droppedAttributesCount' @:: Lens' Resource Data.Word.Word32@ -}</span><span>
+</span><span id="line-40"></span><span class="hs-keyword">data</span><span> </span><span id="Resource"><span class="annot"><a href="OTel.SDK.OTLP.Bindings.Resource.V1.Resource.html#Resource"><span class="hs-identifier hs-var">Resource</span></a></span></span><span>
+</span><span id="line-41"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="Resource%27_constructor"><span class="annot"><a href="OTel.SDK.OTLP.Bindings.Resource.V1.Resource.html#Resource%27_constructor"><span class="hs-identifier hs-var">Resource'_constructor</span></a></span></span><span> </span><span class="hs-special">{</span><span id="_Resource%27attributes"><span class="annot"><span class="annottext">Resource -&gt; Vector KeyValue
+</span><a href="OTel.SDK.OTLP.Bindings.Resource.V1.Resource.html#_Resource%27attributes"><span class="hs-identifier hs-var hs-var">_Resource'attributes</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Data.Vector.Vector</span></span><span> </span><span class="annot"><a href="OTel.SDK.OTLP.Bindings.Common.V1.Common.html#KeyValue"><span class="hs-identifier hs-type">OTel.SDK.OTLP.Bindings.Common.V1.Common.KeyValue</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-42"></span><span>                           </span><span id="_Resource%27droppedAttributesCount"><span class="annot"><span class="annottext">Resource -&gt; Word32
+</span><a href="OTel.SDK.OTLP.Bindings.Resource.V1.Resource.html#_Resource%27droppedAttributesCount"><span class="hs-identifier hs-var hs-var">_Resource'droppedAttributesCount</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="annot"><span class="hs-identifier hs-type">Data.Word.Word32</span></span><span class="hs-special">,</span><span>
+</span><span id="line-43"></span><span>                           </span><span id="_Resource%27_unknownFields"><span class="annot"><span class="annottext">Resource -&gt; FieldSet
+</span><a href="OTel.SDK.OTLP.Bindings.Resource.V1.Resource.html#_Resource%27_unknownFields"><span class="hs-identifier hs-var hs-var">_Resource'_unknownFields</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="annot"><span class="hs-identifier hs-type">Data.ProtoLens.FieldSet</span></span><span class="hs-special">}</span><span>
+</span><span id="line-44"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">stock</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679134519"><span id="local-6989586621679134529"><span class="annot"><span class="annottext">Resource -&gt; Resource -&gt; Bool
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+/= :: Resource -&gt; Resource -&gt; Bool
+$c/= :: Resource -&gt; Resource -&gt; Bool
+== :: Resource -&gt; Resource -&gt; Bool
+$c== :: Resource -&gt; Resource -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Prelude.Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679134484"><span id="local-6989586621679134486"><span id="local-6989586621679134489"><span id="local-6989586621679134492"><span id="local-6989586621679134495"><span id="local-6989586621679134502"><span id="local-6989586621679134512"><span class="annot"><span class="annottext">Eq Resource
+Resource -&gt; Resource -&gt; Bool
+Resource -&gt; Resource -&gt; Ordering
+Resource -&gt; Resource -&gt; Resource
+forall a.
+Eq a
+-&gt; (a -&gt; a -&gt; Ordering)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; Ord a
+min :: Resource -&gt; Resource -&gt; Resource
+$cmin :: Resource -&gt; Resource -&gt; Resource
+max :: Resource -&gt; Resource -&gt; Resource
+$cmax :: Resource -&gt; Resource -&gt; Resource
+&gt;= :: Resource -&gt; Resource -&gt; Bool
+$c&gt;= :: Resource -&gt; Resource -&gt; Bool
+&gt; :: Resource -&gt; Resource -&gt; Bool
+$c&gt; :: Resource -&gt; Resource -&gt; Bool
+&lt;= :: Resource -&gt; Resource -&gt; Bool
+$c&lt;= :: Resource -&gt; Resource -&gt; Bool
+&lt; :: Resource -&gt; Resource -&gt; Bool
+$c&lt; :: Resource -&gt; Resource -&gt; Bool
+compare :: Resource -&gt; Resource -&gt; Ordering
+$ccompare :: Resource -&gt; Resource -&gt; Ordering
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Prelude.Ord</span></span></span></span></span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-45"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679134476"><span id="local-6989586621679134478"><span class="annot"><span class="hs-identifier hs-type">Prelude.Show</span></span><span> </span><span class="annot"><a href="OTel.SDK.OTLP.Bindings.Resource.V1.Resource.html#Resource"><span class="hs-identifier hs-type">Resource</span></a></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-46"></span><span>  </span><span id="local-6989586621679134473"><span class="annot"><span class="annottext">showsPrec :: Int -&gt; Resource -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">showsPrec</span></span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679134471"><span class="annot"><span class="annottext">Resource
+</span><a href="#local-6989586621679134471"><span class="hs-identifier hs-var">__x</span></a></span></span><span> </span><span id="local-6989586621679134470"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679134470"><span class="hs-identifier hs-var">__s</span></a></span></span><span>
+</span><span id="line-47"></span><span>    </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Char -&gt; ShowS
+</span><span class="hs-identifier hs-var">Prelude.showChar</span></span><span>
+</span><span id="line-48"></span><span>        </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'{'</span></span><span>
+</span><span id="line-49"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; ShowS
+</span><span class="hs-identifier hs-var">Prelude.showString</span></span><span>
+</span><span id="line-50"></span><span>           </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall msg. Message msg =&gt; msg -&gt; String
+</span><span class="hs-identifier hs-var">Data.ProtoLens.showMessageShort</span></span><span> </span><span class="annot"><span class="annottext">Resource
+</span><a href="#local-6989586621679134471"><span class="hs-identifier hs-var">__x</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Char -&gt; ShowS
+</span><span class="hs-identifier hs-var">Prelude.showChar</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'}'</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679134470"><span class="hs-identifier hs-var">__s</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-51"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Data.ProtoLens.Field.HasField</span></span><span> </span><span class="annot"><a href="OTel.SDK.OTLP.Bindings.Resource.V1.Resource.html#Resource"><span class="hs-identifier hs-type">Resource</span></a></span><span> </span><span class="annot"><span class="hs-string">&quot;attributes&quot;</span></span><span> </span><span class="hs-special">[</span><span class="annot"><a href="OTel.SDK.OTLP.Bindings.Common.V1.Common.html#KeyValue"><span class="hs-identifier hs-type">OTel.SDK.OTLP.Bindings.Common.V1.Common.KeyValue</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-52"></span><span>  </span><span id="local-6989586621679134457"><span class="annot"><span class="annottext">fieldOf :: forall (f :: * -&gt; *).
+Functor f =&gt;
+Proxy# &quot;attributes&quot;
+-&gt; ([KeyValue] -&gt; f [KeyValue]) -&gt; Resource -&gt; f Resource
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">fieldOf</span></span></span><span> </span><span class="annot"><span class="annottext">Proxy# &quot;attributes&quot;
+</span><span class="hs-identifier">_</span></span><span>
+</span><span id="line-53"></span><span>    </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">(Prelude..)</span></span><span>
+</span><span id="line-54"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall s a b t. (s -&gt; a) -&gt; (s -&gt; b -&gt; t) -&gt; Lens s t a b
+</span><span class="hs-identifier hs-var">Lens.Family2.Unchecked.lens</span></span><span>
+</span><span id="line-55"></span><span>           </span><span class="annot"><span class="annottext">Resource -&gt; Vector KeyValue
+</span><a href="OTel.SDK.OTLP.Bindings.Resource.V1.Resource.html#_Resource%27attributes"><span class="hs-identifier hs-var">_Resource'attributes</span></a></span><span>
+</span><span id="line-56"></span><span>           </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span> </span><span id="local-6989586621679134453"><span class="annot"><span class="annottext">Resource
+</span><a href="#local-6989586621679134453"><span class="hs-identifier hs-var">x__</span></a></span></span><span> </span><span id="local-6989586621679134452"><span class="annot"><span class="annottext">Vector KeyValue
+</span><a href="#local-6989586621679134452"><span class="hs-identifier hs-var">y__</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Resource
+</span><a href="#local-6989586621679134453"><span class="hs-identifier hs-var">x__</span></a></span><span> </span><span class="hs-special">{</span><span class="annot"><span class="annottext">_Resource'attributes :: Vector KeyValue
+</span><a href="OTel.SDK.OTLP.Bindings.Resource.V1.Resource.html#_Resource%27attributes"><span class="hs-identifier hs-var">_Resource'attributes</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Vector KeyValue
+</span><a href="#local-6989586621679134452"><span class="hs-identifier hs-var">y__</span></a></span><span class="hs-special">}</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-57"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall s a b t. (s -&gt; a) -&gt; (s -&gt; b -&gt; t) -&gt; Lens s t a b
+</span><span class="hs-identifier hs-var">Lens.Family2.Unchecked.lens</span></span><span>
+</span><span id="line-58"></span><span>           </span><span class="annot"><span class="annottext">forall (v :: * -&gt; *) a. Vector v a =&gt; v a -&gt; [a]
+</span><span class="hs-identifier hs-var">Data.Vector.Generic.toList</span></span><span>
+</span><span id="line-59"></span><span>           </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span> </span><span class="annot"><span class="annottext">Vector KeyValue
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679134450"><span class="annot"><span class="annottext">[KeyValue]
+</span><a href="#local-6989586621679134450"><span class="hs-identifier hs-var">y__</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall (v :: * -&gt; *) a. Vector v a =&gt; [a] -&gt; v a
+</span><span class="hs-identifier hs-var">Data.Vector.Generic.fromList</span></span><span> </span><span class="annot"><span class="annottext">[KeyValue]
+</span><a href="#local-6989586621679134450"><span class="hs-identifier hs-var">y__</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-60"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Data.ProtoLens.Field.HasField</span></span><span> </span><span class="annot"><a href="OTel.SDK.OTLP.Bindings.Resource.V1.Resource.html#Resource"><span class="hs-identifier hs-type">Resource</span></a></span><span> </span><span class="annot"><span class="hs-string">&quot;vec'attributes&quot;</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Data.Vector.Vector</span></span><span> </span><span class="annot"><a href="OTel.SDK.OTLP.Bindings.Common.V1.Common.html#KeyValue"><span class="hs-identifier hs-type">OTel.SDK.OTLP.Bindings.Common.V1.Common.KeyValue</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-61"></span><span>  </span><span id="local-6989586621679134444"><span class="annot"><span class="annottext">fieldOf :: forall (f :: * -&gt; *).
+Functor f =&gt;
+Proxy# &quot;vec'attributes&quot;
+-&gt; (Vector KeyValue -&gt; f (Vector KeyValue))
+-&gt; Resource
+-&gt; f Resource
+</span><a href="#local-6989586621679134444"><span class="hs-identifier hs-var hs-var hs-var hs-var">fieldOf</span></a></span></span><span> </span><span class="annot"><span class="annottext">Proxy# &quot;vec'attributes&quot;
+</span><span class="hs-identifier">_</span></span><span>
+</span><span id="line-62"></span><span>    </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">(Prelude..)</span></span><span>
+</span><span id="line-63"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall s a b t. (s -&gt; a) -&gt; (s -&gt; b -&gt; t) -&gt; Lens s t a b
+</span><span class="hs-identifier hs-var">Lens.Family2.Unchecked.lens</span></span><span>
+</span><span id="line-64"></span><span>           </span><span class="annot"><span class="annottext">Resource -&gt; Vector KeyValue
+</span><a href="OTel.SDK.OTLP.Bindings.Resource.V1.Resource.html#_Resource%27attributes"><span class="hs-identifier hs-var">_Resource'attributes</span></a></span><span>
+</span><span id="line-65"></span><span>           </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span> </span><span id="local-6989586621679134443"><span class="annot"><span class="annottext">Resource
+</span><a href="#local-6989586621679134443"><span class="hs-identifier hs-var">x__</span></a></span></span><span> </span><span id="local-6989586621679134442"><span class="annot"><span class="annottext">Vector KeyValue
+</span><a href="#local-6989586621679134442"><span class="hs-identifier hs-var">y__</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Resource
+</span><a href="#local-6989586621679134443"><span class="hs-identifier hs-var">x__</span></a></span><span> </span><span class="hs-special">{</span><span class="annot"><span class="annottext">_Resource'attributes :: Vector KeyValue
+</span><a href="OTel.SDK.OTLP.Bindings.Resource.V1.Resource.html#_Resource%27attributes"><span class="hs-identifier hs-var">_Resource'attributes</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Vector KeyValue
+</span><a href="#local-6989586621679134442"><span class="hs-identifier hs-var">y__</span></a></span><span class="hs-special">}</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-66"></span><span>        </span><span class="annot"><span class="annottext">forall a. a -&gt; a
+</span><span class="hs-identifier hs-var">Prelude.id</span></span><span>
+</span><span id="line-67"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Data.ProtoLens.Field.HasField</span></span><span> </span><span class="annot"><a href="OTel.SDK.OTLP.Bindings.Resource.V1.Resource.html#Resource"><span class="hs-identifier hs-type">Resource</span></a></span><span> </span><span class="annot"><span class="hs-string">&quot;droppedAttributesCount&quot;</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Data.Word.Word32</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-68"></span><span>  </span><span id="local-6989586621679134436"><span class="annot"><span class="annottext">fieldOf :: forall (f :: * -&gt; *).
+Functor f =&gt;
+Proxy# &quot;droppedAttributesCount&quot;
+-&gt; (Word32 -&gt; f Word32) -&gt; Resource -&gt; f Resource
+</span><a href="#local-6989586621679134436"><span class="hs-identifier hs-var hs-var hs-var hs-var">fieldOf</span></a></span></span><span> </span><span class="annot"><span class="annottext">Proxy# &quot;droppedAttributesCount&quot;
+</span><span class="hs-identifier">_</span></span><span>
+</span><span id="line-69"></span><span>    </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">(Prelude..)</span></span><span>
+</span><span id="line-70"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall s a b t. (s -&gt; a) -&gt; (s -&gt; b -&gt; t) -&gt; Lens s t a b
+</span><span class="hs-identifier hs-var">Lens.Family2.Unchecked.lens</span></span><span>
+</span><span id="line-71"></span><span>           </span><span class="annot"><span class="annottext">Resource -&gt; Word32
+</span><a href="OTel.SDK.OTLP.Bindings.Resource.V1.Resource.html#_Resource%27droppedAttributesCount"><span class="hs-identifier hs-var">_Resource'droppedAttributesCount</span></a></span><span>
+</span><span id="line-72"></span><span>           </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span> </span><span id="local-6989586621679134435"><span class="annot"><span class="annottext">Resource
+</span><a href="#local-6989586621679134435"><span class="hs-identifier hs-var">x__</span></a></span></span><span> </span><span id="local-6989586621679134434"><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679134434"><span class="hs-identifier hs-var">y__</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Resource
+</span><a href="#local-6989586621679134435"><span class="hs-identifier hs-var">x__</span></a></span><span> </span><span class="hs-special">{</span><span class="annot"><span class="annottext">_Resource'droppedAttributesCount :: Word32
+</span><a href="OTel.SDK.OTLP.Bindings.Resource.V1.Resource.html#_Resource%27droppedAttributesCount"><span class="hs-identifier hs-var">_Resource'droppedAttributesCount</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679134434"><span class="hs-identifier hs-var">y__</span></a></span><span class="hs-special">}</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-73"></span><span>        </span><span class="annot"><span class="annottext">forall a. a -&gt; a
+</span><span class="hs-identifier hs-var">Prelude.id</span></span><span>
+</span><span id="line-74"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679134427"><span class="annot"><span class="hs-identifier hs-type">Data.ProtoLens.Message</span></span><span> </span><span class="annot"><a href="OTel.SDK.OTLP.Bindings.Resource.V1.Resource.html#Resource"><span class="hs-identifier hs-type">Resource</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-75"></span><span>  </span><span id="local-6989586621679134422"><span class="annot"><span class="annottext">messageName :: Proxy Resource -&gt; Text
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">messageName</span></span></span><span> </span><span class="annot"><span class="annottext">Proxy Resource
+</span><span class="hs-identifier">_</span></span><span>
+</span><span id="line-76"></span><span>    </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; Text
+</span><span class="hs-identifier hs-var">Data.Text.pack</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;opentelemetry.proto.resource.v1.Resource&quot;</span></span><span>
+</span><span id="line-77"></span><span>  </span><span id="local-6989586621679134418"><span class="annot"><span class="annottext">packedMessageDescriptor :: Proxy Resource -&gt; ByteString
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">packedMessageDescriptor</span></span></span><span> </span><span class="annot"><span class="annottext">Proxy Resource
+</span><span class="hs-identifier">_</span></span><span>
+</span><span id="line-78"></span><span>    </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><span class="hs-string">&quot;\n\
+      \\bResource\DC2G\n\
+      \\n\
+      \attributes\CAN\SOH \ETX(\v2'.opentelemetry.proto.common.v1.KeyValueR\n\
+      \attributes\DC28\n\
+      \\CANdropped_attributes_count\CAN\STX \SOH(\rR\SYNdroppedAttributesCount&quot;</span></span><span>
+</span><span id="line-84"></span><span>  </span><span id="local-6989586621679134416"><span class="annot"><span class="annottext">packedFileDescriptor :: Proxy Resource -&gt; ByteString
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">packedFileDescriptor</span></span></span><span> </span><span class="annot"><span class="annottext">Proxy Resource
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="OTel.SDK.OTLP.Bindings.Resource.V1.Resource.html#packedFileDescriptor"><span class="hs-identifier hs-var">packedFileDescriptor</span></a></span><span>
+</span><span id="line-85"></span><span>  </span><span id="local-6989586621679134411"><span class="annot"><span class="annottext">fieldsByTag :: Map Tag (FieldDescriptor Resource)
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">fieldsByTag</span></span></span><span>
+</span><span id="line-86"></span><span>    </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">let</span><span>
+</span><span id="line-87"></span><span>        </span><span id="local-6989586621679134407"><span class="annot"><span class="annottext">attributes__field_descriptor :: FieldDescriptor Resource
+</span><a href="#local-6989586621679134407"><span class="hs-identifier hs-var hs-var">attributes__field_descriptor</span></a></span></span><span>
+</span><span id="line-88"></span><span>          </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall value msg.
+String
+-&gt; FieldTypeDescriptor value
+-&gt; FieldAccessor msg value
+-&gt; FieldDescriptor msg
+</span><span class="hs-identifier hs-var">Data.ProtoLens.FieldDescriptor</span></span><span>
+</span><span id="line-89"></span><span>              </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;attributes&quot;</span></span><span>
+</span><span id="line-90"></span><span>              </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall value.
+Message value =&gt;
+MessageOrGroup -&gt; FieldTypeDescriptor value
+</span><span class="hs-identifier hs-var">Data.ProtoLens.MessageField</span></span><span> </span><span class="annot"><span class="annottext">MessageOrGroup
+</span><span class="hs-identifier hs-var">Data.ProtoLens.MessageType</span></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-91"></span><span>                 </span><span class="annot"><span class="hs-identifier hs-type">Data.ProtoLens.FieldTypeDescriptor</span></span><span> </span><span class="annot"><a href="OTel.SDK.OTLP.Bindings.Common.V1.Common.html#KeyValue"><span class="hs-identifier hs-type">OTel.SDK.OTLP.Bindings.Common.V1.Common.KeyValue</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-92"></span><span>              </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall msg value.
+Packing -&gt; Lens' msg [value] -&gt; FieldAccessor msg value
+</span><span class="hs-identifier hs-var">Data.ProtoLens.RepeatedField</span></span><span>
+</span><span id="line-93"></span><span>                 </span><span class="annot"><span class="annottext">Packing
+</span><span class="hs-identifier hs-var">Data.ProtoLens.Unpacked</span></span><span>
+</span><span id="line-94"></span><span>                 </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (x :: Symbol) s a (f :: * -&gt; *).
+(HasField s x a, Functor f) =&gt;
+(a -&gt; f a) -&gt; s -&gt; f s
+</span><span class="hs-identifier hs-var">Data.ProtoLens.Field.field</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><span class="hs-string">&quot;attributes&quot;</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-95"></span><span>              </span><span class="annot"><span class="hs-identifier hs-type">Data.ProtoLens.FieldDescriptor</span></span><span> </span><span class="annot"><a href="OTel.SDK.OTLP.Bindings.Resource.V1.Resource.html#Resource"><span class="hs-identifier hs-type">Resource</span></a></span><span>
+</span><span id="line-96"></span><span>        </span><span id="local-6989586621679134394"><span class="annot"><span class="annottext">droppedAttributesCount__field_descriptor :: FieldDescriptor Resource
+</span><a href="#local-6989586621679134394"><span class="hs-identifier hs-var hs-var">droppedAttributesCount__field_descriptor</span></a></span></span><span>
+</span><span id="line-97"></span><span>          </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall value msg.
+String
+-&gt; FieldTypeDescriptor value
+-&gt; FieldAccessor msg value
+-&gt; FieldDescriptor msg
+</span><span class="hs-identifier hs-var">Data.ProtoLens.FieldDescriptor</span></span><span>
+</span><span id="line-98"></span><span>              </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;dropped_attributes_count&quot;</span></span><span>
+</span><span id="line-99"></span><span>              </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall value. ScalarField value -&gt; FieldTypeDescriptor value
+</span><span class="hs-identifier hs-var">Data.ProtoLens.ScalarField</span></span><span> </span><span class="annot"><span class="annottext">ScalarField Word32
+</span><span class="hs-identifier hs-var">Data.ProtoLens.UInt32Field</span></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-100"></span><span>                 </span><span class="annot"><span class="hs-identifier hs-type">Data.ProtoLens.FieldTypeDescriptor</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Data.Word.Word32</span></span><span class="hs-special">)</span><span>
+</span><span id="line-101"></span><span>              </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall value msg.
+WireDefault value -&gt; Lens' msg value -&gt; FieldAccessor msg value
+</span><span class="hs-identifier hs-var">Data.ProtoLens.PlainField</span></span><span>
+</span><span id="line-102"></span><span>                 </span><span class="annot"><span class="annottext">forall value. (FieldDefault value, Eq value) =&gt; WireDefault value
+</span><span class="hs-identifier hs-var">Data.ProtoLens.Optional</span></span><span>
+</span><span id="line-103"></span><span>                 </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (x :: Symbol) s a (f :: * -&gt; *).
+(HasField s x a, Functor f) =&gt;
+(a -&gt; f a) -&gt; s -&gt; f s
+</span><span class="hs-identifier hs-var">Data.ProtoLens.Field.field</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><span class="hs-string">&quot;droppedAttributesCount&quot;</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-104"></span><span>              </span><span class="annot"><span class="hs-identifier hs-type">Data.ProtoLens.FieldDescriptor</span></span><span> </span><span class="annot"><a href="OTel.SDK.OTLP.Bindings.Resource.V1.Resource.html#Resource"><span class="hs-identifier hs-type">Resource</span></a></span><span>
+</span><span id="line-105"></span><span>      </span><span class="hs-keyword">in</span><span>
+</span><span id="line-106"></span><span>        </span><span class="annot"><span class="annottext">forall k a. Ord k =&gt; [(k, a)] -&gt; Map k a
+</span><span class="hs-identifier hs-var">Data.Map.fromList</span></span><span>
+</span><span id="line-107"></span><span>          </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int -&gt; Tag
+</span><span class="hs-identifier hs-var">Data.ProtoLens.Tag</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">FieldDescriptor Resource
+</span><a href="#local-6989586621679134407"><span class="hs-identifier hs-var">attributes__field_descriptor</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-108"></span><span>           </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int -&gt; Tag
+</span><span class="hs-identifier hs-var">Data.ProtoLens.Tag</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">2</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">FieldDescriptor Resource
+</span><a href="#local-6989586621679134394"><span class="hs-identifier hs-var">droppedAttributesCount__field_descriptor</span></a></span><span class="hs-special">)</span><span class="hs-special">]</span><span>
+</span><span id="line-109"></span><span>  </span><span id="local-6989586621679134382"><span class="annot"><span class="annottext">unknownFields :: Lens' Resource FieldSet
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">unknownFields</span></span></span><span>
+</span><span id="line-110"></span><span>    </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall s a b t. (s -&gt; a) -&gt; (s -&gt; b -&gt; t) -&gt; Lens s t a b
+</span><span class="hs-identifier hs-var">Lens.Family2.Unchecked.lens</span></span><span>
+</span><span id="line-111"></span><span>        </span><span class="annot"><span class="annottext">Resource -&gt; FieldSet
+</span><a href="OTel.SDK.OTLP.Bindings.Resource.V1.Resource.html#_Resource%27_unknownFields"><span class="hs-identifier hs-var">_Resource'_unknownFields</span></a></span><span>
+</span><span id="line-112"></span><span>        </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span> </span><span id="local-6989586621679134380"><span class="annot"><span class="annottext">Resource
+</span><a href="#local-6989586621679134380"><span class="hs-identifier hs-var">x__</span></a></span></span><span> </span><span id="local-6989586621679134379"><span class="annot"><span class="annottext">FieldSet
+</span><a href="#local-6989586621679134379"><span class="hs-identifier hs-var">y__</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Resource
+</span><a href="#local-6989586621679134380"><span class="hs-identifier hs-var">x__</span></a></span><span> </span><span class="hs-special">{</span><span class="annot"><span class="annottext">_Resource'_unknownFields :: FieldSet
+</span><a href="OTel.SDK.OTLP.Bindings.Resource.V1.Resource.html#_Resource%27_unknownFields"><span class="hs-identifier hs-var">_Resource'_unknownFields</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">FieldSet
+</span><a href="#local-6989586621679134379"><span class="hs-identifier hs-var">y__</span></a></span><span class="hs-special">}</span><span class="hs-special">)</span><span>
+</span><span id="line-113"></span><span>  </span><span id="local-6989586621679134376"><span class="annot"><span class="annottext">defMessage :: Resource
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">defMessage</span></span></span><span>
+</span><span id="line-114"></span><span>    </span><span class="hs-glyph">=</span><span> </span><span class="annot"><a href="OTel.SDK.OTLP.Bindings.Resource.V1.Resource.html#Resource%27_constructor"><span class="hs-identifier hs-type">Resource'_constructor</span></a></span><span>
+</span><span id="line-115"></span><span>        </span><span class="hs-special">{</span><span class="annot"><span class="annottext">_Resource'attributes :: Vector KeyValue
+</span><a href="OTel.SDK.OTLP.Bindings.Resource.V1.Resource.html#_Resource%27attributes"><span class="hs-identifier hs-var">_Resource'attributes</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall (v :: * -&gt; *) a. Vector v a =&gt; v a
+</span><span class="hs-identifier hs-var">Data.Vector.Generic.empty</span></span><span class="hs-special">,</span><span>
+</span><span id="line-116"></span><span>         </span><span class="annot"><span class="annottext">_Resource'droppedAttributesCount :: Word32
+</span><a href="OTel.SDK.OTLP.Bindings.Resource.V1.Resource.html#_Resource%27droppedAttributesCount"><span class="hs-identifier hs-var">_Resource'droppedAttributesCount</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall value. FieldDefault value =&gt; value
+</span><span class="hs-identifier hs-var">Data.ProtoLens.fieldDefault</span></span><span class="hs-special">,</span><span>
+</span><span id="line-117"></span><span>         </span><span class="annot"><span class="annottext">_Resource'_unknownFields :: FieldSet
+</span><a href="OTel.SDK.OTLP.Bindings.Resource.V1.Resource.html#_Resource%27_unknownFields"><span class="hs-identifier hs-var">_Resource'_unknownFields</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span class="hs-special">}</span><span>
+</span><span id="line-118"></span><span>  </span><span id="local-6989586621679134323"><span class="annot"><span class="annottext">parseMessage :: Parser Resource
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">parseMessage</span></span></span><span>
+</span><span id="line-119"></span><span>    </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">let</span><span>
+</span><span id="line-120"></span><span>        </span><span class="annot"><a href="#local-6989586621679134321"><span class="hs-identifier hs-type">loop</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-121"></span><span>          </span><span class="annot"><a href="OTel.SDK.OTLP.Bindings.Resource.V1.Resource.html#Resource"><span class="hs-identifier hs-type">Resource</span></a></span><span>
+</span><span id="line-122"></span><span>          </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Data.ProtoLens.Encoding.Growing.Growing</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Data.Vector.Vector</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Data.ProtoLens.Encoding.Growing.RealWorld</span></span><span> </span><span class="annot"><a href="OTel.SDK.OTLP.Bindings.Common.V1.Common.html#KeyValue"><span class="hs-identifier hs-type">OTel.SDK.OTLP.Bindings.Common.V1.Common.KeyValue</span></a></span><span>
+</span><span id="line-123"></span><span>             </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Data.ProtoLens.Encoding.Bytes.Parser</span></span><span> </span><span class="annot"><a href="OTel.SDK.OTLP.Bindings.Resource.V1.Resource.html#Resource"><span class="hs-identifier hs-type">Resource</span></a></span><span>
+</span><span id="line-124"></span><span>        </span><span id="local-6989586621679134321"><span class="annot"><span class="annottext">loop :: Resource -&gt; Growing Vector RealWorld KeyValue -&gt; Parser Resource
+</span><a href="#local-6989586621679134321"><span class="hs-identifier hs-var hs-var">loop</span></a></span></span><span> </span><span id="local-6989586621679134320"><span class="annot"><span class="annottext">Resource
+</span><a href="#local-6989586621679134320"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span id="local-6989586621679134319"><span class="annot"><span class="annottext">Growing Vector RealWorld KeyValue
+</span><a href="#local-6989586621679134319"><span class="hs-identifier hs-var">mutable'attributes</span></a></span></span><span>
+</span><span id="line-125"></span><span>          </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span> </span><span id="local-6989586621679134318"><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621679134318"><span class="hs-identifier hs-var">end</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Parser Bool
+</span><span class="hs-identifier hs-var">Data.ProtoLens.Encoding.Bytes.atEnd</span></span><span>
+</span><span id="line-126"></span><span>               </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621679134318"><span class="hs-identifier hs-var">end</span></a></span><span> </span><span class="hs-keyword">then</span><span>
+</span><span id="line-127"></span><span>                   </span><span class="hs-keyword">do</span><span> </span><span id="local-6989586621679134316"><span class="annot"><span class="annottext">Vector KeyValue
+</span><a href="#local-6989586621679134316"><span class="hs-identifier hs-var">frozen'attributes</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall a. IO a -&gt; Parser a
+</span><span class="hs-identifier hs-var">Data.ProtoLens.Encoding.Parser.Unsafe.unsafeLiftIO</span></span><span>
+</span><span id="line-128"></span><span>                                             </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) (v :: * -&gt; *) a.
+(PrimMonad m, Vector v a) =&gt;
+Growing v (PrimState m) a -&gt; m (v a)
+</span><span class="hs-identifier hs-var">Data.ProtoLens.Encoding.Growing.unsafeFreeze</span></span><span>
+</span><span id="line-129"></span><span>                                                </span><span class="annot"><span class="annottext">Growing Vector RealWorld KeyValue
+</span><a href="#local-6989586621679134319"><span class="hs-identifier hs-var">mutable'attributes</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-130"></span><span>                      </span><span class="hs-special">(</span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679134313"><span class="annot"><span class="annottext">missing :: [a]
+</span><a href="#local-6989586621679134313"><span class="hs-identifier hs-var hs-var">missing</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-131"></span><span>                       </span><span class="hs-keyword">in</span><span>
+</span><span id="line-132"></span><span>                         </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Bool
+</span><span class="hs-identifier hs-var">Prelude.null</span></span><span> </span><span class="annot"><span class="annottext">forall a. [a]
+</span><a href="#local-6989586621679134313"><span class="hs-identifier hs-var">missing</span></a></span><span> </span><span class="hs-keyword">then</span><span>
+</span><span id="line-133"></span><span>                             </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">Prelude.return</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><span id="line-134"></span><span>                         </span><span class="hs-keyword">else</span><span>
+</span><span id="line-135"></span><span>                             </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a. MonadFail m =&gt; String -&gt; m a
+</span><span class="hs-identifier hs-var">Prelude.fail</span></span><span>
+</span><span id="line-136"></span><span>                               </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. [a] -&gt; [a] -&gt; [a]
+</span><span class="hs-operator hs-var">(Prelude.++)</span></span><span>
+</span><span id="line-137"></span><span>                                  </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;Missing required fields: &quot;</span></span><span>
+</span><span id="line-138"></span><span>                                  </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. Show a =&gt; a -&gt; String
+</span><span class="hs-identifier hs-var">Prelude.show</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. [a]
+</span><a href="#local-6989586621679134313"><span class="hs-identifier hs-var">missing</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Prelude.String</span></span><span class="hs-special">]</span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-139"></span><span>                      </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">Prelude.return</span></span><span>
+</span><span id="line-140"></span><span>                        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall s t a b. Setter s t a b -&gt; (a -&gt; b) -&gt; s -&gt; t
+</span><span class="hs-identifier hs-var">Lens.Family2.over</span></span><span>
+</span><span id="line-141"></span><span>                           </span><span class="annot"><span class="annottext">forall msg. Message msg =&gt; Lens' msg FieldSet
+</span><span class="hs-identifier hs-var">Data.ProtoLens.unknownFields</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span> </span><span class="hs-glyph">!</span><span id="local-6989586621679134302"><span class="annot"><span class="annottext">FieldSet
+</span><a href="#local-6989586621679134302"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall a. [a] -&gt; [a]
+</span><span class="hs-identifier hs-var">Prelude.reverse</span></span><span> </span><span class="annot"><span class="annottext">FieldSet
+</span><a href="#local-6989586621679134302"><span class="hs-identifier hs-var">t</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-142"></span><span>                           </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall s t a b. Setter s t a b -&gt; b -&gt; s -&gt; t
+</span><span class="hs-identifier hs-var">Lens.Family2.set</span></span><span>
+</span><span id="line-143"></span><span>                              </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (x :: Symbol) s a (f :: * -&gt; *).
+(HasField s x a, Functor f) =&gt;
+(a -&gt; f a) -&gt; s -&gt; f s
+</span><span class="hs-identifier hs-var">Data.ProtoLens.Field.field</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><span class="hs-string">&quot;vec'attributes&quot;</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Vector KeyValue
+</span><a href="#local-6989586621679134316"><span class="hs-identifier hs-var">frozen'attributes</span></a></span><span>
+</span><span id="line-144"></span><span>                              </span><span class="annot"><span class="annottext">Resource
+</span><a href="#local-6989586621679134320"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-145"></span><span>               </span><span class="hs-keyword">else</span><span>
+</span><span id="line-146"></span><span>                   </span><span class="hs-keyword">do</span><span> </span><span id="local-6989586621679134294"><span class="annot"><span class="annottext">Word64
+</span><a href="#local-6989586621679134294"><span class="hs-identifier hs-var">tag</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Parser Word64
+</span><span class="hs-identifier hs-var">Data.ProtoLens.Encoding.Bytes.getVarInt</span></span><span>
+</span><span id="line-147"></span><span>                      </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Word64
+</span><a href="#local-6989586621679134294"><span class="hs-identifier hs-var">tag</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-148"></span><span>                        </span><span class="annot"><span class="annottext">Word64
+</span><span class="hs-number">10</span></span><span>
+</span><span id="line-149"></span><span>                          </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span> </span><span class="hs-glyph">!</span><span id="local-6989586621679134292"><span class="annot"><span class="annottext">KeyValue
+</span><a href="#local-6989586621679134292"><span class="hs-identifier hs-var">y</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall a. Parser a -&gt; String -&gt; Parser a
+</span><span class="hs-operator hs-var">(Data.ProtoLens.Encoding.Bytes.&lt;?&gt;)</span></span><span>
+</span><span id="line-150"></span><span>                                        </span><span class="hs-special">(</span><span class="hs-keyword">do</span><span> </span><span id="local-6989586621679134290"><span class="annot"><span class="annottext">Word64
+</span><a href="#local-6989586621679134290"><span class="hs-identifier hs-var">len</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Parser Word64
+</span><span class="hs-identifier hs-var">Data.ProtoLens.Encoding.Bytes.getVarInt</span></span><span>
+</span><span id="line-151"></span><span>                                            </span><span class="annot"><span class="annottext">forall a. Int -&gt; Parser a -&gt; Parser a
+</span><span class="hs-identifier hs-var">Data.ProtoLens.Encoding.Bytes.isolate</span></span><span>
+</span><span id="line-152"></span><span>                                              </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">Prelude.fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">Word64
+</span><a href="#local-6989586621679134290"><span class="hs-identifier hs-var">len</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-153"></span><span>                                              </span><span class="annot"><span class="annottext">forall msg. Message msg =&gt; Parser msg
+</span><span class="hs-identifier hs-var">Data.ProtoLens.parseMessage</span></span><span class="hs-special">)</span><span>
+</span><span id="line-154"></span><span>                                        </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;attributes&quot;</span></span><span>
+</span><span id="line-155"></span><span>                                </span><span id="local-6989586621679134288"><span class="annot"><span class="annottext">Growing Vector RealWorld KeyValue
+</span><a href="#local-6989586621679134288"><span class="hs-identifier hs-var">v</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall a. IO a -&gt; Parser a
+</span><span class="hs-identifier hs-var">Data.ProtoLens.Encoding.Parser.Unsafe.unsafeLiftIO</span></span><span>
+</span><span id="line-156"></span><span>                                       </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) (v :: * -&gt; *) a.
+(PrimMonad m, Vector v a) =&gt;
+Growing v (PrimState m) a -&gt; a -&gt; m (Growing v (PrimState m) a)
+</span><span class="hs-identifier hs-var">Data.ProtoLens.Encoding.Growing.append</span></span><span> </span><span class="annot"><span class="annottext">Growing Vector RealWorld KeyValue
+</span><a href="#local-6989586621679134319"><span class="hs-identifier hs-var">mutable'attributes</span></a></span><span> </span><span class="annot"><span class="annottext">KeyValue
+</span><a href="#local-6989586621679134292"><span class="hs-identifier hs-var">y</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-157"></span><span>                                </span><span class="annot"><span class="annottext">Resource -&gt; Growing Vector RealWorld KeyValue -&gt; Parser Resource
+</span><a href="#local-6989586621679134321"><span class="hs-identifier hs-var">loop</span></a></span><span> </span><span class="annot"><span class="annottext">Resource
+</span><a href="#local-6989586621679134320"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">Growing Vector RealWorld KeyValue
+</span><a href="#local-6989586621679134288"><span class="hs-identifier hs-var">v</span></a></span><span>
+</span><span id="line-158"></span><span>                        </span><span class="annot"><span class="annottext">Word64
+</span><span class="hs-number">16</span></span><span>
+</span><span id="line-159"></span><span>                          </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span> </span><span id="local-6989586621679134286"><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679134286"><span class="hs-identifier hs-var">y</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall a. Parser a -&gt; String -&gt; Parser a
+</span><span class="hs-operator hs-var">(Data.ProtoLens.Encoding.Bytes.&lt;?&gt;)</span></span><span>
+</span><span id="line-160"></span><span>                                       </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">Prelude.fmap</span></span><span>
+</span><span id="line-161"></span><span>                                          </span><span class="annot"><span class="annottext">forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">Prelude.fromIntegral</span></span><span>
+</span><span id="line-162"></span><span>                                          </span><span class="annot"><span class="annottext">Parser Word64
+</span><span class="hs-identifier hs-var">Data.ProtoLens.Encoding.Bytes.getVarInt</span></span><span class="hs-special">)</span><span>
+</span><span id="line-163"></span><span>                                       </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;dropped_attributes_count&quot;</span></span><span>
+</span><span id="line-164"></span><span>                                </span><span class="annot"><span class="annottext">Resource -&gt; Growing Vector RealWorld KeyValue -&gt; Parser Resource
+</span><a href="#local-6989586621679134321"><span class="hs-identifier hs-var">loop</span></a></span><span>
+</span><span id="line-165"></span><span>                                  </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall s t a b. Setter s t a b -&gt; b -&gt; s -&gt; t
+</span><span class="hs-identifier hs-var">Lens.Family2.set</span></span><span>
+</span><span id="line-166"></span><span>                                     </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (x :: Symbol) s a (f :: * -&gt; *).
+(HasField s x a, Functor f) =&gt;
+(a -&gt; f a) -&gt; s -&gt; f s
+</span><span class="hs-identifier hs-var">Data.ProtoLens.Field.field</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><span class="hs-string">&quot;droppedAttributesCount&quot;</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679134286"><span class="hs-identifier hs-var">y</span></a></span><span> </span><span class="annot"><span class="annottext">Resource
+</span><a href="#local-6989586621679134320"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-167"></span><span>                                  </span><span class="annot"><span class="annottext">Growing Vector RealWorld KeyValue
+</span><a href="#local-6989586621679134319"><span class="hs-identifier hs-var">mutable'attributes</span></a></span><span>
+</span><span id="line-168"></span><span>                        </span><span id="local-6989586621679134280"><span class="annot"><span class="annottext">Word64
+</span><a href="#local-6989586621679134280"><span class="hs-identifier hs-var">wire</span></a></span></span><span>
+</span><span id="line-169"></span><span>                          </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span> </span><span class="hs-glyph">!</span><span id="local-6989586621679134279"><span class="annot"><span class="annottext">TaggedValue
+</span><a href="#local-6989586621679134279"><span class="hs-identifier hs-var">y</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Word64 -&gt; Parser TaggedValue
+</span><span class="hs-identifier hs-var">Data.ProtoLens.Encoding.Wire.parseTaggedValueFromWire</span></span><span>
+</span><span id="line-170"></span><span>                                        </span><span class="annot"><span class="annottext">Word64
+</span><a href="#local-6989586621679134280"><span class="hs-identifier hs-var">wire</span></a></span><span>
+</span><span id="line-171"></span><span>                                </span><span class="annot"><span class="annottext">Resource -&gt; Growing Vector RealWorld KeyValue -&gt; Parser Resource
+</span><a href="#local-6989586621679134321"><span class="hs-identifier hs-var">loop</span></a></span><span>
+</span><span id="line-172"></span><span>                                  </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall s t a b. Setter s t a b -&gt; (a -&gt; b) -&gt; s -&gt; t
+</span><span class="hs-identifier hs-var">Lens.Family2.over</span></span><span>
+</span><span id="line-173"></span><span>                                     </span><span class="annot"><span class="annottext">forall msg. Message msg =&gt; Lens' msg FieldSet
+</span><span class="hs-identifier hs-var">Data.ProtoLens.unknownFields</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span> </span><span class="hs-glyph">!</span><span id="local-6989586621679134272"><span class="annot"><span class="annottext">FieldSet
+</span><a href="#local-6989586621679134272"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="hs-glyph">:</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">TaggedValue
+</span><a href="#local-6989586621679134279"><span class="hs-identifier hs-var">y</span></a></span><span> </span><span class="annot"><span class="annottext">FieldSet
+</span><a href="#local-6989586621679134272"><span class="hs-identifier hs-var">t</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Resource
+</span><a href="#local-6989586621679134320"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-174"></span><span>                                  </span><span class="annot"><span class="annottext">Growing Vector RealWorld KeyValue
+</span><a href="#local-6989586621679134319"><span class="hs-identifier hs-var">mutable'attributes</span></a></span><span>
+</span><span id="line-175"></span><span>      </span><span class="hs-keyword">in</span><span>
+</span><span id="line-176"></span><span>        </span><span class="annot"><span class="annottext">forall a. Parser a -&gt; String -&gt; Parser a
+</span><span class="hs-operator hs-var">(Data.ProtoLens.Encoding.Bytes.&lt;?&gt;)</span></span><span>
+</span><span id="line-177"></span><span>          </span><span class="hs-special">(</span><span class="hs-keyword">do</span><span> </span><span id="local-6989586621679134271"><span class="annot"><span class="annottext">Growing Vector RealWorld KeyValue
+</span><a href="#local-6989586621679134271"><span class="hs-identifier hs-var">mutable'attributes</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall a. IO a -&gt; Parser a
+</span><span class="hs-identifier hs-var">Data.ProtoLens.Encoding.Parser.Unsafe.unsafeLiftIO</span></span><span>
+</span><span id="line-178"></span><span>                                      </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) (v :: * -&gt; *) a.
+(PrimMonad m, Vector v a) =&gt;
+m (Growing v (PrimState m) a)
+</span><span class="hs-identifier hs-var">Data.ProtoLens.Encoding.Growing.new</span></span><span>
+</span><span id="line-179"></span><span>              </span><span class="annot"><span class="annottext">Resource -&gt; Growing Vector RealWorld KeyValue -&gt; Parser Resource
+</span><a href="#local-6989586621679134321"><span class="hs-identifier hs-var">loop</span></a></span><span> </span><span class="annot"><span class="annottext">forall msg. Message msg =&gt; msg
+</span><span class="hs-identifier hs-var">Data.ProtoLens.defMessage</span></span><span> </span><span class="annot"><span class="annottext">Growing Vector RealWorld KeyValue
+</span><a href="#local-6989586621679134271"><span class="hs-identifier hs-var">mutable'attributes</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-180"></span><span>          </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;Resource&quot;</span></span><span>
+</span><span id="line-181"></span><span>  </span><span id="local-6989586621679134242"><span class="annot"><span class="annottext">buildMessage :: Resource -&gt; Builder
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">buildMessage</span></span></span><span>
+</span><span id="line-182"></span><span>    </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span> </span><span id="local-6989586621679134240"><span class="annot"><span class="annottext">Resource
+</span><a href="#local-6989586621679134240"><span class="hs-identifier hs-var">_x</span></a></span></span><span>
+</span><span id="line-183"></span><span>        </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">(Data.Monoid.&lt;&gt;)</span></span><span>
+</span><span id="line-184"></span><span>             </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (v :: * -&gt; *) a.
+Vector v a =&gt;
+(a -&gt; Builder) -&gt; v a -&gt; Builder
+</span><span class="hs-identifier hs-var">Data.ProtoLens.Encoding.Bytes.foldMapBuilder</span></span><span>
+</span><span id="line-185"></span><span>                </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span> </span><span id="local-6989586621679134238"><span class="annot"><span class="annottext">KeyValue
+</span><a href="#local-6989586621679134238"><span class="hs-identifier hs-var">_v</span></a></span></span><span>
+</span><span id="line-186"></span><span>                   </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">(Data.Monoid.&lt;&gt;)</span></span><span>
+</span><span id="line-187"></span><span>                        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word64 -&gt; Builder
+</span><span class="hs-identifier hs-var">Data.ProtoLens.Encoding.Bytes.putVarInt</span></span><span> </span><span class="annot"><span class="annottext">Word64
+</span><span class="hs-number">10</span></span><span class="hs-special">)</span><span>
+</span><span id="line-188"></span><span>                        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">(Prelude..)</span></span><span>
+</span><span id="line-189"></span><span>                           </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span> </span><span id="local-6989586621679134236"><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679134236"><span class="hs-identifier hs-var">bs</span></a></span></span><span>
+</span><span id="line-190"></span><span>                              </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">(Data.Monoid.&lt;&gt;)</span></span><span>
+</span><span id="line-191"></span><span>                                   </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word64 -&gt; Builder
+</span><span class="hs-identifier hs-var">Data.ProtoLens.Encoding.Bytes.putVarInt</span></span><span>
+</span><span id="line-192"></span><span>                                      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">Prelude.fromIntegral</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ByteString -&gt; Int
+</span><span class="hs-identifier hs-var">Data.ByteString.length</span></span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679134236"><span class="hs-identifier hs-var">bs</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-193"></span><span>                                   </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ByteString -&gt; Builder
+</span><span class="hs-identifier hs-var">Data.ProtoLens.Encoding.Bytes.putBytes</span></span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679134236"><span class="hs-identifier hs-var">bs</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-194"></span><span>                           </span><span class="annot"><span class="annottext">forall msg. Message msg =&gt; msg -&gt; ByteString
+</span><span class="hs-identifier hs-var">Data.ProtoLens.encodeMessage</span></span><span> </span><span class="annot"><span class="annottext">KeyValue
+</span><a href="#local-6989586621679134238"><span class="hs-identifier hs-var">_v</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-195"></span><span>                </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a s t b. FoldLike a s t a b -&gt; s -&gt; a
+</span><span class="hs-identifier hs-var">Lens.Family2.view</span></span><span>
+</span><span id="line-196"></span><span>                   </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (x :: Symbol) s a (f :: * -&gt; *).
+(HasField s x a, Functor f) =&gt;
+(a -&gt; f a) -&gt; s -&gt; f s
+</span><span class="hs-identifier hs-var">Data.ProtoLens.Field.field</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><span class="hs-string">&quot;vec'attributes&quot;</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Resource
+</span><a href="#local-6989586621679134240"><span class="hs-identifier hs-var">_x</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-197"></span><span>             </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">(Data.Monoid.&lt;&gt;)</span></span><span>
+</span><span id="line-198"></span><span>                </span><span class="hs-special">(</span><span class="hs-keyword">let</span><span>
+</span><span id="line-199"></span><span>                   </span><span id="local-6989586621679134231"><span class="annot"><span class="annottext">_v :: Word32
+</span><a href="#local-6989586621679134231"><span class="hs-identifier hs-var hs-var">_v</span></a></span></span><span>
+</span><span id="line-200"></span><span>                     </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a s t b. FoldLike a s t a b -&gt; s -&gt; a
+</span><span class="hs-identifier hs-var">Lens.Family2.view</span></span><span>
+</span><span id="line-201"></span><span>                         </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (x :: Symbol) s a (f :: * -&gt; *).
+(HasField s x a, Functor f) =&gt;
+(a -&gt; f a) -&gt; s -&gt; f s
+</span><span class="hs-identifier hs-var">Data.ProtoLens.Field.field</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><span class="hs-string">&quot;droppedAttributesCount&quot;</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Resource
+</span><a href="#local-6989586621679134240"><span class="hs-identifier hs-var">_x</span></a></span><span>
+</span><span id="line-202"></span><span>                 </span><span class="hs-keyword">in</span><span>
+</span><span id="line-203"></span><span>                   </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">(Prelude.==)</span></span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679134231"><span class="hs-identifier hs-var">_v</span></a></span><span> </span><span class="annot"><span class="annottext">forall value. FieldDefault value =&gt; value
+</span><span class="hs-identifier hs-var">Data.ProtoLens.fieldDefault</span></span><span> </span><span class="hs-keyword">then</span><span>
+</span><span id="line-204"></span><span>                       </span><span class="annot"><span class="annottext">forall a. Monoid a =&gt; a
+</span><span class="hs-identifier hs-var">Data.Monoid.mempty</span></span><span>
+</span><span id="line-205"></span><span>                   </span><span class="hs-keyword">else</span><span>
+</span><span id="line-206"></span><span>                       </span><span class="annot"><span class="annottext">forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">(Data.Monoid.&lt;&gt;)</span></span><span>
+</span><span id="line-207"></span><span>                         </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word64 -&gt; Builder
+</span><span class="hs-identifier hs-var">Data.ProtoLens.Encoding.Bytes.putVarInt</span></span><span> </span><span class="annot"><span class="annottext">Word64
+</span><span class="hs-number">16</span></span><span class="hs-special">)</span><span>
+</span><span id="line-208"></span><span>                         </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">(Prelude..)</span></span><span>
+</span><span id="line-209"></span><span>                            </span><span class="annot"><span class="annottext">Word64 -&gt; Builder
+</span><span class="hs-identifier hs-var">Data.ProtoLens.Encoding.Bytes.putVarInt</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">Prelude.fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679134231"><span class="hs-identifier hs-var">_v</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-210"></span><span>                </span><span class="hs-special">(</span><span class="annot"><span class="annottext">FieldSet -&gt; Builder
+</span><span class="hs-identifier hs-var">Data.ProtoLens.Encoding.Wire.buildFieldSet</span></span><span>
+</span><span id="line-211"></span><span>                   </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a s t b. FoldLike a s t a b -&gt; s -&gt; a
+</span><span class="hs-identifier hs-var">Lens.Family2.view</span></span><span> </span><span class="annot"><span class="annottext">forall msg. Message msg =&gt; Lens' msg FieldSet
+</span><span class="hs-identifier hs-var">Data.ProtoLens.unknownFields</span></span><span> </span><span class="annot"><span class="annottext">Resource
+</span><a href="#local-6989586621679134240"><span class="hs-identifier hs-var">_x</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-212"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Control.DeepSeq.NFData</span></span><span> </span><span class="annot"><a href="OTel.SDK.OTLP.Bindings.Resource.V1.Resource.html#Resource"><span class="hs-identifier hs-type">Resource</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-213"></span><span>  </span><span id="local-6989586621679134216"><span class="annot"><span class="annottext">rnf :: Resource -&gt; ()
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">rnf</span></span></span><span>
+</span><span id="line-214"></span><span>    </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span> </span><span id="local-6989586621679134214"><span class="annot"><span class="annottext">Resource
+</span><a href="#local-6989586621679134214"><span class="hs-identifier hs-var">x__</span></a></span></span><span>
+</span><span id="line-215"></span><span>        </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall a b. NFData a =&gt; a -&gt; b -&gt; b
+</span><span class="hs-identifier hs-var">Control.DeepSeq.deepseq</span></span><span>
+</span><span id="line-216"></span><span>             </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Resource -&gt; FieldSet
+</span><a href="OTel.SDK.OTLP.Bindings.Resource.V1.Resource.html#_Resource%27_unknownFields"><span class="hs-identifier hs-var">_Resource'_unknownFields</span></a></span><span> </span><span class="annot"><span class="annottext">Resource
+</span><a href="#local-6989586621679134214"><span class="hs-identifier hs-var">x__</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-217"></span><span>             </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a b. NFData a =&gt; a -&gt; b -&gt; b
+</span><span class="hs-identifier hs-var">Control.DeepSeq.deepseq</span></span><span>
+</span><span id="line-218"></span><span>                </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Resource -&gt; Vector KeyValue
+</span><a href="OTel.SDK.OTLP.Bindings.Resource.V1.Resource.html#_Resource%27attributes"><span class="hs-identifier hs-var">_Resource'attributes</span></a></span><span> </span><span class="annot"><span class="annottext">Resource
+</span><a href="#local-6989586621679134214"><span class="hs-identifier hs-var">x__</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-219"></span><span>                </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a b. NFData a =&gt; a -&gt; b -&gt; b
+</span><span class="hs-identifier hs-var">Control.DeepSeq.deepseq</span></span><span>
+</span><span id="line-220"></span><span>                   </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Resource -&gt; Word32
+</span><a href="OTel.SDK.OTLP.Bindings.Resource.V1.Resource.html#_Resource%27droppedAttributesCount"><span class="hs-identifier hs-var">_Resource'droppedAttributesCount</span></a></span><span> </span><span class="annot"><span class="annottext">Resource
+</span><a href="#local-6989586621679134214"><span class="hs-identifier hs-var">x__</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-221"></span><span class="annot"><a href="OTel.SDK.OTLP.Bindings.Resource.V1.Resource.html#packedFileDescriptor"><span class="hs-identifier hs-type">packedFileDescriptor</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Data.ByteString.ByteString</span></span><span>
+</span><span id="line-222"></span><span id="packedFileDescriptor"><span class="annot"><span class="annottext">packedFileDescriptor :: ByteString
+</span><a href="OTel.SDK.OTLP.Bindings.Resource.V1.Resource.html#packedFileDescriptor"><span class="hs-identifier hs-var hs-var">packedFileDescriptor</span></a></span></span><span>
+</span><span id="line-223"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><span class="hs-string">&quot;\n\
+    \.opentelemetry/proto/resource/v1/resource.proto\DC2\USopentelemetry.proto.resource.v1\SUB*opentelemetry/proto/common/v1/common.proto\&quot;\141\SOH\n\
+    \\bResource\DC2G\n\
+    \\n\
+    \attributes\CAN\SOH \ETX(\v2'.opentelemetry.proto.common.v1.KeyValueR\n\
+    \attributes\DC28\n\
+    \\CANdropped_attributes_count\CAN\STX \SOH(\rR\SYNdroppedAttributesCountB\131\SOH\n\
+    \\&quot;io.opentelemetry.proto.resource.v1B\rResourceProtoP\SOHZ*go.opentelemetry.io/proto/otlp/resource/v1\170\STX\USOpenTelemetry.Proto.Resource.V1J\143\t\n\
+    \\ACK\DC2\EOT\SO\NUL$\SOH\n\
+    \\200\EOT\n\
+    \\SOH\f\DC2\ETX\SO\NUL\DC22\189\EOT Copyright 2019, OpenTelemetry Authors\n\
+    \\n\
+    \ Licensed under the Apache License, Version 2.0 (the \&quot;License\&quot;);\n\
+    \ you may not use this file except in compliance with the License.\n\
+    \ You may obtain a copy of the License at\n\
+    \\n\
+    \     http://www.apache.org/licenses/LICENSE-2.0\n\
+    \\n\
+    \ Unless required by applicable law or agreed to in writing, software\n\
+    \ distributed under the License is distributed on an \&quot;AS IS\&quot; BASIS,\n\
+    \ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n\
+    \ See the License for the specific language governing permissions and\n\
+    \ limitations under the License.\n\
+    \\n\
+    \\b\n\
+    \\SOH\STX\DC2\ETX\DLE\NUL(\n\
+    \\t\n\
+    \\STX\ETX\NUL\DC2\ETX\DC2\NUL4\n\
+    \\b\n\
+    \\SOH\b\DC2\ETX\DC4\NUL&lt;\n\
+    \\t\n\
+    \\STX\b%\DC2\ETX\DC4\NUL&lt;\n\
+    \\b\n\
+    \\SOH\b\DC2\ETX\NAK\NUL\&quot;\n\
+    \\t\n\
+    \\STX\b\n\
+    \\DC2\ETX\NAK\NUL\&quot;\n\
+    \\b\n\
+    \\SOH\b\DC2\ETX\SYN\NUL;\n\
+    \\t\n\
+    \\STX\b\SOH\DC2\ETX\SYN\NUL;\n\
+    \\b\n\
+    \\SOH\b\DC2\ETX\ETB\NUL.\n\
+    \\t\n\
+    \\STX\b\b\DC2\ETX\ETB\NUL.\n\
+    \\b\n\
+    \\SOH\b\DC2\ETX\CAN\NULA\n\
+    \\t\n\
+    \\STX\b\v\DC2\ETX\CAN\NULA\n\
+    \#\n\
+    \\STX\EOT\NUL\DC2\EOT\ESC\NUL$\SOH\SUB\ETB Resource information.\n\
+    \\n\
+    \\n\
+    \\n\
+    \\ETX\EOT\NUL\SOH\DC2\ETX\ESC\b\DLE\n\
+    \\164\SOH\n\
+    \\EOT\EOT\NUL\STX\NUL\DC2\ETX\US\STXA\SUB\150\SOH Set of attributes that describe the resource.\n\
+    \ Attribute keys MUST be unique (it is not allowed to have more than one\n\
+    \ attribute with the same key).\n\
+    \\n\
+    \\f\n\
+    \\ENQ\EOT\NUL\STX\NUL\EOT\DC2\ETX\US\STX\n\
+    \\n\
+    \\f\n\
+    \\ENQ\EOT\NUL\STX\NUL\ACK\DC2\ETX\US\v1\n\
+    \\f\n\
+    \\ENQ\EOT\NUL\STX\NUL\SOH\DC2\ETX\US2&lt;\n\
+    \\f\n\
+    \\ENQ\EOT\NUL\STX\NUL\ETX\DC2\ETX\US?@\n\
+    \\129\SOH\n\
+    \\EOT\EOT\NUL\STX\SOH\DC2\ETX#\STX&amp;\SUBt dropped_attributes_count is the number of dropped attributes. If the value is 0, then\n\
+    \ no attributes were dropped.\n\
+    \\n\
+    \\f\n\
+    \\ENQ\EOT\NUL\STX\SOH\ENQ\DC2\ETX#\STX\b\n\
+    \\f\n\
+    \\ENQ\EOT\NUL\STX\SOH\SOH\DC2\ETX#\t!\n\
+    \\f\n\
+    \\ENQ\EOT\NUL\STX\SOH\ETX\DC2\ETX#$%b\ACKproto3&quot;</span></span></pre></body></html>

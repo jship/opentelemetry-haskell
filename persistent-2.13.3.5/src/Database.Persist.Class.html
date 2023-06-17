@@ -1,0 +1,186 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE ConstraintKinds #-}</span><span>
+</span><span id="line-2"></span><span>
+</span><span id="line-3"></span><span class="hs-comment">-- | This module exports all of the type classes in @persistent@ for operating</span><span>
+</span><span id="line-4"></span><span class="hs-comment">-- on the database backends.</span><span>
+</span><span id="line-5"></span><span class="hs-comment">--</span><span>
+</span><span id="line-6"></span><span class="hs-comment">-- @persistent@ offers methods that are abstract in the specific @backend@ type.</span><span>
+</span><span id="line-7"></span><span class="hs-comment">-- For SQL databases, this wil be 'Database.Persist.SqlBackend.SqlBackend'.</span><span>
+</span><span id="line-8"></span><span class="hs-comment">-- Other database backends will define their own types.</span><span>
+</span><span id="line-9"></span><span class="hs-comment">--</span><span>
+</span><span id="line-10"></span><span class="hs-comment">-- Methods and functions in this module have examples documented under an</span><span>
+</span><span id="line-11"></span><span class="hs-comment">-- &quot;Example Usage&quot; thing, that you need to click on to expand.</span><span>
+</span><span id="line-12"></span><span class="hs-comment">--</span><span>
+</span><span id="line-13"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Database.Persist.Class</span><span>
+</span><span id="line-14"></span><span>    </span><span class="hs-special">(</span><span>
+</span><span id="line-15"></span><span>
+</span><span id="line-16"></span><span>    </span><span class="annot"><span class="hs-comment">-- * PersistStore</span></span><span>
+</span><span id="line-17"></span><span>    </span><span class="hs-comment">-- | The 'PersistStore', 'PersistStoreRead', and 'PersistStoreWrite' type</span><span>
+</span><span id="line-18"></span><span>    </span><span class="hs-comment">-- classes are used to define basic operations on the database. A database</span><span>
+</span><span id="line-19"></span><span>    </span><span class="hs-comment">-- that implements these classes is capable of being used as a simple</span><span>
+</span><span id="line-20"></span><span>    </span><span class="hs-comment">-- key-value store.</span><span>
+</span><span id="line-21"></span><span>    </span><span class="hs-comment">--</span><span>
+</span><span id="line-22"></span><span>    </span><span class="hs-comment">-- All the examples present here will be explained based on these schemas, datasets and functions:</span><span>
+</span><span id="line-23"></span><span>    </span><span class="hs-comment">--</span><span>
+</span><span id="line-24"></span><span>    </span><span class="hs-comment">-- = schema-1</span><span>
+</span><span id="line-25"></span><span>    </span><span class="hs-comment">--</span><span>
+</span><span id="line-26"></span><span>    </span><span class="hs-comment">-- #schema-persist-store-1#</span><span>
+</span><span id="line-27"></span><span>    </span><span class="hs-comment">--</span><span>
+</span><span id="line-28"></span><span>    </span><span class="hs-comment">-- &gt; share [mkPersist sqlSettings, mkMigrate &quot;migrateAll&quot;] [persistLowerCase|</span><span>
+</span><span id="line-29"></span><span>    </span><span class="hs-comment">-- &gt; User</span><span>
+</span><span id="line-30"></span><span>    </span><span class="hs-comment">-- &gt;     name String</span><span>
+</span><span id="line-31"></span><span>    </span><span class="hs-comment">-- &gt;     age Int</span><span>
+</span><span id="line-32"></span><span>    </span><span class="hs-comment">-- &gt;     deriving Show</span><span>
+</span><span id="line-33"></span><span>    </span><span class="hs-comment">-- &gt; |]</span><span>
+</span><span id="line-34"></span><span>    </span><span class="hs-comment">--</span><span>
+</span><span id="line-35"></span><span>    </span><span class="hs-comment">-- = dataset-1</span><span>
+</span><span id="line-36"></span><span>    </span><span class="hs-comment">--</span><span>
+</span><span id="line-37"></span><span>    </span><span class="hs-comment">-- #dataset-persist-store-1#</span><span>
+</span><span id="line-38"></span><span>    </span><span class="hs-comment">--</span><span>
+</span><span id="line-39"></span><span>    </span><span class="hs-comment">-- &gt; +----+-------+-----+</span><span>
+</span><span id="line-40"></span><span>    </span><span class="hs-comment">-- &gt; | id | name  | age |</span><span>
+</span><span id="line-41"></span><span>    </span><span class="hs-comment">-- &gt; +----+-------+-----+</span><span>
+</span><span id="line-42"></span><span>    </span><span class="hs-comment">-- &gt; |  1 | SPJ   |  40 |</span><span>
+</span><span id="line-43"></span><span>    </span><span class="hs-comment">-- &gt; +----+-------+-----+</span><span>
+</span><span id="line-44"></span><span>    </span><span class="hs-comment">-- &gt; |  2 | Simon |  41 |</span><span>
+</span><span id="line-45"></span><span>    </span><span class="hs-comment">-- &gt; +----+-------+-----+</span><span>
+</span><span id="line-46"></span><span>      </span><span class="annot"><a href="Database.Persist.Class.html#PersistStore"><span class="hs-identifier">PersistStore</span></a></span><span>
+</span><span id="line-47"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistStore.html#PersistStoreRead"><span class="hs-identifier">PersistStoreRead</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-48"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistStore.html#PersistStoreWrite"><span class="hs-identifier">PersistStoreWrite</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-49"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistStore.html#PersistRecordBackend"><span class="hs-identifier">PersistRecordBackend</span></a></span><span>
+</span><span id="line-50"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistStore.html#getJust"><span class="hs-identifier">getJust</span></a></span><span>
+</span><span id="line-51"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistStore.html#getJustEntity"><span class="hs-identifier">getJustEntity</span></a></span><span>
+</span><span id="line-52"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistStore.html#getEntity"><span class="hs-identifier">getEntity</span></a></span><span>
+</span><span id="line-53"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistStore.html#belongsTo"><span class="hs-identifier">belongsTo</span></a></span><span>
+</span><span id="line-54"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistStore.html#belongsToJust"><span class="hs-identifier">belongsToJust</span></a></span><span>
+</span><span id="line-55"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistStore.html#insertEntity"><span class="hs-identifier">insertEntity</span></a></span><span>
+</span><span id="line-56"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistStore.html#insertRecord"><span class="hs-identifier">insertRecord</span></a></span><span>
+</span><span id="line-57"></span><span>
+</span><span id="line-58"></span><span>    </span><span class="annot"><span class="hs-comment">-- * PersistUnique</span></span><span>
+</span><span id="line-59"></span><span>    </span><span class="hs-comment">-- | The 'PersistUnique' type class is relevant for database backends that</span><span>
+</span><span id="line-60"></span><span>    </span><span class="hs-comment">-- offer uniqueness keys. Uniquenes keys allow us to perform operations like</span><span>
+</span><span id="line-61"></span><span>    </span><span class="hs-comment">-- 'getBy', 'deleteBy', as well as 'upsert' and 'putMany'.</span><span>
+</span><span id="line-62"></span><span>    </span><span class="hs-comment">--</span><span>
+</span><span id="line-63"></span><span>    </span><span class="hs-comment">-- All the examples present here will be explained based on these two schemas and the dataset:</span><span>
+</span><span id="line-64"></span><span>    </span><span class="hs-comment">--</span><span>
+</span><span id="line-65"></span><span>    </span><span class="hs-comment">-- = schema-1</span><span>
+</span><span id="line-66"></span><span>    </span><span class="hs-comment">-- This schema has single unique constraint.</span><span>
+</span><span id="line-67"></span><span>    </span><span class="hs-comment">--</span><span>
+</span><span id="line-68"></span><span>    </span><span class="hs-comment">-- #schema-persist-unique-1#</span><span>
+</span><span id="line-69"></span><span>    </span><span class="hs-comment">--</span><span>
+</span><span id="line-70"></span><span>    </span><span class="hs-comment">-- &gt; share [mkPersist sqlSettings, mkMigrate &quot;migrateAll&quot;] [persistLowerCase|</span><span>
+</span><span id="line-71"></span><span>    </span><span class="hs-comment">-- &gt; User</span><span>
+</span><span id="line-72"></span><span>    </span><span class="hs-comment">-- &gt;     name String</span><span>
+</span><span id="line-73"></span><span>    </span><span class="hs-comment">-- &gt;     age Int</span><span>
+</span><span id="line-74"></span><span>    </span><span class="hs-comment">-- &gt;     UniqueUserName name</span><span>
+</span><span id="line-75"></span><span>    </span><span class="hs-comment">-- &gt;     deriving Show</span><span>
+</span><span id="line-76"></span><span>    </span><span class="hs-comment">-- &gt; |]</span><span>
+</span><span id="line-77"></span><span>    </span><span class="hs-comment">--</span><span>
+</span><span id="line-78"></span><span>    </span><span class="hs-comment">-- = schema-2</span><span>
+</span><span id="line-79"></span><span>    </span><span class="hs-comment">-- This schema has two unique constraints.</span><span>
+</span><span id="line-80"></span><span>    </span><span class="hs-comment">--</span><span>
+</span><span id="line-81"></span><span>    </span><span class="hs-comment">-- #schema-persist-unique-2#</span><span>
+</span><span id="line-82"></span><span>    </span><span class="hs-comment">--</span><span>
+</span><span id="line-83"></span><span>    </span><span class="hs-comment">-- &gt; share [mkPersist sqlSettings, mkMigrate &quot;migrateAll&quot;] [persistLowerCase|</span><span>
+</span><span id="line-84"></span><span>    </span><span class="hs-comment">-- &gt; User</span><span>
+</span><span id="line-85"></span><span>    </span><span class="hs-comment">-- &gt;     name String</span><span>
+</span><span id="line-86"></span><span>    </span><span class="hs-comment">-- &gt;     age Int</span><span>
+</span><span id="line-87"></span><span>    </span><span class="hs-comment">-- &gt;     UniqueUserName name</span><span>
+</span><span id="line-88"></span><span>    </span><span class="hs-comment">-- &gt;     UniqueUserAge age</span><span>
+</span><span id="line-89"></span><span>    </span><span class="hs-comment">-- &gt;     deriving Show</span><span>
+</span><span id="line-90"></span><span>    </span><span class="hs-comment">-- &gt; |]</span><span>
+</span><span id="line-91"></span><span>    </span><span class="hs-comment">--</span><span>
+</span><span id="line-92"></span><span>    </span><span class="hs-comment">-- = dataset-1</span><span>
+</span><span id="line-93"></span><span>    </span><span class="hs-comment">--</span><span>
+</span><span id="line-94"></span><span>    </span><span class="hs-comment">-- #dataset-persist-unique-1#</span><span>
+</span><span id="line-95"></span><span>    </span><span class="hs-comment">--</span><span>
+</span><span id="line-96"></span><span>    </span><span class="hs-comment">-- &gt; +-----+-----+-----+</span><span>
+</span><span id="line-97"></span><span>    </span><span class="hs-comment">-- &gt; |id   |name |age  |</span><span>
+</span><span id="line-98"></span><span>    </span><span class="hs-comment">-- &gt; +-----+-----+-----+</span><span>
+</span><span id="line-99"></span><span>    </span><span class="hs-comment">-- &gt; |1    |SPJ  |40   |</span><span>
+</span><span id="line-100"></span><span>    </span><span class="hs-comment">-- &gt; +-----+-----+-----+</span><span>
+</span><span id="line-101"></span><span>    </span><span class="hs-comment">-- &gt; |2    |Simon|41   |</span><span>
+</span><span id="line-102"></span><span>    </span><span class="hs-comment">-- &gt; +-----+-----+-----+</span><span>
+</span><span id="line-103"></span><span>
+</span><span id="line-104"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Class.html#PersistUnique"><span class="hs-identifier">PersistUnique</span></a></span><span>
+</span><span id="line-105"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistUnique.html#PersistUniqueRead"><span class="hs-identifier">PersistUniqueRead</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-106"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistUnique.html#PersistUniqueWrite"><span class="hs-identifier">PersistUniqueWrite</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-107"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistUnique.html#OnlyOneUniqueKey"><span class="hs-identifier">OnlyOneUniqueKey</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-108"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistUnique.html#AtLeastOneUniqueKey"><span class="hs-identifier">AtLeastOneUniqueKey</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-109"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistUnique.html#onlyOneUniqueDef"><span class="hs-identifier">onlyOneUniqueDef</span></a></span><span>
+</span><span id="line-110"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistUnique.html#NoUniqueKeysError"><span class="hs-identifier">NoUniqueKeysError</span></a></span><span>
+</span><span id="line-111"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistUnique.html#MultipleUniqueKeysError"><span class="hs-identifier">MultipleUniqueKeysError</span></a></span><span>
+</span><span id="line-112"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistUnique.html#getByValue"><span class="hs-identifier">getByValue</span></a></span><span>
+</span><span id="line-113"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistUnique.html#insertBy"><span class="hs-identifier">insertBy</span></a></span><span>
+</span><span id="line-114"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistUnique.html#insertUniqueEntity"><span class="hs-identifier">insertUniqueEntity</span></a></span><span>
+</span><span id="line-115"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistUnique.html#replaceUnique"><span class="hs-identifier">replaceUnique</span></a></span><span>
+</span><span id="line-116"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistUnique.html#checkUnique"><span class="hs-identifier">checkUnique</span></a></span><span>
+</span><span id="line-117"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistUnique.html#checkUniqueUpdateable"><span class="hs-identifier">checkUniqueUpdateable</span></a></span><span>
+</span><span id="line-118"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistUnique.html#onlyUnique"><span class="hs-identifier">onlyUnique</span></a></span><span>
+</span><span id="line-119"></span><span>
+</span><span id="line-120"></span><span>    </span><span class="annot"><span class="hs-comment">-- * PersistQuery</span></span><span>
+</span><span id="line-121"></span><span>    </span><span class="hs-comment">-- |  The 'PersistQuery' type class allows us to select lists and filter</span><span>
+</span><span id="line-122"></span><span>    </span><span class="hs-comment">-- database models.  'selectList' is the canonical read operation, and we</span><span>
+</span><span id="line-123"></span><span>    </span><span class="hs-comment">-- can write 'updateWhere' and 'deleteWhere' to modify based on filters.</span><span>
+</span><span id="line-124"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistQuery.html#selectList"><span class="hs-identifier">selectList</span></a></span><span>
+</span><span id="line-125"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistQuery.html#selectKeys"><span class="hs-identifier">selectKeys</span></a></span><span>
+</span><span id="line-126"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Class.html#PersistQuery"><span class="hs-identifier">PersistQuery</span></a></span><span>
+</span><span id="line-127"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistQuery.html#PersistQueryRead"><span class="hs-identifier">PersistQueryRead</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-128"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistQuery.html#PersistQueryWrite"><span class="hs-identifier">PersistQueryWrite</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-129"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistQuery.html#selectSource"><span class="hs-identifier">selectSource</span></a></span><span>
+</span><span id="line-130"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistQuery.html#selectKeysList"><span class="hs-identifier">selectKeysList</span></a></span><span>
+</span><span id="line-131"></span><span>
+</span><span id="line-132"></span><span>    </span><span class="annot"><span class="hs-comment">-- * DeleteCascade</span></span><span>
+</span><span id="line-133"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Class.DeleteCascade.html#DeleteCascade"><span class="hs-identifier">DeleteCascade</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-134"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Class.DeleteCascade.html#deleteCascadeWhere"><span class="hs-identifier">deleteCascadeWhere</span></a></span><span>
+</span><span id="line-135"></span><span>
+</span><span id="line-136"></span><span>    </span><span class="annot"><span class="hs-comment">-- * PersistEntity</span></span><span>
+</span><span id="line-137"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistEntity.html#PersistEntity"><span class="hs-identifier">PersistEntity</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-138"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistEntity.html#SymbolToField"><span class="hs-identifier">SymbolToField</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-139"></span><span>    </span><span class="annot"><span class="hs-comment">-- * PersistField</span></span><span>
+</span><span id="line-140"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistField.html#PersistField"><span class="hs-identifier">PersistField</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-141"></span><span>    </span><span class="annot"><span class="hs-comment">-- * PersistConfig</span></span><span>
+</span><span id="line-142"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistConfig.html#PersistConfig"><span class="hs-identifier">PersistConfig</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-143"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistEntity.html#entityValues"><span class="hs-identifier">entityValues</span></a></span><span>
+</span><span id="line-144"></span><span>
+</span><span id="line-145"></span><span>    </span><span class="annot"><span class="hs-comment">-- * Lifting</span></span><span>
+</span><span id="line-146"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistStore.html#HasPersistBackend"><span class="hs-identifier">HasPersistBackend</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-147"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistStore.html#withBaseBackend"><span class="hs-identifier">withBaseBackend</span></a></span><span>
+</span><span id="line-148"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistStore.html#IsPersistBackend"><span class="hs-identifier">IsPersistBackend</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><span id="line-149"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistStore.html#liftPersist"><span class="hs-identifier">liftPersist</span></a></span><span>
+</span><span id="line-150"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistStore.html#BackendCompatible"><span class="hs-identifier">BackendCompatible</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-151"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistStore.html#withCompatibleBackend"><span class="hs-identifier">withCompatibleBackend</span></a></span><span>
+</span><span id="line-152"></span><span>
+</span><span id="line-153"></span><span>    </span><span class="annot"><span class="hs-comment">-- * PersistCore</span></span><span>
+</span><span id="line-154"></span><span>    </span><span class="hs-comment">-- | 'PersistCore' is a type class that defines a default database</span><span>
+</span><span id="line-155"></span><span>    </span><span class="hs-comment">-- 'BackendKey' type. For SQL databases, this is currently an</span><span>
+</span><span id="line-156"></span><span>    </span><span class="hs-comment">-- auto-incrementing inteer primary key. For MongoDB, it is the default</span><span>
+</span><span id="line-157"></span><span>    </span><span class="hs-comment">-- ObjectID.</span><span>
+</span><span id="line-158"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistStore.html#PersistCore"><span class="hs-identifier">PersistCore</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-159"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistStore.html#ToBackendKey"><span class="hs-identifier">ToBackendKey</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-160"></span><span>    </span><span class="annot"><span class="hs-comment">-- * JSON utilities</span></span><span>
+</span><span id="line-161"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistEntity.html#keyValueEntityToJSON"><span class="hs-identifier">keyValueEntityToJSON</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistEntity.html#keyValueEntityFromJSON"><span class="hs-identifier">keyValueEntityFromJSON</span></a></span><span>
+</span><span id="line-162"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistEntity.html#entityIdToJSON"><span class="hs-identifier">entityIdToJSON</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistEntity.html#entityIdFromJSON"><span class="hs-identifier">entityIdFromJSON</span></a></span><span>
+</span><span id="line-163"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistEntity.html#toPersistValueJSON"><span class="hs-identifier">toPersistValueJSON</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistEntity.html#fromPersistValueJSON"><span class="hs-identifier">fromPersistValueJSON</span></a></span><span>
+</span><span id="line-164"></span><span>    </span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-165"></span><span>
+</span><span id="line-166"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Database.Persist.Class.DeleteCascade.html"><span class="hs-identifier">Database.Persist.Class.DeleteCascade</span></a></span><span>
+</span><span id="line-167"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistConfig.html"><span class="hs-identifier">Database.Persist.Class.PersistConfig</span></a></span><span>
+</span><span id="line-168"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistEntity.html"><span class="hs-identifier">Database.Persist.Class.PersistEntity</span></a></span><span>
+</span><span id="line-169"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistField.html"><span class="hs-identifier">Database.Persist.Class.PersistField</span></a></span><span>
+</span><span id="line-170"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistQuery.html"><span class="hs-identifier">Database.Persist.Class.PersistQuery</span></a></span><span>
+</span><span id="line-171"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistStore.html"><span class="hs-identifier">Database.Persist.Class.PersistStore</span></a></span><span>
+</span><span id="line-172"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistUnique.html"><span class="hs-identifier">Database.Persist.Class.PersistUnique</span></a></span><span>
+</span><span id="line-173"></span><span>
+</span><span id="line-174"></span><span>
+</span><span id="line-175"></span><span class="hs-comment">-- | A backwards-compatible alias for those that don't care about distinguishing between read and write queries.</span><span>
+</span><span id="line-176"></span><span class="hs-comment">-- It signifies the assumption that, by default, a backend can write as well as read.</span><span>
+</span><span id="line-177"></span><span class="hs-keyword">type</span><span> </span><span id="PersistUnique"><span class="annot"><a href="Database.Persist.Class.html#PersistUnique"><span class="hs-identifier hs-var">PersistUnique</span></a></span></span><span> </span><span id="local-6989586621679932674"><span class="annot"><a href="#local-6989586621679932674"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistUnique.html#PersistUniqueWrite"><span class="hs-identifier hs-type">PersistUniqueWrite</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679932674"><span class="hs-identifier hs-type">a</span></a></span><span>
+</span><span id="line-178"></span><span>
+</span><span id="line-179"></span><span class="hs-comment">-- | A backwards-compatible alias for those that don't care about distinguishing between read and write queries.</span><span>
+</span><span id="line-180"></span><span class="hs-comment">-- It signifies the assumption that, by default, a backend can write as well as read.</span><span>
+</span><span id="line-181"></span><span class="hs-keyword">type</span><span> </span><span id="PersistQuery"><span class="annot"><a href="Database.Persist.Class.html#PersistQuery"><span class="hs-identifier hs-var">PersistQuery</span></a></span></span><span> </span><span id="local-6989586621679932673"><span class="annot"><a href="#local-6989586621679932673"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistQuery.html#PersistQueryWrite"><span class="hs-identifier hs-type">PersistQueryWrite</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679932673"><span class="hs-identifier hs-type">a</span></a></span><span>
+</span><span id="line-182"></span><span>
+</span><span id="line-183"></span><span class="hs-comment">-- | A backwards-compatible alias for those that don't care about distinguishing between read and write queries.</span><span>
+</span><span id="line-184"></span><span class="hs-comment">-- It signifies the assumption that, by default, a backend can write as well as read.</span><span>
+</span><span id="line-185"></span><span class="hs-keyword">type</span><span> </span><span id="PersistStore"><span class="annot"><a href="Database.Persist.Class.html#PersistStore"><span class="hs-identifier hs-var">PersistStore</span></a></span></span><span> </span><span id="local-6989586621679932672"><span class="annot"><a href="#local-6989586621679932672"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistStore.html#PersistStoreWrite"><span class="hs-identifier hs-type">PersistStoreWrite</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679932672"><span class="hs-identifier hs-type">a</span></a></span><span>
+</span><span id="line-186"></span></pre></body></html>

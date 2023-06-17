@@ -1,0 +1,23 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-comment">-- | A compatibility layer for older code to create default protocol buffer messages.</span><span>
+</span><span id="line-2"></span><span class="hs-comment">--</span><span>
+</span><span id="line-3"></span><span class="hs-comment">-- In older versions of @proto-lens@, messages could be constructed with</span><span>
+</span><span id="line-4"></span><span class="hs-comment">-- @Data.Default.Class.def@.  However, for @proto-lens &gt;= 0.4@, that is</span><span>
+</span><span id="line-5"></span><span class="hs-comment">-- no longer the case and @Data.ProtoLens.defMessage@ should be used instead.</span><span>
+</span><span id="line-6"></span><span class="hs-comment">--</span><span>
+</span><span id="line-7"></span><span class="hs-comment">-- This module provides a compatibility layer that may be used to upgrade</span><span>
+</span><span id="line-8"></span><span class="hs-comment">-- older code without substantial code changes.</span><span>
+</span><span id="line-9"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Data.ProtoLens.Default</span><span>
+</span><span id="line-10"></span><span>    </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Data.ProtoLens.Default.html#def"><span class="hs-identifier">def</span></a></span><span>
+</span><span id="line-11"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.ProtoLens.Message.html#Message"><span class="hs-identifier">Message</span></a></span><span>
+</span><span id="line-12"></span><span>    </span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-13"></span><span>
+</span><span id="line-14"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Data.ProtoLens.Message.html"><span class="hs-identifier">Data.ProtoLens.Message</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.ProtoLens.Message.html#Message"><span class="hs-identifier">Message</span></a></span><span class="hs-special">(</span><span class="annot"><a href="Data.ProtoLens.Message.html#defMessage"><span class="hs-identifier">defMessage</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-15"></span><span>
+</span><span id="line-16"></span><span class="hs-comment">-- | A message with all fields set to their default values.</span><span>
+</span><span id="line-17"></span><span class="hs-comment">--</span><span>
+</span><span id="line-18"></span><span class="hs-comment">-- For new code, prefer `defMessage`.</span><span>
+</span><span id="line-19"></span><span id="local-6989586621679075111"><span class="annot"><a href="Data.ProtoLens.Default.html#def"><span class="hs-identifier hs-type">def</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.ProtoLens.Message.html#Message"><span class="hs-identifier hs-type">Message</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679075111"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679075111"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-20"></span><span id="def"><span class="annot"><span class="annottext">def :: forall a. Message a =&gt; a
+</span><a href="Data.ProtoLens.Default.html#def"><span class="hs-identifier hs-var hs-var">def</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. Message a =&gt; a
+</span><a href="Data.ProtoLens.Message.html#defMessage"><span class="hs-identifier hs-var">defMessage</span></a></span><span>
+</span><span id="line-21"></span></pre></body></html>

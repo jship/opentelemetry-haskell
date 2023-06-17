@@ -1,0 +1,267 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE AllowAmbiguousTypes #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE GADTs #-}</span><span>
+</span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE PolyKinds #-}</span><span>
+</span><span id="line-4"></span><span class="hs-pragma">{-# LANGUAGE ScopedTypeVariables #-}</span><span>
+</span><span id="line-5"></span><span class="hs-pragma">{-# LANGUAGE TemplateHaskell #-}</span><span>
+</span><span id="line-6"></span><span class="hs-pragma">{-# LANGUAGE TypeApplications #-}</span><span>
+</span><span id="line-7"></span><span class="hs-pragma">{-# LANGUAGE TypeInType #-}</span><span>
+</span><span id="line-8"></span><span class="hs-pragma">{-# LANGUAGE TypeOperators #-}</span><span>
+</span><span id="line-9"></span><span>
+</span><span id="line-10"></span><span class="hs-comment">-- | Template Haskell has a class 'Lift' that allows you to promote values</span><span>
+</span><span id="line-11"></span><span class="hs-comment">-- from Haskell-land into the land of metaprogramming - 'Q'.</span><span>
+</span><span id="line-12"></span><span class="hs-comment">--</span><span>
+</span><span id="line-13"></span><span class="hs-comment">-- @</span><span>
+</span><span id="line-14"></span><span class="hs-comment">-- class 'Lift' a where</span><span>
+</span><span id="line-15"></span><span class="hs-comment">--     'lift' :: a -&gt; 'Q' 'Exp'</span><span>
+</span><span id="line-16"></span><span class="hs-comment">--</span><span>
+</span><span id="line-17"></span><span class="hs-comment">--     'liftTyped' :: a -&gt; 'Q' ('TExp' a)</span><span>
+</span><span id="line-18"></span><span class="hs-comment">-- @</span><span>
+</span><span id="line-19"></span><span class="hs-comment">--</span><span>
+</span><span id="line-20"></span><span class="hs-comment">-- However, there wasn't a way to promote a *type* into a @'Q' 'Type'@.</span><span>
+</span><span id="line-21"></span><span class="hs-comment">--</span><span>
+</span><span id="line-22"></span><span class="hs-comment">-- This library provides exactly that function. It requires a 'Typeable'</span><span>
+</span><span id="line-23"></span><span class="hs-comment">-- constraint, but this is automatically satisfied by GHC.</span><span>
+</span><span id="line-24"></span><span class="hs-comment">--</span><span>
+</span><span id="line-25"></span><span class="hs-comment">-- @since 0.1.0.0</span><span>
+</span><span id="line-26"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">LiftType</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-27"></span><span>
+</span><span id="line-28"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Foldable</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">asum</span></span><span class="hs-special">)</span><span>
+</span><span id="line-29"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Kind</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Kind</span></span><span>
+</span><span id="line-30"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">fromMaybe</span></span><span class="hs-special">)</span><span>
+</span><span id="line-31"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Language.Haskell.TH.Syntax</span></span><span>
+</span><span id="line-32"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Text.Read</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">readMaybe</span></span><span class="hs-special">)</span><span>
+</span><span id="line-33"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Type.Reflection</span></span><span>
+</span><span id="line-34"></span><span>
+</span><span id="line-35"></span><span class="hs-comment">-- | 'liftType' promoted to the 'Q' monad.</span><span>
+</span><span id="line-36"></span><span class="hs-comment">--</span><span>
+</span><span id="line-37"></span><span class="hs-comment">-- @since 0.1.0.0</span><span>
+</span><span id="line-38"></span><span class="annot"><a href="LiftType.html#liftTypeQ"><span class="hs-identifier hs-type">liftTypeQ</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679031231"><span class="annot"><a href="#local-6989586621679031231"><span class="hs-identifier hs-type">t</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Typeable</span></span><span> </span><span class="annot"><a href="#local-6989586621679031231"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Q</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Type</span></span><span>
+</span><span id="line-39"></span><span id="liftTypeQ"><span class="annot"><span class="annottext">liftTypeQ :: forall {k} (t :: k). Typeable t =&gt; Q Type
+</span><a href="LiftType.html#liftTypeQ"><span class="hs-identifier hs-var hs-var">liftTypeQ</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall {k} (t :: k). Typeable t =&gt; Type
+</span><a href="LiftType.html#liftType"><span class="hs-identifier hs-var">liftType</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621679031231"><span class="hs-identifier hs-type">t</span></a></span><span>
+</span><span id="line-40"></span><span>
+</span><span id="line-41"></span><span class="hs-comment">-- | Promote a 'SomeTypeRep' into a 'Type'.</span><span>
+</span><span id="line-42"></span><span class="hs-comment">--</span><span>
+</span><span id="line-43"></span><span class="hs-comment">-- @since 0.1.1.0</span><span>
+</span><span id="line-44"></span><span class="annot"><a href="LiftType.html#typeRepToType"><span class="hs-identifier hs-type">typeRepToType</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">SomeTypeRep</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Type</span></span><span>
+</span><span id="line-45"></span><span id="typeRepToType"><span class="annot"><span class="annottext">typeRepToType :: SomeTypeRep -&gt; Type
+</span><a href="LiftType.html#typeRepToType"><span class="hs-identifier hs-var hs-var">typeRepToType</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">SomeTypeRep</span></span><span> </span><span id="local-6989586621679031154"><span class="annot"><span class="annottext">TypeRep a
+</span><a href="#local-6989586621679031154"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall k (a :: k). TypeRep a -&gt; Type
+</span><a href="#local-6989586621679031153"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="annot"><span class="annottext">TypeRep a
+</span><a href="#local-6989586621679031154"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-46"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-47"></span><span>    </span><span class="annot"><a href="#local-6989586621679031153"><span class="hs-identifier hs-type">go</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679031218"><span class="annot"><a href="#local-6989586621679031218"><span class="hs-identifier hs-type">k</span></a></span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679031217"><span class="annot"><a href="#local-6989586621679031217"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621679031218"><span class="hs-identifier hs-type">k</span></a></span><span class="hs-special">)</span><span class="hs-operator">.</span><span> </span><span class="annot"><span class="hs-identifier hs-type">TypeRep</span></span><span> </span><span class="annot"><a href="#local-6989586621679031217"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Type</span></span><span>
+</span><span id="line-48"></span><span>    </span><span id="local-6989586621679031153"><span class="annot"><span class="annottext">go :: forall k (a :: k). TypeRep a -&gt; Type
+</span><a href="#local-6989586621679031153"><span class="hs-identifier hs-var hs-var">go</span></a></span></span><span> </span><span id="local-6989586621679031147"><span class="annot"><span class="annottext">TypeRep a
+</span><a href="#local-6989586621679031147"><span class="hs-identifier hs-var">tr</span></a></span></span><span>
+</span><span id="line-49"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="annot"><span class="annottext">* :~~: a
+</span><span class="hs-identifier hs-var">HRefl</span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall k1 k2 (a :: k1) (b :: k2).
+TypeRep a -&gt; TypeRep b -&gt; Maybe (a :~~: b)
+</span><span class="hs-identifier hs-var">eqTypeRep</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall {k} (a :: k). Typeable a =&gt; TypeRep a
+</span><span class="hs-identifier hs-var">typeRep</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><span class="hs-identifier hs-type">Kind.Type</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">TypeRep a
+</span><a href="#local-6989586621679031147"><span class="hs-identifier hs-var">tr</span></a></span><span>
+</span><span id="line-50"></span><span>        </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Name -&gt; Type
+</span><span class="hs-identifier hs-var">ConT</span></span><span> </span><span class="hs-special">''</span><span class="hs-identifier">Kind.Type</span><span>
+</span><span id="line-51"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-52"></span><span>        </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">TypeRep a
+</span><a href="#local-6989586621679031147"><span class="hs-identifier hs-var">tr</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-53"></span><span>            </span><span class="annot"><span class="hs-identifier hs-type">Con</span></span><span> </span><span id="local-6989586621679031138"><span class="annot"><span class="annottext">TyCon
+</span><a href="#local-6989586621679031138"><span class="hs-identifier hs-var">tyCon</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-54"></span><span>                </span><span class="annot"><span class="annottext">TyCon -&gt; Type
+</span><a href="#local-6989586621679031137"><span class="hs-identifier hs-var">mk</span></a></span><span> </span><span class="annot"><span class="annottext">TyCon
+</span><a href="#local-6989586621679031138"><span class="hs-identifier hs-var">tyCon</span></a></span><span>
+</span><span id="line-55"></span><span>            </span><span class="annot"><span class="hs-identifier hs-type">Fun</span></span><span> </span><span id="local-6989586621679031133"><span class="annot"><span class="annottext">TypeRep arg
+</span><a href="#local-6989586621679031133"><span class="hs-identifier hs-var">trA</span></a></span></span><span> </span><span id="local-6989586621679031132"><span class="annot"><span class="annottext">TypeRep res
+</span><a href="#local-6989586621679031132"><span class="hs-identifier hs-var">trB</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-56"></span><span>                </span><span class="annot"><span class="annottext">Name -&gt; Type
+</span><span class="hs-identifier hs-var">ConT</span></span><span> </span><span class="hs-special">''</span><span class="hs-special">(</span><span class="hs-glyph">-&gt;</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Type -&gt; Type -&gt; Type
+</span><span class="hs-operator hs-var">`AppT`</span></span><span> </span><span class="annot"><span class="annottext">forall k (a :: k). TypeRep a -&gt; Type
+</span><a href="#local-6989586621679031153"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="annot"><span class="annottext">TypeRep arg
+</span><a href="#local-6989586621679031133"><span class="hs-identifier hs-var">trA</span></a></span><span> </span><span class="annot"><span class="annottext">Type -&gt; Type -&gt; Type
+</span><span class="hs-operator hs-var">`AppT`</span></span><span> </span><span class="annot"><span class="annottext">forall k (a :: k). TypeRep a -&gt; Type
+</span><a href="#local-6989586621679031153"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="annot"><span class="annottext">TypeRep res
+</span><a href="#local-6989586621679031132"><span class="hs-identifier hs-var">trB</span></a></span><span>
+</span><span id="line-57"></span><span>            </span><span class="annot"><span class="hs-identifier hs-type">App</span></span><span> </span><span id="local-6989586621679031128"><span class="annot"><span class="annottext">TypeRep a
+</span><a href="#local-6989586621679031128"><span class="hs-identifier hs-var">trA</span></a></span></span><span> </span><span id="local-6989586621679031127"><span class="annot"><span class="annottext">TypeRep b
+</span><a href="#local-6989586621679031127"><span class="hs-identifier hs-var">trB</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-58"></span><span>                </span><span class="annot"><span class="annottext">Type -&gt; Type -&gt; Type
+</span><span class="hs-identifier hs-var">AppT</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall k (a :: k). TypeRep a -&gt; Type
+</span><a href="#local-6989586621679031153"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="annot"><span class="annottext">TypeRep a
+</span><a href="#local-6989586621679031128"><span class="hs-identifier hs-var">trA</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall k (a :: k). TypeRep a -&gt; Type
+</span><a href="#local-6989586621679031153"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="annot"><span class="annottext">TypeRep b
+</span><a href="#local-6989586621679031127"><span class="hs-identifier hs-var">trB</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-59"></span><span>
+</span><span id="line-60"></span><span>    </span><span class="annot"><a href="#local-6989586621679031137"><span class="hs-identifier hs-type">mk</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">TyCon</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Type</span></span><span>
+</span><span id="line-61"></span><span>    </span><span id="local-6989586621679031137"><span class="annot"><span class="annottext">mk :: TyCon -&gt; Type
+</span><a href="#local-6989586621679031137"><span class="hs-identifier hs-var hs-var">mk</span></a></span></span><span> </span><span id="local-6989586621679031126"><span class="annot"><span class="annottext">TyCon
+</span><a href="#local-6989586621679031126"><span class="hs-identifier hs-var">tyCon</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-62"></span><span>        </span><span class="hs-keyword">let</span><span>
+</span><span id="line-63"></span><span>            </span><span id="local-6989586621679031125"><span class="annot"><span class="annottext">tcName :: String
+</span><a href="#local-6989586621679031125"><span class="hs-identifier hs-var hs-var">tcName</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-64"></span><span>                </span><span class="annot"><span class="annottext">TyCon -&gt; String
+</span><span class="hs-identifier hs-var">tyConName</span></span><span> </span><span class="annot"><span class="annottext">TyCon
+</span><a href="#local-6989586621679031126"><span class="hs-identifier hs-var">tyCon</span></a></span><span>
+</span><span id="line-65"></span><span>            </span><span id="local-6989586621679031123"><span class="annot"><span class="annottext">trySymbol :: Maybe Type
+</span><a href="#local-6989586621679031123"><span class="hs-identifier hs-var hs-var">trySymbol</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-66"></span><span>                </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679031125"><span class="hs-identifier hs-var">tcName</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-67"></span><span>                    </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'&quot;'</span></span><span> </span><span class="annot"><span class="hs-glyph hs-type">:</span></span><span> </span><span id="local-6989586621679031122"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679031122"><span class="hs-identifier hs-var">cs</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-68"></span><span>                        </span><span class="annot"><span class="annottext">forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">TyLit -&gt; Type
+</span><span class="hs-identifier hs-var">LitT</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; TyLit
+</span><span class="hs-identifier hs-var">StrTyLit</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a b c. (a -&gt; b -&gt; c) -&gt; [a] -&gt; [b] -&gt; [c]
+</span><span class="hs-identifier hs-var">zipWith</span></span><span> </span><span class="annot"><span class="annottext">forall a b. a -&gt; b -&gt; a
+</span><span class="hs-identifier hs-var">const</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679031122"><span class="hs-identifier hs-var">cs</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. Int -&gt; [a] -&gt; [a]
+</span><span class="hs-identifier hs-var">drop</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679031122"><span class="hs-identifier hs-var">cs</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-69"></span><span>                    </span><span class="annot"><span class="annottext">String
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-70"></span><span>                        </span><span class="annot"><span class="annottext">forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-71"></span><span>            </span><span id="local-6989586621679031116"><span class="annot"><span class="annottext">tryTicked :: Maybe Type
+</span><a href="#local-6989586621679031116"><span class="hs-identifier hs-var hs-var">tryTicked</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-72"></span><span>                </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679031125"><span class="hs-identifier hs-var">tcName</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-73"></span><span>                    </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'\''</span></span><span> </span><span class="annot"><span class="hs-glyph hs-type">:</span></span><span> </span><span id="local-6989586621679031115"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679031115"><span class="hs-identifier hs-var">dcName</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-74"></span><span>                        </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679031114"><span class="annot"><span class="annottext">nameBase :: OccName
+</span><a href="#local-6989586621679031114"><span class="hs-identifier hs-var hs-var">nameBase</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-75"></span><span>                                </span><span class="annot"><span class="annottext">String -&gt; OccName
+</span><span class="hs-identifier hs-var">mkOccName</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679031115"><span class="hs-identifier hs-var">dcName</span></a></span><span>
+</span><span id="line-76"></span><span>
+</span><span id="line-77"></span><span>                            </span><span id="local-6989586621679031112"><span class="annot"><span class="annottext">flavor :: NameFlavour
+</span><a href="#local-6989586621679031112"><span class="hs-identifier hs-var hs-var">flavor</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-78"></span><span>                                </span><span class="annot"><span class="annottext">NameSpace -&gt; PkgName -&gt; ModName -&gt; NameFlavour
+</span><span class="hs-identifier hs-var">NameG</span></span><span>
+</span><span id="line-79"></span><span>                                    </span><span class="annot"><span class="annottext">NameSpace
+</span><span class="hs-identifier hs-var">DataName</span></span><span>
+</span><span id="line-80"></span><span>                                    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; PkgName
+</span><span class="hs-identifier hs-var">mkPkgName</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">TyCon -&gt; String
+</span><span class="hs-identifier hs-var">tyConPackage</span></span><span> </span><span class="annot"><span class="annottext">TyCon
+</span><a href="#local-6989586621679031126"><span class="hs-identifier hs-var">tyCon</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-81"></span><span>                                    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; ModName
+</span><span class="hs-identifier hs-var">mkModName</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">TyCon -&gt; String
+</span><span class="hs-identifier hs-var">tyConModule</span></span><span> </span><span class="annot"><span class="annottext">TyCon
+</span><a href="#local-6989586621679031126"><span class="hs-identifier hs-var">tyCon</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-82"></span><span>                            </span><span id="local-6989586621679031106"><span class="annot"><span class="annottext">name :: Name
+</span><a href="#local-6989586621679031106"><span class="hs-identifier hs-var hs-var">name</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-83"></span><span>                                </span><span class="annot"><span class="annottext">OccName -&gt; NameFlavour -&gt; Name
+</span><span class="hs-identifier hs-var">Name</span></span><span>
+</span><span id="line-84"></span><span>                                    </span><span class="annot"><span class="annottext">OccName
+</span><a href="#local-6989586621679031114"><span class="hs-identifier hs-var">nameBase</span></a></span><span>
+</span><span id="line-85"></span><span>                                    </span><span class="annot"><span class="annottext">NameFlavour
+</span><a href="#local-6989586621679031112"><span class="hs-identifier hs-var">flavor</span></a></span><span>
+</span><span id="line-86"></span><span>                        </span><span class="hs-keyword">in</span><span>
+</span><span id="line-87"></span><span>                            </span><span class="annot"><span class="annottext">forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Name -&gt; Type
+</span><span class="hs-identifier hs-var">PromotedT</span></span><span> </span><span class="annot"><span class="annottext">Name
+</span><a href="#local-6989586621679031106"><span class="hs-identifier hs-var">name</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-88"></span><span>                    </span><span class="annot"><span class="annottext">String
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-89"></span><span>                        </span><span class="annot"><span class="annottext">forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-90"></span><span>            </span><span id="local-6989586621679031103"><span class="annot"><span class="annottext">tryNat :: Maybe Type
+</span><a href="#local-6989586621679031103"><span class="hs-identifier hs-var hs-var">tryNat</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-91"></span><span>                </span><span class="annot"><span class="annottext">TyLit -&gt; Type
+</span><span class="hs-identifier hs-var">LitT</span></span><span> </span><span class="annot"><span class="annottext">forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Integer -&gt; TyLit
+</span><span class="hs-identifier hs-var">NumTyLit</span></span><span> </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">forall a. Read a =&gt; String -&gt; Maybe a
+</span><span class="hs-identifier hs-var">readMaybe</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679031125"><span class="hs-identifier hs-var">tcName</span></a></span><span>
+</span><span id="line-92"></span><span>            </span><span id="local-6989586621679031099"><span class="annot"><span class="annottext">plainType :: Type
+</span><a href="#local-6989586621679031099"><span class="hs-identifier hs-var hs-var">plainType</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-93"></span><span>                </span><span class="hs-keyword">let</span><span>
+</span><span id="line-94"></span><span>                    </span><span id="local-6989586621679031098"><span class="annot"><span class="annottext">nameBase :: OccName
+</span><a href="#local-6989586621679031098"><span class="hs-identifier hs-var hs-var">nameBase</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-95"></span><span>                        </span><span class="annot"><span class="annottext">String -&gt; OccName
+</span><span class="hs-identifier hs-var">mkOccName</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679031125"><span class="hs-identifier hs-var">tcName</span></a></span><span>
+</span><span id="line-96"></span><span>                    </span><span id="local-6989586621679031097"><span class="annot"><span class="annottext">flavor :: NameFlavour
+</span><a href="#local-6989586621679031097"><span class="hs-identifier hs-var hs-var">flavor</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-97"></span><span>                        </span><span class="annot"><span class="annottext">NameSpace -&gt; PkgName -&gt; ModName -&gt; NameFlavour
+</span><span class="hs-identifier hs-var">NameG</span></span><span>
+</span><span id="line-98"></span><span>                            </span><span class="annot"><span class="annottext">NameSpace
+</span><span class="hs-identifier hs-var">TcClsName</span></span><span>
+</span><span id="line-99"></span><span>                            </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; PkgName
+</span><span class="hs-identifier hs-var">mkPkgName</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">TyCon -&gt; String
+</span><span class="hs-identifier hs-var">tyConPackage</span></span><span> </span><span class="annot"><span class="annottext">TyCon
+</span><a href="#local-6989586621679031126"><span class="hs-identifier hs-var">tyCon</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-100"></span><span>                            </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; ModName
+</span><span class="hs-identifier hs-var">mkModName</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">TyCon -&gt; String
+</span><span class="hs-identifier hs-var">tyConModule</span></span><span> </span><span class="annot"><span class="annottext">TyCon
+</span><a href="#local-6989586621679031126"><span class="hs-identifier hs-var">tyCon</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-101"></span><span>                    </span><span id="local-6989586621679031095"><span class="annot"><span class="annottext">name :: Name
+</span><a href="#local-6989586621679031095"><span class="hs-identifier hs-var hs-var">name</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-102"></span><span>                        </span><span class="annot"><span class="annottext">OccName -&gt; NameFlavour -&gt; Name
+</span><span class="hs-identifier hs-var">Name</span></span><span>
+</span><span id="line-103"></span><span>                            </span><span class="annot"><span class="annottext">OccName
+</span><a href="#local-6989586621679031098"><span class="hs-identifier hs-var">nameBase</span></a></span><span>
+</span><span id="line-104"></span><span>                            </span><span class="annot"><span class="annottext">NameFlavour
+</span><a href="#local-6989586621679031097"><span class="hs-identifier hs-var">flavor</span></a></span><span>
+</span><span id="line-105"></span><span>                </span><span class="hs-keyword">in</span><span>
+</span><span id="line-106"></span><span>                    </span><span class="annot"><span class="annottext">Name -&gt; Type
+</span><span class="hs-identifier hs-var">ConT</span></span><span> </span><span class="annot"><span class="annottext">Name
+</span><a href="#local-6989586621679031095"><span class="hs-identifier hs-var">name</span></a></span><span>
+</span><span id="line-107"></span><span>        </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; Maybe a -&gt; a
+</span><span class="hs-identifier hs-var">fromMaybe</span></span><span> </span><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679031099"><span class="hs-identifier hs-var">plainType</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall (t :: * -&gt; *) (f :: * -&gt; *) a.
+(Foldable t, Alternative f) =&gt;
+t (f a) -&gt; f a
+</span><span class="hs-identifier hs-var">asum</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Maybe Type
+</span><a href="#local-6989586621679031116"><span class="hs-identifier hs-var">tryTicked</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Maybe Type
+</span><a href="#local-6989586621679031123"><span class="hs-identifier hs-var">trySymbol</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Maybe Type
+</span><a href="#local-6989586621679031103"><span class="hs-identifier hs-var">tryNat</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-108"></span><span>
+</span><span id="line-109"></span><span class="hs-comment">-- | Convert a type argument into a Template Haskell 'Type'.</span><span>
+</span><span id="line-110"></span><span class="hs-comment">--</span><span>
+</span><span id="line-111"></span><span class="hs-comment">-- Use with @TypeApplications@.</span><span>
+</span><span id="line-112"></span><span class="hs-comment">--</span><span>
+</span><span id="line-113"></span><span class="hs-comment">-- Example:</span><span>
+</span><span id="line-114"></span><span class="hs-comment">--</span><span>
+</span><span id="line-115"></span><span class="hs-comment">-- @</span><span>
+</span><span id="line-116"></span><span class="hs-comment">-- &gt;&gt;&gt; :set -XTypeApplications</span><span>
+</span><span id="line-117"></span><span class="hs-comment">-- &gt;&gt;&gt; liftType \@Bool</span><span>
+</span><span id="line-118"></span><span class="hs-comment">-- ConT GHC.Types.Bool</span><span>
+</span><span id="line-119"></span><span class="hs-comment">-- &gt;&gt;&gt; liftType \@[Char]</span><span>
+</span><span id="line-120"></span><span class="hs-comment">-- AppT (ConT GHC.Types.[]) (ConT GHC.Types.Char)</span><span>
+</span><span id="line-121"></span><span class="hs-comment">-- @</span><span>
+</span><span id="line-122"></span><span class="hs-comment">--</span><span>
+</span><span id="line-123"></span><span class="hs-comment">-- This works with data kinds, too.</span><span>
+</span><span id="line-124"></span><span class="hs-comment">--</span><span>
+</span><span id="line-125"></span><span class="hs-comment">-- @</span><span>
+</span><span id="line-126"></span><span class="hs-comment">-- &gt;&gt;&gt; :set -XDataKinds</span><span>
+</span><span id="line-127"></span><span class="hs-comment">-- &gt;&gt;&gt; liftType \@3</span><span>
+</span><span id="line-128"></span><span class="hs-comment">-- LitT (NumTyLit 3)</span><span>
+</span><span id="line-129"></span><span class="hs-comment">-- &gt;&gt;&gt; liftType \@&quot;hello&quot;</span><span>
+</span><span id="line-130"></span><span class="hs-comment">-- LitT (StrTyLit &quot;hello&quot;)</span><span>
+</span><span id="line-131"></span><span class="hs-comment">-- &gt;&gt;&gt; liftType \@'[Int, Char]</span><span>
+</span><span id="line-132"></span><span class="hs-comment">-- AppT (AppT (PromotedT GHC.Types.:) (ConT GHC.Types.Int)) (AppT (AppT (PromotedT GHC.Types.:) (ConT GHC.Types.Char)) (PromotedT GHC.Types.[]))</span><span>
+</span><span id="line-133"></span><span class="hs-comment">-- &gt;&gt;&gt; liftType \@'(Int, Char)</span><span>
+</span><span id="line-134"></span><span class="hs-comment">-- AppT (AppT (PromotedT GHC.Tuple.(,)) (ConT GHC.Types.Int)) (ConT GHC.Types.Char)</span><span>
+</span><span id="line-135"></span><span class="hs-comment">-- @</span><span>
+</span><span id="line-136"></span><span class="hs-comment">--</span><span>
+</span><span id="line-137"></span><span class="hs-comment">-- @since 0.1.0.0</span><span>
+</span><span id="line-138"></span><span class="annot"><a href="LiftType.html#liftType"><span class="hs-identifier hs-type">liftType</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679031222"><span class="annot"><a href="#local-6989586621679031222"><span class="hs-identifier hs-type">t</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Typeable</span></span><span> </span><span class="annot"><a href="#local-6989586621679031222"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Type</span></span><span>
+</span><span id="line-139"></span><span id="liftType"><span class="annot"><span class="annottext">liftType :: forall {k} (t :: k). Typeable t =&gt; Type
+</span><a href="LiftType.html#liftType"><span class="hs-identifier hs-var hs-var">liftType</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-140"></span><span>    </span><span class="annot"><span class="annottext">SomeTypeRep -&gt; Type
+</span><a href="LiftType.html#typeRepToType"><span class="hs-identifier hs-var">typeRepToType</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall k (a :: k). TypeRep a -&gt; SomeTypeRep
+</span><span class="hs-identifier hs-var">SomeTypeRep</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall {k} (a :: k). Typeable a =&gt; TypeRep a
+</span><span class="hs-identifier hs-var">typeRep</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621679031222"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-141"></span></pre></body></html>

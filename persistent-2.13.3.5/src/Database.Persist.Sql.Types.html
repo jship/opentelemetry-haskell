@@ -1,0 +1,341 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Database.Persist.Sql.Types</span><span>
+</span><span id="line-2"></span><span>    </span><span class="hs-special">(</span><span> </span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Database.Persist.Sql.Types.html"><span class="hs-identifier">Database.Persist.Sql.Types</span></a></span><span>
+</span><span id="line-3"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.SqlBackend.Internal.html#SqlBackend"><span class="hs-identifier">SqlBackend</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Sql.Types.Internal.html#SqlReadBackend"><span class="hs-identifier">SqlReadBackend</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Sql.Types.Internal.html#SqlWriteBackend"><span class="hs-identifier">SqlWriteBackend</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-4"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.SqlBackend.Internal.Statement.html#Statement"><span class="hs-identifier">Statement</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.SqlBackend.Internal.MkSqlBackend.html#LogFunc"><span class="hs-identifier">LogFunc</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.SqlBackend.Internal.InsertSqlResult.html#InsertSqlResult"><span class="hs-identifier">InsertSqlResult</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-5"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Sql.Types.Internal.html#readToUnknown"><span class="hs-identifier">readToUnknown</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Sql.Types.Internal.html#readToWrite"><span class="hs-identifier">readToWrite</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Sql.Types.Internal.html#writeToUnknown"><span class="hs-identifier">writeToUnknown</span></a></span><span>
+</span><span id="line-6"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Sql.Types.Internal.html#SqlBackendCanRead"><span class="hs-identifier">SqlBackendCanRead</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Sql.Types.Internal.html#SqlBackendCanWrite"><span class="hs-identifier">SqlBackendCanWrite</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Sql.Types.Internal.html#SqlReadT"><span class="hs-identifier">SqlReadT</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Sql.Types.Internal.html#SqlWriteT"><span class="hs-identifier">SqlWriteT</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Sql.Types.Internal.html#IsSqlBackend"><span class="hs-identifier">IsSqlBackend</span></a></span><span>
+</span><span id="line-7"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Class.PersistField.html#OverflowNatural"><span class="hs-identifier">OverflowNatural</span></a></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-8"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Sql.Types.html#ConnectionPoolConfig"><span class="hs-identifier">ConnectionPoolConfig</span></a></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-9"></span><span>    </span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-10"></span><span>
+</span><span id="line-11"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Exception</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Exception</span></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-12"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.Logger</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">NoLoggingT</span></span><span class="hs-special">)</span><span>
+</span><span id="line-13"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.Trans.Reader</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">ReaderT</span></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-14"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.Trans.Resource</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">ResourceT</span></span><span class="hs-special">)</span><span>
+</span><span id="line-15"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Pool</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Pool</span></span><span class="hs-special">)</span><span>
+</span><span id="line-16"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Text</span></span><span class="hs-special">)</span><span>
+</span><span id="line-17"></span><span>
+</span><span id="line-18"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Time</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">NominalDiffTime</span></span><span class="hs-special">)</span><span>
+</span><span id="line-19"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Database.Persist.Sql.Types.Internal.html"><span class="hs-identifier">Database.Persist.Sql.Types.Internal</span></a></span><span>
+</span><span id="line-20"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Database.Persist.Types.html"><span class="hs-identifier">Database.Persist.Types</span></a></span><span>
+</span><span id="line-21"></span><span>
+</span><span id="line-22"></span><span class="hs-keyword">data</span><span> </span><span id="Column"><span class="annot"><a href="Database.Persist.Sql.Types.html#Column"><span class="hs-identifier hs-var">Column</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Column"><span class="annot"><a href="Database.Persist.Sql.Types.html#Column"><span class="hs-identifier hs-var">Column</span></a></span></span><span>
+</span><span id="line-23"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="cName"><span class="annot"><span class="annottext">Column -&gt; FieldNameDB
+</span><a href="Database.Persist.Sql.Types.html#cName"><span class="hs-identifier hs-var hs-var">cName</span></a></span></span><span>      </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="Database.Persist.Names.html#FieldNameDB"><span class="hs-identifier hs-type">FieldNameDB</span></a></span><span>
+</span><span id="line-24"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="cNull"><span class="annot"><span class="annottext">Column -&gt; Bool
+</span><a href="Database.Persist.Sql.Types.html#cNull"><span class="hs-identifier hs-var hs-var">cNull</span></a></span></span><span>      </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-25"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="cSqlType"><span class="annot"><span class="annottext">Column -&gt; SqlType
+</span><a href="Database.Persist.Sql.Types.html#cSqlType"><span class="hs-identifier hs-var hs-var">cSqlType</span></a></span></span><span>   </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="Database.Persist.Types.Base.html#SqlType"><span class="hs-identifier hs-type">SqlType</span></a></span><span>
+</span><span id="line-26"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="cDefault"><span class="annot"><span class="annottext">Column -&gt; Maybe Text
+</span><a href="Database.Persist.Sql.Types.html#cDefault"><span class="hs-identifier hs-var hs-var">cDefault</span></a></span></span><span>   </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">)</span><span>
+</span><span id="line-27"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="cGenerated"><span class="annot"><span class="annottext">Column -&gt; Maybe Text
+</span><a href="Database.Persist.Sql.Types.html#cGenerated"><span class="hs-identifier hs-var hs-var">cGenerated</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">)</span><span>
+</span><span id="line-28"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="cDefaultConstraintName"><span class="annot"><span class="annottext">Column -&gt; Maybe ConstraintNameDB
+</span><a href="Database.Persist.Sql.Types.html#cDefaultConstraintName"><span class="hs-identifier hs-var hs-var">cDefaultConstraintName</span></a></span></span><span>   </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Database.Persist.Names.html#ConstraintNameDB"><span class="hs-identifier hs-type">ConstraintNameDB</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-29"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="cMaxLen"><span class="annot"><span class="annottext">Column -&gt; Maybe Integer
+</span><a href="Database.Persist.Sql.Types.html#cMaxLen"><span class="hs-identifier hs-var hs-var">cMaxLen</span></a></span></span><span>    </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Integer</span></span><span class="hs-special">)</span><span>
+</span><span id="line-30"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="cReference"><span class="annot"><span class="annottext">Column -&gt; Maybe ColumnReference
+</span><a href="Database.Persist.Sql.Types.html#cReference"><span class="hs-identifier hs-var hs-var">cReference</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Database.Persist.Sql.Types.html#ColumnReference"><span class="hs-identifier hs-type">ColumnReference</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-31"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-32"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679933148"><span id="local-6989586621679933166"><span class="annot"><span class="annottext">Column -&gt; Column -&gt; Bool
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+/= :: Column -&gt; Column -&gt; Bool
+$c/= :: Column -&gt; Column -&gt; Bool
+== :: Column -&gt; Column -&gt; Bool
+$c== :: Column -&gt; Column -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679933097"><span id="local-6989586621679933099"><span id="local-6989586621679933102"><span id="local-6989586621679933105"><span id="local-6989586621679933108"><span id="local-6989586621679933122"><span id="local-6989586621679933140"><span class="annot"><span class="annottext">Eq Column
+Column -&gt; Column -&gt; Bool
+Column -&gt; Column -&gt; Ordering
+Column -&gt; Column -&gt; Column
+forall a.
+Eq a
+-&gt; (a -&gt; a -&gt; Ordering)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; Ord a
+min :: Column -&gt; Column -&gt; Column
+$cmin :: Column -&gt; Column -&gt; Column
+max :: Column -&gt; Column -&gt; Column
+$cmax :: Column -&gt; Column -&gt; Column
+&gt;= :: Column -&gt; Column -&gt; Bool
+$c&gt;= :: Column -&gt; Column -&gt; Bool
+&gt; :: Column -&gt; Column -&gt; Bool
+$c&gt; :: Column -&gt; Column -&gt; Bool
+&lt;= :: Column -&gt; Column -&gt; Bool
+$c&lt;= :: Column -&gt; Column -&gt; Bool
+&lt; :: Column -&gt; Column -&gt; Bool
+$c&lt; :: Column -&gt; Column -&gt; Bool
+compare :: Column -&gt; Column -&gt; Ordering
+$ccompare :: Column -&gt; Column -&gt; Ordering
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Ord</span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679933069"><span id="local-6989586621679933071"><span id="local-6989586621679933091"><span class="annot"><span class="annottext">Int -&gt; Column -&gt; ShowS
+[Column] -&gt; ShowS
+Column -&gt; String
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+showList :: [Column] -&gt; ShowS
+$cshowList :: [Column] -&gt; ShowS
+show :: Column -&gt; String
+$cshow :: Column -&gt; String
+showsPrec :: Int -&gt; Column -&gt; ShowS
+$cshowsPrec :: Int -&gt; Column -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-33"></span><span>
+</span><span id="line-34"></span><span class="hs-comment">-- | This value specifies how a field references another table.</span><span>
+</span><span id="line-35"></span><span class="hs-comment">--</span><span>
+</span><span id="line-36"></span><span class="hs-comment">-- @since 2.11.0.0</span><span>
+</span><span id="line-37"></span><span class="hs-keyword">data</span><span> </span><span id="ColumnReference"><span class="annot"><a href="Database.Persist.Sql.Types.html#ColumnReference"><span class="hs-identifier hs-var">ColumnReference</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="ColumnReference"><span class="annot"><a href="Database.Persist.Sql.Types.html#ColumnReference"><span class="hs-identifier hs-var">ColumnReference</span></a></span></span><span>
+</span><span id="line-38"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="crTableName"><span class="annot"><span class="annottext">ColumnReference -&gt; EntityNameDB
+</span><a href="Database.Persist.Sql.Types.html#crTableName"><span class="hs-identifier hs-var hs-var">crTableName</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="Database.Persist.Names.html#EntityNameDB"><span class="hs-identifier hs-type">EntityNameDB</span></a></span><span>
+</span><span id="line-39"></span><span>    </span><span class="hs-comment">-- ^ The table name that the</span><span>
+</span><span id="line-40"></span><span>    </span><span class="hs-comment">--</span><span>
+</span><span id="line-41"></span><span>    </span><span class="hs-comment">-- @since 2.11.0.0</span><span>
+</span><span id="line-42"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="crConstraintName"><span class="annot"><span class="annottext">ColumnReference -&gt; ConstraintNameDB
+</span><a href="Database.Persist.Sql.Types.html#crConstraintName"><span class="hs-identifier hs-var hs-var">crConstraintName</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="Database.Persist.Names.html#ConstraintNameDB"><span class="hs-identifier hs-type">ConstraintNameDB</span></a></span><span>
+</span><span id="line-43"></span><span>    </span><span class="hs-comment">-- ^ The name of the foreign key constraint.</span><span>
+</span><span id="line-44"></span><span>    </span><span class="hs-comment">--</span><span>
+</span><span id="line-45"></span><span>    </span><span class="hs-comment">-- @since 2.11.0.0</span><span>
+</span><span id="line-46"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="crFieldCascade"><span class="annot"><span class="annottext">ColumnReference -&gt; FieldCascade
+</span><a href="Database.Persist.Sql.Types.html#crFieldCascade"><span class="hs-identifier hs-var hs-var">crFieldCascade</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="Database.Persist.Types.Base.html#FieldCascade"><span class="hs-identifier hs-type">FieldCascade</span></a></span><span>
+</span><span id="line-47"></span><span>    </span><span class="hs-comment">-- ^ Whether or not updates/deletions to the referenced table cascade</span><span>
+</span><span id="line-48"></span><span>    </span><span class="hs-comment">-- to this table.</span><span>
+</span><span id="line-49"></span><span>    </span><span class="hs-comment">--</span><span>
+</span><span id="line-50"></span><span>    </span><span class="hs-comment">-- @since 2.11.0.0</span><span>
+</span><span id="line-51"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-52"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679933052"><span id="local-6989586621679933059"><span class="annot"><span class="annottext">ColumnReference -&gt; ColumnReference -&gt; Bool
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+/= :: ColumnReference -&gt; ColumnReference -&gt; Bool
+$c/= :: ColumnReference -&gt; ColumnReference -&gt; Bool
+== :: ColumnReference -&gt; ColumnReference -&gt; Bool
+$c== :: ColumnReference -&gt; ColumnReference -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679933025"><span id="local-6989586621679933027"><span id="local-6989586621679933030"><span id="local-6989586621679933033"><span id="local-6989586621679933036"><span id="local-6989586621679933041"><span id="local-6989586621679933048"><span class="annot"><span class="annottext">Eq ColumnReference
+ColumnReference -&gt; ColumnReference -&gt; Bool
+ColumnReference -&gt; ColumnReference -&gt; Ordering
+ColumnReference -&gt; ColumnReference -&gt; ColumnReference
+forall a.
+Eq a
+-&gt; (a -&gt; a -&gt; Ordering)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; Ord a
+min :: ColumnReference -&gt; ColumnReference -&gt; ColumnReference
+$cmin :: ColumnReference -&gt; ColumnReference -&gt; ColumnReference
+max :: ColumnReference -&gt; ColumnReference -&gt; ColumnReference
+$cmax :: ColumnReference -&gt; ColumnReference -&gt; ColumnReference
+&gt;= :: ColumnReference -&gt; ColumnReference -&gt; Bool
+$c&gt;= :: ColumnReference -&gt; ColumnReference -&gt; Bool
+&gt; :: ColumnReference -&gt; ColumnReference -&gt; Bool
+$c&gt; :: ColumnReference -&gt; ColumnReference -&gt; Bool
+&lt;= :: ColumnReference -&gt; ColumnReference -&gt; Bool
+$c&lt;= :: ColumnReference -&gt; ColumnReference -&gt; Bool
+&lt; :: ColumnReference -&gt; ColumnReference -&gt; Bool
+$c&lt; :: ColumnReference -&gt; ColumnReference -&gt; Bool
+compare :: ColumnReference -&gt; ColumnReference -&gt; Ordering
+$ccompare :: ColumnReference -&gt; ColumnReference -&gt; Ordering
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Ord</span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679933013"><span id="local-6989586621679933015"><span id="local-6989586621679933023"><span class="annot"><span class="annottext">Int -&gt; ColumnReference -&gt; ShowS
+[ColumnReference] -&gt; ShowS
+ColumnReference -&gt; String
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+showList :: [ColumnReference] -&gt; ShowS
+$cshowList :: [ColumnReference] -&gt; ShowS
+show :: ColumnReference -&gt; String
+$cshow :: ColumnReference -&gt; String
+showsPrec :: Int -&gt; ColumnReference -&gt; ShowS
+$cshowsPrec :: Int -&gt; ColumnReference -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-53"></span><span>
+</span><span id="line-54"></span><span class="hs-keyword">data</span><span> </span><span id="PersistentSqlException"><span class="annot"><a href="Database.Persist.Sql.Types.html#PersistentSqlException"><span class="hs-identifier hs-var">PersistentSqlException</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="StatementAlreadyFinalized"><span class="annot"><a href="Database.Persist.Sql.Types.html#StatementAlreadyFinalized"><span class="hs-identifier hs-var">StatementAlreadyFinalized</span></a></span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-55"></span><span>                            </span><span class="hs-glyph">|</span><span> </span><span id="Couldn%27tGetSQLConnection"><span class="annot"><a href="Database.Persist.Sql.Types.html#Couldn%27tGetSQLConnection"><span class="hs-identifier hs-var">Couldn'tGetSQLConnection</span></a></span></span><span>
+</span><span id="line-56"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span id="local-6989586621679933003"><span id="local-6989586621679933005"><span id="local-6989586621679933009"><span class="annot"><span class="annottext">Int -&gt; PersistentSqlException -&gt; ShowS
+[PersistentSqlException] -&gt; ShowS
+PersistentSqlException -&gt; String
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+showList :: [PersistentSqlException] -&gt; ShowS
+$cshowList :: [PersistentSqlException] -&gt; ShowS
+show :: PersistentSqlException -&gt; String
+$cshow :: PersistentSqlException -&gt; String
+showsPrec :: Int -&gt; PersistentSqlException -&gt; ShowS
+$cshowsPrec :: Int -&gt; PersistentSqlException -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span>
+</span><span id="line-57"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679932993"><span id="local-6989586621679932995"><span id="local-6989586621679932997"><span class="annot"><span class="hs-identifier hs-type">Exception</span></span><span> </span><span class="annot"><a href="Database.Persist.Sql.Types.html#PersistentSqlException"><span class="hs-identifier hs-type">PersistentSqlException</span></a></span></span></span></span><span>
+</span><span id="line-58"></span><span>
+</span><span id="line-59"></span><span class="hs-keyword">type</span><span> </span><span id="SqlPersistT"><span class="annot"><a href="Database.Persist.Sql.Types.html#SqlPersistT"><span class="hs-identifier hs-var">SqlPersistT</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ReaderT</span></span><span> </span><span class="annot"><a href="Database.Persist.SqlBackend.Internal.html#SqlBackend"><span class="hs-identifier hs-type">SqlBackend</span></a></span><span>
+</span><span id="line-60"></span><span>
+</span><span id="line-61"></span><span class="hs-keyword">type</span><span> </span><span id="SqlPersistM"><span class="annot"><a href="Database.Persist.Sql.Types.html#SqlPersistM"><span class="hs-identifier hs-var">SqlPersistM</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><a href="Database.Persist.Sql.Types.html#SqlPersistT"><span class="hs-identifier hs-type">SqlPersistT</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">NoLoggingT</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">ResourceT</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-62"></span><span>
+</span><span id="line-63"></span><span class="hs-keyword">type</span><span> </span><span id="ConnectionPool"><span class="annot"><a href="Database.Persist.Sql.Types.html#ConnectionPool"><span class="hs-identifier hs-var">ConnectionPool</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Pool</span></span><span> </span><span class="annot"><a href="Database.Persist.SqlBackend.Internal.html#SqlBackend"><span class="hs-identifier hs-type">SqlBackend</span></a></span><span>
+</span><span id="line-64"></span><span>
+</span><span id="line-65"></span><span class="hs-comment">-- | Values to configure a pool of database connections. See &quot;Data.Pool&quot; for details.</span><span>
+</span><span id="line-66"></span><span class="hs-comment">--</span><span>
+</span><span id="line-67"></span><span class="hs-comment">-- @since 2.11.0.0</span><span>
+</span><span id="line-68"></span><span class="hs-keyword">data</span><span> </span><span id="ConnectionPoolConfig"><span class="annot"><a href="Database.Persist.Sql.Types.html#ConnectionPoolConfig"><span class="hs-identifier hs-var">ConnectionPoolConfig</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="ConnectionPoolConfig"><span class="annot"><a href="Database.Persist.Sql.Types.html#ConnectionPoolConfig"><span class="hs-identifier hs-var">ConnectionPoolConfig</span></a></span></span><span>
+</span><span id="line-69"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="connectionPoolConfigStripes"><span class="annot"><span class="annottext">ConnectionPoolConfig -&gt; Int
+</span><a href="Database.Persist.Sql.Types.html#connectionPoolConfigStripes"><span class="hs-identifier hs-var hs-var">connectionPoolConfigStripes</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-comment">-- ^ How many stripes to divide the pool into. See &quot;Data.Pool&quot; for details. Default: 1.</span><span>
+</span><span id="line-70"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="connectionPoolConfigIdleTimeout"><span class="annot"><span class="annottext">ConnectionPoolConfig -&gt; NominalDiffTime
+</span><a href="Database.Persist.Sql.Types.html#connectionPoolConfigIdleTimeout"><span class="hs-identifier hs-var hs-var">connectionPoolConfigIdleTimeout</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">NominalDiffTime</span></span><span> </span><span class="hs-comment">-- ^ How long connections can remain idle before being disposed of, in seconds. Default: 600</span><span>
+</span><span id="line-71"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="connectionPoolConfigSize"><span class="annot"><span class="annottext">ConnectionPoolConfig -&gt; Int
+</span><a href="Database.Persist.Sql.Types.html#connectionPoolConfigSize"><span class="hs-identifier hs-var hs-var">connectionPoolConfigSize</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-comment">-- ^ How many connections should be held in the connection pool. Default: 10</span><span>
+</span><span id="line-72"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-73"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679932973"><span id="local-6989586621679932975"><span id="local-6989586621679932983"><span class="annot"><span class="annottext">Int -&gt; ConnectionPoolConfig -&gt; ShowS
+[ConnectionPoolConfig] -&gt; ShowS
+ConnectionPoolConfig -&gt; String
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+showList :: [ConnectionPoolConfig] -&gt; ShowS
+$cshowList :: [ConnectionPoolConfig] -&gt; ShowS
+show :: ConnectionPoolConfig -&gt; String
+$cshow :: ConnectionPoolConfig -&gt; String
+showsPrec :: Int -&gt; ConnectionPoolConfig -&gt; ShowS
+$cshowsPrec :: Int -&gt; ConnectionPoolConfig -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-74"></span><span>
+</span><span id="line-75"></span><span class="hs-comment">-- TODO: Bad defaults for SQLite maybe?</span><span>
+</span><span id="line-76"></span><span class="hs-comment">-- | Initializes a ConnectionPoolConfig with default values. See the documentation of 'ConnectionPoolConfig' for each field's default value.</span><span>
+</span><span id="line-77"></span><span class="hs-comment">--</span><span>
+</span><span id="line-78"></span><span class="hs-comment">-- @since 2.11.0.0</span><span>
+</span><span id="line-79"></span><span class="annot"><a href="Database.Persist.Sql.Types.html#defaultConnectionPoolConfig"><span class="hs-identifier hs-type">defaultConnectionPoolConfig</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Database.Persist.Sql.Types.html#ConnectionPoolConfig"><span class="hs-identifier hs-type">ConnectionPoolConfig</span></a></span><span>
+</span><span id="line-80"></span><span id="defaultConnectionPoolConfig"><span class="annot"><span class="annottext">defaultConnectionPoolConfig :: ConnectionPoolConfig
+</span><a href="Database.Persist.Sql.Types.html#defaultConnectionPoolConfig"><span class="hs-identifier hs-var hs-var">defaultConnectionPoolConfig</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int -&gt; NominalDiffTime -&gt; Int -&gt; ConnectionPoolConfig
+</span><a href="Database.Persist.Sql.Types.html#ConnectionPoolConfig"><span class="hs-identifier hs-var">ConnectionPoolConfig</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="annottext">NominalDiffTime
+</span><span class="hs-number">600</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">10</span></span><span>
+</span><span id="line-81"></span><span>
+</span><span id="line-82"></span><span class="hs-comment">-- $rawSql</span><span>
+</span><span id="line-83"></span><span class="hs-comment">--</span><span>
+</span><span id="line-84"></span><span class="hs-comment">-- Although it covers most of the useful cases, @persistent@'s</span><span>
+</span><span id="line-85"></span><span class="hs-comment">-- API may not be enough for some of your tasks.  May be you need</span><span>
+</span><span id="line-86"></span><span class="hs-comment">-- some complex @JOIN@ query, or a database-specific command</span><span>
+</span><span id="line-87"></span><span class="hs-comment">-- needs to be issued.</span><span>
+</span><span id="line-88"></span><span class="hs-comment">--</span><span>
+</span><span id="line-89"></span><span class="hs-comment">-- To issue raw SQL queries, use 'rawSql'. It does all the hard work of</span><span>
+</span><span id="line-90"></span><span class="hs-comment">-- automatically parsing the rows of the result.  It may return:</span><span>
+</span><span id="line-91"></span><span class="hs-comment">--</span><span>
+</span><span id="line-92"></span><span class="hs-comment">--   * An 'Entity', that which 'selectList' returns.</span><span>
+</span><span id="line-93"></span><span class="hs-comment">--     All of your entity's fields are</span><span>
+</span><span id="line-94"></span><span class="hs-comment">--     automatically parsed.</span><span>
+</span><span id="line-95"></span><span class="hs-comment">--</span><span>
+</span><span id="line-96"></span><span class="hs-comment">--   * A @'Single' a@, which is a single, raw column of type @a@.</span><span>
+</span><span id="line-97"></span><span class="hs-comment">--     You may use a Haskell type (such as in your entity</span><span>
+</span><span id="line-98"></span><span class="hs-comment">--     definitions), for example @Single Text@ or @Single Int@,</span><span>
+</span><span id="line-99"></span><span class="hs-comment">--     or you may get the raw column value with @Single</span><span>
+</span><span id="line-100"></span><span class="hs-comment">--     'PersistValue'@.</span><span>
+</span><span id="line-101"></span><span class="hs-comment">--</span><span>
+</span><span id="line-102"></span><span class="hs-comment">--   * A tuple combining any of these (including other tuples).</span><span>
+</span><span id="line-103"></span><span class="hs-comment">--     Using tuples allows you to return many entities in one</span><span>
+</span><span id="line-104"></span><span class="hs-comment">--     query.</span><span>
+</span><span id="line-105"></span><span class="hs-comment">--</span><span>
+</span><span id="line-106"></span><span class="hs-comment">-- The only difference between issuing SQL queries with 'rawSql'</span><span>
+</span><span id="line-107"></span><span class="hs-comment">-- and using other means is that we have an /entity selection/</span><span>
+</span><span id="line-108"></span><span class="hs-comment">-- /placeholder/, the double question mark @??@.  It /must/ be</span><span>
+</span><span id="line-109"></span><span class="hs-comment">-- used whenever you want to @SELECT@ an 'Entity' from your</span><span>
+</span><span id="line-110"></span><span class="hs-comment">-- query.  Here's a sample SQL query @sampleStmt@ that may be</span><span>
+</span><span id="line-111"></span><span class="hs-comment">-- issued:</span><span>
+</span><span id="line-112"></span><span class="hs-comment">--</span><span>
+</span><span id="line-113"></span><span class="hs-comment">-- @</span><span>
+</span><span id="line-114"></span><span class="hs-comment">-- SELECT ??, ??</span><span>
+</span><span id="line-115"></span><span class="hs-comment">-- FROM \&quot;Person\&quot;, \&quot;Likes\&quot;, \&quot;Object\&quot;</span><span>
+</span><span id="line-116"></span><span class="hs-comment">-- WHERE \&quot;Person\&quot;.id = \&quot;Likes\&quot;.\&quot;personId\&quot;</span><span>
+</span><span id="line-117"></span><span class="hs-comment">-- AND \&quot;Object\&quot;.id = \&quot;Likes\&quot;.\&quot;objectId\&quot;</span><span>
+</span><span id="line-118"></span><span class="hs-comment">-- AND \&quot;Person\&quot;.name LIKE ?</span><span>
+</span><span id="line-119"></span><span class="hs-comment">-- @</span><span>
+</span><span id="line-120"></span><span class="hs-comment">--</span><span>
+</span><span id="line-121"></span><span class="hs-comment">-- To use that query, you could say</span><span>
+</span><span id="line-122"></span><span class="hs-comment">--</span><span>
+</span><span id="line-123"></span><span class="hs-comment">-- @</span><span>
+</span><span id="line-124"></span><span class="hs-comment">-- do results &lt;- 'rawSql' sampleStmt [\&quot;%Luke%\&quot;]</span><span>
+</span><span id="line-125"></span><span class="hs-comment">--    forM_ results $</span><span>
+</span><span id="line-126"></span><span class="hs-comment">--      \\( Entity personKey person</span><span>
+</span><span id="line-127"></span><span class="hs-comment">--       , Entity objectKey object</span><span>
+</span><span id="line-128"></span><span class="hs-comment">--       ) -&gt; do ...</span><span>
+</span><span id="line-129"></span><span class="hs-comment">-- @</span><span>
+</span><span id="line-130"></span><span class="hs-comment">--</span><span>
+</span><span id="line-131"></span><span class="hs-comment">-- Note that 'rawSql' knows how to replace the double question</span><span>
+</span><span id="line-132"></span><span class="hs-comment">-- marks @??@ because of the type of the @results@.</span><span>
+</span><span id="line-133"></span><span>
+</span><span id="line-134"></span><span>
+</span><span id="line-135"></span><span class="hs-comment">-- | A single column (see 'rawSql').  Any 'PersistField' may be</span><span>
+</span><span id="line-136"></span><span class="hs-comment">-- used here, including 'PersistValue' (which does not do any</span><span>
+</span><span id="line-137"></span><span class="hs-comment">-- processing).</span><span>
+</span><span id="line-138"></span><span class="hs-keyword">newtype</span><span> </span><span id="Single"><span class="annot"><a href="Database.Persist.Sql.Types.html#Single"><span class="hs-identifier hs-var">Single</span></a></span></span><span> </span><span id="local-6989586621679933237"><span class="annot"><a href="#local-6989586621679933237"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Single"><span class="annot"><a href="Database.Persist.Sql.Types.html#Single"><span class="hs-identifier hs-var">Single</span></a></span></span><span> </span><span class="hs-special">{</span><span id="unSingle"><span class="annot"><span class="annottext">forall a. Single a -&gt; a
+</span><a href="Database.Persist.Sql.Types.html#unSingle"><span class="hs-identifier hs-var hs-var">unSingle</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621679933237"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">}</span><span>
+</span><span id="line-139"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679932963"><span id="local-6989586621679932967"><span class="annot"><span class="annottext">Single a -&gt; Single a -&gt; Bool
+forall a. Eq a =&gt; Single a -&gt; Single a -&gt; Bool
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+/= :: Single a -&gt; Single a -&gt; Bool
+$c/= :: forall a. Eq a =&gt; Single a -&gt; Single a -&gt; Bool
+== :: Single a -&gt; Single a -&gt; Bool
+$c== :: forall a. Eq a =&gt; Single a -&gt; Single a -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679932930"><span id="local-6989586621679932934"><span id="local-6989586621679932938"><span id="local-6989586621679932942"><span id="local-6989586621679932946"><span id="local-6989586621679932950"><span id="local-6989586621679932954"><span class="annot"><span class="annottext">Single a -&gt; Single a -&gt; Bool
+Single a -&gt; Single a -&gt; Ordering
+Single a -&gt; Single a -&gt; Single a
+forall a.
+Eq a
+-&gt; (a -&gt; a -&gt; Ordering)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; Ord a
+forall {a}. Ord a =&gt; Eq (Single a)
+forall a. Ord a =&gt; Single a -&gt; Single a -&gt; Bool
+forall a. Ord a =&gt; Single a -&gt; Single a -&gt; Ordering
+forall a. Ord a =&gt; Single a -&gt; Single a -&gt; Single a
+min :: Single a -&gt; Single a -&gt; Single a
+$cmin :: forall a. Ord a =&gt; Single a -&gt; Single a -&gt; Single a
+max :: Single a -&gt; Single a -&gt; Single a
+$cmax :: forall a. Ord a =&gt; Single a -&gt; Single a -&gt; Single a
+&gt;= :: Single a -&gt; Single a -&gt; Bool
+$c&gt;= :: forall a. Ord a =&gt; Single a -&gt; Single a -&gt; Bool
+&gt; :: Single a -&gt; Single a -&gt; Bool
+$c&gt; :: forall a. Ord a =&gt; Single a -&gt; Single a -&gt; Bool
+&lt;= :: Single a -&gt; Single a -&gt; Bool
+$c&lt;= :: forall a. Ord a =&gt; Single a -&gt; Single a -&gt; Bool
+&lt; :: Single a -&gt; Single a -&gt; Bool
+$c&lt; :: forall a. Ord a =&gt; Single a -&gt; Single a -&gt; Bool
+compare :: Single a -&gt; Single a -&gt; Ordering
+$ccompare :: forall a. Ord a =&gt; Single a -&gt; Single a -&gt; Ordering
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Ord</span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679932918"><span id="local-6989586621679932920"><span id="local-6989586621679932924"><span class="annot"><span class="annottext">Int -&gt; Single a -&gt; ShowS
+forall a. Show a =&gt; Int -&gt; Single a -&gt; ShowS
+forall a. Show a =&gt; [Single a] -&gt; ShowS
+forall a. Show a =&gt; Single a -&gt; String
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+showList :: [Single a] -&gt; ShowS
+$cshowList :: forall a. Show a =&gt; [Single a] -&gt; ShowS
+show :: Single a -&gt; String
+$cshow :: forall a. Show a =&gt; Single a -&gt; String
+showsPrec :: Int -&gt; Single a -&gt; ShowS
+$cshowsPrec :: forall a. Show a =&gt; Int -&gt; Single a -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679932902"><span id="local-6989586621679932911"><span id="local-6989586621679932914"><span id="local-6989586621679932916"><span class="annot"><span class="annottext">ReadPrec [Single a]
+ReadPrec (Single a)
+ReadS [Single a]
+forall a. Read a =&gt; ReadPrec [Single a]
+forall a. Read a =&gt; ReadPrec (Single a)
+forall a. Read a =&gt; Int -&gt; ReadS (Single a)
+forall a. Read a =&gt; ReadS [Single a]
+forall a.
+(Int -&gt; ReadS a)
+-&gt; ReadS [a] -&gt; ReadPrec a -&gt; ReadPrec [a] -&gt; Read a
+readListPrec :: ReadPrec [Single a]
+$creadListPrec :: forall a. Read a =&gt; ReadPrec [Single a]
+readPrec :: ReadPrec (Single a)
+$creadPrec :: forall a. Read a =&gt; ReadPrec (Single a)
+readList :: ReadS [Single a]
+$creadList :: forall a. Read a =&gt; ReadS [Single a]
+readsPrec :: Int -&gt; ReadS (Single a)
+$creadsPrec :: forall a. Read a =&gt; Int -&gt; ReadS (Single a)
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Read</span></span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-140"></span><span>
+</span><span id="line-141"></span></pre></body></html>

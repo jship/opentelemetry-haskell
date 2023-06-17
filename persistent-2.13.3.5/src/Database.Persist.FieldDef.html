@@ -1,0 +1,102 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-comment">-- |</span><span>
+</span><span id="line-2"></span><span class="hs-comment">--</span><span>
+</span><span id="line-3"></span><span class="hs-comment">-- @since 2.13.0.0</span><span>
+</span><span id="line-4"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Database.Persist.FieldDef</span><span>
+</span><span id="line-5"></span><span>    </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-comment">-- * The 'FieldDef' type</span></span><span>
+</span><span id="line-6"></span><span>      </span><span class="annot"><a href="Database.Persist.Types.Base.html#FieldDef"><span class="hs-identifier">FieldDef</span></a></span><span>
+</span><span id="line-7"></span><span>      </span><span class="annot"><span class="hs-comment">-- ** Setters</span></span><span>
+</span><span id="line-8"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.FieldDef.html#setFieldAttrs"><span class="hs-identifier">setFieldAttrs</span></a></span><span>
+</span><span id="line-9"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.FieldDef.html#overFieldAttrs"><span class="hs-identifier">overFieldAttrs</span></a></span><span>
+</span><span id="line-10"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.FieldDef.html#addFieldAttr"><span class="hs-identifier">addFieldAttr</span></a></span><span>
+</span><span id="line-11"></span><span>      </span><span class="annot"><span class="hs-comment">-- ** Helpers</span></span><span>
+</span><span id="line-12"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.FieldDef.html#isFieldNullable"><span class="hs-identifier">isFieldNullable</span></a></span><span>
+</span><span id="line-13"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.FieldDef.html#isFieldMaybe"><span class="hs-identifier">isFieldMaybe</span></a></span><span>
+</span><span id="line-14"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Types.Base.html#isFieldNotGenerated"><span class="hs-identifier">isFieldNotGenerated</span></a></span><span>
+</span><span id="line-15"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Types.Base.html#isHaskellField"><span class="hs-identifier">isHaskellField</span></a></span><span>
+</span><span id="line-16"></span><span>      </span><span class="annot"><span class="hs-comment">-- * 'FieldCascade'</span></span><span>
+</span><span id="line-17"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Types.Base.html#FieldCascade"><span class="hs-identifier">FieldCascade</span></a></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-18"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Types.Base.html#renderFieldCascade"><span class="hs-identifier">renderFieldCascade</span></a></span><span>
+</span><span id="line-19"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Types.Base.html#renderCascadeAction"><span class="hs-identifier">renderCascadeAction</span></a></span><span>
+</span><span id="line-20"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Types.Base.html#noCascade"><span class="hs-identifier">noCascade</span></a></span><span>
+</span><span id="line-21"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Types.Base.html#CascadeAction"><span class="hs-identifier">CascadeAction</span></a></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-22"></span><span>    </span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-23"></span><span>
+</span><span id="line-24"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Database.Persist.FieldDef.Internal.html"><span class="hs-identifier">Database.Persist.FieldDef.Internal</span></a></span><span>
+</span><span id="line-25"></span><span>
+</span><span id="line-26"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Database.Persist.Types.Base.html"><span class="hs-identifier">Database.Persist.Types.Base</span></a></span><span>
+</span><span id="line-27"></span><span>       </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Database.Persist.Types.Base.html#FieldAttr"><span class="hs-identifier">FieldAttr</span></a></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-28"></span><span>       </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Types.Base.html#FieldType"><span class="hs-identifier">FieldType</span></a></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-29"></span><span>       </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Types.Base.html#IsNullable"><span class="hs-identifier">IsNullable</span></a></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-30"></span><span>       </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Types.Base.html#fieldAttrsContainsNullable"><span class="hs-identifier">fieldAttrsContainsNullable</span></a></span><span>
+</span><span id="line-31"></span><span>       </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Database.Persist.Types.Base.html#isHaskellField"><span class="hs-identifier">isHaskellField</span></a></span><span>
+</span><span id="line-32"></span><span>       </span><span class="hs-special">)</span><span>
+</span><span id="line-33"></span><span>
+</span><span id="line-34"></span><span class="hs-comment">-- | Replace the 'FieldDef' 'FieldAttr' with the new list.</span><span>
+</span><span id="line-35"></span><span class="hs-comment">--</span><span>
+</span><span id="line-36"></span><span class="hs-comment">-- @since 2.13.0.0</span><span>
+</span><span id="line-37"></span><span class="annot"><a href="Database.Persist.FieldDef.html#setFieldAttrs"><span class="hs-identifier hs-type">setFieldAttrs</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Database.Persist.Types.Base.html#FieldAttr"><span class="hs-identifier hs-type">FieldAttr</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Database.Persist.Types.Base.html#FieldDef"><span class="hs-identifier hs-type">FieldDef</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Database.Persist.Types.Base.html#FieldDef"><span class="hs-identifier hs-type">FieldDef</span></a></span><span>
+</span><span id="line-38"></span><span id="setFieldAttrs"><span class="annot"><span class="annottext">setFieldAttrs :: [FieldAttr] -&gt; FieldDef -&gt; FieldDef
+</span><a href="Database.Persist.FieldDef.html#setFieldAttrs"><span class="hs-identifier hs-var hs-var">setFieldAttrs</span></a></span></span><span> </span><span id="local-6989586621679926819"><span class="annot"><span class="annottext">[FieldAttr]
+</span><a href="#local-6989586621679926819"><span class="hs-identifier hs-var">fas</span></a></span></span><span> </span><span id="local-6989586621679926818"><span class="annot"><span class="annottext">FieldDef
+</span><a href="#local-6989586621679926818"><span class="hs-identifier hs-var">fd</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">FieldDef
+</span><a href="#local-6989586621679926818"><span class="hs-identifier hs-var">fd</span></a></span><span> </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">fieldAttrs :: [FieldAttr]
+</span><a href="Database.Persist.Types.Base.html#fieldAttrs"><span class="hs-identifier hs-var">fieldAttrs</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[FieldAttr]
+</span><a href="#local-6989586621679926819"><span class="hs-identifier hs-var">fas</span></a></span><span> </span><span class="hs-special">}</span><span>
+</span><span id="line-39"></span><span>
+</span><span id="line-40"></span><span class="hs-comment">-- | Modify the list of field attributes.</span><span>
+</span><span id="line-41"></span><span class="hs-comment">--</span><span>
+</span><span id="line-42"></span><span class="hs-comment">-- @since 2.13.0.0</span><span>
+</span><span id="line-43"></span><span class="annot"><a href="Database.Persist.FieldDef.html#overFieldAttrs"><span class="hs-identifier hs-type">overFieldAttrs</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="hs-special">[</span><span class="annot"><a href="Database.Persist.Types.Base.html#FieldAttr"><span class="hs-identifier hs-type">FieldAttr</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Database.Persist.Types.Base.html#FieldAttr"><span class="hs-identifier hs-type">FieldAttr</span></a></span><span class="hs-special">]</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Database.Persist.Types.Base.html#FieldDef"><span class="hs-identifier hs-type">FieldDef</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Database.Persist.Types.Base.html#FieldDef"><span class="hs-identifier hs-type">FieldDef</span></a></span><span>
+</span><span id="line-44"></span><span id="overFieldAttrs"><span class="annot"><span class="annottext">overFieldAttrs :: ([FieldAttr] -&gt; [FieldAttr]) -&gt; FieldDef -&gt; FieldDef
+</span><a href="Database.Persist.FieldDef.html#overFieldAttrs"><span class="hs-identifier hs-var hs-var">overFieldAttrs</span></a></span></span><span> </span><span id="local-6989586621679926816"><span class="annot"><span class="annottext">[FieldAttr] -&gt; [FieldAttr]
+</span><a href="#local-6989586621679926816"><span class="hs-identifier hs-var">k</span></a></span></span><span> </span><span id="local-6989586621679926815"><span class="annot"><span class="annottext">FieldDef
+</span><a href="#local-6989586621679926815"><span class="hs-identifier hs-var">fd</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">FieldDef
+</span><a href="#local-6989586621679926815"><span class="hs-identifier hs-var">fd</span></a></span><span> </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">fieldAttrs :: [FieldAttr]
+</span><a href="Database.Persist.Types.Base.html#fieldAttrs"><span class="hs-identifier hs-var">fieldAttrs</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[FieldAttr] -&gt; [FieldAttr]
+</span><a href="#local-6989586621679926816"><span class="hs-identifier hs-var">k</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">FieldDef -&gt; [FieldAttr]
+</span><a href="Database.Persist.Types.Base.html#fieldAttrs"><span class="hs-identifier hs-var">fieldAttrs</span></a></span><span> </span><span class="annot"><span class="annottext">FieldDef
+</span><a href="#local-6989586621679926815"><span class="hs-identifier hs-var">fd</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">}</span><span>
+</span><span id="line-45"></span><span>
+</span><span id="line-46"></span><span class="hs-comment">-- | Add an attribute to the list of field attributes.</span><span>
+</span><span id="line-47"></span><span class="hs-comment">--</span><span>
+</span><span id="line-48"></span><span class="hs-comment">-- @since 2.13.0.0</span><span>
+</span><span id="line-49"></span><span class="annot"><a href="Database.Persist.FieldDef.html#addFieldAttr"><span class="hs-identifier hs-type">addFieldAttr</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Database.Persist.Types.Base.html#FieldAttr"><span class="hs-identifier hs-type">FieldAttr</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Database.Persist.Types.Base.html#FieldDef"><span class="hs-identifier hs-type">FieldDef</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Database.Persist.Types.Base.html#FieldDef"><span class="hs-identifier hs-type">FieldDef</span></a></span><span>
+</span><span id="line-50"></span><span id="addFieldAttr"><span class="annot"><span class="annottext">addFieldAttr :: FieldAttr -&gt; FieldDef -&gt; FieldDef
+</span><a href="Database.Persist.FieldDef.html#addFieldAttr"><span class="hs-identifier hs-var hs-var">addFieldAttr</span></a></span></span><span> </span><span id="local-6989586621679926814"><span class="annot"><span class="annottext">FieldAttr
+</span><a href="#local-6989586621679926814"><span class="hs-identifier hs-var">fa</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">([FieldAttr] -&gt; [FieldAttr]) -&gt; FieldDef -&gt; FieldDef
+</span><a href="Database.Persist.FieldDef.html#overFieldAttrs"><span class="hs-identifier hs-var">overFieldAttrs</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">FieldAttr
+</span><a href="#local-6989586621679926814"><span class="hs-identifier hs-var">fa</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; [a] -&gt; [a]
+</span><span class="hs-glyph hs-var">:</span></span><span class="hs-special">)</span><span>
+</span><span id="line-51"></span><span>
+</span><span id="line-52"></span><span class="hs-comment">-- | Check if the field definition is nullable</span><span>
+</span><span id="line-53"></span><span class="hs-comment">--</span><span>
+</span><span id="line-54"></span><span class="hs-comment">-- @since 2.13.0.0</span><span>
+</span><span id="line-55"></span><span class="annot"><a href="Database.Persist.FieldDef.html#isFieldNullable"><span class="hs-identifier hs-type">isFieldNullable</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Database.Persist.Types.Base.html#FieldDef"><span class="hs-identifier hs-type">FieldDef</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Database.Persist.Types.Base.html#IsNullable"><span class="hs-identifier hs-type">IsNullable</span></a></span><span>
+</span><span id="line-56"></span><span id="isFieldNullable"><span class="annot"><span class="annottext">isFieldNullable :: FieldDef -&gt; IsNullable
+</span><a href="Database.Persist.FieldDef.html#isFieldNullable"><span class="hs-identifier hs-var hs-var">isFieldNullable</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-57"></span><span>    </span><span class="annot"><span class="annottext">[FieldAttr] -&gt; IsNullable
+</span><a href="Database.Persist.Types.Base.html#fieldAttrsContainsNullable"><span class="hs-identifier hs-var">fieldAttrsContainsNullable</span></a></span><span> </span><span class="annot"><span class="annottext">forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">FieldDef -&gt; [FieldAttr]
+</span><a href="Database.Persist.Types.Base.html#fieldAttrs"><span class="hs-identifier hs-var">fieldAttrs</span></a></span><span>
+</span><span id="line-58"></span><span>
+</span><span id="line-59"></span><span class="hs-comment">-- | Check if the field is `Maybe a`</span><span>
+</span><span id="line-60"></span><span class="hs-comment">--</span><span>
+</span><span id="line-61"></span><span class="hs-comment">-- @since 2.13.0.0</span><span>
+</span><span id="line-62"></span><span class="annot"><a href="Database.Persist.FieldDef.html#isFieldMaybe"><span class="hs-identifier hs-type">isFieldMaybe</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Database.Persist.Types.Base.html#FieldDef"><span class="hs-identifier hs-type">FieldDef</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-63"></span><span id="isFieldMaybe"><span class="annot"><span class="annottext">isFieldMaybe :: FieldDef -&gt; Bool
+</span><a href="Database.Persist.FieldDef.html#isFieldMaybe"><span class="hs-identifier hs-var hs-var">isFieldMaybe</span></a></span></span><span> </span><span id="local-6989586621679926812"><span class="annot"><span class="annottext">FieldDef
+</span><a href="#local-6989586621679926812"><span class="hs-identifier hs-var">field</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-64"></span><span>    </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">FieldDef -&gt; FieldType
+</span><a href="Database.Persist.Types.Base.html#fieldType"><span class="hs-identifier hs-var">fieldType</span></a></span><span> </span><span class="annot"><span class="annottext">FieldDef
+</span><a href="#local-6989586621679926812"><span class="hs-identifier hs-var">field</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-65"></span><span>        </span><span class="annot"><a href="Database.Persist.Types.Base.html#FTApp"><span class="hs-identifier hs-type">FTApp</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Database.Persist.Types.Base.html#FTTypeCon"><span class="hs-identifier hs-type">FTTypeCon</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe Text
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;Maybe&quot;</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">FieldType
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-66"></span><span>            </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span>
+</span><span id="line-67"></span><span>        </span><span class="annot"><span class="annottext">FieldType
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-68"></span><span>            </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span>
+</span><span id="line-69"></span></pre></body></html>

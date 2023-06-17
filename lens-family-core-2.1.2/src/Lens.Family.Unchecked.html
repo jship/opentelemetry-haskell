@@ -1,0 +1,394 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-comment">-- | /Caution/: Improper use of this module can lead to unexpected behaviour if the preconditions of the functions are not met.</span><span>
+</span><span id="line-2"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Lens.Family.Unchecked</span><span> </span><span class="hs-special">(</span><span>
+</span><span id="line-3"></span><span class="annot"><span class="hs-comment">-- * Adapters</span></span><span>
+</span><span id="line-4"></span><span class="hs-comment">-- | An adapter represents a isomorphism between two types or a parametric isomorphism between two families of types.</span><span>
+</span><span id="line-5"></span><span class="hs-comment">-- For example we can build an adapter between the type families @'Either' a a@ and @('Bool', a)@ as follows:</span><span>
+</span><span id="line-6"></span><span class="hs-comment">--</span><span>
+</span><span id="line-7"></span><span class="hs-comment">-- &gt; timesTwo :: (Functor f, Functor g) =&gt; AdapterLike f g (Either a a) (Either b b) (Bool, a) (Bool b)</span><span>
+</span><span id="line-8"></span><span class="hs-comment">-- &gt; timesTwo f x = fmap yang . f . fmap yin</span><span>
+</span><span id="line-9"></span><span class="hs-comment">-- &gt;  where</span><span>
+</span><span id="line-10"></span><span class="hs-comment">-- &gt;   yin (True, a) = Left a</span><span>
+</span><span id="line-11"></span><span class="hs-comment">-- &gt;   yin (False, a) = Right a</span><span>
+</span><span id="line-12"></span><span class="hs-comment">-- &gt;   yang (Left a) = (True, a)</span><span>
+</span><span id="line-13"></span><span class="hs-comment">-- &gt;   yang (Right a) = (False, a)</span><span>
+</span><span id="line-14"></span><span class="hs-comment">--</span><span>
+</span><span id="line-15"></span><span class="hs-comment">-- /Note/: It is possible to adapters without even depending on @lens-family-core@ by expanding away the type synonym.</span><span>
+</span><span id="line-16"></span><span class="hs-comment">--</span><span>
+</span><span id="line-17"></span><span class="hs-comment">-- &gt; timesTwo :: (Functor f, Functor g) =&gt; (g (Either a a) -&gt; f (Either b b)) -&gt; g (Bool, a) -&gt; f (Bool, b)</span><span>
+</span><span id="line-18"></span><span class="hs-comment">--</span><span>
+</span><span id="line-19"></span><span class="hs-comment">-- The function 'adapter' can also be used to construct adapters from a pair of mutually inverse functions.</span><span>
+</span><span id="line-20"></span><span>
+</span><span id="line-21"></span><span class="annot"><span class="hs-comment">-- * Lenses</span></span><span>
+</span><span id="line-22"></span><span class="hs-comment">-- | A lens focuses on a field of record type.</span><span>
+</span><span id="line-23"></span><span class="hs-comment">-- Lenses can be used to get and/or set the focused field.</span><span>
+</span><span id="line-24"></span><span class="hs-comment">-- How to create a lens family is best illustrated by the common example of a field of a record:</span><span>
+</span><span id="line-25"></span><span class="hs-comment">--</span><span>
+</span><span id="line-26"></span><span class="hs-comment">-- &gt; data MyRecord a = MyRecord { _myA :: a, _myInt :: Int }</span><span>
+</span><span id="line-27"></span><span class="hs-comment">-- &gt;</span><span>
+</span><span id="line-28"></span><span class="hs-comment">-- &gt; -- The use of type variables a and b allow for polymorphic updates.</span><span>
+</span><span id="line-29"></span><span class="hs-comment">-- &gt; myA :: Functor f =&gt; LensLike f (MyRecord a) (MyRecord b) a b</span><span>
+</span><span id="line-30"></span><span class="hs-comment">-- &gt; myA f (MyRecord a i) = (\b -&gt; MyRecord b i) &lt;$&gt; f a</span><span>
+</span><span id="line-31"></span><span class="hs-comment">-- &gt;</span><span>
+</span><span id="line-32"></span><span class="hs-comment">-- &gt; -- The field _myInt is monomorphic, so we can use a 'LensLike''  type.</span><span>
+</span><span id="line-33"></span><span class="hs-comment">-- &gt; -- However, the structure of the function is exactly the same as for LensLike.</span><span>
+</span><span id="line-34"></span><span class="hs-comment">-- &gt; myInt :: Functor f =&gt; LensLike' f (MyRecord a) Int</span><span>
+</span><span id="line-35"></span><span class="hs-comment">-- &gt; myInt f (MyRecord a i) = (\i' -&gt; MyRecord a i') &lt;$&gt; f i</span><span>
+</span><span id="line-36"></span><span class="hs-comment">--</span><span>
+</span><span id="line-37"></span><span class="hs-comment">-- See the @lens-family-th@ package to generate this sort of code using Template Haskell.</span><span>
+</span><span id="line-38"></span><span class="hs-comment">--</span><span>
+</span><span id="line-39"></span><span class="hs-comment">-- /Note/: It is possible to build lenses without even depending on @lens-family-core@ by expanding away the type synonym.</span><span>
+</span><span id="line-40"></span><span class="hs-comment">--</span><span>
+</span><span id="line-41"></span><span class="hs-comment">-- &gt; myA :: Functor f =&gt; (a -&gt; f b) -&gt; (MyRecord a) -&gt; f (MyRecord b)</span><span>
+</span><span id="line-42"></span><span class="hs-comment">--</span><span>
+</span><span id="line-43"></span><span class="hs-comment">-- You can build lenses for more than just fields of records.</span><span>
+</span><span id="line-44"></span><span class="hs-comment">-- Any value @l :: Functor f =&gt; LensLike f s t a b@ is well-defined when it satisfies the two van Laarhoven lens laws:</span><span>
+</span><span id="line-45"></span><span class="hs-comment">--</span><span>
+</span><span id="line-46"></span><span class="hs-comment">-- * @l Identity === Identity@</span><span>
+</span><span id="line-47"></span><span class="hs-comment">--</span><span>
+</span><span id="line-48"></span><span class="hs-comment">-- * @l (Compose . fmap f . g) === Compose . fmap (l f) . (l g)@</span><span>
+</span><span id="line-49"></span><span class="hs-comment">--</span><span>
+</span><span id="line-50"></span><span class="hs-comment">-- The function 'lens' can also be used to construct lenses.</span><span>
+</span><span id="line-51"></span><span class="hs-comment">-- The resulting lenses will be well-defined so long as their preconditions are satisfied.</span><span>
+</span><span id="line-52"></span><span>
+</span><span id="line-53"></span><span class="annot"><span class="hs-comment">-- * Traversals</span></span><span>
+</span><span id="line-54"></span><span class="hs-comment">-- | If you have zero or more fields of the same type of a record, a traversal can be used to refer to all of them in order.</span><span>
+</span><span id="line-55"></span><span class="hs-comment">-- Multiple references are made by replacing the 'Functor' constraint of lenses with an 'Control.Applicative.Applicative' constraint.</span><span>
+</span><span id="line-56"></span><span class="hs-comment">-- Consider the following example of a record with two 'Int' fields.</span><span>
+</span><span id="line-57"></span><span class="hs-comment">--</span><span>
+</span><span id="line-58"></span><span class="hs-comment">-- &gt; data MyRecord = MyRecord { _myA :: Int, _myB :: Int, _myC :: Bool }</span><span>
+</span><span id="line-59"></span><span class="hs-comment">-- &gt;</span><span>
+</span><span id="line-60"></span><span class="hs-comment">-- &gt; -- myInts is a traversal over both fields of MyRecord.</span><span>
+</span><span id="line-61"></span><span class="hs-comment">-- &gt; myInts :: Applicative f =&gt; LensLike' f MyRecord Int</span><span>
+</span><span id="line-62"></span><span class="hs-comment">-- &gt; myInts f (MyRecord a b c) = MyRecord &lt;$&gt; f a &lt;*&gt; f b &lt;*&gt; pure c</span><span>
+</span><span id="line-63"></span><span class="hs-comment">--</span><span>
+</span><span id="line-64"></span><span class="hs-comment">-- If the record and the referenced fields are parametric, you can can build polymrphic traversals.</span><span>
+</span><span id="line-65"></span><span class="hs-comment">-- Consider the following example of a record with two 'Maybe' fields.</span><span>
+</span><span id="line-66"></span><span class="hs-comment">--</span><span>
+</span><span id="line-67"></span><span class="hs-comment">-- &gt; data MyRecord a = MyRecord { _myA0 :: Maybe a, _myA1 :: Maybe a, myC :: Bool }</span><span>
+</span><span id="line-68"></span><span class="hs-comment">-- &gt;</span><span>
+</span><span id="line-69"></span><span class="hs-comment">-- &gt; -- myMaybes is a traversal over both fields of MyRecord.</span><span>
+</span><span id="line-70"></span><span class="hs-comment">-- &gt; myMaybes :: Applicative f =&gt; LensLike f (MyRecord a) (MyRecord b) (Maybe a) (Maybe b)</span><span>
+</span><span id="line-71"></span><span class="hs-comment">-- &gt; myMaybes f (MyRecord a0 a1 c) = MyRecord &lt;$&gt; f a0 &lt;*&gt; f a1 &lt;*&gt; pure c</span><span>
+</span><span id="line-72"></span><span class="hs-comment">--</span><span>
+</span><span id="line-73"></span><span class="hs-comment">-- /Note/: It is possible to build traversals without even depending on @lens-family-core@ by expanding away the type synonym.</span><span>
+</span><span id="line-74"></span><span class="hs-comment">--</span><span>
+</span><span id="line-75"></span><span class="hs-comment">-- &gt; myMaybes :: Applicative f =&gt; (Maybe a -&gt; f (Maybe b)) -&gt; MyRecord a -&gt; f (MyRecord b)</span><span>
+</span><span id="line-76"></span><span class="hs-comment">-- &gt; myMaybes f (MyRecord a0 a1 c) = MyRecord &lt;$&gt; f a0 &lt;*&gt; f a1 &lt;*&gt; pure c</span><span>
+</span><span id="line-77"></span><span class="hs-comment">--</span><span>
+</span><span id="line-78"></span><span class="hs-comment">-- Unfortunately, there are no helper functions for making traversals.</span><span>
+</span><span id="line-79"></span><span class="hs-comment">-- In most cases, you must make them by hand.</span><span>
+</span><span id="line-80"></span><span class="hs-comment">--</span><span>
+</span><span id="line-81"></span><span class="hs-comment">-- Any value @t :: Applicative f =&gt; LensLike f s t a b@ is well-defined when it satisfies the two van Laarhoven traversal laws:</span><span>
+</span><span id="line-82"></span><span class="hs-comment">--</span><span>
+</span><span id="line-83"></span><span class="hs-comment">-- * @t Identity === Identity@</span><span>
+</span><span id="line-84"></span><span class="hs-comment">--</span><span>
+</span><span id="line-85"></span><span class="hs-comment">-- * @t (Compose . fmap f . g) === Compose . fmap (t f) . (t g)@</span><span>
+</span><span id="line-86"></span><span class="hs-comment">--</span><span>
+</span><span id="line-87"></span><span class="hs-comment">-- 'Data.Traversable.traverse' is the canonical traversal for various containers.</span><span>
+</span><span id="line-88"></span><span>
+</span><span id="line-89"></span><span class="annot"><span class="hs-comment">-- * Prisms</span></span><span>
+</span><span id="line-90"></span><span class="hs-comment">-- | A prism focuses on a single variant of a type.</span><span>
+</span><span id="line-91"></span><span class="hs-comment">-- They can be used to 'Lens.Family.matching' / 'Lens.Family.review' the focused variant.</span><span>
+</span><span id="line-92"></span><span class="hs-comment">-- Consider the following example.</span><span>
+</span><span id="line-93"></span><span class="hs-comment">--</span><span>
+</span><span id="line-94"></span><span class="hs-comment">-- &gt; data MySum a = MyA a | MyB Int</span><span>
+</span><span id="line-95"></span><span class="hs-comment">-- &gt;</span><span>
+</span><span id="line-96"></span><span class="hs-comment">-- &gt; -- myA is a prism for the MyA variant of MySum</span><span>
+</span><span id="line-97"></span><span class="hs-comment">-- &gt; myA :: (Applicative f, Traversable g) =&gt; AdapterLike f g (MySum a) (MySum b) a b</span><span>
+</span><span id="line-98"></span><span class="hs-comment">-- &gt; myA f = either pure (fmap MyA . f) . traverse h</span><span>
+</span><span id="line-99"></span><span class="hs-comment">-- &gt;  where</span><span>
+</span><span id="line-100"></span><span class="hs-comment">-- &gt;   h (MyA a) = Right a</span><span>
+</span><span id="line-101"></span><span class="hs-comment">-- &gt;   h (MyB n) = Left (MyB n)</span><span>
+</span><span id="line-102"></span><span class="hs-comment">--</span><span>
+</span><span id="line-103"></span><span class="hs-comment">-- This prism can be used with 'Lens.Family.matching' via 'Lens.Family.under':</span><span>
+</span><span id="line-104"></span><span class="hs-comment">--</span><span>
+</span><span id="line-105"></span><span class="hs-comment">-- @ 'Lens.Family.matching' ('Lens.Family.under' myA) :: MySum a -&gt; Either (MySum b) a @</span><span>
+</span><span id="line-106"></span><span class="hs-comment">--</span><span>
+</span><span id="line-107"></span><span class="hs-comment">-- This prism can be used with 'Lens.Family.review' via 'Lens.Family.over':</span><span>
+</span><span id="line-108"></span><span class="hs-comment">--</span><span>
+</span><span id="line-109"></span><span class="hs-comment">-- @ 'Lens.Family.review' ('Lens.Family.over' myA) :: a -&gt; MySum a @</span><span>
+</span><span id="line-110"></span><span class="hs-comment">--</span><span>
+</span><span id="line-111"></span><span class="hs-comment">-- /Note/: It is possible to build prisms without even depending on @lens-family-core@ by expanding away the type synonym.</span><span>
+</span><span id="line-112"></span><span class="hs-comment">--</span><span>
+</span><span id="line-113"></span><span class="hs-comment">-- &gt; myA :: (Appicative f, Traversable g) =&gt; (g a -&gt; f b) -&gt; g (MySum a) -&gt; f (MySum b)</span><span>
+</span><span id="line-114"></span><span class="hs-comment">--</span><span>
+</span><span id="line-115"></span><span class="hs-comment">-- You can build prism for more than just constructors of sum types.</span><span>
+</span><span id="line-116"></span><span class="hs-comment">-- Any value @p :: (Applicative f, Traversable g) =&gt; AdapterLike f g s t a b@ is well-defined when it satisfies the prism laws:</span><span>
+</span><span id="line-117"></span><span class="hs-comment">--</span><span>
+</span><span id="line-118"></span><span class="hs-comment">-- * @matching (under p) (review (over p) b) === Right b@</span><span>
+</span><span id="line-119"></span><span class="hs-comment">--</span><span>
+</span><span id="line-120"></span><span class="hs-comment">-- * @(id ||| review (over p)) (matching (under p) s) === s@</span><span>
+</span><span id="line-121"></span><span class="hs-comment">--</span><span>
+</span><span id="line-122"></span><span class="hs-comment">-- * @left (match (under p)) (matching (under p) s) === left Left (matching (under p) s)@</span><span>
+</span><span id="line-123"></span><span class="hs-comment">--</span><span>
+</span><span id="line-124"></span><span class="hs-comment">-- The function 'prism' can also be used to construct prisms.</span><span>
+</span><span id="line-125"></span><span class="hs-comment">-- The resulting prisms will be well-defined so long as their preconditions are satisfied.</span><span>
+</span><span id="line-126"></span><span>
+</span><span id="line-127"></span><span class="annot"><span class="hs-comment">-- * Grates</span></span><span>
+</span><span id="line-128"></span><span class="hs-comment">-- | A grate focuses on the contents of a representable functor.</span><span>
+</span><span id="line-129"></span><span class="hs-comment">-- In other words, a grate focuses on the codomain of a function type or something isomorphic to a function type.</span><span>
+</span><span id="line-130"></span><span class="hs-comment">-- They are used to lift operations on this codomain to operations on the larger structure via zipping.</span><span>
+</span><span id="line-131"></span><span class="hs-comment">-- Consider the following example of a stream of 'Int's.</span><span>
+</span><span id="line-132"></span><span class="hs-comment">--</span><span>
+</span><span id="line-133"></span><span class="hs-comment">-- &gt; data IntStream = IntStream { hd :: Int, tl :: IntStream }</span><span>
+</span><span id="line-134"></span><span class="hs-comment">-- &gt;</span><span>
+</span><span id="line-135"></span><span class="hs-comment">-- &gt; -- myInts is a grate over the Ints of IntStream.</span><span>
+</span><span id="line-136"></span><span class="hs-comment">-- &gt; myInts :: Functor g =&gt; GrateLike' g IntStream Int</span><span>
+</span><span id="line-137"></span><span class="hs-comment">-- &gt; myInts f s = IntStream (f (hd &lt;$&gt; s)) (myInts f (tl &lt;$&gt; s))</span><span>
+</span><span id="line-138"></span><span class="hs-comment">--</span><span>
+</span><span id="line-139"></span><span class="hs-comment">-- If the contents are parametric, you can can build polymorphic grates.</span><span>
+</span><span id="line-140"></span><span class="hs-comment">-- Consider the following example of a generic stream.</span><span>
+</span><span id="line-141"></span><span class="hs-comment">--</span><span>
+</span><span id="line-142"></span><span class="hs-comment">-- &gt; data Stream a = Stream { hd :: a, tl :: Stream a }</span><span>
+</span><span id="line-143"></span><span class="hs-comment">-- &gt;</span><span>
+</span><span id="line-144"></span><span class="hs-comment">-- &gt; -- myStream is a grate over the contents of a Stream.</span><span>
+</span><span id="line-145"></span><span class="hs-comment">-- &gt; myStream :: Functor g =&gt; GrateLike g (Stream a) (Stream b) a b</span><span>
+</span><span id="line-146"></span><span class="hs-comment">-- &gt; myStream f s = Stream (f (hd &lt;$&gt; s)) (myStream f (tl &lt;$&gt; s))</span><span>
+</span><span id="line-147"></span><span class="hs-comment">--</span><span>
+</span><span id="line-148"></span><span class="hs-comment">-- /Note/: It is possible to build grates without even depending on @lens-family-core@ by expanding away the type synonym.</span><span>
+</span><span id="line-149"></span><span class="hs-comment">--</span><span>
+</span><span id="line-150"></span><span class="hs-comment">-- &gt; myStream :: Functor g =&gt; (g (Stream a) -&gt; Stream b) -&gt; g a -&gt; b</span><span>
+</span><span id="line-151"></span><span class="hs-comment">--</span><span>
+</span><span id="line-152"></span><span class="hs-comment">-- Any value @t :: Functor g =&gt; GrateLike g s t a b@ is a well-defined grate when it satisfies the two van Laarhoven traversal laws:</span><span>
+</span><span id="line-153"></span><span class="hs-comment">--</span><span>
+</span><span id="line-154"></span><span class="hs-comment">-- * @t runIdentity === runIdentity@</span><span>
+</span><span id="line-155"></span><span class="hs-comment">--</span><span>
+</span><span id="line-156"></span><span class="hs-comment">-- * @t (f . fmap g . runCompose) === (t f) . fmap (t g) . runCompose@</span><span>
+</span><span id="line-157"></span><span class="hs-comment">--</span><span>
+</span><span id="line-158"></span><span class="hs-comment">-- The function 'grate' can also be used to construct grates from graters.</span><span>
+</span><span id="line-159"></span><span class="hs-comment">-- The resulting grates will be well-defined so long as the preconditions are satisfied.</span><span>
+</span><span id="line-160"></span><span>
+</span><span id="line-161"></span><span class="annot"><span class="hs-comment">-- * Grids</span></span><span>
+</span><span id="line-162"></span><span class="hs-comment">-- | A grid is both a traversal and a grate.</span><span>
+</span><span id="line-163"></span><span class="hs-comment">-- When you have a type that is isomorphic to a fixed and finite number of copies of another type, a grid can be used to zip or traverse them.</span><span>
+</span><span id="line-164"></span><span class="hs-comment">-- Consider the following example of a record with exactly two 'Int' fields.</span><span>
+</span><span id="line-165"></span><span class="hs-comment">--</span><span>
+</span><span id="line-166"></span><span class="hs-comment">-- &gt; data MyRecord = MyRecord { _myA :: Int, _myB :: Int }</span><span>
+</span><span id="line-167"></span><span class="hs-comment">-- &gt;</span><span>
+</span><span id="line-168"></span><span class="hs-comment">-- &gt; -- myInts is a grid over both fields of MyRecord.</span><span>
+</span><span id="line-169"></span><span class="hs-comment">-- &gt; myInts :: (Applicative f, Functor g) =&gt; AdapterLike' f g MyRecord Int</span><span>
+</span><span id="line-170"></span><span class="hs-comment">-- &gt; myInts f r = MyRecord &lt;$&gt; f (_myA &lt;$&gt; r) &lt;*&gt; f (_myB &lt;$&gt; r)</span><span>
+</span><span id="line-171"></span><span class="hs-comment">--</span><span>
+</span><span id="line-172"></span><span class="hs-comment">-- If the record and the referenced fields are parametric, you can can build polymorphic grids.</span><span>
+</span><span id="line-173"></span><span class="hs-comment">-- Consider the following example of a record with exactly two 'Maybe' fields.</span><span>
+</span><span id="line-174"></span><span class="hs-comment">--</span><span>
+</span><span id="line-175"></span><span class="hs-comment">-- &gt; data MyRecord a = MyRecord { _myA0 :: Maybe a, _myA1 :: Maybe a }</span><span>
+</span><span id="line-176"></span><span class="hs-comment">-- &gt;</span><span>
+</span><span id="line-177"></span><span class="hs-comment">-- &gt; -- myMaybes is a traversal over both fields of MyRecord.</span><span>
+</span><span id="line-178"></span><span class="hs-comment">-- &gt; myMaybes :: (Applicative f, Functor g) =&gt; AdapterLike f g (MyRecord a) (MyRecord b) (Maybe a) (Maybe b)</span><span>
+</span><span id="line-179"></span><span class="hs-comment">-- &gt; myMaybes f r = MyRecord &lt;$&gt; f (_myA0 &lt;$&gt; r) &lt;*&gt; f (_myA1 &lt;$&gt; r)</span><span>
+</span><span id="line-180"></span><span class="hs-comment">--</span><span>
+</span><span id="line-181"></span><span class="hs-comment">-- A grid is converted into a grate by using the 'Lens.Family.over' function, and it is converted to a traversal by using the 'Lens.Family.under' function.</span><span>
+</span><span id="line-182"></span><span class="hs-comment">--</span><span>
+</span><span id="line-183"></span><span class="hs-comment">-- /Note/: It is possible to build grids without even depending on @lens-family-core@ by expanding away the type synonym.</span><span>
+</span><span id="line-184"></span><span class="hs-comment">--</span><span>
+</span><span id="line-185"></span><span class="hs-comment">-- &gt; myMaybes :: (Applicative f, Functor g) =&gt; (g (Maybe a) -&gt; f (Maybe b)) -&gt; g (MyRecord a) -&gt; f (MyRecord b)</span><span>
+</span><span id="line-186"></span><span class="hs-comment">--</span><span>
+</span><span id="line-187"></span><span class="hs-comment">-- Unfortunately, there are no helper functions for making grids.</span><span>
+</span><span id="line-188"></span><span class="hs-comment">-- In most cases, you must make them by hand.</span><span>
+</span><span id="line-189"></span><span>
+</span><span id="line-190"></span><span class="annot"><span class="hs-comment">-- * Documentation</span></span><span>
+</span><span id="line-191"></span><span>    </span><span class="annot"><a href="Lens.Family.Unchecked.html#adapter"><span class="hs-identifier">adapter</span></a></span><span>
+</span><span id="line-192"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Lens.Family.Unchecked.html#lens"><span class="hs-identifier">lens</span></a></span><span>
+</span><span id="line-193"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Lens.Family.Unchecked.html#prism"><span class="hs-identifier">prism</span></a></span><span>
+</span><span id="line-194"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Lens.Family.Unchecked.html#grate"><span class="hs-identifier">grate</span></a></span><span>
+</span><span id="line-195"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Lens.Family.Unchecked.html#setting"><span class="hs-identifier">setting</span></a></span><span>
+</span><span id="line-196"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Lens.Family.Unchecked.html#resetting"><span class="hs-identifier">resetting</span></a></span><span>
+</span><span id="line-197"></span><span class="annot"><span class="hs-comment">-- * Types</span></span><span>
+</span><span id="line-198"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Lens.Family.Unchecked.html#AdapterLike"><span class="hs-identifier">AdapterLike</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Lens.Family.Unchecked.html#AdapterLike%27"><span class="hs-identifier">AdapterLike'</span></a></span><span>
+</span><span id="line-199"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Lens.Family.Unchecked.html#LensLike"><span class="hs-identifier">LensLike</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Lens.Family.Unchecked.html#LensLike%27"><span class="hs-identifier">LensLike'</span></a></span><span>
+</span><span id="line-200"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Lens.Family.Unchecked.html#GrateLike"><span class="hs-identifier">GrateLike</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Lens.Family.Unchecked.html#GrateLike%27"><span class="hs-identifier">GrateLike'</span></a></span><span>
+</span><span id="line-201"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Lens.Family.Identical.html#Identical"><span class="hs-identifier">Identical</span></a></span><span>
+</span><span id="line-202"></span><span>  </span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-203"></span><span>
+</span><span id="line-204"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Lens.Family.Identical.html"><span class="hs-identifier">Lens.Family.Identical</span></a></span><span>
+</span><span id="line-205"></span><span>
+</span><span id="line-206"></span><span class="hs-keyword">type</span><span> </span><span id="AdapterLike"><span class="annot"><a href="Lens.Family.Unchecked.html#AdapterLike"><span class="hs-identifier hs-var">AdapterLike</span></a></span></span><span> </span><span id="local-6989586621679046406"><span class="annot"><a href="#local-6989586621679046406"><span class="hs-identifier hs-type">f</span></a></span></span><span> </span><span id="local-6989586621679046405"><span class="annot"><a href="#local-6989586621679046405"><span class="hs-identifier hs-type">g</span></a></span></span><span> </span><span id="local-6989586621679046404"><span class="annot"><a href="#local-6989586621679046404"><span class="hs-identifier hs-type">s</span></a></span></span><span> </span><span id="local-6989586621679046403"><span class="annot"><a href="#local-6989586621679046403"><span class="hs-identifier hs-type">t</span></a></span></span><span> </span><span id="local-6989586621679046402"><span class="annot"><a href="#local-6989586621679046402"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span id="local-6989586621679046401"><span class="annot"><a href="#local-6989586621679046401"><span class="hs-identifier hs-type">b</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679046405"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679046402"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679046406"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679046401"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679046405"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679046404"><span class="hs-identifier hs-type">s</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679046406"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679046403"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-207"></span><span class="hs-keyword">type</span><span> </span><span id="AdapterLike%27"><span class="annot"><a href="Lens.Family.Unchecked.html#AdapterLike%27"><span class="hs-identifier hs-var">AdapterLike'</span></a></span></span><span> </span><span id="local-6989586621679046400"><span class="annot"><a href="#local-6989586621679046400"><span class="hs-identifier hs-type">f</span></a></span></span><span> </span><span id="local-6989586621679046399"><span class="annot"><a href="#local-6989586621679046399"><span class="hs-identifier hs-type">g</span></a></span></span><span> </span><span id="local-6989586621679046398"><span class="annot"><a href="#local-6989586621679046398"><span class="hs-identifier hs-type">s</span></a></span></span><span> </span><span id="local-6989586621679046397"><span class="annot"><a href="#local-6989586621679046397"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679046399"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679046397"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679046400"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679046397"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679046399"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679046398"><span class="hs-identifier hs-type">s</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679046400"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679046398"><span class="hs-identifier hs-type">s</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-208"></span><span class="hs-keyword">type</span><span> </span><span id="LensLike"><span class="annot"><a href="Lens.Family.Unchecked.html#LensLike"><span class="hs-identifier hs-var">LensLike</span></a></span></span><span> </span><span id="local-6989586621679046396"><span class="annot"><a href="#local-6989586621679046396"><span class="hs-identifier hs-type">f</span></a></span></span><span> </span><span id="local-6989586621679046395"><span class="annot"><a href="#local-6989586621679046395"><span class="hs-identifier hs-type">s</span></a></span></span><span> </span><span id="local-6989586621679046394"><span class="annot"><a href="#local-6989586621679046394"><span class="hs-identifier hs-type">t</span></a></span></span><span> </span><span id="local-6989586621679046393"><span class="annot"><a href="#local-6989586621679046393"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span id="local-6989586621679046392"><span class="annot"><a href="#local-6989586621679046392"><span class="hs-identifier hs-type">b</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679046393"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679046396"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679046392"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679046395"><span class="hs-identifier hs-type">s</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679046396"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679046394"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-209"></span><span class="hs-keyword">type</span><span> </span><span id="LensLike%27"><span class="annot"><a href="Lens.Family.Unchecked.html#LensLike%27"><span class="hs-identifier hs-var">LensLike'</span></a></span></span><span> </span><span id="local-6989586621679046391"><span class="annot"><a href="#local-6989586621679046391"><span class="hs-identifier hs-type">f</span></a></span></span><span> </span><span id="local-6989586621679046390"><span class="annot"><a href="#local-6989586621679046390"><span class="hs-identifier hs-type">s</span></a></span></span><span> </span><span id="local-6989586621679046389"><span class="annot"><a href="#local-6989586621679046389"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679046389"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679046391"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679046389"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679046390"><span class="hs-identifier hs-type">s</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679046391"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679046390"><span class="hs-identifier hs-type">s</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-210"></span><span class="hs-keyword">type</span><span> </span><span id="GrateLike"><span class="annot"><a href="Lens.Family.Unchecked.html#GrateLike"><span class="hs-identifier hs-var">GrateLike</span></a></span></span><span> </span><span id="local-6989586621679046388"><span class="annot"><a href="#local-6989586621679046388"><span class="hs-identifier hs-type">g</span></a></span></span><span> </span><span id="local-6989586621679046387"><span class="annot"><a href="#local-6989586621679046387"><span class="hs-identifier hs-type">s</span></a></span></span><span> </span><span id="local-6989586621679046386"><span class="annot"><a href="#local-6989586621679046386"><span class="hs-identifier hs-type">t</span></a></span></span><span> </span><span id="local-6989586621679046385"><span class="annot"><a href="#local-6989586621679046385"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span id="local-6989586621679046384"><span class="annot"><a href="#local-6989586621679046384"><span class="hs-identifier hs-type">b</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679046388"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679046385"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679046384"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679046388"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679046387"><span class="hs-identifier hs-type">s</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679046386"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-211"></span><span class="hs-keyword">type</span><span> </span><span id="GrateLike%27"><span class="annot"><a href="Lens.Family.Unchecked.html#GrateLike%27"><span class="hs-identifier hs-var">GrateLike'</span></a></span></span><span> </span><span id="local-6989586621679046383"><span class="annot"><a href="#local-6989586621679046383"><span class="hs-identifier hs-type">g</span></a></span></span><span> </span><span id="local-6989586621679046382"><span class="annot"><a href="#local-6989586621679046382"><span class="hs-identifier hs-type">s</span></a></span></span><span> </span><span id="local-6989586621679046381"><span class="annot"><a href="#local-6989586621679046381"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679046383"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679046381"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679046381"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679046383"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679046382"><span class="hs-identifier hs-type">s</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679046382"><span class="hs-identifier hs-type">s</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-212"></span><span>
+</span><span id="line-213"></span><span id="local-6989586621679046502"><span id="local-6989586621679046503"><span id="local-6989586621679046504"><span id="local-6989586621679046505"><span id="local-6989586621679046506"><span id="local-6989586621679046507"><span class="annot"><a href="Lens.Family.Unchecked.html#adapter"><span class="hs-identifier hs-type">adapter</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Functor</span></span><span> </span><span class="annot"><a href="#local-6989586621679046507"><span class="hs-identifier hs-type">f</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Functor</span></span><span> </span><span class="annot"><a href="#local-6989586621679046506"><span class="hs-identifier hs-type">g</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-214"></span><span>        </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679046505"><span class="hs-identifier hs-type">s</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679046504"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-comment">-- ^ yin</span><span>
+</span><span id="line-215"></span><span>        </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679046503"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679046502"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-comment">-- ^ yang</span><span>
+</span><span id="line-216"></span><span>        </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Lens.Family.Unchecked.html#AdapterLike"><span class="hs-identifier hs-type">AdapterLike</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679046507"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679046506"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679046505"><span class="hs-identifier hs-type">s</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679046502"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679046504"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679046503"><span class="hs-identifier hs-type">b</span></a></span></span></span></span></span></span></span><span>
+</span><span id="line-217"></span><span class="hs-comment">-- ^ @</span><span>
+</span><span id="line-218"></span><span class="hs-comment">-- adapter :: (s -&gt; a) -&gt; (b -&gt; t) -&gt; Adapter s t a b</span><span>
+</span><span id="line-219"></span><span class="hs-comment">-- @</span><span>
+</span><span id="line-220"></span><span class="hs-comment">--</span><span>
+</span><span id="line-221"></span><span class="hs-comment">-- Build an adapter from an isomorphism family.</span><span>
+</span><span id="line-222"></span><span class="hs-comment">--</span><span>
+</span><span id="line-223"></span><span class="hs-comment">-- /Caution/: In order for the generated adapter family to be well-defined, you must ensure that the two isomorphism laws hold:</span><span>
+</span><span id="line-224"></span><span class="hs-comment">--</span><span>
+</span><span id="line-225"></span><span class="hs-comment">-- * @yin . yang === id@</span><span>
+</span><span id="line-226"></span><span class="hs-comment">--</span><span>
+</span><span id="line-227"></span><span class="hs-comment">-- * @yang . yin === id@</span><span>
+</span><span id="line-228"></span><span id="adapter"><span class="annot"><span class="annottext">adapter :: forall (f :: * -&gt; *) (g :: * -&gt; *) s a b t.
+(Functor f, Functor g) =&gt;
+(s -&gt; a) -&gt; (b -&gt; t) -&gt; AdapterLike f g s t a b
+</span><a href="Lens.Family.Unchecked.html#adapter"><span class="hs-identifier hs-var hs-var">adapter</span></a></span></span><span> </span><span id="local-6989586621679046376"><span class="annot"><span class="annottext">s -&gt; a
+</span><a href="#local-6989586621679046376"><span class="hs-identifier hs-var">yin</span></a></span></span><span> </span><span id="local-6989586621679046375"><span class="annot"><span class="annottext">b -&gt; t
+</span><a href="#local-6989586621679046375"><span class="hs-identifier hs-var">yang</span></a></span></span><span> </span><span id="local-6989586621679046374"><span class="annot"><span class="annottext">g a -&gt; f b
+</span><a href="#local-6989586621679046374"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621679046373"><span class="annot"><span class="annottext">g s
+</span><a href="#local-6989586621679046373"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">b -&gt; t
+</span><a href="#local-6989586621679046375"><span class="hs-identifier hs-var">yang</span></a></span><span> </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">g a -&gt; f b
+</span><a href="#local-6989586621679046374"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">s -&gt; a
+</span><a href="#local-6989586621679046376"><span class="hs-identifier hs-var">yin</span></a></span><span> </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">g s
+</span><a href="#local-6989586621679046373"><span class="hs-identifier hs-var">s</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-229"></span><span>
+</span><span id="line-230"></span><span id="local-6989586621679046487"><span id="local-6989586621679046488"><span id="local-6989586621679046489"><span id="local-6989586621679046490"><span id="local-6989586621679046491"><span class="annot"><a href="Lens.Family.Unchecked.html#lens"><span class="hs-identifier hs-type">lens</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Functor</span></span><span> </span><span class="annot"><a href="#local-6989586621679046491"><span class="hs-identifier hs-type">f</span></a></span><span>
+</span><span id="line-231"></span><span>     </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679046490"><span class="hs-identifier hs-type">s</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679046489"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-comment">-- ^ getter</span><span>
+</span><span id="line-232"></span><span>     </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679046490"><span class="hs-identifier hs-type">s</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679046488"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679046487"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-comment">-- ^ setter</span><span>
+</span><span id="line-233"></span><span>     </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Lens.Family.Unchecked.html#LensLike"><span class="hs-identifier hs-type">LensLike</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679046491"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679046490"><span class="hs-identifier hs-type">s</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679046487"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679046489"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679046488"><span class="hs-identifier hs-type">b</span></a></span></span></span></span></span></span><span>
+</span><span id="line-234"></span><span class="hs-comment">-- ^ @</span><span>
+</span><span id="line-235"></span><span class="hs-comment">-- lens :: (s -&gt; a) -&gt; (s -&gt; b -&gt; t) -&gt; Lens s t a b</span><span>
+</span><span id="line-236"></span><span class="hs-comment">-- @</span><span>
+</span><span id="line-237"></span><span class="hs-comment">--</span><span>
+</span><span id="line-238"></span><span class="hs-comment">-- Build a lens from a @getter@ and @setter@ family.</span><span>
+</span><span id="line-239"></span><span class="hs-comment">--</span><span>
+</span><span id="line-240"></span><span class="hs-comment">-- /Caution/: In order for the generated lens family to be well-defined, you must ensure that the three lens laws hold:</span><span>
+</span><span id="line-241"></span><span class="hs-comment">--</span><span>
+</span><span id="line-242"></span><span class="hs-comment">-- * @getter (setter s a) === a@</span><span>
+</span><span id="line-243"></span><span class="hs-comment">--</span><span>
+</span><span id="line-244"></span><span class="hs-comment">-- * @setter s (getter s) === s@</span><span>
+</span><span id="line-245"></span><span class="hs-comment">--</span><span>
+</span><span id="line-246"></span><span class="hs-comment">-- * @setter (setter s a1) a2 === setter s a2@</span><span>
+</span><span id="line-247"></span><span id="lens"><span class="annot"><span class="annottext">lens :: forall (f :: * -&gt; *) s a b t.
+Functor f =&gt;
+(s -&gt; a) -&gt; (s -&gt; b -&gt; t) -&gt; LensLike f s t a b
+</span><a href="Lens.Family.Unchecked.html#lens"><span class="hs-identifier hs-var hs-var">lens</span></a></span></span><span> </span><span id="local-6989586621679046369"><span class="annot"><span class="annottext">s -&gt; a
+</span><a href="#local-6989586621679046369"><span class="hs-identifier hs-var">getter</span></a></span></span><span> </span><span id="local-6989586621679046368"><span class="annot"><span class="annottext">s -&gt; b -&gt; t
+</span><a href="#local-6989586621679046368"><span class="hs-identifier hs-var">setter</span></a></span></span><span> </span><span id="local-6989586621679046367"><span class="annot"><span class="annottext">a -&gt; f b
+</span><a href="#local-6989586621679046367"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621679046366"><span class="annot"><span class="annottext">s
+</span><a href="#local-6989586621679046366"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">s -&gt; b -&gt; t
+</span><a href="#local-6989586621679046368"><span class="hs-identifier hs-var">setter</span></a></span><span> </span><span class="annot"><span class="annottext">s
+</span><a href="#local-6989586621679046366"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; f b
+</span><a href="#local-6989586621679046367"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">s -&gt; a
+</span><a href="#local-6989586621679046369"><span class="hs-identifier hs-var">getter</span></a></span><span> </span><span class="annot"><span class="annottext">s
+</span><a href="#local-6989586621679046366"><span class="hs-identifier hs-var">s</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-248"></span><span>
+</span><span id="line-249"></span><span id="local-6989586621679046476"><span id="local-6989586621679046477"><span id="local-6989586621679046478"><span id="local-6989586621679046479"><span id="local-6989586621679046480"><span class="annot"><a href="Lens.Family.Unchecked.html#grate"><span class="hs-identifier hs-type">grate</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Functor</span></span><span> </span><span class="annot"><a href="#local-6989586621679046480"><span class="hs-identifier hs-type">g</span></a></span><span>
+</span><span id="line-250"></span><span>      </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679046479"><span class="hs-identifier hs-type">s</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679046478"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679046477"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679046476"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-comment">-- ^ grater</span><span>
+</span><span id="line-251"></span><span>      </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Lens.Family.Unchecked.html#GrateLike"><span class="hs-identifier hs-type">GrateLike</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679046480"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679046479"><span class="hs-identifier hs-type">s</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679046476"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679046478"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679046477"><span class="hs-identifier hs-type">b</span></a></span></span></span></span></span></span><span>
+</span><span id="line-252"></span><span class="hs-comment">-- ^ @</span><span>
+</span><span id="line-253"></span><span class="hs-comment">-- grate :: (((s -&gt; a) -&gt; b) -&gt; t) -&gt; Grate s t a b</span><span>
+</span><span id="line-254"></span><span class="hs-comment">-- @</span><span>
+</span><span id="line-255"></span><span class="hs-comment">--</span><span>
+</span><span id="line-256"></span><span class="hs-comment">-- Build a grate from a @grater@ family.</span><span>
+</span><span id="line-257"></span><span class="hs-comment">--</span><span>
+</span><span id="line-258"></span><span class="hs-comment">-- /Caution/: In order for the generated grate family to be well-defined, you must ensure that the two grater laws hold:</span><span>
+</span><span id="line-259"></span><span class="hs-comment">--</span><span>
+</span><span id="line-260"></span><span class="hs-comment">-- * @grater ($ s) === s@</span><span>
+</span><span id="line-261"></span><span class="hs-comment">--</span><span>
+</span><span id="line-262"></span><span class="hs-comment">-- * @grater (\k -&gt; h (k . grater)) === grater (\k -&gt; h ($ k))@</span><span>
+</span><span id="line-263"></span><span class="hs-comment">--</span><span>
+</span><span id="line-264"></span><span class="hs-comment">-- Note: The grater laws are that of an algebra for the parameterised continuation monad, `Lens.Family.PCont`.</span><span>
+</span><span id="line-265"></span><span id="grate"><span class="annot"><span class="annottext">grate :: forall (g :: * -&gt; *) s a b t.
+Functor g =&gt;
+(((s -&gt; a) -&gt; b) -&gt; t) -&gt; GrateLike g s t a b
+</span><a href="Lens.Family.Unchecked.html#grate"><span class="hs-identifier hs-var hs-var">grate</span></a></span></span><span> </span><span id="local-6989586621679046363"><span class="annot"><span class="annottext">((s -&gt; a) -&gt; b) -&gt; t
+</span><a href="#local-6989586621679046363"><span class="hs-identifier hs-var">grater</span></a></span></span><span> </span><span id="local-6989586621679046362"><span class="annot"><span class="annottext">g a -&gt; b
+</span><a href="#local-6989586621679046362"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621679046361"><span class="annot"><span class="annottext">g s
+</span><a href="#local-6989586621679046361"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">((s -&gt; a) -&gt; b) -&gt; t
+</span><a href="#local-6989586621679046363"><span class="hs-identifier hs-var">grater</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679046360"><span class="annot"><span class="annottext">s -&gt; a
+</span><a href="#local-6989586621679046360"><span class="hs-identifier hs-var">h</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">g a -&gt; b
+</span><a href="#local-6989586621679046362"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">s -&gt; a
+</span><a href="#local-6989586621679046360"><span class="hs-identifier hs-var">h</span></a></span><span> </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">g s
+</span><a href="#local-6989586621679046361"><span class="hs-identifier hs-var">s</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-266"></span><span>
+</span><span id="line-267"></span><span id="local-6989586621679046461"><span id="local-6989586621679046462"><span id="local-6989586621679046463"><span id="local-6989586621679046464"><span id="local-6989586621679046465"><span id="local-6989586621679046466"><span class="annot"><a href="Lens.Family.Unchecked.html#prism"><span class="hs-identifier hs-type">prism</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Applicative</span></span><span> </span><span class="annot"><a href="#local-6989586621679046466"><span class="hs-identifier hs-type">f</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Traversable</span></span><span> </span><span class="annot"><a href="#local-6989586621679046465"><span class="hs-identifier hs-type">g</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-268"></span><span>      </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679046464"><span class="hs-identifier hs-type">s</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Either</span></span><span> </span><span class="annot"><a href="#local-6989586621679046463"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679046462"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-comment">-- ^ matcher</span><span>
+</span><span id="line-269"></span><span>      </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679046461"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679046463"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-comment">-- ^ reviewer</span><span>
+</span><span id="line-270"></span><span>      </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Lens.Family.Unchecked.html#AdapterLike"><span class="hs-identifier hs-type">AdapterLike</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679046466"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679046465"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679046464"><span class="hs-identifier hs-type">s</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679046463"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679046462"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679046461"><span class="hs-identifier hs-type">b</span></a></span></span></span></span></span></span></span><span>
+</span><span id="line-271"></span><span class="hs-comment">-- ^ @</span><span>
+</span><span id="line-272"></span><span class="hs-comment">-- prism :: (s -&gt; Either t a) -&gt; (b -&gt; t) -&gt; Prism s t a b</span><span>
+</span><span id="line-273"></span><span class="hs-comment">-- @</span><span>
+</span><span id="line-274"></span><span class="hs-comment">--</span><span>
+</span><span id="line-275"></span><span class="hs-comment">-- Build a prism from a @matcher@ and @reviewer@ family.</span><span>
+</span><span id="line-276"></span><span class="hs-comment">--</span><span>
+</span><span id="line-277"></span><span class="hs-comment">-- /Caution/: In order for the generated prism family to be well-defined, you must ensure that the three prism laws hold:</span><span>
+</span><span id="line-278"></span><span class="hs-comment">--</span><span>
+</span><span id="line-279"></span><span class="hs-comment">-- * @matcher (reviewer b) === Right b@</span><span>
+</span><span id="line-280"></span><span class="hs-comment">--</span><span>
+</span><span id="line-281"></span><span class="hs-comment">-- * @(id ||| reviewer) (matcher s) === s@</span><span>
+</span><span id="line-282"></span><span class="hs-comment">--</span><span>
+</span><span id="line-283"></span><span class="hs-comment">-- * @left matcher (matcher s) === left Left (matcher s)@</span><span>
+</span><span id="line-284"></span><span id="prism"><span class="annot"><span class="annottext">prism :: forall (f :: * -&gt; *) (g :: * -&gt; *) s t a b.
+(Applicative f, Traversable g) =&gt;
+(s -&gt; Either t a) -&gt; (b -&gt; t) -&gt; AdapterLike f g s t a b
+</span><a href="Lens.Family.Unchecked.html#prism"><span class="hs-identifier hs-var hs-var">prism</span></a></span></span><span> </span><span id="local-6989586621679046350"><span class="annot"><span class="annottext">s -&gt; Either t a
+</span><a href="#local-6989586621679046350"><span class="hs-identifier hs-var">matcher</span></a></span></span><span> </span><span id="local-6989586621679046349"><span class="annot"><span class="annottext">b -&gt; t
+</span><a href="#local-6989586621679046349"><span class="hs-identifier hs-var">reviewer</span></a></span></span><span> </span><span id="local-6989586621679046348"><span class="annot"><span class="annottext">g a -&gt; f b
+</span><a href="#local-6989586621679046348"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621679046347"><span class="annot"><span class="annottext">g s
+</span><a href="#local-6989586621679046347"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a c b. (a -&gt; c) -&gt; (b -&gt; c) -&gt; Either a b -&gt; c
+</span><span class="hs-identifier hs-var">either</span></span><span> </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">b -&gt; t
+</span><a href="#local-6989586621679046349"><span class="hs-identifier hs-var">reviewer</span></a></span><span> </span><span class="annot"><span class="annottext">forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">g a -&gt; f b
+</span><a href="#local-6989586621679046348"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall (t :: * -&gt; *) (f :: * -&gt; *) a b.
+(Traversable t, Applicative f) =&gt;
+(a -&gt; f b) -&gt; t a -&gt; f (t b)
+</span><span class="hs-identifier hs-var">traverse</span></span><span> </span><span class="annot"><span class="annottext">s -&gt; Either t a
+</span><a href="#local-6989586621679046350"><span class="hs-identifier hs-var">matcher</span></a></span><span> </span><span class="annot"><span class="annottext">g s
+</span><a href="#local-6989586621679046347"><span class="hs-identifier hs-var">s</span></a></span><span>
+</span><span id="line-285"></span><span>
+</span><span id="line-286"></span><span class="hs-comment">-- | 'setting' promotes a \&quot;semantic editor combinator\&quot; to a modify-only lens.</span><span>
+</span><span id="line-287"></span><span class="hs-comment">-- To demote a lens to a semantic edit combinator, use the section @(l %~)@ or @over l@ from &quot;Lens.Family&quot;.</span><span>
+</span><span id="line-288"></span><span class="hs-comment">--</span><span>
+</span><span id="line-289"></span><span class="hs-comment">-- &gt;&gt;&gt; [(&quot;The&quot;,0),(&quot;quick&quot;,1),(&quot;brown&quot;,1),(&quot;fox&quot;,2)] &amp; setting map . fstL %~ length</span><span>
+</span><span id="line-290"></span><span class="hs-comment">-- [(3,0),(5,1),(5,1),(3,2)]</span><span>
+</span><span id="line-291"></span><span class="hs-comment">--</span><span>
+</span><span id="line-292"></span><span class="hs-comment">-- /Caution/: In order for the generated family to be well-defined, you must ensure that the two functors laws hold:</span><span>
+</span><span id="line-293"></span><span class="hs-comment">--</span><span>
+</span><span id="line-294"></span><span class="hs-comment">-- * @sec id === id@</span><span>
+</span><span id="line-295"></span><span class="hs-comment">--</span><span>
+</span><span id="line-296"></span><span class="hs-comment">-- * @sec f . sec g === sec (f . g)@</span><span>
+</span><span id="line-297"></span><span id="local-6989586621679046433"><span id="local-6989586621679046434"><span id="local-6989586621679046435"><span id="local-6989586621679046436"><span id="local-6989586621679046438"><span class="annot"><a href="Lens.Family.Unchecked.html#setting"><span class="hs-identifier hs-type">setting</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Lens.Family.Identical.html#Identical"><span class="hs-identifier hs-type">Identical</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679046438"><span class="hs-identifier hs-type">f</span></a></span><span>
+</span><span id="line-298"></span><span>        </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679046436"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679046435"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679046434"><span class="hs-identifier hs-type">s</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679046433"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-comment">-- ^ sec (semantic editor combinator)</span><span>
+</span><span id="line-299"></span><span>        </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Lens.Family.Unchecked.html#LensLike"><span class="hs-identifier hs-type">LensLike</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679046438"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679046434"><span class="hs-identifier hs-type">s</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679046433"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679046436"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679046435"><span class="hs-identifier hs-type">b</span></a></span></span></span></span></span></span><span>
+</span><span id="line-300"></span><span id="setting"><span class="annot"><span class="annottext">setting :: forall (f :: * -&gt; *) a b s t.
+Identical f =&gt;
+((a -&gt; b) -&gt; s -&gt; t) -&gt; LensLike f s t a b
+</span><a href="Lens.Family.Unchecked.html#setting"><span class="hs-identifier hs-var hs-var">setting</span></a></span></span><span> </span><span id="local-6989586621679046338"><span class="annot"><span class="annottext">(a -&gt; b) -&gt; s -&gt; t
+</span><a href="#local-6989586621679046338"><span class="hs-identifier hs-var">sec</span></a></span></span><span> </span><span id="local-6989586621679046337"><span class="annot"><span class="annottext">a -&gt; f b
+</span><a href="#local-6989586621679046337"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">(a -&gt; b) -&gt; s -&gt; t
+</span><a href="#local-6989586621679046338"><span class="hs-identifier hs-var">sec</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a. Identical f =&gt; f a -&gt; a
+</span><a href="Lens.Family.Identical.html#extract"><span class="hs-identifier hs-var">extract</span></a></span><span> </span><span class="annot"><span class="annottext">forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; f b
+</span><a href="#local-6989586621679046337"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-301"></span><span>
+</span><span id="line-302"></span><span class="hs-comment">-- | 'resetting' promotes a \&quot;semantic editor combinator\&quot; to a form of grate that can only lift unary functions.</span><span>
+</span><span id="line-303"></span><span class="hs-comment">-- To demote a grate to a semantic edit combinator, use @under l@ from &quot;Lens.Family&quot;.</span><span>
+</span><span id="line-304"></span><span class="hs-comment">--</span><span>
+</span><span id="line-305"></span><span class="hs-comment">-- /Caution/: In order for the generated family to be well-defined, you must ensure that the two functors laws hold:</span><span>
+</span><span id="line-306"></span><span class="hs-comment">--</span><span>
+</span><span id="line-307"></span><span class="hs-comment">-- * @sec id === id@</span><span>
+</span><span id="line-308"></span><span class="hs-comment">--</span><span>
+</span><span id="line-309"></span><span class="hs-comment">-- * @sec f . sec g === sec (f . g)@</span><span>
+</span><span id="line-310"></span><span id="local-6989586621679046421"><span id="local-6989586621679046422"><span id="local-6989586621679046423"><span id="local-6989586621679046424"><span id="local-6989586621679046425"><span class="annot"><a href="Lens.Family.Unchecked.html#resetting"><span class="hs-identifier hs-type">resetting</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Lens.Family.Identical.html#Identical"><span class="hs-identifier hs-type">Identical</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679046425"><span class="hs-identifier hs-type">g</span></a></span><span>
+</span><span id="line-311"></span><span>        </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679046424"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679046423"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679046422"><span class="hs-identifier hs-type">s</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679046421"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-comment">-- ^ sec (semantic editor combinator)</span><span>
+</span><span id="line-312"></span><span>        </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Lens.Family.Unchecked.html#GrateLike"><span class="hs-identifier hs-type">GrateLike</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679046425"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679046422"><span class="hs-identifier hs-type">s</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679046421"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679046424"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679046423"><span class="hs-identifier hs-type">b</span></a></span></span></span></span></span></span><span>
+</span><span id="line-313"></span><span id="resetting"><span class="annot"><span class="annottext">resetting :: forall (g :: * -&gt; *) a b s t.
+Identical g =&gt;
+((a -&gt; b) -&gt; s -&gt; t) -&gt; GrateLike g s t a b
+</span><a href="Lens.Family.Unchecked.html#resetting"><span class="hs-identifier hs-var hs-var">resetting</span></a></span></span><span> </span><span id="local-6989586621679046331"><span class="annot"><span class="annottext">(a -&gt; b) -&gt; s -&gt; t
+</span><a href="#local-6989586621679046331"><span class="hs-identifier hs-var">sec</span></a></span></span><span> </span><span id="local-6989586621679046330"><span class="annot"><span class="annottext">g a -&gt; b
+</span><a href="#local-6989586621679046330"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(a -&gt; b) -&gt; s -&gt; t
+</span><a href="#local-6989586621679046331"><span class="hs-identifier hs-var">sec</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">g a -&gt; b
+</span><a href="#local-6989586621679046330"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a. Identical f =&gt; f a -&gt; a
+</span><a href="Lens.Family.Identical.html#extract"><span class="hs-identifier hs-var">extract</span></a></span><span>
+</span><span id="line-314"></span></pre></body></html>

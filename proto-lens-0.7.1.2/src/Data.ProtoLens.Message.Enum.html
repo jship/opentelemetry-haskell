@@ -1,0 +1,239 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE ScopedTypeVariables #-}</span><span>
+</span><span id="line-2"></span><span class="hs-comment">-- | This internal module provides functions used to define the various</span><span>
+</span><span id="line-3"></span><span class="hs-comment">-- @enumFrom*@ functions of 'Enum'.</span><span>
+</span><span id="line-4"></span><span class="hs-comment">--</span><span>
+</span><span id="line-5"></span><span class="hs-comment">-- We expect 'fromEnum' to be an ordering homomorphism, that is:</span><span>
+</span><span id="line-6"></span><span class="hs-comment">--</span><span>
+</span><span id="line-7"></span><span class="hs-comment">-- @</span><span>
+</span><span id="line-8"></span><span class="hs-comment">-- forall a b. Enum a b</span><span>
+</span><span id="line-9"></span><span class="hs-comment">-- succ a == b =&gt; fromEnum a &lt; fromEnum b</span><span>
+</span><span id="line-10"></span><span class="hs-comment">-- @</span><span>
+</span><span id="line-11"></span><span class="hs-comment">--</span><span>
+</span><span id="line-12"></span><span class="hs-comment">-- Note that this homomorphism is most likely not surjective.  Note further that</span><span>
+</span><span id="line-13"></span><span class="hs-comment">-- one cannot assume:</span><span>
+</span><span id="line-14"></span><span class="hs-comment">--</span><span>
+</span><span id="line-15"></span><span class="hs-comment">-- @</span><span>
+</span><span id="line-16"></span><span class="hs-comment">-- CANNOT BE ASSUMED !</span><span>
+</span><span id="line-17"></span><span class="hs-comment">-- succ a == b =&gt; fromEnum a + 1 == fromEnum b</span><span>
+</span><span id="line-18"></span><span class="hs-comment">-- @</span><span>
+</span><span id="line-19"></span><span class="hs-comment">--</span><span>
+</span><span id="line-20"></span><span class="hs-comment">-- The 'succ' essor of a given message enum value @A@ that's not 'maxBound' is</span><span>
+</span><span id="line-21"></span><span class="hs-comment">-- the enum value @B@ whose 'fromEnum' value is the one immediately after @A@'s</span><span>
+</span><span id="line-22"></span><span class="hs-comment">-- 'fromEnum' value.  That is, 'fromEnum' determines order, but not distance.</span><span>
+</span><span id="line-23"></span><span class="hs-comment">--</span><span>
+</span><span id="line-24"></span><span class="hs-comment">-- As an example, consider the enum in the test suite:</span><span>
+</span><span id="line-25"></span><span class="hs-comment">--</span><span>
+</span><span id="line-26"></span><span class="hs-comment">-- @</span><span>
+</span><span id="line-27"></span><span class="hs-comment">-- enum Baz {</span><span>
+</span><span id="line-28"></span><span class="hs-comment">--     BAZ1 = 1; BAZ2 = 2; BAZ3 = 4; BAZ4 = 6;</span><span>
+</span><span id="line-29"></span><span class="hs-comment">--     BAZ5 = 7; BAZ6 = 9; BAZ7 = 10; BAZ8 = 12;</span><span>
+</span><span id="line-30"></span><span class="hs-comment">-- }</span><span>
+</span><span id="line-31"></span><span class="hs-comment">-- @</span><span>
+</span><span id="line-32"></span><span class="hs-comment">--</span><span>
+</span><span id="line-33"></span><span class="hs-comment">-- In this case, @succ BAZ2@ is @BAZ3@ despite their fromEnum values differing</span><span>
+</span><span id="line-34"></span><span class="hs-comment">-- by 2.  Further, @[BAZ2, BAZ4 ..]@ or equivalently</span><span>
+</span><span id="line-35"></span><span class="hs-comment">-- @messageEnumFromThen BAZ2 BAZ4@ is every other enum (i.e. a distance of 2)</span><span>
+</span><span id="line-36"></span><span class="hs-comment">-- when taken as a list, i.e.  @[BAZ2, BAZ4, BAZ6, BAZ8]@ despite the</span><span>
+</span><span id="line-37"></span><span class="hs-comment">-- 'fromEnum' distances being @[4, 3, 3]@.</span><span>
+</span><span id="line-38"></span><span class="hs-comment">--</span><span>
+</span><span id="line-39"></span><span class="hs-comment">-- That said, it is highly unwise to use any of the @[a,b ..*]@ patterns or</span><span>
+</span><span id="line-40"></span><span class="hs-comment">-- @enumFromThen*@ functions since adding or removing enums values can cause</span><span>
+</span><span id="line-41"></span><span class="hs-comment">-- previously functioning code to fail.  I.e. removing @BAZ3@ in the above</span><span>
+</span><span id="line-42"></span><span class="hs-comment">-- example makes the result equivalent @fromEnum BAZ2@ and the sequence now</span><span>
+</span><span id="line-43"></span><span class="hs-comment">-- includes every enum value save @BAZ1@.  This is all despite the fact that</span><span>
+</span><span id="line-44"></span><span class="hs-comment">-- @BAZ3@ was never referenced.</span><span>
+</span><span id="line-45"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Data.ProtoLens.Message.Enum</span><span>
+</span><span id="line-46"></span><span>    </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Data.ProtoLens.Message.Enum.html#messageEnumFrom"><span class="hs-identifier">messageEnumFrom</span></a></span><span>
+</span><span id="line-47"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.ProtoLens.Message.Enum.html#messageEnumFromTo"><span class="hs-identifier">messageEnumFromTo</span></a></span><span>
+</span><span id="line-48"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.ProtoLens.Message.Enum.html#messageEnumFromThen"><span class="hs-identifier">messageEnumFromThen</span></a></span><span>
+</span><span id="line-49"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.ProtoLens.Message.Enum.html#messageEnumFromThenTo"><span class="hs-identifier">messageEnumFromThenTo</span></a></span><span>
+</span><span id="line-50"></span><span>    </span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-51"></span><span>
+</span><span id="line-52"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.List</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">unfoldr</span></span><span class="hs-special">)</span><span>
+</span><span id="line-53"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Ord</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">comparing</span></span><span class="hs-special">)</span><span>
+</span><span id="line-54"></span><span>
+</span><span id="line-55"></span><span id="local-6989586621679075228"><span class="annot"><a href="Data.ProtoLens.Message.Enum.html#messageEnumFromTo"><span class="hs-identifier hs-type">messageEnumFromTo</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Enum</span></span><span> </span><span class="annot"><a href="#local-6989586621679075228"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679075228"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679075228"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="#local-6989586621679075228"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">]</span></span><span>
+</span><span id="line-56"></span><span id="messageEnumFromTo"><span class="annot"><span class="annottext">messageEnumFromTo :: forall a. Enum a =&gt; a -&gt; a -&gt; [a]
+</span><a href="Data.ProtoLens.Message.Enum.html#messageEnumFromTo"><span class="hs-identifier hs-var hs-var">messageEnumFromTo</span></a></span></span><span> </span><span id="local-6989586621679075187"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679075187"><span class="hs-identifier hs-var">start</span></a></span></span><span> </span><span id="local-6989586621679075186"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679075186"><span class="hs-identifier hs-var">stop</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">forall a b. Ord a =&gt; (b -&gt; a) -&gt; b -&gt; b -&gt; Ordering
+</span><span class="hs-identifier hs-var">comparing</span></span><span> </span><span class="annot"><span class="annottext">forall a. Enum a =&gt; a -&gt; Int
+</span><span class="hs-identifier hs-var">fromEnum</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679075187"><span class="hs-identifier hs-var">start</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679075186"><span class="hs-identifier hs-var">stop</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-57"></span><span>    </span><span class="annot"><span class="annottext">Ordering
+</span><span class="hs-identifier hs-var">LT</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall a. Enum a =&gt; a -&gt; a -&gt; a -&gt; [a]
+</span><a href="Data.ProtoLens.Message.Enum.html#messageEnumFromThenTo"><span class="hs-identifier hs-var">messageEnumFromThenTo</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679075187"><span class="hs-identifier hs-var">start</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. Enum a =&gt; a -&gt; a
+</span><span class="hs-identifier hs-var">succ</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679075187"><span class="hs-identifier hs-var">start</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679075186"><span class="hs-identifier hs-var">stop</span></a></span><span>
+</span><span id="line-58"></span><span>    </span><span class="hs-comment">-- The only time we can't call 'succ' on @start@ is if it's 'maxBound' which</span><span>
+</span><span id="line-59"></span><span>    </span><span class="hs-comment">-- is &gt;= all values by definition, so the below cases cover all possible</span><span>
+</span><span id="line-60"></span><span>    </span><span class="hs-comment">-- cases where succ cannot be called.</span><span>
+</span><span id="line-61"></span><span>    </span><span class="annot"><span class="annottext">Ordering
+</span><span class="hs-identifier hs-var">EQ</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679075187"><span class="hs-identifier hs-var">start</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-62"></span><span>    </span><span class="annot"><span class="annottext">Ordering
+</span><span class="hs-identifier hs-var">GT</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-63"></span><span>
+</span><span id="line-64"></span><span id="local-6989586621679075221"><span class="annot"><a href="Data.ProtoLens.Message.Enum.html#messageEnumFrom"><span class="hs-identifier hs-type">messageEnumFrom</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Enum</span></span><span> </span><span class="annot"><a href="#local-6989586621679075221"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bounded</span></span><span> </span><span class="annot"><a href="#local-6989586621679075221"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679075221"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="#local-6989586621679075221"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">]</span></span><span>
+</span><span id="line-65"></span><span id="messageEnumFrom"><span class="annot"><span class="annottext">messageEnumFrom :: forall a. (Enum a, Bounded a) =&gt; a -&gt; [a]
+</span><a href="Data.ProtoLens.Message.Enum.html#messageEnumFrom"><span class="hs-identifier hs-var hs-var">messageEnumFrom</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a b c. (a -&gt; b -&gt; c) -&gt; b -&gt; a -&gt; c
+</span><span class="hs-identifier hs-var">flip</span></span><span> </span><span class="annot"><span class="annottext">forall a. Enum a =&gt; a -&gt; a -&gt; [a]
+</span><a href="Data.ProtoLens.Message.Enum.html#messageEnumFromTo"><span class="hs-identifier hs-var">messageEnumFromTo</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Bounded a =&gt; a
+</span><span class="hs-identifier hs-var">maxBound</span></span><span>
+</span><span id="line-66"></span><span>
+</span><span id="line-67"></span><span id="local-6989586621679075215"><span class="annot"><a href="Data.ProtoLens.Message.Enum.html#messageEnumFromThen"><span class="hs-identifier hs-type">messageEnumFromThen</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Enum</span></span><span> </span><span class="annot"><a href="#local-6989586621679075215"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bounded</span></span><span> </span><span class="annot"><a href="#local-6989586621679075215"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679075215"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679075215"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="#local-6989586621679075215"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">]</span></span><span>
+</span><span id="line-68"></span><span id="messageEnumFromThen"><span class="annot"><span class="annottext">messageEnumFromThen :: forall a. (Enum a, Bounded a) =&gt; a -&gt; a -&gt; [a]
+</span><a href="Data.ProtoLens.Message.Enum.html#messageEnumFromThen"><span class="hs-identifier hs-var hs-var">messageEnumFromThen</span></a></span></span><span> </span><span id="local-6989586621679075169"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679075169"><span class="hs-identifier hs-var">start</span></a></span></span><span> </span><span id="local-6989586621679075168"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679075168"><span class="hs-identifier hs-var">step</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">forall a b. Ord a =&gt; (b -&gt; a) -&gt; b -&gt; b -&gt; Ordering
+</span><span class="hs-identifier hs-var">comparing</span></span><span> </span><span class="annot"><span class="annottext">forall a. Enum a =&gt; a -&gt; Int
+</span><span class="hs-identifier hs-var">fromEnum</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679075169"><span class="hs-identifier hs-var">start</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679075168"><span class="hs-identifier hs-var">step</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-69"></span><span>    </span><span class="annot"><span class="annottext">Ordering
+</span><span class="hs-identifier hs-var">LT</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall a. Enum a =&gt; a -&gt; a -&gt; a -&gt; [a]
+</span><a href="Data.ProtoLens.Message.Enum.html#messageEnumFromThenTo"><span class="hs-identifier hs-var">messageEnumFromThenTo</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679075169"><span class="hs-identifier hs-var">start</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679075168"><span class="hs-identifier hs-var">step</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Bounded a =&gt; a
+</span><span class="hs-identifier hs-var">maxBound</span></span><span>
+</span><span id="line-70"></span><span>    </span><span class="annot"><span class="annottext">Ordering
+</span><span class="hs-identifier hs-var">EQ</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; [a]
+</span><span class="hs-identifier hs-var">repeat</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679075169"><span class="hs-identifier hs-var">start</span></a></span><span>
+</span><span id="line-71"></span><span>    </span><span class="annot"><span class="annottext">Ordering
+</span><span class="hs-identifier hs-var">GT</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall a. Enum a =&gt; a -&gt; a -&gt; a -&gt; [a]
+</span><a href="Data.ProtoLens.Message.Enum.html#messageEnumFromThenTo"><span class="hs-identifier hs-var">messageEnumFromThenTo</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679075169"><span class="hs-identifier hs-var">start</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679075168"><span class="hs-identifier hs-var">step</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Bounded a =&gt; a
+</span><span class="hs-identifier hs-var">minBound</span></span><span>
+</span><span id="line-72"></span><span>
+</span><span id="line-73"></span><span class="annot"><a href="Data.ProtoLens.Message.Enum.html#messageEnumFromThenTo"><span class="hs-identifier hs-type">messageEnumFromThenTo</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679075223"><span class="annot"><a href="#local-6989586621679075223"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span class="hs-operator">.</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Enum</span></span><span> </span><span class="annot"><a href="#local-6989586621679075223"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679075223"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679075223"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679075223"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="#local-6989586621679075223"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-74"></span><span id="messageEnumFromThenTo"><span class="annot"><span class="annottext">messageEnumFromThenTo :: forall a. Enum a =&gt; a -&gt; a -&gt; a -&gt; [a]
+</span><a href="Data.ProtoLens.Message.Enum.html#messageEnumFromThenTo"><span class="hs-identifier hs-var hs-var">messageEnumFromThenTo</span></a></span></span><span> </span><span id="local-6989586621679075159"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679075159"><span class="hs-identifier hs-var">start</span></a></span></span><span> </span><span id="local-6989586621679075158"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679075158"><span class="hs-identifier hs-var">step</span></a></span></span><span> </span><span id="local-6989586621679075157"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679075157"><span class="hs-identifier hs-var">stop</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">forall a b. Ord a =&gt; (b -&gt; a) -&gt; b -&gt; b -&gt; Ordering
+</span><span class="hs-identifier hs-var">comparing</span></span><span> </span><span class="annot"><span class="annottext">forall a. Enum a =&gt; a -&gt; Int
+</span><span class="hs-identifier hs-var">fromEnum</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679075159"><span class="hs-identifier hs-var">start</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679075158"><span class="hs-identifier hs-var">step</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-75"></span><span>    </span><span class="annot"><span class="annottext">Ordering
+</span><span class="hs-identifier hs-var">LT</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(a -&gt; a) -&gt; Ordering -&gt; [a]
+</span><a href="#local-6989586621679075156"><span class="hs-identifier hs-var">helper</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Enum a =&gt; a -&gt; a
+</span><span class="hs-identifier hs-var">succ</span></span><span> </span><span class="annot"><span class="annottext">Ordering
+</span><span class="hs-identifier hs-var">GT</span></span><span>
+</span><span id="line-76"></span><span>    </span><span class="annot"><span class="annottext">Ordering
+</span><span class="hs-identifier hs-var">EQ</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679075155"><span class="hs-identifier hs-var">stopInt</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&gt;=</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679075154"><span class="hs-identifier hs-var">stepInt</span></a></span><span> </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; [a]
+</span><span class="hs-identifier hs-var">repeat</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679075159"><span class="hs-identifier hs-var">start</span></a></span><span> </span><span class="hs-keyword">else</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-77"></span><span>    </span><span class="annot"><span class="annottext">Ordering
+</span><span class="hs-identifier hs-var">GT</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(a -&gt; a) -&gt; Ordering -&gt; [a]
+</span><a href="#local-6989586621679075156"><span class="hs-identifier hs-var">helper</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Enum a =&gt; a -&gt; a
+</span><span class="hs-identifier hs-var">pred</span></span><span> </span><span class="annot"><span class="annottext">Ordering
+</span><span class="hs-identifier hs-var">LT</span></span><span>
+</span><span id="line-78"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-79"></span><span>    </span><span id="local-6989586621679075155"><span class="annot"><span class="annottext">stopInt :: Int
+</span><a href="#local-6989586621679075155"><span class="hs-identifier hs-var hs-var">stopInt</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. Enum a =&gt; a -&gt; Int
+</span><span class="hs-identifier hs-var">fromEnum</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679075157"><span class="hs-identifier hs-var">stop</span></a></span><span>
+</span><span id="line-80"></span><span>    </span><span id="local-6989586621679075154"><span class="annot"><span class="annottext">stepInt :: Int
+</span><a href="#local-6989586621679075154"><span class="hs-identifier hs-var hs-var">stepInt</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. Enum a =&gt; a -&gt; Int
+</span><span class="hs-identifier hs-var">fromEnum</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679075158"><span class="hs-identifier hs-var">step</span></a></span><span>
+</span><span id="line-81"></span><span>    </span><span id="local-6989586621679075156"><span class="annot"><span class="annottext">helper :: (a -&gt; a) -&gt; Ordering -&gt; [a]
+</span><a href="#local-6989586621679075156"><span class="hs-identifier hs-var hs-var">helper</span></a></span></span><span> </span><span id="local-6989586621679075136"><span class="annot"><span class="annottext">a -&gt; a
+</span><a href="#local-6989586621679075136"><span class="hs-identifier hs-var">iter</span></a></span></span><span> </span><span id="local-6989586621679075135"><span class="annot"><span class="annottext">Ordering
+</span><a href="#local-6989586621679075135"><span class="hs-identifier hs-var">isAfter</span></a></span></span><span>
+</span><span id="line-82"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">forall a b. Ord a =&gt; (b -&gt; a) -&gt; b -&gt; b -&gt; Ordering
+</span><span class="hs-identifier hs-var">comparing</span></span><span> </span><span class="annot"><span class="annottext">forall a. Enum a =&gt; a -&gt; Int
+</span><span class="hs-identifier hs-var">fromEnum</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679075159"><span class="hs-identifier hs-var">start</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679075157"><span class="hs-identifier hs-var">stop</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Ordering
+</span><a href="#local-6989586621679075135"><span class="hs-identifier hs-var">isAfter</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-83"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">forall a. Ord a =&gt; a -&gt; a -&gt; Ordering
+</span><span class="hs-identifier hs-var">compare</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679075154"><span class="hs-identifier hs-var">stepInt</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679075155"><span class="hs-identifier hs-var">stopInt</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Ordering
+</span><a href="#local-6989586621679075135"><span class="hs-identifier hs-var">isAfter</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679075159"><span class="hs-identifier hs-var">start</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-84"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679075159"><span class="hs-identifier hs-var">start</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; [a] -&gt; [a]
+</span><span class="hs-glyph hs-var">:</span></span><span> </span><span class="annot"><span class="annottext">forall b a. (b -&gt; Maybe (a, b)) -&gt; b -&gt; [a]
+</span><span class="hs-identifier hs-var">unfoldr</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; (a, Maybe a)
+</span><a href="#local-6989586621679075133"><span class="hs-identifier hs-var">unfoldIter</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679075158"><span class="hs-identifier hs-var">step</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-85"></span><span>      </span><span class="hs-keyword">where</span><span>
+</span><span id="line-86"></span><span>        </span><span class="hs-comment">-- This applies @iter@ (which is either succ or pred depending on our</span><span>
+</span><span id="line-87"></span><span>        </span><span class="hs-comment">-- direction) @n@ times.  This returns @Just@ the result unless we've</span><span>
+</span><span id="line-88"></span><span>        </span><span class="hs-comment">-- passed @stop@, in which case we return @Nothing@.</span><span>
+</span><span id="line-89"></span><span>        </span><span id="local-6989586621679075124"><span class="annot"><span class="annottext">jump :: t -&gt; a -&gt; Maybe a
+</span><a href="#local-6989586621679075124"><span class="hs-identifier hs-var hs-var">jump</span></a></span></span><span> </span><span class="annot"><span class="annottext">t
+</span><span class="hs-number">0</span></span><span> </span><span id="local-6989586621679075123"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679075123"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679075123"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-90"></span><span>        </span><span class="annot"><a href="#local-6989586621679075124"><span class="hs-identifier hs-var">jump</span></a></span><span> </span><span id="local-6989586621679075122"><span class="annot"><span class="annottext">t
+</span><a href="#local-6989586621679075122"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span id="local-6989586621679075121"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679075121"><span class="hs-identifier hs-var">a</span></a></span></span><span>
+</span><span id="line-91"></span><span>            </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679075155"><span class="hs-identifier hs-var">stopInt</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">forall a. Enum a =&gt; a -&gt; Int
+</span><span class="hs-identifier hs-var">fromEnum</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679075121"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-92"></span><span>            </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">t -&gt; a -&gt; Maybe a
+</span><a href="#local-6989586621679075124"><span class="hs-identifier hs-var">jump</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">t
+</span><a href="#local-6989586621679075122"><span class="hs-identifier hs-var">n</span></a></span><span class="annot"><span class="annottext">forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-glyph hs-var">-</span></span><span class="annot"><span class="annottext">t
+</span><span class="hs-number">1</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; a
+</span><a href="#local-6989586621679075136"><span class="hs-identifier hs-var">iter</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679075121"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-93"></span><span>        </span><span id="local-6989586621679075133"><span class="annot"><span class="annottext">unfoldIter :: a -&gt; (a, Maybe a)
+</span><a href="#local-6989586621679075133"><span class="hs-identifier hs-var hs-var">unfoldIter</span></a></span></span><span> </span><span id="local-6989586621679075117"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679075117"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679075117"><span class="hs-identifier hs-var">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">forall {t}. (Eq t, Num t) =&gt; t -&gt; a -&gt; Maybe a
+</span><a href="#local-6989586621679075124"><span class="hs-identifier hs-var">jump</span></a></span><span> </span><span class="annot"><span class="annottext">Integer
+</span><a href="#local-6989586621679075116"><span class="hs-identifier hs-var">skipCount</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679075117"><span class="hs-identifier hs-var">a</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-94"></span><span>        </span><span class="annot"><a href="#local-6989586621679075115"><span class="hs-identifier hs-type">countSkips</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Integer</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679075223"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Integer</span></span><span>
+</span><span id="line-95"></span><span>        </span><span id="local-6989586621679075115"><span class="annot"><span class="annottext">countSkips :: Integer -&gt; a -&gt; Integer
+</span><a href="#local-6989586621679075115"><span class="hs-identifier hs-var hs-var">countSkips</span></a></span></span><span> </span><span id="local-6989586621679075114"><span class="annot"><span class="annottext">Integer
+</span><a href="#local-6989586621679075114"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span id="local-6989586621679075113"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679075113"><span class="hs-identifier hs-var">start'</span></a></span></span><span>
+</span><span id="line-96"></span><span>            </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679075154"><span class="hs-identifier hs-var">stepInt</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">forall a. Enum a =&gt; a -&gt; Int
+</span><span class="hs-identifier hs-var">fromEnum</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679075113"><span class="hs-identifier hs-var">start'</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Integer
+</span><a href="#local-6989586621679075114"><span class="hs-identifier hs-var">n</span></a></span><span>
+</span><span id="line-97"></span><span>            </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Integer -&gt; a -&gt; Integer
+</span><a href="#local-6989586621679075115"><span class="hs-identifier hs-var">countSkips</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Integer
+</span><a href="#local-6989586621679075114"><span class="hs-identifier hs-var">n</span></a></span><span class="annot"><span class="annottext">forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span class="annot"><span class="annottext">Integer
+</span><span class="hs-number">1</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; a
+</span><a href="#local-6989586621679075136"><span class="hs-identifier hs-var">iter</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679075113"><span class="hs-identifier hs-var">start'</span></a></span><span>
+</span><span id="line-98"></span><span>        </span><span class="hs-comment">-- This is the number of applications of @iter@ (again, either @succ@</span><span>
+</span><span id="line-99"></span><span>        </span><span class="hs-comment">-- or @pred@) needed to get from @start@ to @step@.</span><span>
+</span><span id="line-100"></span><span>        </span><span id="local-6989586621679075116"><span class="annot"><span class="annottext">skipCount :: Integer
+</span><a href="#local-6989586621679075116"><span class="hs-identifier hs-var hs-var">skipCount</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Integer -&gt; a -&gt; Integer
+</span><a href="#local-6989586621679075115"><span class="hs-identifier hs-var">countSkips</span></a></span><span> </span><span class="annot"><span class="annottext">Integer
+</span><span class="hs-number">0</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679075159"><span class="hs-identifier hs-var">start</span></a></span><span>
+</span><span id="line-101"></span><span>
+</span><span id="line-102"></span></pre></body></html>

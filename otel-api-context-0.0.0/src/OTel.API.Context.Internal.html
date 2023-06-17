@@ -1,0 +1,586 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE BangPatterns #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE BlockArguments #-}</span><span>
+</span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE CPP #-}</span><span>
+</span><span id="line-4"></span><span class="hs-pragma">{-# LANGUAGE DerivingVia #-}</span><span>
+</span><span id="line-5"></span><span class="hs-pragma">{-# LANGUAGE FlexibleInstances #-}</span><span>
+</span><span id="line-6"></span><span class="hs-pragma">{-# LANGUAGE MagicHash #-}</span><span>
+</span><span id="line-7"></span><span class="hs-pragma">{-# LANGUAGE MultiParamTypeClasses #-}</span><span>
+</span><span id="line-8"></span><span class="hs-pragma">{-# LANGUAGE NamedFieldPuns #-}</span><span>
+</span><span id="line-9"></span><span class="hs-pragma">{-# LANGUAGE OverloadedStrings #-}</span><span>
+</span><span id="line-10"></span><span class="hs-pragma">{-# LANGUAGE ScopedTypeVariables #-}</span><span>
+</span><span id="line-11"></span><span class="hs-pragma">{-# LANGUAGE StandaloneKindSignatures #-}</span><span>
+</span><span id="line-12"></span><span class="hs-pragma">{-# LANGUAGE UndecidableInstances #-}</span><span>
+</span><span id="line-13"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">OTel.API.Context.Internal</span><span>
+</span><span id="line-14"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-comment">-- * Disclaimer</span></span><span>
+</span><span id="line-15"></span><span>    </span><span class="annot"><span class="hs-comment">-- $disclaimer</span></span><span>
+</span><span id="line-16"></span><span>    </span><span class="annot"><a href="OTel.API.Context.Internal.html#ContextT"><span class="hs-identifier">ContextT</span></a></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-17"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="OTel.API.Context.Internal.html#mapContextT"><span class="hs-identifier">mapContextT</span></a></span><span>
+</span><span id="line-18"></span><span>
+</span><span id="line-19"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="OTel.API.Context.Internal.html#attachContextValue"><span class="hs-identifier">attachContextValue</span></a></span><span>
+</span><span id="line-20"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="OTel.API.Context.Internal.html#getAttachedContextValue"><span class="hs-identifier">getAttachedContextValue</span></a></span><span>
+</span><span id="line-21"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="OTel.API.Context.Internal.html#getAttachedContext"><span class="hs-identifier">getAttachedContext</span></a></span><span>
+</span><span id="line-22"></span><span>  </span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-23"></span><span>
+</span><span id="line-24"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Applicative</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Alternative</span></span><span class="hs-special">)</span><span>
+</span><span id="line-25"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">MonadPlus</span></span><span class="hs-special">)</span><span>
+</span><span id="line-26"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.Base</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">MonadBase</span></span><span class="hs-special">)</span><span>
+</span><span id="line-27"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.Catch</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">MonadCatch</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">MonadMask</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">MonadThrow</span></span><span class="hs-special">)</span><span>
+</span><span id="line-28"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.Cont</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">MonadCont</span></span><span class="hs-special">)</span><span>
+</span><span id="line-29"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.Except</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">MonadError</span></span><span class="hs-special">)</span><span>
+</span><span id="line-30"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.IO.Class</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">MonadIO</span></span><span class="hs-special">)</span><span>
+</span><span id="line-31"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.IO.Unlift</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">MonadUnliftIO</span></span><span class="hs-special">)</span><span>
+</span><span id="line-32"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.Logger</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">MonadLogger</span></span><span class="hs-special">)</span><span>
+</span><span id="line-33"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.RWS.Class</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">MonadRWS</span></span><span class="hs-special">)</span><span>
+</span><span id="line-34"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.Reader</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">MonadReader</span></span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">ask</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">local</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">reader</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-35"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.State</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">MonadState</span></span><span class="hs-special">)</span><span>
+</span><span id="line-36"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.Trans.Class</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">MonadTrans</span></span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">lift</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-37"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.Trans.Control</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">MonadBaseControl</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">MonadTransControl</span></span><span class="hs-special">)</span><span>
+</span><span id="line-38"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.Trans.Reader</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">ReaderT</span></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-39"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.Trans.Resource</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">MonadResource</span></span><span class="hs-special">)</span><span>
+</span><span id="line-40"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.Writer.Class</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">MonadWriter</span></span><span class="hs-special">)</span><span>
+</span><span id="line-41"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Kind</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Type</span></span><span class="hs-special">)</span><span>
+</span><span id="line-42"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Monoid</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Ap</span></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-43"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">OTel.API.Context.Core</span></span><span>
+</span><span id="line-44"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-identifier">Context</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">ContextBackend</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">attachContextValueUsing</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">getAttachedContextUsing</span></span><span>
+</span><span id="line-45"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">getAttachedContextValueUsing</span></span><span>
+</span><span id="line-46"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-47"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Prelude</span></span><span class="hs-cpp">
+
+#if MIN_VERSION_mtl(2,3,0)
+</span><span class="hs-keyword">import</span><span> </span><span class="hs-identifier">Control.Monad.Accum</span><span> </span><span class="hs-special">(</span><span class="hs-identifier">MonadAccum</span><span class="hs-special">)</span><span>
+</span><span id="line-51"></span><span class="hs-keyword">import</span><span> </span><span class="hs-identifier">Control.Monad.Select</span><span> </span><span class="hs-special">(</span><span class="hs-identifier">MonadSelect</span><span class="hs-special">)</span><span class="hs-cpp">
+#endif
+</span><span>
+</span><span id="line-54"></span><span class="hs-keyword">type</span><span> </span><span class="annot"><a href="OTel.API.Context.Internal.html#ContextT"><span class="hs-identifier hs-type">ContextT</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Type</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Type</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Type</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Type</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Type</span></span><span>
+</span><span id="line-55"></span><span>
+</span><span id="line-56"></span><span class="hs-keyword">newtype</span><span> </span><span id="ContextT"><span class="annot"><a href="OTel.API.Context.Internal.html#ContextT"><span class="hs-identifier hs-var">ContextT</span></a></span></span><span> </span><span id="local-6989586621679069924"><span class="annot"><a href="#local-6989586621679069924"><span class="hs-identifier hs-type">c</span></a></span></span><span> </span><span id="local-6989586621679069923"><span class="annot"><a href="#local-6989586621679069923"><span class="hs-identifier hs-type">m</span></a></span></span><span> </span><span id="local-6989586621679069922"><span class="annot"><a href="#local-6989586621679069922"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="ContextT"><span class="annot"><a href="OTel.API.Context.Internal.html#ContextT"><span class="hs-identifier hs-var">ContextT</span></a></span></span><span>
+</span><span id="line-57"></span><span>  </span><span class="hs-special">{</span><span> </span><span id="runContextT"><span class="annot"><span class="annottext">forall c (m :: * -&gt; *) a. ContextT c m a -&gt; ContextBackend c -&gt; m a
+</span><a href="OTel.API.Context.Internal.html#runContextT"><span class="hs-identifier hs-var hs-var">runContextT</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ContextBackend</span></span><span> </span><span class="annot"><a href="#local-6989586621679069924"><span class="hs-identifier hs-type">c</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679069923"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679069922"><span class="hs-identifier hs-type">a</span></a></span><span>
+</span><span id="line-58"></span><span>  </span><span class="hs-special">}</span><span> </span><span class="hs-keyword">deriving</span><span>
+</span><span id="line-59"></span><span>      </span><span class="hs-special">(</span><span> </span><span id="local-6989586621679069521"><span id="local-6989586621679069525"><span id="local-6989586621679069529"><span id="local-6989586621679069533"><span id="local-6989586621679069538"><span class="annot"><span class="annottext">forall a. a -&gt; ContextT c m a
+forall a b. ContextT c m a -&gt; ContextT c m b -&gt; ContextT c m a
+forall a b. ContextT c m a -&gt; ContextT c m b -&gt; ContextT c m b
+forall a b.
+ContextT c m (a -&gt; b) -&gt; ContextT c m a -&gt; ContextT c m b
+forall a b c.
+(a -&gt; b -&gt; c) -&gt; ContextT c m a -&gt; ContextT c m b -&gt; ContextT c m c
+forall {c} {m :: * -&gt; *}. Applicative m =&gt; Functor (ContextT c m)
+forall c (m :: * -&gt; *) a. Applicative m =&gt; a -&gt; ContextT c m a
+forall c (m :: * -&gt; *) a b.
+Applicative m =&gt;
+ContextT c m a -&gt; ContextT c m b -&gt; ContextT c m a
+forall c (m :: * -&gt; *) a b.
+Applicative m =&gt;
+ContextT c m a -&gt; ContextT c m b -&gt; ContextT c m b
+forall c (m :: * -&gt; *) a b.
+Applicative m =&gt;
+ContextT c m (a -&gt; b) -&gt; ContextT c m a -&gt; ContextT c m b
+forall c (m :: * -&gt; *) a b c.
+Applicative m =&gt;
+(a -&gt; b -&gt; c) -&gt; ContextT c m a -&gt; ContextT c m b -&gt; ContextT c m c
+forall (f :: * -&gt; *).
+Functor f
+-&gt; (forall a. a -&gt; f a)
+-&gt; (forall a b. f (a -&gt; b) -&gt; f a -&gt; f b)
+-&gt; (forall a b c. (a -&gt; b -&gt; c) -&gt; f a -&gt; f b -&gt; f c)
+-&gt; (forall a b. f a -&gt; f b -&gt; f b)
+-&gt; (forall a b. f a -&gt; f b -&gt; f a)
+-&gt; Applicative f
+&lt;* :: forall a b. ContextT c m a -&gt; ContextT c m b -&gt; ContextT c m a
+$c&lt;* :: forall c (m :: * -&gt; *) a b.
+Applicative m =&gt;
+ContextT c m a -&gt; ContextT c m b -&gt; ContextT c m a
+*&gt; :: forall a b. ContextT c m a -&gt; ContextT c m b -&gt; ContextT c m b
+$c*&gt; :: forall c (m :: * -&gt; *) a b.
+Applicative m =&gt;
+ContextT c m a -&gt; ContextT c m b -&gt; ContextT c m b
+liftA2 :: forall a b c.
+(a -&gt; b -&gt; c) -&gt; ContextT c m a -&gt; ContextT c m b -&gt; ContextT c m c
+$cliftA2 :: forall c (m :: * -&gt; *) a b c.
+Applicative m =&gt;
+(a -&gt; b -&gt; c) -&gt; ContextT c m a -&gt; ContextT c m b -&gt; ContextT c m c
+&lt;*&gt; :: forall a b.
+ContextT c m (a -&gt; b) -&gt; ContextT c m a -&gt; ContextT c m b
+$c&lt;*&gt; :: forall c (m :: * -&gt; *) a b.
+Applicative m =&gt;
+ContextT c m (a -&gt; b) -&gt; ContextT c m a -&gt; ContextT c m b
+pure :: forall a. a -&gt; ContextT c m a
+$cpure :: forall c (m :: * -&gt; *) a. Applicative m =&gt; a -&gt; ContextT c m a
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Applicative</span></span></span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679069508"><span id="local-6989586621679069513"><span class="annot"><span class="annottext">forall a b. a -&gt; ContextT c m b -&gt; ContextT c m a
+forall a b. (a -&gt; b) -&gt; ContextT c m a -&gt; ContextT c m b
+forall c (m :: * -&gt; *) a b.
+Functor m =&gt;
+a -&gt; ContextT c m b -&gt; ContextT c m a
+forall c (m :: * -&gt; *) a b.
+Functor m =&gt;
+(a -&gt; b) -&gt; ContextT c m a -&gt; ContextT c m b
+forall (f :: * -&gt; *).
+(forall a b. (a -&gt; b) -&gt; f a -&gt; f b)
+-&gt; (forall a b. a -&gt; f b -&gt; f a) -&gt; Functor f
+&lt;$ :: forall a b. a -&gt; ContextT c m b -&gt; ContextT c m a
+$c&lt;$ :: forall c (m :: * -&gt; *) a b.
+Functor m =&gt;
+a -&gt; ContextT c m b -&gt; ContextT c m a
+fmap :: forall a b. (a -&gt; b) -&gt; ContextT c m a -&gt; ContextT c m b
+$cfmap :: forall c (m :: * -&gt; *) a b.
+Functor m =&gt;
+(a -&gt; b) -&gt; ContextT c m a -&gt; ContextT c m b
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Functor</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679069490"><span id="local-6989586621679069494"><span id="local-6989586621679069499"><span class="annot"><span class="annottext">forall a. a -&gt; ContextT c m a
+forall a b. ContextT c m a -&gt; ContextT c m b -&gt; ContextT c m b
+forall a b.
+ContextT c m a -&gt; (a -&gt; ContextT c m b) -&gt; ContextT c m b
+forall {c} {m :: * -&gt; *}. Monad m =&gt; Applicative (ContextT c m)
+forall c (m :: * -&gt; *) a. Monad m =&gt; a -&gt; ContextT c m a
+forall c (m :: * -&gt; *) a b.
+Monad m =&gt;
+ContextT c m a -&gt; ContextT c m b -&gt; ContextT c m b
+forall c (m :: * -&gt; *) a b.
+Monad m =&gt;
+ContextT c m a -&gt; (a -&gt; ContextT c m b) -&gt; ContextT c m b
+forall (m :: * -&gt; *).
+Applicative m
+-&gt; (forall a b. m a -&gt; (a -&gt; m b) -&gt; m b)
+-&gt; (forall a b. m a -&gt; m b -&gt; m b)
+-&gt; (forall a. a -&gt; m a)
+-&gt; Monad m
+return :: forall a. a -&gt; ContextT c m a
+$creturn :: forall c (m :: * -&gt; *) a. Monad m =&gt; a -&gt; ContextT c m a
+&gt;&gt; :: forall a b. ContextT c m a -&gt; ContextT c m b -&gt; ContextT c m b
+$c&gt;&gt; :: forall c (m :: * -&gt; *) a b.
+Monad m =&gt;
+ContextT c m a -&gt; ContextT c m b -&gt; ContextT c m b
+&gt;&gt;= :: forall a b.
+ContextT c m a -&gt; (a -&gt; ContextT c m b) -&gt; ContextT c m b
+$c&gt;&gt;= :: forall c (m :: * -&gt; *) a b.
+Monad m =&gt;
+ContextT c m a -&gt; (a -&gt; ContextT c m b) -&gt; ContextT c m b
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Monad</span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679069479"><span class="annot"><span class="annottext">forall a. String -&gt; ContextT c m a
+forall {c} {m :: * -&gt; *}. MonadFail m =&gt; Monad (ContextT c m)
+forall c (m :: * -&gt; *) a. MonadFail m =&gt; String -&gt; ContextT c m a
+forall (m :: * -&gt; *).
+Monad m -&gt; (forall a. String -&gt; m a) -&gt; MonadFail m
+fail :: forall a. String -&gt; ContextT c m a
+$cfail :: forall c (m :: * -&gt; *) a. MonadFail m =&gt; String -&gt; ContextT c m a
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var">MonadFail</span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679069467"><span class="annot"><span class="annottext">forall a. IO a -&gt; ContextT c m a
+forall {c} {m :: * -&gt; *}. MonadIO m =&gt; Monad (ContextT c m)
+forall c (m :: * -&gt; *) a. MonadIO m =&gt; IO a -&gt; ContextT c m a
+forall (m :: * -&gt; *).
+Monad m -&gt; (forall a. IO a -&gt; m a) -&gt; MonadIO m
+liftIO :: forall a. IO a -&gt; ContextT c m a
+$cliftIO :: forall c (m :: * -&gt; *) a. MonadIO m =&gt; IO a -&gt; ContextT c m a
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var">MonadIO</span></span></span><span> </span><span class="hs-comment">-- @base@</span><span>
+</span><span id="line-60"></span><span>      </span><span class="hs-special">,</span><span> </span><span id="local-6989586621679069442"><span id="local-6989586621679069446"><span id="local-6989586621679069450"><span id="local-6989586621679069455"><span class="annot"><span class="annottext">forall a. ContextT c m a
+forall a. ContextT c m a -&gt; ContextT c m [a]
+forall a. ContextT c m a -&gt; ContextT c m a -&gt; ContextT c m a
+forall {c} {m :: * -&gt; *}.
+Alternative m =&gt;
+Applicative (ContextT c m)
+forall c (m :: * -&gt; *) a. Alternative m =&gt; ContextT c m a
+forall c (m :: * -&gt; *) a.
+Alternative m =&gt;
+ContextT c m a -&gt; ContextT c m [a]
+forall c (m :: * -&gt; *) a.
+Alternative m =&gt;
+ContextT c m a -&gt; ContextT c m a -&gt; ContextT c m a
+forall (f :: * -&gt; *).
+Applicative f
+-&gt; (forall a. f a)
+-&gt; (forall a. f a -&gt; f a -&gt; f a)
+-&gt; (forall a. f a -&gt; f [a])
+-&gt; (forall a. f a -&gt; f [a])
+-&gt; Alternative f
+many :: forall a. ContextT c m a -&gt; ContextT c m [a]
+$cmany :: forall c (m :: * -&gt; *) a.
+Alternative m =&gt;
+ContextT c m a -&gt; ContextT c m [a]
+some :: forall a. ContextT c m a -&gt; ContextT c m [a]
+$csome :: forall c (m :: * -&gt; *) a.
+Alternative m =&gt;
+ContextT c m a -&gt; ContextT c m [a]
+&lt;|&gt; :: forall a. ContextT c m a -&gt; ContextT c m a -&gt; ContextT c m a
+$c&lt;|&gt; :: forall c (m :: * -&gt; *) a.
+Alternative m =&gt;
+ContextT c m a -&gt; ContextT c m a -&gt; ContextT c m a
+empty :: forall a. ContextT c m a
+$cempty :: forall c (m :: * -&gt; *) a. Alternative m =&gt; ContextT c m a
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Alternative</span></span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679069423"><span id="local-6989586621679069428"><span class="annot"><span class="annottext">forall a. ContextT c m a
+forall a. ContextT c m a -&gt; ContextT c m a -&gt; ContextT c m a
+forall {c} {m :: * -&gt; *}. MonadPlus m =&gt; Monad (ContextT c m)
+forall {c} {m :: * -&gt; *}. MonadPlus m =&gt; Alternative (ContextT c m)
+forall c (m :: * -&gt; *) a. MonadPlus m =&gt; ContextT c m a
+forall c (m :: * -&gt; *) a.
+MonadPlus m =&gt;
+ContextT c m a -&gt; ContextT c m a -&gt; ContextT c m a
+forall (m :: * -&gt; *).
+Alternative m
+-&gt; Monad m
+-&gt; (forall a. m a)
+-&gt; (forall a. m a -&gt; m a -&gt; m a)
+-&gt; MonadPlus m
+mplus :: forall a. ContextT c m a -&gt; ContextT c m a -&gt; ContextT c m a
+$cmplus :: forall c (m :: * -&gt; *) a.
+MonadPlus m =&gt;
+ContextT c m a -&gt; ContextT c m a -&gt; ContextT c m a
+mzero :: forall a. ContextT c m a
+$cmzero :: forall c (m :: * -&gt; *) a. MonadPlus m =&gt; ContextT c m a
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">MonadPlus</span></span></span></span><span> </span><span class="hs-comment">-- @base@</span><span>
+</span><span id="line-61"></span><span>      </span><span class="hs-special">,</span><span> </span><span id="local-6989586621679069411"><span class="annot"><span class="annottext">forall a b.
+((a -&gt; ContextT c m b) -&gt; ContextT c m a) -&gt; ContextT c m a
+forall {c} {m :: * -&gt; *}. MonadCont m =&gt; Monad (ContextT c m)
+forall c (m :: * -&gt; *) a b.
+MonadCont m =&gt;
+((a -&gt; ContextT c m b) -&gt; ContextT c m a) -&gt; ContextT c m a
+forall (m :: * -&gt; *).
+Monad m -&gt; (forall a b. ((a -&gt; m b) -&gt; m a) -&gt; m a) -&gt; MonadCont m
+callCC :: forall a b.
+((a -&gt; ContextT c m b) -&gt; ContextT c m a) -&gt; ContextT c m a
+$ccallCC :: forall c (m :: * -&gt; *) a b.
+MonadCont m =&gt;
+((a -&gt; ContextT c m b) -&gt; ContextT c m a) -&gt; ContextT c m a
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var">MonadCont</span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679069394"><span id="local-6989586621679069399"><span id="local-6989586621679069800"><span class="annot"><span class="hs-identifier hs-type">MonadError</span></span><span> </span><span class="annot"><a href="#local-6989586621679069800"><span class="hs-identifier hs-type">e</span></a></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679069374"><span id="local-6989586621679069378"><span id="local-6989586621679069383"><span id="local-6989586621679069788"><span class="annot"><span class="hs-identifier hs-type">MonadState</span></span><span> </span><span class="annot"><a href="#local-6989586621679069788"><span class="hs-identifier hs-type">s</span></a></span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679069347"><span id="local-6989586621679069351"><span id="local-6989586621679069355"><span id="local-6989586621679069360"><span id="local-6989586621679069772"><span class="annot"><span class="hs-identifier hs-type">MonadWriter</span></span><span> </span><span class="annot"><a href="#local-6989586621679069772"><span class="hs-identifier hs-type">w</span></a></span></span></span></span></span></span><span> </span><span class="hs-comment">-- @mtl@</span><span class="hs-cpp">
+#if MIN_VERSION_mtl(2,3,0)
+</span><span>      </span><span class="hs-special">,</span><span> </span><span class="hs-identifier">MonadAccum</span><span> </span><span class="hs-identifier">w</span><span class="hs-special">,</span><span> </span><span class="hs-identifier">MonadSelect</span><span> </span><span class="hs-identifier">r</span><span> </span><span class="hs-comment">-- @mtl@</span><span class="hs-cpp">
+#endif
+</span><span>      </span><span class="hs-special">,</span><span> </span><span id="local-6989586621679069332"><span class="annot"><span class="annottext">forall e a.
+Exception e =&gt;
+ContextT c m a -&gt; (e -&gt; ContextT c m a) -&gt; ContextT c m a
+forall {c} {m :: * -&gt; *}. MonadCatch m =&gt; MonadThrow (ContextT c m)
+forall c (m :: * -&gt; *) e a.
+(MonadCatch m, Exception e) =&gt;
+ContextT c m a -&gt; (e -&gt; ContextT c m a) -&gt; ContextT c m a
+forall (m :: * -&gt; *).
+MonadThrow m
+-&gt; (forall e a. Exception e =&gt; m a -&gt; (e -&gt; m a) -&gt; m a)
+-&gt; MonadCatch m
+catch :: forall e a.
+Exception e =&gt;
+ContextT c m a -&gt; (e -&gt; ContextT c m a) -&gt; ContextT c m a
+$ccatch :: forall c (m :: * -&gt; *) e a.
+(MonadCatch m, Exception e) =&gt;
+ContextT c m a -&gt; (e -&gt; ContextT c m a) -&gt; ContextT c m a
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var">MonadCatch</span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679069309"><span id="local-6989586621679069313"><span id="local-6989586621679069318"><span class="annot"><span class="annottext">forall b.
+((forall a. ContextT c m a -&gt; ContextT c m a) -&gt; ContextT c m b)
+-&gt; ContextT c m b
+forall a b c.
+ContextT c m a
+-&gt; (a -&gt; ExitCase b -&gt; ContextT c m c)
+-&gt; (a -&gt; ContextT c m b)
+-&gt; ContextT c m (b, c)
+forall {c} {m :: * -&gt; *}. MonadMask m =&gt; MonadCatch (ContextT c m)
+forall c (m :: * -&gt; *) b.
+MonadMask m =&gt;
+((forall a. ContextT c m a -&gt; ContextT c m a) -&gt; ContextT c m b)
+-&gt; ContextT c m b
+forall c (m :: * -&gt; *) a b c.
+MonadMask m =&gt;
+ContextT c m a
+-&gt; (a -&gt; ExitCase b -&gt; ContextT c m c)
+-&gt; (a -&gt; ContextT c m b)
+-&gt; ContextT c m (b, c)
+forall (m :: * -&gt; *).
+MonadCatch m
+-&gt; (forall b. ((forall a. m a -&gt; m a) -&gt; m b) -&gt; m b)
+-&gt; (forall b. ((forall a. m a -&gt; m a) -&gt; m b) -&gt; m b)
+-&gt; (forall a b c.
+    m a -&gt; (a -&gt; ExitCase b -&gt; m c) -&gt; (a -&gt; m b) -&gt; m (b, c))
+-&gt; MonadMask m
+generalBracket :: forall a b c.
+ContextT c m a
+-&gt; (a -&gt; ExitCase b -&gt; ContextT c m c)
+-&gt; (a -&gt; ContextT c m b)
+-&gt; ContextT c m (b, c)
+$cgeneralBracket :: forall c (m :: * -&gt; *) a b c.
+MonadMask m =&gt;
+ContextT c m a
+-&gt; (a -&gt; ExitCase b -&gt; ContextT c m c)
+-&gt; (a -&gt; ContextT c m b)
+-&gt; ContextT c m (b, c)
+uninterruptibleMask :: forall b.
+((forall a. ContextT c m a -&gt; ContextT c m a) -&gt; ContextT c m b)
+-&gt; ContextT c m b
+$cuninterruptibleMask :: forall c (m :: * -&gt; *) b.
+MonadMask m =&gt;
+((forall a. ContextT c m a -&gt; ContextT c m a) -&gt; ContextT c m b)
+-&gt; ContextT c m b
+mask :: forall b.
+((forall a. ContextT c m a -&gt; ContextT c m a) -&gt; ContextT c m b)
+-&gt; ContextT c m b
+$cmask :: forall c (m :: * -&gt; *) b.
+MonadMask m =&gt;
+((forall a. ContextT c m a -&gt; ContextT c m a) -&gt; ContextT c m b)
+-&gt; ContextT c m b
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">MonadMask</span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679069296"><span class="annot"><span class="annottext">forall e a. Exception e =&gt; e -&gt; ContextT c m a
+forall {c} {m :: * -&gt; *}. MonadThrow m =&gt; Monad (ContextT c m)
+forall c (m :: * -&gt; *) e a.
+(MonadThrow m, Exception e) =&gt;
+e -&gt; ContextT c m a
+forall (m :: * -&gt; *).
+Monad m -&gt; (forall e a. Exception e =&gt; e -&gt; m a) -&gt; MonadThrow m
+throwM :: forall e a. Exception e =&gt; e -&gt; ContextT c m a
+$cthrowM :: forall c (m :: * -&gt; *) e a.
+(MonadThrow m, Exception e) =&gt;
+e -&gt; ContextT c m a
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var">MonadThrow</span></span></span><span> </span><span class="hs-comment">-- @exceptions@</span><span>
+</span><span id="line-66"></span><span>      </span><span class="hs-special">,</span><span> </span><span id="local-6989586621679069283"><span class="annot"><span class="annottext">forall b.
+((forall a. ContextT c m a -&gt; IO a) -&gt; IO b) -&gt; ContextT c m b
+forall {c} {m :: * -&gt; *}. MonadUnliftIO m =&gt; MonadIO (ContextT c m)
+forall c (m :: * -&gt; *) b.
+MonadUnliftIO m =&gt;
+((forall a. ContextT c m a -&gt; IO a) -&gt; IO b) -&gt; ContextT c m b
+forall (m :: * -&gt; *).
+MonadIO m
+-&gt; (forall b. ((forall a. m a -&gt; IO a) -&gt; IO b) -&gt; m b)
+-&gt; MonadUnliftIO m
+withRunInIO :: forall b.
+((forall a. ContextT c m a -&gt; IO a) -&gt; IO b) -&gt; ContextT c m b
+$cwithRunInIO :: forall c (m :: * -&gt; *) b.
+MonadUnliftIO m =&gt;
+((forall a. ContextT c m a -&gt; IO a) -&gt; IO b) -&gt; ContextT c m b
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var">MonadUnliftIO</span></span></span><span> </span><span class="hs-comment">-- @unliftio-core@</span><span>
+</span><span id="line-67"></span><span>      </span><span class="hs-special">,</span><span> </span><span id="local-6989586621679069262"><span id="local-6989586621679069709"><span class="annot"><span class="hs-identifier hs-type">MonadBase</span></span><span> </span><span class="annot"><a href="#local-6989586621679069709"><span class="hs-identifier hs-type">b</span></a></span></span></span><span> </span><span class="hs-comment">-- @transformers-base@</span><span>
+</span><span id="line-68"></span><span>      </span><span class="hs-special">,</span><span> </span><span id="local-6989586621679069241"><span id="local-6989586621679069247"><span id="local-6989586621679069692"><span class="annot"><span class="hs-identifier hs-type">MonadBaseControl</span></span><span> </span><span class="annot"><a href="#local-6989586621679069692"><span class="hs-identifier hs-type">b</span></a></span></span></span></span><span> </span><span class="hs-comment">-- @monad-control@</span><span>
+</span><span id="line-69"></span><span>      </span><span class="hs-special">,</span><span> </span><span id="local-6989586621679069227"><span class="annot"><span class="annottext">forall msg.
+ToLogStr msg =&gt;
+Loc -&gt; LogSource -&gt; LogLevel -&gt; msg -&gt; ContextT c m ()
+forall {c} {m :: * -&gt; *}. MonadLogger m =&gt; Monad (ContextT c m)
+forall c (m :: * -&gt; *) msg.
+(MonadLogger m, ToLogStr msg) =&gt;
+Loc -&gt; LogSource -&gt; LogLevel -&gt; msg -&gt; ContextT c m ()
+forall (m :: * -&gt; *).
+Monad m
+-&gt; (forall msg.
+    ToLogStr msg =&gt;
+    Loc -&gt; LogSource -&gt; LogLevel -&gt; msg -&gt; m ())
+-&gt; MonadLogger m
+monadLoggerLog :: forall msg.
+ToLogStr msg =&gt;
+Loc -&gt; LogSource -&gt; LogLevel -&gt; msg -&gt; ContextT c m ()
+$cmonadLoggerLog :: forall c (m :: * -&gt; *) msg.
+(MonadLogger m, ToLogStr msg) =&gt;
+Loc -&gt; LogSource -&gt; LogLevel -&gt; msg -&gt; ContextT c m ()
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var">MonadLogger</span></span></span><span> </span><span class="hs-comment">-- @monad-logger@</span><span>
+</span><span id="line-70"></span><span>      </span><span class="hs-special">,</span><span> </span><span id="local-6989586621679069213"><span class="annot"><span class="annottext">forall a. ResourceT IO a -&gt; ContextT c m a
+forall {c} {m :: * -&gt; *}. MonadResource m =&gt; MonadIO (ContextT c m)
+forall c (m :: * -&gt; *) a.
+MonadResource m =&gt;
+ResourceT IO a -&gt; ContextT c m a
+forall (m :: * -&gt; *).
+MonadIO m -&gt; (forall a. ResourceT IO a -&gt; m a) -&gt; MonadResource m
+liftResourceT :: forall a. ResourceT IO a -&gt; ContextT c m a
+$cliftResourceT :: forall c (m :: * -&gt; *) a.
+MonadResource m =&gt;
+ResourceT IO a -&gt; ContextT c m a
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var">MonadResource</span></span></span><span> </span><span class="hs-comment">-- @resourcet@</span><span>
+</span><span id="line-71"></span><span>      </span><span class="hs-special">)</span><span> </span><span class="hs-keyword">via</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">ReaderT</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">ContextBackend</span></span><span> </span><span class="annot"><a href="#local-6989586621679069924"><span class="hs-identifier hs-type">c</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="#local-6989586621679069923"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-72"></span><span>    </span><span class="hs-keyword">deriving</span><span>
+</span><span id="line-73"></span><span>      </span><span class="hs-special">(</span><span> </span><span id="local-6989586621679069203"><span class="annot"><span class="annottext">forall c (m :: * -&gt; *) a. Monad m =&gt; m a -&gt; ContextT c m a
+forall (m :: * -&gt; *) a. Monad m =&gt; m a -&gt; ContextT c m a
+forall (t :: (* -&gt; *) -&gt; * -&gt; *).
+(forall (m :: * -&gt; *) a. Monad m =&gt; m a -&gt; t m a) -&gt; MonadTrans t
+lift :: forall (m :: * -&gt; *) a. Monad m =&gt; m a -&gt; ContextT c m a
+$clift :: forall c (m :: * -&gt; *) a. Monad m =&gt; m a -&gt; ContextT c m a
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">MonadTrans</span></span></span><span> </span><span class="hs-comment">-- @base@</span><span>
+</span><span id="line-74"></span><span>      </span><span class="hs-special">,</span><span> </span><span id="local-6989586621679069178"><span id="local-6989586621679069188"><span class="annot"><span class="annottext">forall c. MonadTrans (ContextT c)
+forall c (m :: * -&gt; *) a.
+Monad m =&gt;
+m (StT (ContextT c) a) -&gt; ContextT c m a
+forall c (m :: * -&gt; *) a.
+Monad m =&gt;
+(Run (ContextT c) -&gt; m a) -&gt; ContextT c m a
+forall (m :: * -&gt; *) a.
+Monad m =&gt;
+m (StT (ContextT c) a) -&gt; ContextT c m a
+forall (m :: * -&gt; *) a.
+Monad m =&gt;
+(Run (ContextT c) -&gt; m a) -&gt; ContextT c m a
+forall (t :: (* -&gt; *) -&gt; * -&gt; *).
+MonadTrans t
+-&gt; (forall (m :: * -&gt; *) a. Monad m =&gt; (Run t -&gt; m a) -&gt; t m a)
+-&gt; (forall (m :: * -&gt; *) a. Monad m =&gt; m (StT t a) -&gt; t m a)
+-&gt; MonadTransControl t
+restoreT :: forall (m :: * -&gt; *) a.
+Monad m =&gt;
+m (StT (ContextT c) a) -&gt; ContextT c m a
+$crestoreT :: forall c (m :: * -&gt; *) a.
+Monad m =&gt;
+m (StT (ContextT c) a) -&gt; ContextT c m a
+liftWith :: forall (m :: * -&gt; *) a.
+Monad m =&gt;
+(Run (ContextT c) -&gt; m a) -&gt; ContextT c m a
+$cliftWith :: forall c (m :: * -&gt; *) a.
+Monad m =&gt;
+(Run (ContextT c) -&gt; m a) -&gt; ContextT c m a
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var">MonadTransControl</span></span></span></span><span> </span><span class="hs-comment">-- @monad-control@</span><span>
+</span><span id="line-75"></span><span>      </span><span class="hs-special">)</span><span> </span><span class="hs-keyword">via</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">ReaderT</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">ContextBackend</span></span><span> </span><span class="annot"><a href="#local-6989586621679069924"><span class="hs-identifier hs-type">c</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-76"></span><span>    </span><span class="hs-keyword">deriving</span><span>
+</span><span id="line-77"></span><span>      </span><span class="hs-special">(</span><span> </span><span id="local-6989586621679069154"><span id="local-6989586621679069161"><span id="local-6989586621679069167"><span class="annot"><span class="annottext">NonEmpty (ContextT c m a) -&gt; ContextT c m a
+ContextT c m a -&gt; ContextT c m a -&gt; ContextT c m a
+forall b. Integral b =&gt; b -&gt; ContextT c m a -&gt; ContextT c m a
+forall a.
+(a -&gt; a -&gt; a)
+-&gt; (NonEmpty a -&gt; a)
+-&gt; (forall b. Integral b =&gt; b -&gt; a -&gt; a)
+-&gt; Semigroup a
+forall c (m :: * -&gt; *) a.
+(Applicative m, Semigroup a) =&gt;
+NonEmpty (ContextT c m a) -&gt; ContextT c m a
+forall c (m :: * -&gt; *) a.
+(Applicative m, Semigroup a) =&gt;
+ContextT c m a -&gt; ContextT c m a -&gt; ContextT c m a
+forall c (m :: * -&gt; *) a b.
+(Applicative m, Semigroup a, Integral b) =&gt;
+b -&gt; ContextT c m a -&gt; ContextT c m a
+stimes :: forall b. Integral b =&gt; b -&gt; ContextT c m a -&gt; ContextT c m a
+$cstimes :: forall c (m :: * -&gt; *) a b.
+(Applicative m, Semigroup a, Integral b) =&gt;
+b -&gt; ContextT c m a -&gt; ContextT c m a
+sconcat :: NonEmpty (ContextT c m a) -&gt; ContextT c m a
+$csconcat :: forall c (m :: * -&gt; *) a.
+(Applicative m, Semigroup a) =&gt;
+NonEmpty (ContextT c m a) -&gt; ContextT c m a
+&lt;&gt; :: ContextT c m a -&gt; ContextT c m a -&gt; ContextT c m a
+$c&lt;&gt; :: forall c (m :: * -&gt; *) a.
+(Applicative m, Semigroup a) =&gt;
+ContextT c m a -&gt; ContextT c m a -&gt; ContextT c m a
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Semigroup</span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679069129"><span id="local-6989586621679069134"><span id="local-6989586621679069140"><span class="annot"><span class="annottext">ContextT c m a
+[ContextT c m a] -&gt; ContextT c m a
+ContextT c m a -&gt; ContextT c m a -&gt; ContextT c m a
+forall a.
+Semigroup a -&gt; a -&gt; (a -&gt; a -&gt; a) -&gt; ([a] -&gt; a) -&gt; Monoid a
+forall {c} {m :: * -&gt; *} {a}.
+(Applicative m, Monoid a) =&gt;
+Semigroup (ContextT c m a)
+forall c (m :: * -&gt; *) a.
+(Applicative m, Monoid a) =&gt;
+ContextT c m a
+forall c (m :: * -&gt; *) a.
+(Applicative m, Monoid a) =&gt;
+[ContextT c m a] -&gt; ContextT c m a
+forall c (m :: * -&gt; *) a.
+(Applicative m, Monoid a) =&gt;
+ContextT c m a -&gt; ContextT c m a -&gt; ContextT c m a
+mconcat :: [ContextT c m a] -&gt; ContextT c m a
+$cmconcat :: forall c (m :: * -&gt; *) a.
+(Applicative m, Monoid a) =&gt;
+[ContextT c m a] -&gt; ContextT c m a
+mappend :: ContextT c m a -&gt; ContextT c m a -&gt; ContextT c m a
+$cmappend :: forall c (m :: * -&gt; *) a.
+(Applicative m, Monoid a) =&gt;
+ContextT c m a -&gt; ContextT c m a -&gt; ContextT c m a
+mempty :: ContextT c m a
+$cmempty :: forall c (m :: * -&gt; *) a.
+(Applicative m, Monoid a) =&gt;
+ContextT c m a
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Monoid</span></span></span></span></span><span> </span><span class="hs-comment">-- @base@</span><span>
+</span><span id="line-78"></span><span>      </span><span class="hs-special">)</span><span> </span><span class="hs-keyword">via</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Ap</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">ReaderT</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">ContextBackend</span></span><span> </span><span class="annot"><a href="#local-6989586621679069924"><span class="hs-identifier hs-type">c</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="#local-6989586621679069923"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="#local-6989586621679069922"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-79"></span><span>
+</span><span id="line-80"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679069615"><span id="local-6989586621679069616"><span id="local-6989586621679069617"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadReader</span></span><span> </span><span class="annot"><a href="#local-6989586621679069617"><span class="hs-identifier hs-type">r</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679069616"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadReader</span></span><span> </span><span class="annot"><a href="#local-6989586621679069617"><span class="hs-identifier hs-type">r</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="OTel.API.Context.Internal.html#ContextT"><span class="hs-identifier hs-type">ContextT</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679069615"><span class="hs-identifier hs-type">c</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679069616"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-81"></span><span>  </span><span id="local-6989586621679069109"><span class="annot"><span class="annottext">ask :: ContextT c m r
+</span><a href="#local-6989586621679069109"><span class="hs-identifier hs-var hs-var hs-var hs-var">ask</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall (t :: (* -&gt; *) -&gt; * -&gt; *) (m :: * -&gt; *) a.
+(MonadTrans t, Monad m) =&gt;
+m a -&gt; t m a
+</span><span class="hs-identifier hs-var">lift</span></span><span> </span><span class="annot"><span class="annottext">forall r (m :: * -&gt; *). MonadReader r m =&gt; m r
+</span><span class="hs-identifier hs-var">ask</span></span><span>
+</span><span id="line-82"></span><span>  </span><span id="local-6989586621679069105"><span class="annot"><span class="annottext">reader :: forall a. (r -&gt; a) -&gt; ContextT c m a
+</span><a href="#local-6989586621679069105"><span class="hs-identifier hs-var hs-var hs-var hs-var">reader</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall (t :: (* -&gt; *) -&gt; * -&gt; *) (m :: * -&gt; *) a.
+(MonadTrans t, Monad m) =&gt;
+m a -&gt; t m a
+</span><span class="hs-identifier hs-var">lift</span></span><span> </span><span class="annot"><span class="annottext">forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">forall r (m :: * -&gt; *) a. MonadReader r m =&gt; (r -&gt; a) -&gt; m a
+</span><span class="hs-identifier hs-var">reader</span></span><span>
+</span><span id="line-83"></span><span>  </span><span id="local-6989586621679069102"><span class="annot"><span class="annottext">local :: forall a. (r -&gt; r) -&gt; ContextT c m a -&gt; ContextT c m a
+</span><a href="#local-6989586621679069102"><span class="hs-identifier hs-var hs-var hs-var hs-var">local</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) (n :: * -&gt; *) c a b.
+(m a -&gt; n b) -&gt; ContextT c m a -&gt; ContextT c n b
+</span><a href="OTel.API.Context.Internal.html#mapContextT"><span class="hs-identifier hs-var">mapContextT</span></a></span><span> </span><span class="annot"><span class="annottext">forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">forall r (m :: * -&gt; *) a. MonadReader r m =&gt; (r -&gt; r) -&gt; m a -&gt; m a
+</span><span class="hs-identifier hs-var">local</span></span><span>
+</span><span id="line-84"></span><span>
+</span><span id="line-85"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679069590"><span id="local-6989586621679069591"><span id="local-6989586621679069592"><span id="local-6989586621679069593"><span id="local-6989586621679069594"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadRWS</span></span><span> </span><span class="annot"><a href="#local-6989586621679069594"><span class="hs-identifier hs-type">r</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679069593"><span class="hs-identifier hs-type">w</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679069592"><span class="hs-identifier hs-type">s</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679069591"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadRWS</span></span><span> </span><span class="annot"><a href="#local-6989586621679069594"><span class="hs-identifier hs-type">r</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679069593"><span class="hs-identifier hs-type">w</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679069592"><span class="hs-identifier hs-type">s</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="OTel.API.Context.Internal.html#ContextT"><span class="hs-identifier hs-type">ContextT</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679069590"><span class="hs-identifier hs-type">c</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679069591"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span></span></span></span></span></span><span>
+</span><span id="line-86"></span><span>
+</span><span id="line-87"></span><span class="annot"><a href="OTel.API.Context.Internal.html#mapContextT"><span class="hs-identifier hs-type">mapContextT</span></a></span><span>
+</span><span id="line-88"></span><span>  </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679069609"><span class="annot"><a href="#local-6989586621679069609"><span class="hs-identifier hs-type">m</span></a></span></span><span> </span><span id="local-6989586621679069607"><span class="annot"><a href="#local-6989586621679069607"><span class="hs-identifier hs-type">n</span></a></span></span><span> </span><span id="local-6989586621679069605"><span class="annot"><a href="#local-6989586621679069605"><span class="hs-identifier hs-type">c</span></a></span></span><span> </span><span id="local-6989586621679069608"><span class="annot"><a href="#local-6989586621679069608"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span id="local-6989586621679069606"><span class="annot"><a href="#local-6989586621679069606"><span class="hs-identifier hs-type">b</span></a></span></span><span>
+</span><span id="line-89"></span><span>   </span><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679069609"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679069608"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679069607"><span class="hs-identifier hs-type">n</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679069606"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-90"></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="OTel.API.Context.Internal.html#ContextT"><span class="hs-identifier hs-type">ContextT</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679069605"><span class="hs-identifier hs-type">c</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679069609"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679069608"><span class="hs-identifier hs-type">a</span></a></span><span>
+</span><span id="line-91"></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="OTel.API.Context.Internal.html#ContextT"><span class="hs-identifier hs-type">ContextT</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679069605"><span class="hs-identifier hs-type">c</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679069607"><span class="hs-identifier hs-type">n</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679069606"><span class="hs-identifier hs-type">b</span></a></span><span>
+</span><span id="line-92"></span><span id="mapContextT"><span class="annot"><span class="annottext">mapContextT :: forall (m :: * -&gt; *) (n :: * -&gt; *) c a b.
+(m a -&gt; n b) -&gt; ContextT c m a -&gt; ContextT c n b
+</span><a href="OTel.API.Context.Internal.html#mapContextT"><span class="hs-identifier hs-var hs-var">mapContextT</span></a></span></span><span> </span><span id="local-6989586621679069082"><span class="annot"><span class="annottext">m a -&gt; n b
+</span><a href="#local-6989586621679069082"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621679069081"><span class="annot"><span class="annottext">ContextT c m a
+</span><a href="#local-6989586621679069081"><span class="hs-identifier hs-var">action</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall c (m :: * -&gt; *) a.
+(ContextBackend c -&gt; m a) -&gt; ContextT c m a
+</span><a href="OTel.API.Context.Internal.html#ContextT"><span class="hs-identifier hs-var">ContextT</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">m a -&gt; n b
+</span><a href="#local-6989586621679069082"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">forall c (m :: * -&gt; *) a. ContextT c m a -&gt; ContextBackend c -&gt; m a
+</span><a href="OTel.API.Context.Internal.html#runContextT"><span class="hs-identifier hs-var">runContextT</span></a></span><span> </span><span class="annot"><span class="annottext">ContextT c m a
+</span><a href="#local-6989586621679069081"><span class="hs-identifier hs-var">action</span></a></span><span>
+</span><span id="line-93"></span><span>
+</span><span id="line-94"></span><span class="annot"><a href="OTel.API.Context.Internal.html#attachContextValue"><span class="hs-identifier hs-type">attachContextValue</span></a></span><span>
+</span><span id="line-95"></span><span>  </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679069581"><span class="annot"><a href="#local-6989586621679069581"><span class="hs-identifier hs-type">m</span></a></span></span><span> </span><span id="local-6989586621679069580"><span class="annot"><a href="#local-6989586621679069580"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span id="local-6989586621679069579"><span class="annot"><a href="#local-6989586621679069579"><span class="hs-identifier hs-type">b</span></a></span></span><span>
+</span><span id="line-96"></span><span>   </span><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679069581"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadMask</span></span><span> </span><span class="annot"><a href="#local-6989586621679069581"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-97"></span><span>  </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679069580"><span class="hs-identifier hs-type">a</span></a></span><span>
+</span><span id="line-98"></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="OTel.API.Context.Internal.html#ContextT"><span class="hs-identifier hs-type">ContextT</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679069580"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679069581"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679069579"><span class="hs-identifier hs-type">b</span></a></span><span>
+</span><span id="line-99"></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="OTel.API.Context.Internal.html#ContextT"><span class="hs-identifier hs-type">ContextT</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679069580"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679069581"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679069579"><span class="hs-identifier hs-type">b</span></a></span><span>
+</span><span id="line-100"></span><span id="attachContextValue"><span class="annot"><span class="annottext">attachContextValue :: forall (m :: * -&gt; *) a b.
+(MonadIO m, MonadMask m) =&gt;
+a -&gt; ContextT a m b -&gt; ContextT a m b
+</span><a href="OTel.API.Context.Internal.html#attachContextValue"><span class="hs-identifier hs-var hs-var">attachContextValue</span></a></span></span><span> </span><span id="local-6989586621679069076"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679069076"><span class="hs-identifier hs-var">value</span></a></span></span><span> </span><span id="local-6989586621679069075"><span class="annot"><span class="annottext">ContextT a m b
+</span><a href="#local-6989586621679069075"><span class="hs-identifier hs-var">action</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-101"></span><span>  </span><span class="annot"><span class="annottext">forall c (m :: * -&gt; *) a.
+(ContextBackend c -&gt; m a) -&gt; ContextT c m a
+</span><a href="OTel.API.Context.Internal.html#ContextT"><span class="hs-identifier hs-var">ContextT</span></a></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679069074"><span class="annot"><span class="annottext">ContextBackend a
+</span><a href="#local-6989586621679069074"><span class="hs-identifier hs-var">ctxBackend</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-102"></span><span>    </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a b.
+(MonadIO m, MonadMask m) =&gt;
+ContextBackend a -&gt; a -&gt; m b -&gt; m b
+</span><span class="hs-identifier hs-var">attachContextValueUsing</span></span><span> </span><span class="annot"><span class="annottext">ContextBackend a
+</span><a href="#local-6989586621679069074"><span class="hs-identifier hs-var">ctxBackend</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679069076"><span class="hs-identifier hs-var">value</span></a></span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-103"></span><span>      </span><span class="annot"><span class="annottext">forall c (m :: * -&gt; *) a. ContextT c m a -&gt; ContextBackend c -&gt; m a
+</span><a href="OTel.API.Context.Internal.html#runContextT"><span class="hs-identifier hs-var">runContextT</span></a></span><span> </span><span class="annot"><span class="annottext">ContextT a m b
+</span><a href="#local-6989586621679069075"><span class="hs-identifier hs-var">action</span></a></span><span> </span><span class="annot"><span class="annottext">ContextBackend a
+</span><a href="#local-6989586621679069074"><span class="hs-identifier hs-var">ctxBackend</span></a></span><span>
+</span><span id="line-104"></span><span>
+</span><span id="line-105"></span><span class="annot"><a href="OTel.API.Context.Internal.html#getAttachedContextValue"><span class="hs-identifier hs-type">getAttachedContextValue</span></a></span><span>
+</span><span id="line-106"></span><span>  </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679069572"><span class="annot"><a href="#local-6989586621679069572"><span class="hs-identifier hs-type">m</span></a></span></span><span> </span><span id="local-6989586621679069571"><span class="annot"><a href="#local-6989586621679069571"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-107"></span><span>   </span><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679069572"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadMask</span></span><span> </span><span class="annot"><a href="#local-6989586621679069572"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-108"></span><span>  </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="OTel.API.Context.Internal.html#ContextT"><span class="hs-identifier hs-type">ContextT</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679069571"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679069572"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="#local-6989586621679069571"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-109"></span><span id="getAttachedContextValue"><span class="annot"><span class="annottext">getAttachedContextValue :: forall (m :: * -&gt; *) a.
+(MonadIO m, MonadMask m) =&gt;
+ContextT a m (Maybe a)
+</span><a href="OTel.API.Context.Internal.html#getAttachedContextValue"><span class="hs-identifier hs-var hs-var">getAttachedContextValue</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-110"></span><span>  </span><span class="annot"><span class="annottext">forall c (m :: * -&gt; *) a.
+(ContextBackend c -&gt; m a) -&gt; ContextT c m a
+</span><a href="OTel.API.Context.Internal.html#ContextT"><span class="hs-identifier hs-var">ContextT</span></a></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679069067"><span class="annot"><span class="annottext">ContextBackend a
+</span><a href="#local-6989586621679069067"><span class="hs-identifier hs-var">ctxBackend</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-111"></span><span>    </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a.
+(MonadIO m, MonadThrow m) =&gt;
+ContextBackend a -&gt; m (Maybe a)
+</span><span class="hs-identifier hs-var">getAttachedContextValueUsing</span></span><span> </span><span class="annot"><span class="annottext">ContextBackend a
+</span><a href="#local-6989586621679069067"><span class="hs-identifier hs-var">ctxBackend</span></a></span><span>
+</span><span id="line-112"></span><span>
+</span><span id="line-113"></span><span class="annot"><a href="OTel.API.Context.Internal.html#getAttachedContext"><span class="hs-identifier hs-type">getAttachedContext</span></a></span><span>
+</span><span id="line-114"></span><span>  </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679069566"><span class="annot"><a href="#local-6989586621679069566"><span class="hs-identifier hs-type">m</span></a></span></span><span> </span><span id="local-6989586621679069565"><span class="annot"><a href="#local-6989586621679069565"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-115"></span><span>   </span><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679069566"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadThrow</span></span><span> </span><span class="annot"><a href="#local-6989586621679069566"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-116"></span><span>  </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="OTel.API.Context.Internal.html#ContextT"><span class="hs-identifier hs-type">ContextT</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679069565"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679069566"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Context</span></span><span>
+</span><span id="line-117"></span><span id="getAttachedContext"><span class="annot"><span class="annottext">getAttachedContext :: forall (m :: * -&gt; *) a.
+(MonadIO m, MonadThrow m) =&gt;
+ContextT a m Context
+</span><a href="OTel.API.Context.Internal.html#getAttachedContext"><span class="hs-identifier hs-var hs-var">getAttachedContext</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-118"></span><span>  </span><span class="annot"><span class="annottext">forall c (m :: * -&gt; *) a.
+(ContextBackend c -&gt; m a) -&gt; ContextT c m a
+</span><a href="OTel.API.Context.Internal.html#ContextT"><span class="hs-identifier hs-var">ContextT</span></a></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679069062"><span class="annot"><span class="annottext">ContextBackend a
+</span><a href="#local-6989586621679069062"><span class="hs-identifier hs-var">ctxBackend</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-119"></span><span>    </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a.
+(MonadIO m, MonadThrow m) =&gt;
+ContextBackend a -&gt; m Context
+</span><span class="hs-identifier hs-var">getAttachedContextUsing</span></span><span> </span><span class="annot"><span class="annottext">ContextBackend a
+</span><a href="#local-6989586621679069062"><span class="hs-identifier hs-var">ctxBackend</span></a></span><span>
+</span><span id="line-120"></span><span>
+</span><span id="line-121"></span><span class="hs-comment">-- $disclaimer</span><span>
+</span><span id="line-122"></span><span class="hs-comment">--</span><span>
+</span><span id="line-123"></span><span class="hs-comment">-- In general, changes to this module will not be reflected in the library's</span><span>
+</span><span id="line-124"></span><span class="hs-comment">-- version updates. Direct use of this module should be done with utmost care,</span><span>
+</span><span id="line-125"></span><span class="hs-comment">-- otherwise invariants will easily be violated.</span><span>
+</span><span id="line-126"></span></pre></body></html>

@@ -1,0 +1,274 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE CPP #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE ScopedTypeVariables #-}</span><span>
+</span><span id="line-3"></span><span>
+</span><span id="line-4"></span><span class="hs-comment">-- | Need to prevent output to the terminal, a file, or stderr?</span><span>
+</span><span id="line-5"></span><span class="hs-comment">--   Need to capture it and use it for your own means?</span><span>
+</span><span id="line-6"></span><span class="hs-comment">--   Now you can, with 'silence' and 'capture'.</span><span>
+</span><span id="line-7"></span><span>
+</span><span id="line-8"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">System.IO.Silently</span><span>
+</span><span id="line-9"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="System.IO.Silently.html#silence"><span class="hs-identifier">silence</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="System.IO.Silently.html#hSilence"><span class="hs-identifier">hSilence</span></a></span><span>
+</span><span id="line-10"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="System.IO.Silently.html#capture"><span class="hs-identifier">capture</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="System.IO.Silently.html#capture_"><span class="hs-identifier">capture_</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="System.IO.Silently.html#hCapture"><span class="hs-identifier">hCapture</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="System.IO.Silently.html#hCapture_"><span class="hs-identifier">hCapture_</span></a></span><span>
+</span><span id="line-11"></span><span>  </span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-12"></span><span>
+</span><span id="line-13"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Prelude</span></span><span>
+</span><span id="line-14"></span><span>
+</span><span id="line-15"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Control.Exception</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">E</span></span><span>
+</span><span id="line-16"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.DeepSeq</span></span><span>
+</span><span id="line-17"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-identifier">deepseq</span></span><span> </span><span class="hs-special">)</span><span>
+</span><span id="line-18"></span><span>
+</span><span id="line-19"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">GHC.IO.Handle</span></span><span>
+</span><span id="line-20"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-identifier">hDuplicate</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">hDuplicateTo</span></span><span> </span><span class="hs-special">)</span><span>
+</span><span id="line-21"></span><span>
+</span><span id="line-22"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">System.Directory</span></span><span>
+</span><span id="line-23"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-identifier">getTemporaryDirectory</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">removeFile</span></span><span> </span><span class="hs-special">)</span><span>
+</span><span id="line-24"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">System.IO</span></span><span>
+</span><span id="line-25"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-identifier">Handle</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">IOMode</span></span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">AppendMode</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">SeekMode</span></span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">AbsoluteSeek</span></span><span class="hs-special">)</span><span>
+</span><span id="line-26"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">hClose</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">hFlush</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">hGetBuffering</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">hGetContents</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">hSeek</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">hSetBuffering</span></span><span>
+</span><span id="line-27"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">openFile</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">openTempFile</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">stdout</span></span><span>
+</span><span id="line-28"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-29"></span><span>
+</span><span id="line-30"></span><span class="annot"><a href="System.IO.Silently.html#mNullDevice"><span class="hs-identifier hs-type">mNullDevice</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">FilePath</span></span><span class="hs-cpp">
+#ifdef WINDOWS
+</span><span class="hs-identifier">mNullDevice</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier">Just</span><span> </span><span class="hs-string">&quot;\\\\.\\NUL&quot;</span><span class="hs-cpp">
+#elif UNIX
+</span><span id="mNullDevice"><span class="annot"><span class="annottext">mNullDevice :: Maybe FilePath
+</span><a href="System.IO.Silently.html#mNullDevice"><span class="hs-identifier hs-var hs-var">mNullDevice</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><span class="hs-string">&quot;/dev/null&quot;</span></span><span class="hs-cpp">
+#else
+</span><span class="hs-identifier">mNullDevice</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier">Nothing</span><span class="hs-cpp">
+#endif
+</span><span>
+</span><span id="line-39"></span><span class="hs-comment">-- | Run an IO action while preventing all output to stdout.</span><span>
+</span><span id="line-40"></span><span id="local-6989586621679028475"><span class="annot"><a href="System.IO.Silently.html#silence"><span class="hs-identifier hs-type">silence</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679028475"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679028475"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-41"></span><span id="silence"><span class="annot"><span class="annottext">silence :: forall a. IO a -&gt; IO a
+</span><a href="System.IO.Silently.html#silence"><span class="hs-identifier hs-var hs-var">silence</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. [Handle] -&gt; IO a -&gt; IO a
+</span><a href="System.IO.Silently.html#hSilence"><span class="hs-identifier hs-var">hSilence</span></a></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Handle
+</span><span class="hs-identifier hs-var">stdout</span></span><span class="hs-special">]</span><span>
+</span><span id="line-42"></span><span>
+</span><span id="line-43"></span><span class="hs-comment">-- | Run an IO action while preventing all output to the given handles.</span><span>
+</span><span id="line-44"></span><span class="annot"><a href="System.IO.Silently.html#hSilence"><span class="hs-identifier hs-type">hSilence</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679028473"><span class="annot"><a href="#local-6989586621679028473"><span class="hs-identifier hs-type">a</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Handle</span></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679028473"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679028473"><span class="hs-identifier hs-type">a</span></a></span><span>
+</span><span id="line-45"></span><span id="hSilence"><span class="annot"><span class="annottext">hSilence :: forall a. [Handle] -&gt; IO a -&gt; IO a
+</span><a href="System.IO.Silently.html#hSilence"><span class="hs-identifier hs-var hs-var">hSilence</span></a></span></span><span> </span><span id="local-6989586621679028404"><span class="annot"><span class="annottext">[Handle]
+</span><a href="#local-6989586621679028404"><span class="hs-identifier hs-var">handles</span></a></span></span><span> </span><span id="local-6989586621679028403"><span class="annot"><span class="annottext">IO a
+</span><a href="#local-6989586621679028403"><span class="hs-identifier hs-var">action</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-46"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Maybe FilePath
+</span><a href="System.IO.Silently.html#mNullDevice"><span class="hs-identifier hs-var">mNullDevice</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-47"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679028402"><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621679028402"><span class="hs-identifier hs-var">nullDevice</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-48"></span><span>      </span><span class="annot"><span class="annottext">forall a b c. IO a -&gt; (a -&gt; IO b) -&gt; (a -&gt; IO c) -&gt; IO c
+</span><span class="hs-identifier hs-var">E.bracket</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">FilePath -&gt; IOMode -&gt; IO Handle
+</span><span class="hs-identifier hs-var">openFile</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621679028402"><span class="hs-identifier hs-var">nullDevice</span></a></span><span> </span><span class="annot"><span class="annottext">IOMode
+</span><span class="hs-identifier hs-var">AppendMode</span></span><span class="hs-special">)</span><span>
+</span><span id="line-49"></span><span>                </span><span class="annot"><span class="annottext">Handle -&gt; IO ()
+</span><span class="hs-identifier hs-var">hClose</span></span><span>
+</span><span id="line-50"></span><span>                </span><span class="annot"><span class="annottext">Handle -&gt; IO a
+</span><a href="#local-6989586621679028400"><span class="hs-identifier hs-var">prepareAndRun</span></a></span><span>
+</span><span id="line-51"></span><span>    </span><span class="annot"><span class="annottext">Maybe FilePath
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall a. FilePath -&gt; (Handle -&gt; IO a) -&gt; IO a
+</span><a href="System.IO.Silently.html#withTempFile"><span class="hs-identifier hs-var">withTempFile</span></a></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><span class="hs-string">&quot;silence&quot;</span></span><span> </span><span class="annot"><span class="annottext">Handle -&gt; IO a
+</span><a href="#local-6989586621679028400"><span class="hs-identifier hs-var">prepareAndRun</span></a></span><span>
+</span><span id="line-52"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-53"></span><span>    </span><span class="annot"><a href="#local-6989586621679028400"><span class="hs-identifier hs-type">prepareAndRun</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Handle</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679028473"><span class="hs-identifier hs-type">a</span></a></span><span>
+</span><span id="line-54"></span><span>    </span><span id="local-6989586621679028400"><span class="annot"><span class="annottext">prepareAndRun :: Handle -&gt; IO a
+</span><a href="#local-6989586621679028400"><span class="hs-identifier hs-var hs-var">prepareAndRun</span></a></span></span><span> </span><span id="local-6989586621679028398"><span class="annot"><span class="annottext">Handle
+</span><a href="#local-6989586621679028398"><span class="hs-identifier hs-var">tmpHandle</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Handle] -&gt; IO a
+</span><a href="#local-6989586621679028397"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="annot"><span class="annottext">[Handle]
+</span><a href="#local-6989586621679028404"><span class="hs-identifier hs-var">handles</span></a></span><span>
+</span><span id="line-55"></span><span>      </span><span class="hs-keyword">where</span><span>
+</span><span id="line-56"></span><span>        </span><span id="local-6989586621679028397"><span class="annot"><span class="annottext">go :: [Handle] -&gt; IO a
+</span><a href="#local-6989586621679028397"><span class="hs-identifier hs-var hs-var">go</span></a></span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>     </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">IO a
+</span><a href="#local-6989586621679028403"><span class="hs-identifier hs-var">action</span></a></span><span>
+</span><span id="line-57"></span><span>        </span><span class="annot"><a href="#local-6989586621679028397"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679028396"><span class="annot"><span class="annottext">Handle
+</span><a href="#local-6989586621679028396"><span class="hs-identifier hs-var">h</span></a></span></span><span class="annot"><span class="hs-glyph hs-type">:</span></span><span id="local-6989586621679028395"><span class="annot"><span class="annottext">[Handle]
+</span><a href="#local-6989586621679028395"><span class="hs-identifier hs-var">hs</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a.
+([Handle] -&gt; IO a) -&gt; Handle -&gt; Handle -&gt; [Handle] -&gt; IO a
+</span><a href="System.IO.Silently.html#goBracket"><span class="hs-identifier hs-var">goBracket</span></a></span><span> </span><span class="annot"><span class="annottext">[Handle] -&gt; IO a
+</span><a href="#local-6989586621679028397"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="annot"><span class="annottext">Handle
+</span><a href="#local-6989586621679028398"><span class="hs-identifier hs-var">tmpHandle</span></a></span><span> </span><span class="annot"><span class="annottext">Handle
+</span><a href="#local-6989586621679028396"><span class="hs-identifier hs-var">h</span></a></span><span> </span><span class="annot"><span class="annottext">[Handle]
+</span><a href="#local-6989586621679028395"><span class="hs-identifier hs-var">hs</span></a></span><span>
+</span><span id="line-58"></span><span>
+</span><span id="line-59"></span><span>
+</span><span id="line-60"></span><span class="hs-comment">-- Provide a tempfile for the given action and remove it afterwards.</span><span>
+</span><span id="line-61"></span><span id="local-6989586621679028467"><span class="annot"><a href="System.IO.Silently.html#withTempFile"><span class="hs-identifier hs-type">withTempFile</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Handle</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679028467"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679028467"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-62"></span><span id="withTempFile"><span class="annot"><span class="annottext">withTempFile :: forall a. FilePath -&gt; (Handle -&gt; IO a) -&gt; IO a
+</span><a href="System.IO.Silently.html#withTempFile"><span class="hs-identifier hs-var hs-var">withTempFile</span></a></span></span><span> </span><span id="local-6989586621679028391"><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621679028391"><span class="hs-identifier hs-var">tmpName</span></a></span></span><span> </span><span id="local-6989586621679028390"><span class="annot"><span class="annottext">Handle -&gt; IO a
+</span><a href="#local-6989586621679028390"><span class="hs-identifier hs-var">action</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-63"></span><span>  </span><span id="local-6989586621679028389"><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621679028389"><span class="hs-identifier hs-var">tmpDir</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">IO FilePath
+</span><a href="System.IO.Silently.html#getTempOrCurrentDirectory"><span class="hs-identifier hs-var">getTempOrCurrentDirectory</span></a></span><span>
+</span><span id="line-64"></span><span>  </span><span class="annot"><span class="annottext">forall a b c. IO a -&gt; (a -&gt; IO b) -&gt; (a -&gt; IO c) -&gt; IO c
+</span><span class="hs-identifier hs-var">E.bracket</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">FilePath -&gt; FilePath -&gt; IO (FilePath, Handle)
+</span><span class="hs-identifier hs-var">openTempFile</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621679028389"><span class="hs-identifier hs-var">tmpDir</span></a></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621679028391"><span class="hs-identifier hs-var">tmpName</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-65"></span><span>            </span><span class="annot"><span class="annottext">(FilePath, Handle) -&gt; IO ()
+</span><a href="#local-6989586621679028387"><span class="hs-identifier hs-var">cleanup</span></a></span><span>
+</span><span id="line-66"></span><span>            </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Handle -&gt; IO a
+</span><a href="#local-6989586621679028390"><span class="hs-identifier hs-var">action</span></a></span><span> </span><span class="annot"><span class="annottext">forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a, b) -&gt; b
+</span><span class="hs-identifier hs-var">snd</span></span><span class="hs-special">)</span><span>
+</span><span id="line-67"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-68"></span><span>    </span><span class="annot"><a href="#local-6989586621679028387"><span class="hs-identifier hs-type">cleanup</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">FilePath</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Handle</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><span id="line-69"></span><span>    </span><span id="local-6989586621679028387"><span class="annot"><span class="annottext">cleanup :: (FilePath, Handle) -&gt; IO ()
+</span><a href="#local-6989586621679028387"><span class="hs-identifier hs-var hs-var">cleanup</span></a></span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679028385"><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621679028385"><span class="hs-identifier hs-var">tmpFile</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679028384"><span class="annot"><span class="annottext">Handle
+</span><a href="#local-6989586621679028384"><span class="hs-identifier hs-var">tmpHandle</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-70"></span><span>      </span><span class="annot"><span class="annottext">Handle -&gt; IO ()
+</span><span class="hs-identifier hs-var">hClose</span></span><span> </span><span class="annot"><span class="annottext">Handle
+</span><a href="#local-6989586621679028384"><span class="hs-identifier hs-var">tmpHandle</span></a></span><span>
+</span><span id="line-71"></span><span>      </span><span class="annot"><span class="annottext">FilePath -&gt; IO ()
+</span><span class="hs-identifier hs-var">removeFile</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621679028385"><span class="hs-identifier hs-var">tmpFile</span></a></span><span>
+</span><span id="line-72"></span><span>
+</span><span id="line-73"></span><span class="annot"><a href="System.IO.Silently.html#getTempOrCurrentDirectory"><span class="hs-identifier hs-type">getTempOrCurrentDirectory</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span>
+</span><span id="line-74"></span><span id="getTempOrCurrentDirectory"><span class="annot"><span class="annottext">getTempOrCurrentDirectory :: IO FilePath
+</span><a href="System.IO.Silently.html#getTempOrCurrentDirectory"><span class="hs-identifier hs-var hs-var">getTempOrCurrentDirectory</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">IO FilePath
+</span><span class="hs-identifier hs-var">getTemporaryDirectory</span></span><span> </span><span class="annot"><span class="annottext">forall a. IO a -&gt; (IOError -&gt; IO a) -&gt; IO a
+</span><a href="#local-6989586621679028383"><span class="hs-operator hs-var">`catchIOError`</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span class="annot"><span class="annottext">IOError
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><span class="hs-string">&quot;.&quot;</span></span><span class="hs-special">)</span><span>
+</span><span id="line-75"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-76"></span><span>    </span><span class="hs-comment">-- NOTE: We can not use `catchIOError` from &quot;System.IO.Error&quot;, it is only</span><span>
+</span><span id="line-77"></span><span>    </span><span class="hs-comment">-- available in base &gt;= 4.4.</span><span>
+</span><span id="line-78"></span><span>    </span><span id="local-6989586621679028459"><span class="annot"><a href="#local-6989586621679028383"><span class="hs-identifier hs-type">catchIOError</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679028459"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">IOError</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679028459"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679028459"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-79"></span><span>    </span><span id="local-6989586621679028383"><span class="annot"><span class="annottext">catchIOError :: forall a. IO a -&gt; (IOError -&gt; IO a) -&gt; IO a
+</span><a href="#local-6989586621679028383"><span class="hs-identifier hs-var hs-var">catchIOError</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall e a. Exception e =&gt; IO a -&gt; (e -&gt; IO a) -&gt; IO a
+</span><span class="hs-identifier hs-var">E.catch</span></span><span>
+</span><span id="line-80"></span><span>
+</span><span id="line-81"></span><span class="hs-comment">-- | Run an IO action while preventing and capturing all output to stdout.</span><span>
+</span><span id="line-82"></span><span class="hs-comment">-- This will, as a side effect, create and delete a temp file in the temp directory</span><span>
+</span><span id="line-83"></span><span class="hs-comment">-- or current directory if there is no temp directory.</span><span>
+</span><span id="line-84"></span><span id="local-6989586621679028452"><span class="annot"><a href="System.IO.Silently.html#capture"><span class="hs-identifier hs-type">capture</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679028452"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="#local-6989586621679028452"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span><span>
+</span><span id="line-85"></span><span id="capture"><span class="annot"><span class="annottext">capture :: forall a. IO a -&gt; IO (FilePath, a)
+</span><a href="System.IO.Silently.html#capture"><span class="hs-identifier hs-var hs-var">capture</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. [Handle] -&gt; IO a -&gt; IO (FilePath, a)
+</span><a href="System.IO.Silently.html#hCapture"><span class="hs-identifier hs-var">hCapture</span></a></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Handle
+</span><span class="hs-identifier hs-var">stdout</span></span><span class="hs-special">]</span><span>
+</span><span id="line-86"></span><span>
+</span><span id="line-87"></span><span class="hs-comment">-- | Like `capture`, but discards the result of given action.</span><span>
+</span><span id="line-88"></span><span id="local-6989586621679028450"><span class="annot"><a href="System.IO.Silently.html#capture_"><span class="hs-identifier hs-type">capture_</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679028450"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span></span><span>
+</span><span id="line-89"></span><span id="capture_"><span class="annot"><span class="annottext">capture_ :: forall a. IO a -&gt; IO FilePath
+</span><a href="System.IO.Silently.html#capture_"><span class="hs-identifier hs-var hs-var">capture_</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a, b) -&gt; a
+</span><span class="hs-identifier hs-var">fst</span></span><span> </span><span class="annot"><span class="annottext">forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">forall a. IO a -&gt; IO (FilePath, a)
+</span><a href="System.IO.Silently.html#capture"><span class="hs-identifier hs-var">capture</span></a></span><span>
+</span><span id="line-90"></span><span>
+</span><span id="line-91"></span><span class="hs-comment">-- | Like `hCapture`, but discards the result of given action.</span><span>
+</span><span id="line-92"></span><span id="local-6989586621679028443"><span class="annot"><a href="System.IO.Silently.html#hCapture_"><span class="hs-identifier hs-type">hCapture_</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Handle</span></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679028443"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span></span><span>
+</span><span id="line-93"></span><span id="hCapture_"><span class="annot"><span class="annottext">hCapture_ :: forall a. [Handle] -&gt; IO a -&gt; IO FilePath
+</span><a href="System.IO.Silently.html#hCapture_"><span class="hs-identifier hs-var hs-var">hCapture_</span></a></span></span><span> </span><span id="local-6989586621679028376"><span class="annot"><span class="annottext">[Handle]
+</span><a href="#local-6989586621679028376"><span class="hs-identifier hs-var">handles</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a, b) -&gt; a
+</span><span class="hs-identifier hs-var">fst</span></span><span> </span><span class="annot"><span class="annottext">forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">forall a. [Handle] -&gt; IO a -&gt; IO (FilePath, a)
+</span><a href="System.IO.Silently.html#hCapture"><span class="hs-identifier hs-var">hCapture</span></a></span><span> </span><span class="annot"><span class="annottext">[Handle]
+</span><a href="#local-6989586621679028376"><span class="hs-identifier hs-var">handles</span></a></span><span>
+</span><span id="line-94"></span><span>
+</span><span id="line-95"></span><span class="hs-comment">-- | Run an IO action while preventing and capturing all output to the given handles.</span><span>
+</span><span id="line-96"></span><span class="hs-comment">-- This will, as a side effect, create and delete a temp file in the temp directory</span><span>
+</span><span id="line-97"></span><span class="hs-comment">-- or current directory if there is no temp directory.</span><span>
+</span><span id="line-98"></span><span class="annot"><a href="System.IO.Silently.html#hCapture"><span class="hs-identifier hs-type">hCapture</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679028451"><span class="annot"><a href="#local-6989586621679028451"><span class="hs-identifier hs-type">a</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Handle</span></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679028451"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="#local-6989586621679028451"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-99"></span><span id="hCapture"><span class="annot"><span class="annottext">hCapture :: forall a. [Handle] -&gt; IO a -&gt; IO (FilePath, a)
+</span><a href="System.IO.Silently.html#hCapture"><span class="hs-identifier hs-var hs-var">hCapture</span></a></span></span><span> </span><span id="local-6989586621679028375"><span class="annot"><span class="annottext">[Handle]
+</span><a href="#local-6989586621679028375"><span class="hs-identifier hs-var">handles</span></a></span></span><span> </span><span id="local-6989586621679028374"><span class="annot"><span class="annottext">IO a
+</span><a href="#local-6989586621679028374"><span class="hs-identifier hs-var">action</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. FilePath -&gt; (Handle -&gt; IO a) -&gt; IO a
+</span><a href="System.IO.Silently.html#withTempFile"><span class="hs-identifier hs-var">withTempFile</span></a></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><span class="hs-string">&quot;capture&quot;</span></span><span> </span><span class="annot"><span class="annottext">Handle -&gt; IO (FilePath, a)
+</span><a href="#local-6989586621679028373"><span class="hs-identifier hs-var">prepareAndRun</span></a></span><span>
+</span><span id="line-100"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-101"></span><span>    </span><span class="annot"><a href="#local-6989586621679028373"><span class="hs-identifier hs-type">prepareAndRun</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Handle</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="#local-6989586621679028451"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-102"></span><span>    </span><span id="local-6989586621679028373"><span class="annot"><span class="annottext">prepareAndRun :: Handle -&gt; IO (FilePath, a)
+</span><a href="#local-6989586621679028373"><span class="hs-identifier hs-var hs-var">prepareAndRun</span></a></span></span><span> </span><span id="local-6989586621679028372"><span class="annot"><span class="annottext">Handle
+</span><a href="#local-6989586621679028372"><span class="hs-identifier hs-var">tmpHandle</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Handle] -&gt; IO (FilePath, a)
+</span><a href="#local-6989586621679028371"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="annot"><span class="annottext">[Handle]
+</span><a href="#local-6989586621679028375"><span class="hs-identifier hs-var">handles</span></a></span><span>
+</span><span id="line-103"></span><span>      </span><span class="hs-keyword">where</span><span>
+</span><span id="line-104"></span><span>        </span><span id="local-6989586621679028371"><span class="annot"><span class="annottext">go :: [Handle] -&gt; IO (FilePath, a)
+</span><a href="#local-6989586621679028371"><span class="hs-identifier hs-var hs-var">go</span></a></span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-105"></span><span>          </span><span id="local-6989586621679028358"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679028358"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">IO a
+</span><a href="#local-6989586621679028374"><span class="hs-identifier hs-var">action</span></a></span><span>
+</span><span id="line-106"></span><span>          </span><span class="annot"><span class="annottext">forall (t :: * -&gt; *) (m :: * -&gt; *) a b.
+(Foldable t, Monad m) =&gt;
+(a -&gt; m b) -&gt; t a -&gt; m ()
+</span><span class="hs-identifier hs-var">mapM_</span></span><span> </span><span class="annot"><span class="annottext">Handle -&gt; IO ()
+</span><span class="hs-identifier hs-var">hFlush</span></span><span> </span><span class="annot"><span class="annottext">[Handle]
+</span><a href="#local-6989586621679028375"><span class="hs-identifier hs-var">handles</span></a></span><span>
+</span><span id="line-107"></span><span>          </span><span class="annot"><span class="annottext">Handle -&gt; SeekMode -&gt; Integer -&gt; IO ()
+</span><span class="hs-identifier hs-var">hSeek</span></span><span> </span><span class="annot"><span class="annottext">Handle
+</span><a href="#local-6989586621679028372"><span class="hs-identifier hs-var">tmpHandle</span></a></span><span> </span><span class="annot"><span class="annottext">SeekMode
+</span><span class="hs-identifier hs-var">AbsoluteSeek</span></span><span> </span><span class="annot"><span class="annottext">Integer
+</span><span class="hs-number">0</span></span><span>
+</span><span id="line-108"></span><span>          </span><span id="local-6989586621679028356"><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621679028356"><span class="hs-identifier hs-var">str</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Handle -&gt; IO FilePath
+</span><span class="hs-identifier hs-var">hGetContents</span></span><span> </span><span class="annot"><span class="annottext">Handle
+</span><a href="#local-6989586621679028372"><span class="hs-identifier hs-var">tmpHandle</span></a></span><span>
+</span><span id="line-109"></span><span>          </span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621679028356"><span class="hs-identifier hs-var">str</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. NFData a =&gt; a -&gt; b -&gt; b
+</span><span class="hs-operator hs-var">`deepseq`</span></span><span> </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621679028356"><span class="hs-identifier hs-var">str</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679028358"><span class="hs-identifier hs-var">a</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-110"></span><span>        </span><span class="annot"><a href="#local-6989586621679028371"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679028355"><span class="annot"><span class="annottext">Handle
+</span><a href="#local-6989586621679028355"><span class="hs-identifier hs-var">h</span></a></span></span><span class="annot"><span class="hs-glyph hs-type">:</span></span><span id="local-6989586621679028354"><span class="annot"><span class="annottext">[Handle]
+</span><a href="#local-6989586621679028354"><span class="hs-identifier hs-var">hs</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a.
+([Handle] -&gt; IO a) -&gt; Handle -&gt; Handle -&gt; [Handle] -&gt; IO a
+</span><a href="System.IO.Silently.html#goBracket"><span class="hs-identifier hs-var">goBracket</span></a></span><span> </span><span class="annot"><span class="annottext">[Handle] -&gt; IO (FilePath, a)
+</span><a href="#local-6989586621679028371"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="annot"><span class="annottext">Handle
+</span><a href="#local-6989586621679028372"><span class="hs-identifier hs-var">tmpHandle</span></a></span><span> </span><span class="annot"><span class="annottext">Handle
+</span><a href="#local-6989586621679028355"><span class="hs-identifier hs-var">h</span></a></span><span> </span><span class="annot"><span class="annottext">[Handle]
+</span><a href="#local-6989586621679028354"><span class="hs-identifier hs-var">hs</span></a></span><span>
+</span><span id="line-111"></span><span>
+</span><span id="line-112"></span><span id="local-6989586621679028466"><span class="annot"><a href="System.IO.Silently.html#goBracket"><span class="hs-identifier hs-type">goBracket</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Handle</span></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679028466"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Handle</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Handle</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Handle</span></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679028466"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-113"></span><span id="goBracket"><span class="annot"><span class="annottext">goBracket :: forall a.
+([Handle] -&gt; IO a) -&gt; Handle -&gt; Handle -&gt; [Handle] -&gt; IO a
+</span><a href="System.IO.Silently.html#goBracket"><span class="hs-identifier hs-var hs-var">goBracket</span></a></span></span><span> </span><span id="local-6989586621679028352"><span class="annot"><span class="annottext">[Handle] -&gt; IO a
+</span><a href="#local-6989586621679028352"><span class="hs-identifier hs-var">go</span></a></span></span><span> </span><span id="local-6989586621679028351"><span class="annot"><span class="annottext">Handle
+</span><a href="#local-6989586621679028351"><span class="hs-identifier hs-var">tmpHandle</span></a></span></span><span> </span><span id="local-6989586621679028350"><span class="annot"><span class="annottext">Handle
+</span><a href="#local-6989586621679028350"><span class="hs-identifier hs-var">h</span></a></span></span><span> </span><span id="local-6989586621679028349"><span class="annot"><span class="annottext">[Handle]
+</span><a href="#local-6989586621679028349"><span class="hs-identifier hs-var">hs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-114"></span><span>  </span><span id="local-6989586621679028348"><span class="annot"><span class="annottext">BufferMode
+</span><a href="#local-6989586621679028348"><span class="hs-identifier hs-var">buffering</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Handle -&gt; IO BufferMode
+</span><span class="hs-identifier hs-var">hGetBuffering</span></span><span> </span><span class="annot"><span class="annottext">Handle
+</span><a href="#local-6989586621679028350"><span class="hs-identifier hs-var">h</span></a></span><span>
+</span><span id="line-115"></span><span>  </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679028344"><span class="annot"><span class="annottext">redirect :: IO Handle
+</span><a href="#local-6989586621679028344"><span class="hs-identifier hs-var hs-var">redirect</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-116"></span><span>        </span><span id="local-6989586621679028343"><span class="annot"><span class="annottext">Handle
+</span><a href="#local-6989586621679028343"><span class="hs-identifier hs-var">old</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Handle -&gt; IO Handle
+</span><span class="hs-identifier hs-var">hDuplicate</span></span><span> </span><span class="annot"><span class="annottext">Handle
+</span><a href="#local-6989586621679028350"><span class="hs-identifier hs-var">h</span></a></span><span>
+</span><span id="line-117"></span><span>        </span><span class="annot"><span class="annottext">Handle -&gt; Handle -&gt; IO ()
+</span><span class="hs-identifier hs-var">hDuplicateTo</span></span><span> </span><span class="annot"><span class="annottext">Handle
+</span><a href="#local-6989586621679028351"><span class="hs-identifier hs-var">tmpHandle</span></a></span><span> </span><span class="annot"><span class="annottext">Handle
+</span><a href="#local-6989586621679028350"><span class="hs-identifier hs-var">h</span></a></span><span>
+</span><span id="line-118"></span><span>        </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">Handle
+</span><a href="#local-6989586621679028343"><span class="hs-identifier hs-var">old</span></a></span><span>
+</span><span id="line-119"></span><span>      </span><span id="local-6989586621679028340"><span class="annot"><span class="annottext">restore :: Handle -&gt; IO ()
+</span><a href="#local-6989586621679028340"><span class="hs-identifier hs-var hs-var">restore</span></a></span></span><span> </span><span id="local-6989586621679028339"><span class="annot"><span class="annottext">Handle
+</span><a href="#local-6989586621679028339"><span class="hs-identifier hs-var">old</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-120"></span><span>        </span><span class="annot"><span class="annottext">Handle -&gt; Handle -&gt; IO ()
+</span><span class="hs-identifier hs-var">hDuplicateTo</span></span><span> </span><span class="annot"><span class="annottext">Handle
+</span><a href="#local-6989586621679028339"><span class="hs-identifier hs-var">old</span></a></span><span> </span><span class="annot"><span class="annottext">Handle
+</span><a href="#local-6989586621679028350"><span class="hs-identifier hs-var">h</span></a></span><span>
+</span><span id="line-121"></span><span>        </span><span class="annot"><span class="annottext">Handle -&gt; BufferMode -&gt; IO ()
+</span><span class="hs-identifier hs-var">hSetBuffering</span></span><span> </span><span class="annot"><span class="annottext">Handle
+</span><a href="#local-6989586621679028350"><span class="hs-identifier hs-var">h</span></a></span><span> </span><span class="annot"><span class="annottext">BufferMode
+</span><a href="#local-6989586621679028348"><span class="hs-identifier hs-var">buffering</span></a></span><span>
+</span><span id="line-122"></span><span>        </span><span class="annot"><span class="annottext">Handle -&gt; IO ()
+</span><span class="hs-identifier hs-var">hClose</span></span><span> </span><span class="annot"><span class="annottext">Handle
+</span><a href="#local-6989586621679028339"><span class="hs-identifier hs-var">old</span></a></span><span>
+</span><span id="line-123"></span><span>  </span><span class="annot"><span class="annottext">forall a b c. IO a -&gt; (a -&gt; IO b) -&gt; (a -&gt; IO c) -&gt; IO c
+</span><span class="hs-identifier hs-var">E.bracket</span></span><span> </span><span class="annot"><span class="annottext">IO Handle
+</span><a href="#local-6989586621679028344"><span class="hs-identifier hs-var">redirect</span></a></span><span> </span><span class="annot"><span class="annottext">Handle -&gt; IO ()
+</span><a href="#local-6989586621679028340"><span class="hs-identifier hs-var">restore</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span class="annot"><span class="annottext">Handle
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">[Handle] -&gt; IO a
+</span><a href="#local-6989586621679028352"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="annot"><span class="annottext">[Handle]
+</span><a href="#local-6989586621679028349"><span class="hs-identifier hs-var">hs</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-124"></span></pre></body></html>

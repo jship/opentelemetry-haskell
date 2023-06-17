@@ -1,0 +1,806 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE BlockArguments #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE DataKinds #-}</span><span>
+</span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE LambdaCase #-}</span><span>
+</span><span id="line-4"></span><span class="hs-pragma">{-# LANGUAGE MultiParamTypeClasses #-}</span><span>
+</span><span id="line-5"></span><span class="hs-pragma">{-# LANGUAGE NamedFieldPuns #-}</span><span>
+</span><span id="line-6"></span><span class="hs-pragma">{-# LANGUAGE OverloadedStrings #-}</span><span>
+</span><span id="line-7"></span><span class="hs-pragma">{-# LANGUAGE ScopedTypeVariables #-}</span><span>
+</span><span id="line-8"></span><span class="hs-pragma">{-# LANGUAGE TypeApplications #-}</span><span>
+</span><span id="line-9"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">OTel.Instrumentation.Persistent.Internal</span><span>
+</span><span id="line-10"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-comment">-- * Disclaimer</span></span><span>
+</span><span id="line-11"></span><span>    </span><span class="annot"><span class="hs-comment">-- $disclaimer</span></span><span>
+</span><span id="line-12"></span><span>    </span><span class="annot"><a href="OTel.Instrumentation.Persistent.Internal.html#buildSqlPoolHooks"><span class="hs-identifier">buildSqlPoolHooks</span></a></span><span>
+</span><span id="line-13"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="OTel.Instrumentation.Persistent.Internal.html#sqlPoolHooks"><span class="hs-identifier">sqlPoolHooks</span></a></span><span>
+</span><span id="line-14"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="OTel.Instrumentation.Persistent.Internal.html#setNewAlterBackend"><span class="hs-identifier">setNewAlterBackend</span></a></span><span>
+</span><span id="line-15"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="OTel.Instrumentation.Persistent.Internal.html#setNewRunBefore"><span class="hs-identifier">setNewRunBefore</span></a></span><span>
+</span><span id="line-16"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="OTel.Instrumentation.Persistent.Internal.html#setNewRunAfter"><span class="hs-identifier">setNewRunAfter</span></a></span><span>
+</span><span id="line-17"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="OTel.Instrumentation.Persistent.Internal.html#setNewRunOnException"><span class="hs-identifier">setNewRunOnException</span></a></span><span>
+</span><span id="line-18"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="OTel.Instrumentation.Persistent.Internal.html#modifyRunOnException"><span class="hs-identifier">modifyRunOnException</span></a></span><span>
+</span><span id="line-19"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="OTel.Instrumentation.Persistent.Internal.html#modifyGetStatement"><span class="hs-identifier">modifyGetStatement</span></a></span><span>
+</span><span id="line-20"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="OTel.Instrumentation.Persistent.Internal.html#unsafeTracedAcquire"><span class="hs-identifier">unsafeTracedAcquire</span></a></span><span>
+</span><span id="line-21"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="OTel.Instrumentation.Persistent.Internal.html#persistValuesToAttrs"><span class="hs-identifier">persistValuesToAttrs</span></a></span><span>
+</span><span id="line-22"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="OTel.Instrumentation.Persistent.Internal.html#Bytes"><span class="hs-identifier">Bytes</span></a></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-23"></span><span>  </span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-24"></span><span>
+</span><span id="line-25"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Exception</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">SomeException</span></span><span class="hs-special">)</span><span>
+</span><span id="line-26"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.Catch</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">MonadMask</span></span><span class="hs-special">)</span><span>
+</span><span id="line-27"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.IO.Class</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">MonadIO</span></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-28"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.Trans.Class</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">MonadTrans</span></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-29"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Acquire.Internal</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Acquire</span></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-30"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Bifunctor</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Bifunctor</span></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-31"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.ByteString</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">ByteString</span></span><span class="hs-special">)</span><span>
+</span><span id="line-32"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Text</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">pack</span></span><span class="hs-special">)</span><span>
+</span><span id="line-33"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text.Encoding</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">decodeUtf8With</span></span><span class="hs-special">)</span><span>
+</span><span id="line-34"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text.Encoding.Error</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">lenientDecode</span></span><span class="hs-special">)</span><span>
+</span><span id="line-35"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Database.Persist</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">LiteralType</span></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">PersistValue</span></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-36"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Database.Persist.Sql</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">IsolationLevel</span></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">SqlBackend</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Statement</span></span><span class="hs-special">)</span><span>
+</span><span id="line-37"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Database.Persist.SqlBackend</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">SqlBackendHooks</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">getConnHooks</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">getRDBMS</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">setConnHooks</span></span><span class="hs-special">)</span><span>
+</span><span id="line-38"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Database.Persist.SqlBackend.Internal</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">hookGetStatement</span></span><span class="hs-special">)</span><span>
+</span><span id="line-39"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Database.Persist.SqlBackend.Internal.SqlPoolHooks</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">runOnException</span></span><span class="hs-special">)</span><span>
+</span><span id="line-40"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Database.Persist.SqlBackend.Internal.Statement</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Statement</span></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-41"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Database.Persist.SqlBackend.SqlPoolHooks</span></span><span>
+</span><span id="line-42"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-identifier">SqlPoolHooks</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">defaultSqlPoolHooks</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">modifyAlterBackend</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">modifyRunAfter</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">modifyRunBefore</span></span><span>
+</span><span id="line-43"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-44"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">OTel.API.Common</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">AttrsFor</span></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Key</span></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">ToAttrVal</span></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-operator">(.@)</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">AttrsBuilder</span></span><span class="hs-special">)</span><span>
+</span><span id="line-45"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">OTel.API.Trace</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">SpanName</span></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">TracingT</span></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">SpanSpec</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">TracerProvider</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">TracingBackend</span></span><span class="hs-special">)</span><span>
+</span><span id="line-46"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Prelude</span></span><span>
+</span><span id="line-47"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">OTel.API.Common</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">OTel</span></span><span>
+</span><span id="line-48"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">OTel.API.Trace</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">OTel</span></span><span>
+</span><span id="line-49"></span><span>
+</span><span id="line-50"></span><span class="annot"><a href="OTel.Instrumentation.Persistent.Internal.html#buildSqlPoolHooks"><span class="hs-identifier hs-type">buildSqlPoolHooks</span></a></span><span>
+</span><span id="line-51"></span><span>  </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679115375"><span class="annot"><a href="#local-6989586621679115375"><span class="hs-identifier hs-type">m</span></a></span></span><span>
+</span><span id="line-52"></span><span>   </span><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679115375"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadMask</span></span><span> </span><span class="annot"><a href="#local-6989586621679115375"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-53"></span><span>  </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">TracerProvider</span></span><span>
+</span><span id="line-54"></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">SqlPoolHooks</span></span><span> </span><span class="annot"><a href="#local-6989586621679115375"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">SqlBackend</span></span><span class="hs-special">)</span><span>
+</span><span id="line-55"></span><span id="buildSqlPoolHooks"><span class="annot"><span class="annottext">buildSqlPoolHooks :: forall (m :: * -&gt; *).
+(MonadIO m, MonadMask m) =&gt;
+TracerProvider -&gt; IO (SqlPoolHooks m SqlBackend)
+</span><a href="OTel.Instrumentation.Persistent.Internal.html#buildSqlPoolHooks"><span class="hs-identifier hs-var hs-var">buildSqlPoolHooks</span></a></span></span><span> </span><span id="local-6989586621679115103"><span class="annot"><span class="annottext">TracerProvider
+</span><a href="#local-6989586621679115103"><span class="hs-identifier hs-var">tracerProvider</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-56"></span><span>  </span><span id="local-6989586621679115102"><span class="annot"><span class="annottext">TracingBackend
+</span><a href="#local-6989586621679115102"><span class="hs-identifier hs-var">tracingBackend</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *).
+MonadIO m =&gt;
+TracerProvider -&gt; InstrumentationScope -&gt; m TracingBackend
+</span><span class="hs-identifier hs-var">OTel.getTracingBackend</span></span><span> </span><span class="annot"><span class="annottext">TracerProvider
+</span><a href="#local-6989586621679115103"><span class="hs-identifier hs-var">tracerProvider</span></a></span><span> </span><span class="annot"><span class="annottext">InstrumentationScope
+</span><span class="hs-string">&quot;otel-instrumentation-persistent&quot;</span></span><span>
+</span><span id="line-57"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">instrumentationScopeVersion :: Maybe Version
+</span><span class="hs-identifier hs-var">OTel.instrumentationScopeVersion</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">Version
+</span><span class="hs-string">&quot;0.0.0&quot;</span></span><span> </span><span class="hs-comment">-- TODO: Automatically pull package version</span><span>
+</span><span id="line-58"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">instrumentationScopeSchemaURL :: Maybe SchemaURL
+</span><span class="hs-identifier hs-var">OTel.instrumentationScopeSchemaURL</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">SchemaURL
+</span><span class="hs-identifier hs-var">OTel.TRACE_SCHEMA_URL</span></span><span>
+</span><span id="line-59"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-60"></span><span>  </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *).
+(MonadIO m, MonadMask m) =&gt;
+TracingBackend -&gt; SqlPoolHooks m SqlBackend
+</span><a href="OTel.Instrumentation.Persistent.Internal.html#sqlPoolHooks"><span class="hs-identifier hs-var">sqlPoolHooks</span></a></span><span> </span><span class="annot"><span class="annottext">TracingBackend
+</span><a href="#local-6989586621679115102"><span class="hs-identifier hs-var">tracingBackend</span></a></span><span>
+</span><span id="line-61"></span><span>
+</span><span id="line-62"></span><span class="annot"><a href="OTel.Instrumentation.Persistent.Internal.html#sqlPoolHooks"><span class="hs-identifier hs-type">sqlPoolHooks</span></a></span><span>
+</span><span id="line-63"></span><span>  </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679115358"><span class="annot"><a href="#local-6989586621679115358"><span class="hs-identifier hs-type">m</span></a></span></span><span>
+</span><span id="line-64"></span><span>   </span><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679115358"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadMask</span></span><span> </span><span class="annot"><a href="#local-6989586621679115358"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-65"></span><span>  </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">TracingBackend</span></span><span>
+</span><span id="line-66"></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">SqlPoolHooks</span></span><span> </span><span class="annot"><a href="#local-6989586621679115358"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">SqlBackend</span></span><span>
+</span><span id="line-67"></span><span id="sqlPoolHooks"><span class="annot"><span class="annottext">sqlPoolHooks :: forall (m :: * -&gt; *).
+(MonadIO m, MonadMask m) =&gt;
+TracingBackend -&gt; SqlPoolHooks m SqlBackend
+</span><a href="OTel.Instrumentation.Persistent.Internal.html#sqlPoolHooks"><span class="hs-identifier hs-var hs-var">sqlPoolHooks</span></a></span></span><span> </span><span id="local-6989586621679115087"><span class="annot"><span class="annottext">TracingBackend
+</span><a href="#local-6989586621679115087"><span class="hs-identifier hs-var">tracingBackend</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-68"></span><span>  </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *).
+TracingBackend
+-&gt; SqlPoolHooks m SqlBackend -&gt; SqlPoolHooks m SqlBackend
+</span><a href="OTel.Instrumentation.Persistent.Internal.html#setNewAlterBackend"><span class="hs-identifier hs-var">setNewAlterBackend</span></a></span><span> </span><span class="annot"><span class="annottext">TracingBackend
+</span><a href="#local-6989586621679115087"><span class="hs-identifier hs-var">tracingBackend</span></a></span><span>
+</span><span id="line-69"></span><span>    </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *).
+(MonadIO m, MonadMask m) =&gt;
+TracingBackend
+-&gt; SqlPoolHooks m SqlBackend -&gt; SqlPoolHooks m SqlBackend
+</span><a href="OTel.Instrumentation.Persistent.Internal.html#setNewRunBefore"><span class="hs-identifier hs-var">setNewRunBefore</span></a></span><span> </span><span class="annot"><span class="annottext">TracingBackend
+</span><a href="#local-6989586621679115087"><span class="hs-identifier hs-var">tracingBackend</span></a></span><span>
+</span><span id="line-70"></span><span>    </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *).
+(MonadIO m, MonadMask m) =&gt;
+TracingBackend
+-&gt; SqlPoolHooks m SqlBackend -&gt; SqlPoolHooks m SqlBackend
+</span><a href="OTel.Instrumentation.Persistent.Internal.html#setNewRunAfter"><span class="hs-identifier hs-var">setNewRunAfter</span></a></span><span> </span><span class="annot"><span class="annottext">TracingBackend
+</span><a href="#local-6989586621679115087"><span class="hs-identifier hs-var">tracingBackend</span></a></span><span>
+</span><span id="line-71"></span><span>    </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *).
+(MonadIO m, MonadMask m) =&gt;
+TracingBackend
+-&gt; SqlPoolHooks m SqlBackend -&gt; SqlPoolHooks m SqlBackend
+</span><a href="OTel.Instrumentation.Persistent.Internal.html#setNewRunOnException"><span class="hs-identifier hs-var">setNewRunOnException</span></a></span><span> </span><span class="annot"><span class="annottext">TracingBackend
+</span><a href="#local-6989586621679115087"><span class="hs-identifier hs-var">tracingBackend</span></a></span><span> </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) backend.
+(MonadIO m, BackendCompatible SqlBackend backend) =&gt;
+SqlPoolHooks m backend
+</span><span class="hs-identifier hs-var">defaultSqlPoolHooks</span></span><span>
+</span><span id="line-72"></span><span>
+</span><span id="line-73"></span><span id="local-6989586621679115356"><span class="annot"><a href="OTel.Instrumentation.Persistent.Internal.html#setNewAlterBackend"><span class="hs-identifier hs-type">setNewAlterBackend</span></a></span><span>
+</span><span id="line-74"></span><span>  </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">TracingBackend</span></span><span>
+</span><span id="line-75"></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">SqlPoolHooks</span></span><span> </span><span class="annot"><a href="#local-6989586621679115356"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">SqlBackend</span></span><span>
+</span><span id="line-76"></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">SqlPoolHooks</span></span><span> </span><span class="annot"><a href="#local-6989586621679115356"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">SqlBackend</span></span></span><span>
+</span><span id="line-77"></span><span id="setNewAlterBackend"><span class="annot"><span class="annottext">setNewAlterBackend :: forall (m :: * -&gt; *).
+TracingBackend
+-&gt; SqlPoolHooks m SqlBackend -&gt; SqlPoolHooks m SqlBackend
+</span><a href="OTel.Instrumentation.Persistent.Internal.html#setNewAlterBackend"><span class="hs-identifier hs-var hs-var">setNewAlterBackend</span></a></span></span><span> </span><span id="local-6989586621679115084"><span class="annot"><span class="annottext">TracingBackend
+</span><a href="#local-6989586621679115084"><span class="hs-identifier hs-var">tracingBackend</span></a></span></span><span> </span><span id="local-6989586621679115083"><span class="annot"><span class="annottext">SqlPoolHooks m SqlBackend
+</span><a href="#local-6989586621679115083"><span class="hs-identifier hs-var">hooks</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-78"></span><span>  </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) backend.
+SqlPoolHooks m backend
+-&gt; ((backend -&gt; m backend) -&gt; backend -&gt; m backend)
+-&gt; SqlPoolHooks m backend
+</span><span class="hs-identifier hs-var">modifyAlterBackend</span></span><span> </span><span class="annot"><span class="annottext">SqlPoolHooks m SqlBackend
+</span><a href="#local-6989586621679115083"><span class="hs-identifier hs-var">hooks</span></a></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679115082"><span class="annot"><span class="annottext">SqlBackend -&gt; m SqlBackend
+</span><a href="#local-6989586621679115082"><span class="hs-identifier hs-var">oldAlterBackend</span></a></span></span><span> </span><span id="local-6989586621679115081"><span class="annot"><span class="annottext">SqlBackend
+</span><a href="#local-6989586621679115081"><span class="hs-identifier hs-var">sqlBackend</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-79"></span><span>    </span><span class="annot"><span class="annottext">SqlBackend -&gt; m SqlBackend
+</span><a href="#local-6989586621679115082"><span class="hs-identifier hs-var">oldAlterBackend</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">SqlBackendHooks -&gt; SqlBackend -&gt; SqlBackend
+</span><span class="hs-identifier hs-var">setConnHooks</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SqlBackendHooks -&gt; SqlBackendHooks
+</span><a href="#local-6989586621679115080"><span class="hs-identifier hs-var">setNewBackendHooks</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall backend (m :: * -&gt; *).
+(BackendCompatible SqlBackend backend, MonadReader backend m) =&gt;
+m SqlBackendHooks
+</span><span class="hs-identifier hs-var">getConnHooks</span></span><span> </span><span class="annot"><span class="annottext">SqlBackend
+</span><a href="#local-6989586621679115081"><span class="hs-identifier hs-var">sqlBackend</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">SqlBackend
+</span><a href="#local-6989586621679115081"><span class="hs-identifier hs-var">sqlBackend</span></a></span><span>
+</span><span id="line-80"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-81"></span><span>  </span><span id="local-6989586621679115080"><span class="annot"><span class="annottext">setNewBackendHooks :: SqlBackendHooks -&gt; SqlBackendHooks
+</span><a href="#local-6989586621679115080"><span class="hs-identifier hs-var hs-var">setNewBackendHooks</span></a></span></span><span> </span><span id="local-6989586621679115068"><span class="annot"><span class="annottext">SqlBackendHooks
+</span><a href="#local-6989586621679115068"><span class="hs-identifier hs-var">backendHooks</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-82"></span><span>    </span><span class="annot"><span class="annottext">SqlBackendHooks
+-&gt; ((SqlBackend -&gt; Text -&gt; Statement -&gt; IO Statement)
+    -&gt; SqlBackend -&gt; Text -&gt; Statement -&gt; IO Statement)
+-&gt; SqlBackendHooks
+</span><a href="OTel.Instrumentation.Persistent.Internal.html#modifyGetStatement"><span class="hs-identifier hs-var">modifyGetStatement</span></a></span><span> </span><span class="annot"><span class="annottext">SqlBackendHooks
+</span><a href="#local-6989586621679115068"><span class="hs-identifier hs-var">backendHooks</span></a></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679115067"><span class="annot"><span class="annottext">SqlBackend -&gt; Text -&gt; Statement -&gt; IO Statement
+</span><a href="#local-6989586621679115067"><span class="hs-identifier hs-var">oldGetStatement</span></a></span></span><span> </span><span id="local-6989586621679115066"><span class="annot"><span class="annottext">SqlBackend
+</span><a href="#local-6989586621679115066"><span class="hs-identifier hs-var">sqlBackend</span></a></span></span><span> </span><span id="local-6989586621679115065"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679115065"><span class="hs-identifier hs-var">sqlText</span></a></span></span><span> </span><span id="local-6989586621679115064"><span class="annot"><span class="annottext">Statement
+</span><a href="#local-6989586621679115064"><span class="hs-identifier hs-var">statement</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-83"></span><span>      </span><span class="annot"><span class="annottext">SqlBackend -&gt; Text -&gt; Statement -&gt; IO Statement
+</span><a href="#local-6989586621679115067"><span class="hs-identifier hs-var">oldGetStatement</span></a></span><span> </span><span class="annot"><span class="annottext">SqlBackend
+</span><a href="#local-6989586621679115066"><span class="hs-identifier hs-var">sqlBackend</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679115065"><span class="hs-identifier hs-var">sqlText</span></a></span><span> </span><span class="annot"><span class="annottext">Statement
+</span><a href="#local-6989586621679115064"><span class="hs-identifier hs-var">statement</span></a></span><span>
+</span><span id="line-84"></span><span>        </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">stmtQuery :: forall (m :: * -&gt; *).
+MonadIO m =&gt;
+[PersistValue] -&gt; Acquire (ConduitM () [PersistValue] m ())
+</span><span class="hs-identifier hs-var">stmtQuery</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679115060"><span class="annot"><span class="annottext">[PersistValue]
+</span><a href="#local-6989586621679115060"><span class="hs-identifier hs-var">persistValues</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-85"></span><span>            </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679115055"><span class="annot"><span class="annottext">attrs :: AttrsBuilder 'AttrsForSpan
+</span><a href="#local-6989586621679115055"><span class="hs-identifier hs-var hs-var">attrs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Key Text
+</span><span class="hs-identifier hs-var">OTel.DB_STATEMENT</span></span><span> </span><span class="annot"><span class="annottext">forall kv from to.
+(KV kv, KVConstraints kv from to) =&gt;
+Key to -&gt; from -&gt; kv
+</span><span class="hs-operator hs-var">.@</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679115065"><span class="hs-identifier hs-var">sqlText</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">[PersistValue] -&gt; AttrsBuilder 'AttrsForSpan
+</span><a href="OTel.Instrumentation.Persistent.Internal.html#persistValuesToAttrs"><span class="hs-identifier hs-var">persistValuesToAttrs</span></a></span><span> </span><span class="annot"><span class="annottext">[PersistValue]
+</span><a href="#local-6989586621679115060"><span class="hs-identifier hs-var">persistValues</span></a></span><span>
+</span><span id="line-86"></span><span>            </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679115051"><span class="annot"><span class="annottext">spanSpec :: SpanSpec
+</span><a href="#local-6989586621679115051"><span class="hs-identifier hs-var hs-var">spanSpec</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SpanName -&gt; AttrsBuilder 'AttrsForSpan -&gt; SqlBackend -&gt; SpanSpec
+</span><a href="OTel.Instrumentation.Persistent.Internal.html#mkSpanSpec"><span class="hs-identifier hs-var">mkSpanSpec</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text -&gt; SpanName
+</span><span class="hs-identifier hs-var">SpanName</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall backend (m :: * -&gt; *).
+(BackendCompatible SqlBackend backend, MonadReader backend m) =&gt;
+m Text
+</span><span class="hs-identifier hs-var">getRDBMS</span></span><span> </span><span class="annot"><span class="annottext">SqlBackend
+</span><a href="#local-6989586621679115066"><span class="hs-identifier hs-var">sqlBackend</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">AttrsBuilder 'AttrsForSpan
+</span><a href="#local-6989586621679115055"><span class="hs-identifier hs-var">attrs</span></a></span><span> </span><span class="annot"><span class="annottext">SqlBackend
+</span><a href="#local-6989586621679115066"><span class="hs-identifier hs-var">sqlBackend</span></a></span><span>
+</span><span id="line-87"></span><span>            </span><span class="annot"><span class="annottext">forall a. TracingBackend -&gt; SpanSpec -&gt; Acquire a -&gt; Acquire a
+</span><a href="OTel.Instrumentation.Persistent.Internal.html#unsafeTracedAcquire"><span class="hs-identifier hs-var">unsafeTracedAcquire</span></a></span><span> </span><span class="annot"><span class="annottext">TracingBackend
+</span><a href="#local-6989586621679115084"><span class="hs-identifier hs-var">tracingBackend</span></a></span><span> </span><span class="annot"><span class="annottext">SpanSpec
+</span><a href="#local-6989586621679115051"><span class="hs-identifier hs-var">spanSpec</span></a></span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-88"></span><span>              </span><span class="annot"><span class="annottext">Statement
+-&gt; forall (m :: * -&gt; *).
+   MonadIO m =&gt;
+   [PersistValue] -&gt; Acquire (ConduitM () [PersistValue] m ())
+</span><span class="hs-identifier hs-var">stmtQuery</span></span><span> </span><span class="annot"><span class="annottext">Statement
+</span><a href="#local-6989586621679115064"><span class="hs-identifier hs-var">statement</span></a></span><span> </span><span class="annot"><span class="annottext">[PersistValue]
+</span><a href="#local-6989586621679115060"><span class="hs-identifier hs-var">persistValues</span></a></span><span>
+</span><span id="line-89"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">stmtExecute :: [PersistValue] -&gt; IO Int64
+</span><span class="hs-identifier hs-var">stmtExecute</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679115047"><span class="annot"><span class="annottext">[PersistValue]
+</span><a href="#local-6989586621679115047"><span class="hs-identifier hs-var">persistValues</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-90"></span><span>            </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679115042"><span class="annot"><span class="annottext">attrs :: AttrsBuilder 'AttrsForSpan
+</span><a href="#local-6989586621679115042"><span class="hs-identifier hs-var hs-var">attrs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Key Text
+</span><span class="hs-identifier hs-var">OTel.DB_STATEMENT</span></span><span> </span><span class="annot"><span class="annottext">forall kv from to.
+(KV kv, KVConstraints kv from to) =&gt;
+Key to -&gt; from -&gt; kv
+</span><span class="hs-operator hs-var">.@</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679115065"><span class="hs-identifier hs-var">sqlText</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">[PersistValue] -&gt; AttrsBuilder 'AttrsForSpan
+</span><a href="OTel.Instrumentation.Persistent.Internal.html#persistValuesToAttrs"><span class="hs-identifier hs-var">persistValuesToAttrs</span></a></span><span> </span><span class="annot"><span class="annottext">[PersistValue]
+</span><a href="#local-6989586621679115047"><span class="hs-identifier hs-var">persistValues</span></a></span><span>
+</span><span id="line-91"></span><span>            </span><span class="annot"><span class="annottext">forall a b c. (a -&gt; b -&gt; c) -&gt; b -&gt; a -&gt; c
+</span><span class="hs-identifier hs-var">flip</span></span><span> </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a. TracingT m a -&gt; TracingBackend -&gt; m a
+</span><span class="hs-identifier hs-var">runTracingT</span></span><span> </span><span class="annot"><span class="annottext">TracingBackend
+</span><a href="#local-6989586621679115084"><span class="hs-identifier hs-var">tracingBackend</span></a></span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-92"></span><span>              </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a.
+(MonadTracing m, HasCallStack) =&gt;
+SpanSpec -&gt; m a -&gt; m a
+</span><span class="hs-identifier hs-var">OTel.trace_</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SpanName -&gt; AttrsBuilder 'AttrsForSpan -&gt; SqlBackend -&gt; SpanSpec
+</span><a href="OTel.Instrumentation.Persistent.Internal.html#mkSpanSpec"><span class="hs-identifier hs-var">mkSpanSpec</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text -&gt; SpanName
+</span><span class="hs-identifier hs-var">SpanName</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall backend (m :: * -&gt; *).
+(BackendCompatible SqlBackend backend, MonadReader backend m) =&gt;
+m Text
+</span><span class="hs-identifier hs-var">getRDBMS</span></span><span> </span><span class="annot"><span class="annottext">SqlBackend
+</span><a href="#local-6989586621679115066"><span class="hs-identifier hs-var">sqlBackend</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">AttrsBuilder 'AttrsForSpan
+</span><a href="#local-6989586621679115042"><span class="hs-identifier hs-var">attrs</span></a></span><span> </span><span class="annot"><span class="annottext">SqlBackend
+</span><a href="#local-6989586621679115066"><span class="hs-identifier hs-var">sqlBackend</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-93"></span><span>                </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a. MonadIO m =&gt; IO a -&gt; m a
+</span><span class="hs-identifier hs-var">liftIO</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Statement -&gt; [PersistValue] -&gt; IO Int64
+</span><span class="hs-identifier hs-var">stmtExecute</span></span><span> </span><span class="annot"><span class="annottext">Statement
+</span><a href="#local-6989586621679115064"><span class="hs-identifier hs-var">statement</span></a></span><span> </span><span class="annot"><span class="annottext">[PersistValue]
+</span><a href="#local-6989586621679115047"><span class="hs-identifier hs-var">persistValues</span></a></span><span>
+</span><span id="line-94"></span><span>        </span><span class="hs-special">}</span><span>
+</span><span id="line-95"></span><span>
+</span><span id="line-96"></span><span class="annot"><a href="OTel.Instrumentation.Persistent.Internal.html#setNewRunBefore"><span class="hs-identifier hs-type">setNewRunBefore</span></a></span><span>
+</span><span id="line-97"></span><span>  </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679115355"><span class="annot"><a href="#local-6989586621679115355"><span class="hs-identifier hs-type">m</span></a></span></span><span>
+</span><span id="line-98"></span><span>   </span><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679115355"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadMask</span></span><span> </span><span class="annot"><a href="#local-6989586621679115355"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-99"></span><span>  </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">TracingBackend</span></span><span>
+</span><span id="line-100"></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">SqlPoolHooks</span></span><span> </span><span class="annot"><a href="#local-6989586621679115355"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">SqlBackend</span></span><span>
+</span><span id="line-101"></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">SqlPoolHooks</span></span><span> </span><span class="annot"><a href="#local-6989586621679115355"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">SqlBackend</span></span><span>
+</span><span id="line-102"></span><span id="setNewRunBefore"><span class="annot"><span class="annottext">setNewRunBefore :: forall (m :: * -&gt; *).
+(MonadIO m, MonadMask m) =&gt;
+TracingBackend
+-&gt; SqlPoolHooks m SqlBackend -&gt; SqlPoolHooks m SqlBackend
+</span><a href="OTel.Instrumentation.Persistent.Internal.html#setNewRunBefore"><span class="hs-identifier hs-var hs-var">setNewRunBefore</span></a></span></span><span> </span><span id="local-6989586621679115026"><span class="annot"><span class="annottext">TracingBackend
+</span><a href="#local-6989586621679115026"><span class="hs-identifier hs-var">tracingBackend</span></a></span></span><span> </span><span id="local-6989586621679115025"><span class="annot"><span class="annottext">SqlPoolHooks m SqlBackend
+</span><a href="#local-6989586621679115025"><span class="hs-identifier hs-var">hooks</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-103"></span><span>  </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) backend.
+SqlPoolHooks m backend
+-&gt; ((backend -&gt; Maybe IsolationLevel -&gt; m ())
+    -&gt; backend -&gt; Maybe IsolationLevel -&gt; m ())
+-&gt; SqlPoolHooks m backend
+</span><span class="hs-identifier hs-var">modifyRunBefore</span></span><span> </span><span class="annot"><span class="annottext">SqlPoolHooks m SqlBackend
+</span><a href="#local-6989586621679115025"><span class="hs-identifier hs-var">hooks</span></a></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679115024"><span class="annot"><span class="annottext">SqlBackend -&gt; Maybe IsolationLevel -&gt; m ()
+</span><a href="#local-6989586621679115024"><span class="hs-identifier hs-var">oldRunBefore</span></a></span></span><span> </span><span id="local-6989586621679115023"><span class="annot"><span class="annottext">SqlBackend
+</span><a href="#local-6989586621679115023"><span class="hs-identifier hs-var">sqlBackend</span></a></span></span><span> </span><span id="local-6989586621679115022"><span class="annot"><span class="annottext">Maybe IsolationLevel
+</span><a href="#local-6989586621679115022"><span class="hs-identifier hs-var">mIsoLevel</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-104"></span><span>    </span><span class="annot"><span class="annottext">forall a b c. (a -&gt; b -&gt; c) -&gt; b -&gt; a -&gt; c
+</span><span class="hs-identifier hs-var">flip</span></span><span> </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a. TracingT m a -&gt; TracingBackend -&gt; m a
+</span><span class="hs-identifier hs-var">runTracingT</span></span><span> </span><span class="annot"><span class="annottext">TracingBackend
+</span><a href="#local-6989586621679115026"><span class="hs-identifier hs-var">tracingBackend</span></a></span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-105"></span><span>      </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679115018"><span class="annot"><span class="annottext">spanName :: SpanName
+</span><a href="#local-6989586621679115018"><span class="hs-identifier hs-var hs-var">spanName</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; SpanName
+</span><span class="hs-identifier hs-var">SpanName</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;BEGIN TRANSACTION&quot;</span></span><span> </span><span class="annot"><span class="annottext">forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">forall b a. b -&gt; (a -&gt; b) -&gt; Maybe a -&gt; b
+</span><span class="hs-identifier hs-var">maybe</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;&quot;</span></span><span> </span><span class="annot"><span class="annottext">IsolationLevel -&gt; Text
+</span><a href="#local-6989586621679115016"><span class="hs-identifier hs-var">isoLevelText</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe IsolationLevel
+</span><a href="#local-6989586621679115022"><span class="hs-identifier hs-var">mIsoLevel</span></a></span><span>
+</span><span id="line-106"></span><span>      </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a.
+(MonadTracing m, HasCallStack) =&gt;
+SpanSpec -&gt; m a -&gt; m a
+</span><span class="hs-identifier hs-var">OTel.trace_</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SpanName -&gt; AttrsBuilder 'AttrsForSpan -&gt; SqlBackend -&gt; SpanSpec
+</span><a href="OTel.Instrumentation.Persistent.Internal.html#mkSpanSpec"><span class="hs-identifier hs-var">mkSpanSpec</span></a></span><span> </span><span class="annot"><span class="annottext">SpanName
+</span><a href="#local-6989586621679115018"><span class="hs-identifier hs-var">spanName</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Monoid a =&gt; a
+</span><span class="hs-identifier hs-var">mempty</span></span><span> </span><span class="annot"><span class="annottext">SqlBackend
+</span><a href="#local-6989586621679115023"><span class="hs-identifier hs-var">sqlBackend</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-107"></span><span>        </span><span class="annot"><span class="annottext">forall (t :: (* -&gt; *) -&gt; * -&gt; *) (m :: * -&gt; *) a.
+(MonadTrans t, Monad m) =&gt;
+m a -&gt; t m a
+</span><span class="hs-identifier hs-var">lift</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">SqlBackend -&gt; Maybe IsolationLevel -&gt; m ()
+</span><a href="#local-6989586621679115024"><span class="hs-identifier hs-var">oldRunBefore</span></a></span><span> </span><span class="annot"><span class="annottext">SqlBackend
+</span><a href="#local-6989586621679115023"><span class="hs-identifier hs-var">sqlBackend</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe IsolationLevel
+</span><a href="#local-6989586621679115022"><span class="hs-identifier hs-var">mIsoLevel</span></a></span><span>
+</span><span id="line-108"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-109"></span><span>  </span><span id="local-6989586621679115016"><span class="annot"><span class="annottext">isoLevelText :: IsolationLevel -&gt; Text
+</span><a href="#local-6989586621679115016"><span class="hs-identifier hs-var hs-var">isoLevelText</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span>
+</span><span id="line-110"></span><span>    </span><span class="annot"><span class="annottext">IsolationLevel
+</span><span class="hs-identifier hs-var">Serializable</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot; ISOLATION LEVEL SERIALIZABLE&quot;</span></span><span>
+</span><span id="line-111"></span><span>    </span><span class="annot"><span class="annottext">IsolationLevel
+</span><span class="hs-identifier hs-var">RepeatableRead</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot; ISOLATION LEVEL REPEATABLE READ&quot;</span></span><span>
+</span><span id="line-112"></span><span>    </span><span class="annot"><span class="annottext">IsolationLevel
+</span><span class="hs-identifier hs-var">ReadCommitted</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot; ISOLATION LEVEL READ COMMITTED&quot;</span></span><span>
+</span><span id="line-113"></span><span>    </span><span class="annot"><span class="annottext">IsolationLevel
+</span><span class="hs-identifier hs-var">ReadUncommitted</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot; ISOLATION LEVEL READ UNCOMMITTED&quot;</span></span><span>
+</span><span id="line-114"></span><span>
+</span><span id="line-115"></span><span class="annot"><a href="OTel.Instrumentation.Persistent.Internal.html#setNewRunAfter"><span class="hs-identifier hs-type">setNewRunAfter</span></a></span><span>
+</span><span id="line-116"></span><span>  </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679115006"><span class="annot"><a href="#local-6989586621679115006"><span class="hs-identifier hs-type">m</span></a></span></span><span>
+</span><span id="line-117"></span><span>   </span><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679115006"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadMask</span></span><span> </span><span class="annot"><a href="#local-6989586621679115006"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-118"></span><span>  </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">TracingBackend</span></span><span>
+</span><span id="line-119"></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">SqlPoolHooks</span></span><span> </span><span class="annot"><a href="#local-6989586621679115006"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">SqlBackend</span></span><span>
+</span><span id="line-120"></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">SqlPoolHooks</span></span><span> </span><span class="annot"><a href="#local-6989586621679115006"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">SqlBackend</span></span><span>
+</span><span id="line-121"></span><span id="setNewRunAfter"><span class="annot"><span class="annottext">setNewRunAfter :: forall (m :: * -&gt; *).
+(MonadIO m, MonadMask m) =&gt;
+TracingBackend
+-&gt; SqlPoolHooks m SqlBackend -&gt; SqlPoolHooks m SqlBackend
+</span><a href="OTel.Instrumentation.Persistent.Internal.html#setNewRunAfter"><span class="hs-identifier hs-var hs-var">setNewRunAfter</span></a></span></span><span> </span><span id="local-6989586621679114995"><span class="annot"><span class="annottext">TracingBackend
+</span><a href="#local-6989586621679114995"><span class="hs-identifier hs-var">tracingBackend</span></a></span></span><span> </span><span id="local-6989586621679114994"><span class="annot"><span class="annottext">SqlPoolHooks m SqlBackend
+</span><a href="#local-6989586621679114994"><span class="hs-identifier hs-var">hooks</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-122"></span><span>  </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) backend.
+SqlPoolHooks m backend
+-&gt; ((backend -&gt; Maybe IsolationLevel -&gt; m ())
+    -&gt; backend -&gt; Maybe IsolationLevel -&gt; m ())
+-&gt; SqlPoolHooks m backend
+</span><span class="hs-identifier hs-var">modifyRunAfter</span></span><span> </span><span class="annot"><span class="annottext">SqlPoolHooks m SqlBackend
+</span><a href="#local-6989586621679114994"><span class="hs-identifier hs-var">hooks</span></a></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679114993"><span class="annot"><span class="annottext">SqlBackend -&gt; Maybe IsolationLevel -&gt; m ()
+</span><a href="#local-6989586621679114993"><span class="hs-identifier hs-var">oldRunAfter</span></a></span></span><span> </span><span id="local-6989586621679114992"><span class="annot"><span class="annottext">SqlBackend
+</span><a href="#local-6989586621679114992"><span class="hs-identifier hs-var">sqlBackend</span></a></span></span><span> </span><span id="local-6989586621679114991"><span class="annot"><span class="annottext">Maybe IsolationLevel
+</span><a href="#local-6989586621679114991"><span class="hs-identifier hs-var">mIsoLevel</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-123"></span><span>    </span><span class="annot"><span class="annottext">forall a b c. (a -&gt; b -&gt; c) -&gt; b -&gt; a -&gt; c
+</span><span class="hs-identifier hs-var">flip</span></span><span> </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a. TracingT m a -&gt; TracingBackend -&gt; m a
+</span><span class="hs-identifier hs-var">runTracingT</span></span><span> </span><span class="annot"><span class="annottext">TracingBackend
+</span><a href="#local-6989586621679114995"><span class="hs-identifier hs-var">tracingBackend</span></a></span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-124"></span><span>      </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679114989"><span class="annot"><span class="annottext">attrs :: AttrsBuilder 'AttrsForSpan
+</span><a href="#local-6989586621679114989"><span class="hs-identifier hs-var hs-var">attrs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. Monoid a =&gt; a
+</span><span class="hs-identifier hs-var">mempty</span></span><span>
+</span><span id="line-125"></span><span>      </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a.
+(MonadTracing m, HasCallStack) =&gt;
+SpanSpec -&gt; m a -&gt; m a
+</span><span class="hs-identifier hs-var">OTel.trace_</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SpanName -&gt; AttrsBuilder 'AttrsForSpan -&gt; SqlBackend -&gt; SpanSpec
+</span><a href="OTel.Instrumentation.Persistent.Internal.html#mkSpanSpec"><span class="hs-identifier hs-var">mkSpanSpec</span></a></span><span> </span><span class="annot"><span class="annottext">SpanName
+</span><span class="hs-string">&quot;COMMIT TRANSACTION&quot;</span></span><span> </span><span class="annot"><span class="annottext">AttrsBuilder 'AttrsForSpan
+</span><a href="#local-6989586621679114989"><span class="hs-identifier hs-var">attrs</span></a></span><span> </span><span class="annot"><span class="annottext">SqlBackend
+</span><a href="#local-6989586621679114992"><span class="hs-identifier hs-var">sqlBackend</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-126"></span><span>        </span><span class="annot"><span class="annottext">forall (t :: (* -&gt; *) -&gt; * -&gt; *) (m :: * -&gt; *) a.
+(MonadTrans t, Monad m) =&gt;
+m a -&gt; t m a
+</span><span class="hs-identifier hs-var">lift</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">SqlBackend -&gt; Maybe IsolationLevel -&gt; m ()
+</span><a href="#local-6989586621679114993"><span class="hs-identifier hs-var">oldRunAfter</span></a></span><span> </span><span class="annot"><span class="annottext">SqlBackend
+</span><a href="#local-6989586621679114992"><span class="hs-identifier hs-var">sqlBackend</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe IsolationLevel
+</span><a href="#local-6989586621679114991"><span class="hs-identifier hs-var">mIsoLevel</span></a></span><span>
+</span><span id="line-127"></span><span>
+</span><span id="line-128"></span><span class="annot"><a href="OTel.Instrumentation.Persistent.Internal.html#setNewRunOnException"><span class="hs-identifier hs-type">setNewRunOnException</span></a></span><span>
+</span><span id="line-129"></span><span>  </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679114988"><span class="annot"><a href="#local-6989586621679114988"><span class="hs-identifier hs-type">m</span></a></span></span><span>
+</span><span id="line-130"></span><span>   </span><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679114988"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadMask</span></span><span> </span><span class="annot"><a href="#local-6989586621679114988"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-131"></span><span>  </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">TracingBackend</span></span><span>
+</span><span id="line-132"></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">SqlPoolHooks</span></span><span> </span><span class="annot"><a href="#local-6989586621679114988"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">SqlBackend</span></span><span>
+</span><span id="line-133"></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">SqlPoolHooks</span></span><span> </span><span class="annot"><a href="#local-6989586621679114988"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">SqlBackend</span></span><span>
+</span><span id="line-134"></span><span id="setNewRunOnException"><span class="annot"><span class="annottext">setNewRunOnException :: forall (m :: * -&gt; *).
+(MonadIO m, MonadMask m) =&gt;
+TracingBackend
+-&gt; SqlPoolHooks m SqlBackend -&gt; SqlPoolHooks m SqlBackend
+</span><a href="OTel.Instrumentation.Persistent.Internal.html#setNewRunOnException"><span class="hs-identifier hs-var hs-var">setNewRunOnException</span></a></span></span><span> </span><span id="local-6989586621679114974"><span class="annot"><span class="annottext">TracingBackend
+</span><a href="#local-6989586621679114974"><span class="hs-identifier hs-var">tracingBackend</span></a></span></span><span> </span><span id="local-6989586621679114973"><span class="annot"><span class="annottext">SqlPoolHooks m SqlBackend
+</span><a href="#local-6989586621679114973"><span class="hs-identifier hs-var">hooks</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-135"></span><span>  </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) backend.
+SqlPoolHooks m backend
+-&gt; ((backend -&gt; Maybe IsolationLevel -&gt; SomeException -&gt; m ())
+    -&gt; backend -&gt; Maybe IsolationLevel -&gt; SomeException -&gt; m ())
+-&gt; SqlPoolHooks m backend
+</span><a href="OTel.Instrumentation.Persistent.Internal.html#modifyRunOnException"><span class="hs-identifier hs-var">modifyRunOnException</span></a></span><span> </span><span class="annot"><span class="annottext">SqlPoolHooks m SqlBackend
+</span><a href="#local-6989586621679114973"><span class="hs-identifier hs-var">hooks</span></a></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679114972"><span class="annot"><span class="annottext">SqlBackend -&gt; Maybe IsolationLevel -&gt; SomeException -&gt; m ()
+</span><a href="#local-6989586621679114972"><span class="hs-identifier hs-var">oldRunOnException</span></a></span></span><span> </span><span id="local-6989586621679114971"><span class="annot"><span class="annottext">SqlBackend
+</span><a href="#local-6989586621679114971"><span class="hs-identifier hs-var">sqlBackend</span></a></span></span><span> </span><span id="local-6989586621679114970"><span class="annot"><span class="annottext">Maybe IsolationLevel
+</span><a href="#local-6989586621679114970"><span class="hs-identifier hs-var">mIsoLevel</span></a></span></span><span> </span><span id="local-6989586621679114969"><span class="annot"><span class="annottext">SomeException
+</span><a href="#local-6989586621679114969"><span class="hs-identifier hs-var">someEx</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-136"></span><span>    </span><span class="annot"><span class="annottext">forall a b c. (a -&gt; b -&gt; c) -&gt; b -&gt; a -&gt; c
+</span><span class="hs-identifier hs-var">flip</span></span><span> </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a. TracingT m a -&gt; TracingBackend -&gt; m a
+</span><span class="hs-identifier hs-var">runTracingT</span></span><span> </span><span class="annot"><span class="annottext">TracingBackend
+</span><a href="#local-6989586621679114974"><span class="hs-identifier hs-var">tracingBackend</span></a></span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-137"></span><span>      </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679114967"><span class="annot"><span class="annottext">attrs :: AttrsBuilder 'AttrsForSpan
+</span><a href="#local-6989586621679114967"><span class="hs-identifier hs-var hs-var">attrs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. Monoid a =&gt; a
+</span><span class="hs-identifier hs-var">mempty</span></span><span>
+</span><span id="line-138"></span><span>      </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a.
+(MonadTracing m, HasCallStack) =&gt;
+SpanSpec -&gt; (MutableSpan -&gt; m a) -&gt; m a
+</span><span class="hs-identifier hs-var">OTel.trace</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SpanName -&gt; AttrsBuilder 'AttrsForSpan -&gt; SqlBackend -&gt; SpanSpec
+</span><a href="OTel.Instrumentation.Persistent.Internal.html#mkSpanSpec"><span class="hs-identifier hs-var">mkSpanSpec</span></a></span><span> </span><span class="annot"><span class="annottext">SpanName
+</span><span class="hs-string">&quot;ROLLBACK TRANSACTION&quot;</span></span><span> </span><span class="annot"><span class="annottext">AttrsBuilder 'AttrsForSpan
+</span><a href="#local-6989586621679114967"><span class="hs-identifier hs-var">attrs</span></a></span><span> </span><span class="annot"><span class="annottext">SqlBackend
+</span><a href="#local-6989586621679114971"><span class="hs-identifier hs-var">sqlBackend</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679114965"><span class="annot"><span class="annottext">MutableSpan
+</span><a href="#local-6989586621679114965"><span class="hs-identifier hs-var">mutableSpan</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-139"></span><span>        </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *).
+MonadTracing m =&gt;
+MutableSpan -&gt; UpdateSpanSpec -&gt; m ()
+</span><span class="hs-identifier hs-var">OTel.updateSpan</span></span><span> </span><span class="annot"><span class="annottext">MutableSpan
+</span><a href="#local-6989586621679114965"><span class="hs-identifier hs-var">mutableSpan</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">SomeException
+-&gt; Bool
+-&gt; TimestampSource
+-&gt; AttrsBuilder 'AttrsForSpanEvent
+-&gt; UpdateSpanSpec
+</span><span class="hs-identifier hs-var">OTel.recordException</span></span><span> </span><span class="annot"><span class="annottext">SomeException
+</span><a href="#local-6989586621679114969"><span class="hs-identifier hs-var">someEx</span></a></span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span> </span><span class="annot"><span class="annottext">TimestampSource
+</span><span class="hs-identifier hs-var">OTel.TimestampSourceNow</span></span><span> </span><span class="annot"><span class="annottext">forall a. Monoid a =&gt; a
+</span><span class="hs-identifier hs-var">mempty</span></span><span>
+</span><span id="line-140"></span><span>        </span><span class="annot"><span class="annottext">forall (t :: (* -&gt; *) -&gt; * -&gt; *) (m :: * -&gt; *) a.
+(MonadTrans t, Monad m) =&gt;
+m a -&gt; t m a
+</span><span class="hs-identifier hs-var">lift</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">SqlBackend -&gt; Maybe IsolationLevel -&gt; SomeException -&gt; m ()
+</span><a href="#local-6989586621679114972"><span class="hs-identifier hs-var">oldRunOnException</span></a></span><span> </span><span class="annot"><span class="annottext">SqlBackend
+</span><a href="#local-6989586621679114971"><span class="hs-identifier hs-var">sqlBackend</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe IsolationLevel
+</span><a href="#local-6989586621679114970"><span class="hs-identifier hs-var">mIsoLevel</span></a></span><span> </span><span class="annot"><span class="annottext">SomeException
+</span><a href="#local-6989586621679114969"><span class="hs-identifier hs-var">someEx</span></a></span><span>
+</span><span id="line-141"></span><span>
+</span><span id="line-142"></span><span class="hs-comment">-- TODO: This function exists in &quot;Database.Persist.SqlBackend.SqlPoolHooks&quot; but</span><span>
+</span><span id="line-143"></span><span class="hs-comment">-- isn't exported. Should upstream exporting it rather than inlining it here.</span><span>
+</span><span id="line-144"></span><span class="annot"><a href="OTel.Instrumentation.Persistent.Internal.html#modifyRunOnException"><span class="hs-identifier hs-type">modifyRunOnException</span></a></span><span>
+</span><span id="line-145"></span><span>  </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679115301"><span class="annot"><a href="#local-6989586621679115301"><span class="hs-identifier hs-type">m</span></a></span></span><span> </span><span id="local-6989586621679115300"><span class="annot"><a href="#local-6989586621679115300"><span class="hs-identifier hs-type">backend</span></a></span></span><span>
+</span><span id="line-146"></span><span>   </span><span class="hs-operator">.</span><span> </span><span class="annot"><span class="hs-identifier hs-type">SqlPoolHooks</span></span><span> </span><span class="annot"><a href="#local-6989586621679115301"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679115300"><span class="hs-identifier hs-type">backend</span></a></span><span>
+</span><span id="line-147"></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679115300"><span class="hs-identifier hs-type">backend</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">IsolationLevel</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">SomeException</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679115301"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679115300"><span class="hs-identifier hs-type">backend</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">IsolationLevel</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">SomeException</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679115301"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-148"></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">SqlPoolHooks</span></span><span> </span><span class="annot"><a href="#local-6989586621679115301"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679115300"><span class="hs-identifier hs-type">backend</span></a></span><span>
+</span><span id="line-149"></span><span id="modifyRunOnException"><span class="annot"><span class="annottext">modifyRunOnException :: forall (m :: * -&gt; *) backend.
+SqlPoolHooks m backend
+-&gt; ((backend -&gt; Maybe IsolationLevel -&gt; SomeException -&gt; m ())
+    -&gt; backend -&gt; Maybe IsolationLevel -&gt; SomeException -&gt; m ())
+-&gt; SqlPoolHooks m backend
+</span><a href="OTel.Instrumentation.Persistent.Internal.html#modifyRunOnException"><span class="hs-identifier hs-var hs-var">modifyRunOnException</span></a></span></span><span> </span><span id="local-6989586621679114961"><span class="annot"><span class="annottext">SqlPoolHooks m backend
+</span><a href="#local-6989586621679114961"><span class="hs-identifier hs-var">hooks</span></a></span></span><span> </span><span id="local-6989586621679114960"><span class="annot"><span class="annottext">(backend -&gt; Maybe IsolationLevel -&gt; SomeException -&gt; m ())
+-&gt; backend -&gt; Maybe IsolationLevel -&gt; SomeException -&gt; m ()
+</span><a href="#local-6989586621679114960"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-150"></span><span>  </span><span class="annot"><span class="annottext">SqlPoolHooks m backend
+</span><a href="#local-6989586621679114961"><span class="hs-identifier hs-var">hooks</span></a></span><span> </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">runOnException :: backend -&gt; Maybe IsolationLevel -&gt; SomeException -&gt; m ()
+</span><span class="hs-identifier hs-var">runOnException</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(backend -&gt; Maybe IsolationLevel -&gt; SomeException -&gt; m ())
+-&gt; backend -&gt; Maybe IsolationLevel -&gt; SomeException -&gt; m ()
+</span><a href="#local-6989586621679114960"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) backend.
+SqlPoolHooks m backend
+-&gt; backend -&gt; Maybe IsolationLevel -&gt; SomeException -&gt; m ()
+</span><span class="hs-identifier hs-var">runOnException</span></span><span> </span><span class="annot"><span class="annottext">SqlPoolHooks m backend
+</span><a href="#local-6989586621679114961"><span class="hs-identifier hs-var">hooks</span></a></span><span> </span><span class="hs-special">}</span><span>
+</span><span id="line-151"></span><span>
+</span><span id="line-152"></span><span class="hs-comment">-- TODO: 'emptySqlBackendHooks' and 'setConnHooks' are exported from</span><span>
+</span><span id="line-153"></span><span class="hs-comment">-- @persistent@, but there is no means of setting the single function in</span><span>
+</span><span id="line-154"></span><span class="hs-comment">-- 'SqlBackendHooks'. Here, we do that using internals imports. Should upstream</span><span>
+</span><span id="line-155"></span><span class="hs-comment">-- some changes to clean this up.</span><span>
+</span><span id="line-156"></span><span class="annot"><a href="OTel.Instrumentation.Persistent.Internal.html#modifyGetStatement"><span class="hs-identifier hs-type">modifyGetStatement</span></a></span><span>
+</span><span id="line-157"></span><span>  </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">SqlBackendHooks</span></span><span>
+</span><span id="line-158"></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">SqlBackend</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Statement</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Statement</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">SqlBackend</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Statement</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Statement</span></span><span class="hs-special">)</span><span>
+</span><span id="line-159"></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">SqlBackendHooks</span></span><span>
+</span><span id="line-160"></span><span id="modifyGetStatement"><span class="annot"><span class="annottext">modifyGetStatement :: SqlBackendHooks
+-&gt; ((SqlBackend -&gt; Text -&gt; Statement -&gt; IO Statement)
+    -&gt; SqlBackend -&gt; Text -&gt; Statement -&gt; IO Statement)
+-&gt; SqlBackendHooks
+</span><a href="OTel.Instrumentation.Persistent.Internal.html#modifyGetStatement"><span class="hs-identifier hs-var hs-var">modifyGetStatement</span></a></span></span><span> </span><span id="local-6989586621679114959"><span class="annot"><span class="annottext">SqlBackendHooks
+</span><a href="#local-6989586621679114959"><span class="hs-identifier hs-var">hooks</span></a></span></span><span> </span><span id="local-6989586621679114958"><span class="annot"><span class="annottext">(SqlBackend -&gt; Text -&gt; Statement -&gt; IO Statement)
+-&gt; SqlBackend -&gt; Text -&gt; Statement -&gt; IO Statement
+</span><a href="#local-6989586621679114958"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-161"></span><span>  </span><span class="annot"><span class="annottext">SqlBackendHooks
+</span><a href="#local-6989586621679114959"><span class="hs-identifier hs-var">hooks</span></a></span><span> </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">hookGetStatement :: SqlBackend -&gt; Text -&gt; Statement -&gt; IO Statement
+</span><span class="hs-identifier hs-var">hookGetStatement</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(SqlBackend -&gt; Text -&gt; Statement -&gt; IO Statement)
+-&gt; SqlBackend -&gt; Text -&gt; Statement -&gt; IO Statement
+</span><a href="#local-6989586621679114958"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">SqlBackendHooks -&gt; SqlBackend -&gt; Text -&gt; Statement -&gt; IO Statement
+</span><span class="hs-identifier hs-var">hookGetStatement</span></span><span> </span><span class="annot"><span class="annottext">SqlBackendHooks
+</span><a href="#local-6989586621679114959"><span class="hs-identifier hs-var">hooks</span></a></span><span> </span><span class="hs-special">}</span><span>
+</span><span id="line-162"></span><span>
+</span><span id="line-163"></span><span class="annot"><a href="OTel.Instrumentation.Persistent.Internal.html#mkSpanSpec"><span class="hs-identifier hs-type">mkSpanSpec</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">SpanName</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">AttrsBuilder</span></span><span> </span><span class="hs-special">'</span><span class="annot"><span class="hs-identifier hs-type">AttrsForSpan</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">SqlBackend</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">SpanSpec</span></span><span>
+</span><span id="line-164"></span><span id="mkSpanSpec"><span class="annot"><span class="annottext">mkSpanSpec :: SpanName -&gt; AttrsBuilder 'AttrsForSpan -&gt; SqlBackend -&gt; SpanSpec
+</span><a href="OTel.Instrumentation.Persistent.Internal.html#mkSpanSpec"><span class="hs-identifier hs-var hs-var">mkSpanSpec</span></a></span></span><span> </span><span id="local-6989586621679114957"><span class="annot"><span class="annottext">SpanName
+</span><a href="#local-6989586621679114957"><span class="hs-identifier hs-var">spanSpecName</span></a></span></span><span> </span><span id="local-6989586621679114956"><span class="annot"><span class="annottext">AttrsBuilder 'AttrsForSpan
+</span><a href="#local-6989586621679114956"><span class="hs-identifier hs-var">additionalAttrs</span></a></span></span><span> </span><span id="local-6989586621679114955"><span class="annot"><span class="annottext">SqlBackend
+</span><a href="#local-6989586621679114955"><span class="hs-identifier hs-var">sqlBackend</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-165"></span><span>  </span><span class="annot"><span class="annottext">SpanSpec
+</span><span class="hs-identifier hs-var">OTel.defaultSpanSpec</span></span><span>
+</span><span id="line-166"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">spanSpecKind :: SpanKind
+</span><span class="hs-identifier hs-var">OTel.spanSpecKind</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SpanKind
+</span><span class="hs-identifier hs-var">OTel.SpanKindClient</span></span><span>
+</span><span id="line-167"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">SpanName
+spanSpecName :: SpanName
+spanSpecName :: SpanName
+</span><span class="hs-identifier hs-var hs-var">OTel.spanSpecName</span></span><span>
+</span><span id="line-168"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">spanSpecAttrs :: AttrsBuilder 'AttrsForSpan
+</span><span class="hs-identifier hs-var">OTel.spanSpecAttrs</span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-169"></span><span>        </span><span class="hs-comment">-- N.B. We are relying on @persistent@ implementation details here in</span><span>
+</span><span id="line-170"></span><span>        </span><span class="hs-comment">-- that 'getRDBMS' will return &quot;postgresql&quot;, &quot;mysql&quot;, &quot;sqlite&quot;, etc. and</span><span>
+</span><span id="line-171"></span><span>        </span><span class="hs-comment">-- these happen to already line up with the trace semantic conventions.</span><span>
+</span><span id="line-172"></span><span>        </span><span class="hs-comment">-- This saves us a case mapping to the 'DbSystem' enum in</span><span>
+</span><span id="line-173"></span><span>        </span><span class="hs-comment">-- &quot;OTel.API.Trace.Core.Attributes&quot;.</span><span>
+</span><span id="line-174"></span><span>        </span><span class="annot"><span class="annottext">Key Text
+</span><span class="hs-identifier hs-var">OTel.DB_SYSTEM</span></span><span> </span><span class="annot"><span class="annottext">forall kv from to.
+(KV kv, KVConstraints kv from to) =&gt;
+Key to -&gt; from -&gt; kv
+</span><span class="hs-operator hs-var">.@</span></span><span> </span><span class="annot"><span class="annottext">forall backend (m :: * -&gt; *).
+(BackendCompatible SqlBackend backend, MonadReader backend m) =&gt;
+m Text
+</span><span class="hs-identifier hs-var">getRDBMS</span></span><span> </span><span class="annot"><span class="annottext">SqlBackend
+</span><a href="#local-6989586621679114955"><span class="hs-identifier hs-var">sqlBackend</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">AttrsBuilder 'AttrsForSpan
+</span><a href="#local-6989586621679114956"><span class="hs-identifier hs-var">additionalAttrs</span></a></span><span>
+</span><span id="line-175"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-176"></span><span>
+</span><span id="line-177"></span><span id="local-6989586621679115326"><span class="annot"><a href="OTel.Instrumentation.Persistent.Internal.html#unsafeTracedAcquire"><span class="hs-identifier hs-type">unsafeTracedAcquire</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">TracingBackend</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">SpanSpec</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Acquire</span></span><span> </span><span class="annot"><a href="#local-6989586621679115326"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Acquire</span></span><span> </span><span class="annot"><a href="#local-6989586621679115326"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-178"></span><span id="unsafeTracedAcquire"><span class="annot"><span class="annottext">unsafeTracedAcquire :: forall a. TracingBackend -&gt; SpanSpec -&gt; Acquire a -&gt; Acquire a
+</span><a href="OTel.Instrumentation.Persistent.Internal.html#unsafeTracedAcquire"><span class="hs-identifier hs-var hs-var">unsafeTracedAcquire</span></a></span></span><span> </span><span id="local-6989586621679114942"><span class="annot"><span class="annottext">TracingBackend
+</span><a href="#local-6989586621679114942"><span class="hs-identifier hs-var">tracingBackend</span></a></span></span><span> </span><span id="local-6989586621679114941"><span class="annot"><span class="annottext">SpanSpec
+</span><a href="#local-6989586621679114941"><span class="hs-identifier hs-var">spanSpec</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Acquire</span></span><span> </span><span id="local-6989586621679114939"><span class="annot"><span class="annottext">(forall b. IO b -&gt; IO b) -&gt; IO (Allocated a)
+</span><a href="#local-6989586621679114939"><span class="hs-identifier hs-var">f</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-179"></span><span>  </span><span class="annot"><span class="annottext">forall a.
+((forall b. IO b -&gt; IO b) -&gt; IO (Allocated a)) -&gt; Acquire a
+</span><span class="hs-identifier hs-var">Acquire</span></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679114938"><span class="annot"><span class="annottext">forall b. IO b -&gt; IO b
+</span><a href="#local-6989586621679114938"><span class="hs-identifier hs-var">restore</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-180"></span><span>    </span><span class="annot"><span class="annottext">forall a b c. (a -&gt; b -&gt; c) -&gt; b -&gt; a -&gt; c
+</span><span class="hs-identifier hs-var">flip</span></span><span> </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a. TracingT m a -&gt; TracingBackend -&gt; m a
+</span><span class="hs-identifier hs-var">runTracingT</span></span><span> </span><span class="annot"><span class="annottext">TracingBackend
+</span><a href="#local-6989586621679114942"><span class="hs-identifier hs-var">tracingBackend</span></a></span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-181"></span><span>      </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a.
+(MonadTracing m, HasCallStack) =&gt;
+SpanSpec -&gt; m a -&gt; m a
+</span><span class="hs-identifier hs-var">OTel.trace_</span></span><span> </span><span class="annot"><span class="annottext">SpanSpec
+</span><a href="#local-6989586621679114941"><span class="hs-identifier hs-var">spanSpec</span></a></span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-182"></span><span>        </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a. MonadIO m =&gt; IO a -&gt; m a
+</span><span class="hs-identifier hs-var">liftIO</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">(forall b. IO b -&gt; IO b) -&gt; IO (Allocated a)
+</span><a href="#local-6989586621679114939"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">forall b. IO b -&gt; IO b
+</span><a href="#local-6989586621679114938"><span class="hs-identifier hs-var">restore</span></a></span><span>
+</span><span id="line-183"></span><span>
+</span><span id="line-184"></span><span class="annot"><a href="OTel.Instrumentation.Persistent.Internal.html#persistValuesToAttrs"><span class="hs-identifier hs-type">persistValuesToAttrs</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">PersistValue</span></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">AttrsBuilder</span></span><span> </span><span class="hs-special">'</span><span class="annot"><span class="hs-identifier hs-type">AttrsForSpan</span></span><span>
+</span><span id="line-185"></span><span id="persistValuesToAttrs"><span class="annot"><span class="annottext">persistValuesToAttrs :: [PersistValue] -&gt; AttrsBuilder 'AttrsForSpan
+</span><a href="OTel.Instrumentation.Persistent.Internal.html#persistValuesToAttrs"><span class="hs-identifier hs-var hs-var">persistValuesToAttrs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-186"></span><span>  </span><span class="annot"><span class="annottext">[Text] -&gt; [PersistValue] -&gt; AttrsBuilder 'AttrsForSpan
+</span><a href="#local-6989586621679114937"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621679114936"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679114936"><span class="hs-identifier hs-var">i</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;persistent.param.&quot;</span></span><span> </span><span class="annot"><span class="annottext">forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; Text
+</span><span class="hs-identifier hs-var">pack</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. Show a =&gt; a -&gt; String
+</span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679114936"><span class="hs-identifier hs-var">i</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span class="hs-glyph">..</span><span class="hs-special">]</span><span>
+</span><span id="line-187"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-188"></span><span>  </span><span class="annot"><a href="#local-6989586621679114937"><span class="hs-identifier hs-type">go</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">PersistValue</span></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">AttrsBuilder</span></span><span> </span><span class="hs-special">'</span><span class="annot"><span class="hs-identifier hs-type">AttrsForSpan</span></span><span>
+</span><span id="line-189"></span><span>  </span><span id="local-6989586621679114937"><span class="annot"><span class="annottext">go :: [Text] -&gt; [PersistValue] -&gt; AttrsBuilder 'AttrsForSpan
+</span><a href="#local-6989586621679114937"><span class="hs-identifier hs-var hs-var">go</span></a></span></span><span> </span><span id="local-6989586621679114934"><span class="annot"><span class="annottext">[Text]
+</span><a href="#local-6989586621679114934"><span class="hs-identifier hs-var">keyTexts</span></a></span></span><span> </span><span id="local-6989586621679114933"><span class="annot"><span class="annottext">[PersistValue]
+</span><a href="#local-6989586621679114933"><span class="hs-identifier hs-var">persistValues</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. Monoid a =&gt; [a] -&gt; a
+</span><span class="hs-identifier hs-var">mconcat</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall a b c. (a -&gt; b -&gt; c) -&gt; [a] -&gt; [b] -&gt; [c]
+</span><span class="hs-identifier hs-var">zipWith</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; PersistValue -&gt; AttrsBuilder 'AttrsForSpan
+</span><a href="#local-6989586621679114931"><span class="hs-identifier hs-var">zipFunc</span></a></span><span> </span><span class="annot"><span class="annottext">[Text]
+</span><a href="#local-6989586621679114934"><span class="hs-identifier hs-var">keyTexts</span></a></span><span> </span><span class="annot"><span class="annottext">[PersistValue]
+</span><a href="#local-6989586621679114933"><span class="hs-identifier hs-var">persistValues</span></a></span><span>
+</span><span id="line-190"></span><span>
+</span><span id="line-191"></span><span>  </span><span class="annot"><a href="#local-6989586621679114931"><span class="hs-identifier hs-type">zipFunc</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">PersistValue</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">AttrsBuilder</span></span><span> </span><span class="hs-special">'</span><span class="annot"><span class="hs-identifier hs-type">AttrsForSpan</span></span><span>
+</span><span id="line-192"></span><span>  </span><span id="local-6989586621679114931"><span class="annot"><span class="annottext">zipFunc :: Text -&gt; PersistValue -&gt; AttrsBuilder 'AttrsForSpan
+</span><a href="#local-6989586621679114931"><span class="hs-identifier hs-var hs-var">zipFunc</span></a></span></span><span> </span><span id="local-6989586621679114930"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679114930"><span class="hs-identifier hs-var">keyText</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span>
+</span><span id="line-193"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">PersistText</span></span><span> </span><span id="local-6989586621679114928"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679114928"><span class="hs-identifier hs-var">text</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall a. Text -&gt; Key a
+</span><span class="hs-identifier hs-var">Key</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679114930"><span class="hs-identifier hs-var">keyText</span></a></span><span> </span><span class="annot"><span class="annottext">forall kv from to.
+(KV kv, KVConstraints kv from to) =&gt;
+Key to -&gt; from -&gt; kv
+</span><span class="hs-operator hs-var">.@</span></span><span> </span><span class="annot"><span class="annottext">forall from to. ToAttrVal from to =&gt; from -&gt; to
+</span><span class="hs-identifier hs-var">toAttrVal</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679114928"><span class="hs-identifier hs-var">text</span></a></span><span>
+</span><span id="line-194"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">PersistByteString</span></span><span> </span><span id="local-6989586621679114924"><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679114924"><span class="hs-identifier hs-var">bytes</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall a. Text -&gt; Key a
+</span><span class="hs-identifier hs-var">Key</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679114930"><span class="hs-identifier hs-var">keyText</span></a></span><span> </span><span class="annot"><span class="annottext">forall kv from to.
+(KV kv, KVConstraints kv from to) =&gt;
+Key to -&gt; from -&gt; kv
+</span><span class="hs-operator hs-var">.@</span></span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; Bytes
+</span><a href="OTel.Instrumentation.Persistent.Internal.html#Bytes"><span class="hs-identifier hs-var">Bytes</span></a></span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679114924"><span class="hs-identifier hs-var">bytes</span></a></span><span>
+</span><span id="line-195"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">PersistInt64</span></span><span> </span><span id="local-6989586621679114921"><span class="annot"><span class="annottext">Int64
+</span><a href="#local-6989586621679114921"><span class="hs-identifier hs-var">int</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall a. Text -&gt; Key a
+</span><span class="hs-identifier hs-var">Key</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679114930"><span class="hs-identifier hs-var">keyText</span></a></span><span> </span><span class="annot"><span class="annottext">forall kv from to.
+(KV kv, KVConstraints kv from to) =&gt;
+Key to -&gt; from -&gt; kv
+</span><span class="hs-operator hs-var">.@</span></span><span> </span><span class="annot"><span class="annottext">forall from to. ToAttrVal from to =&gt; from -&gt; to
+</span><span class="hs-identifier hs-var">toAttrVal</span></span><span> </span><span class="annot"><span class="annottext">Int64
+</span><a href="#local-6989586621679114921"><span class="hs-identifier hs-var">int</span></a></span><span>
+</span><span id="line-196"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">PersistDouble</span></span><span> </span><span id="local-6989586621679114919"><span class="annot"><span class="annottext">Double
+</span><a href="#local-6989586621679114919"><span class="hs-identifier hs-var">double</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall a. Text -&gt; Key a
+</span><span class="hs-identifier hs-var">Key</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679114930"><span class="hs-identifier hs-var">keyText</span></a></span><span> </span><span class="annot"><span class="annottext">forall kv from to.
+(KV kv, KVConstraints kv from to) =&gt;
+Key to -&gt; from -&gt; kv
+</span><span class="hs-operator hs-var">.@</span></span><span> </span><span class="annot"><span class="annottext">forall from to. ToAttrVal from to =&gt; from -&gt; to
+</span><span class="hs-identifier hs-var">toAttrVal</span></span><span> </span><span class="annot"><span class="annottext">Double
+</span><a href="#local-6989586621679114919"><span class="hs-identifier hs-var">double</span></a></span><span>
+</span><span id="line-197"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">PersistRational</span></span><span> </span><span id="local-6989586621679114917"><span class="annot"><span class="annottext">Rational
+</span><a href="#local-6989586621679114917"><span class="hs-identifier hs-var">rational</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall a. Text -&gt; Key a
+</span><span class="hs-identifier hs-var">Key</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679114930"><span class="hs-identifier hs-var">keyText</span></a></span><span> </span><span class="annot"><span class="annottext">forall kv from to.
+(KV kv, KVConstraints kv from to) =&gt;
+Key to -&gt; from -&gt; kv
+</span><span class="hs-operator hs-var">.@</span></span><span> </span><span class="annot"><span class="annottext">forall from to. ToAttrVal from to =&gt; from -&gt; to
+</span><span class="hs-identifier hs-var">toAttrVal</span></span><span> </span><span class="annot"><span class="annottext">Rational
+</span><a href="#local-6989586621679114917"><span class="hs-identifier hs-var">rational</span></a></span><span>
+</span><span id="line-198"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">PersistBool</span></span><span> </span><span id="local-6989586621679114915"><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621679114915"><span class="hs-identifier hs-var">bool</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall a. Text -&gt; Key a
+</span><span class="hs-identifier hs-var">Key</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679114930"><span class="hs-identifier hs-var">keyText</span></a></span><span> </span><span class="annot"><span class="annottext">forall kv from to.
+(KV kv, KVConstraints kv from to) =&gt;
+Key to -&gt; from -&gt; kv
+</span><span class="hs-operator hs-var">.@</span></span><span> </span><span class="annot"><span class="annottext">forall from to. ToAttrVal from to =&gt; from -&gt; to
+</span><span class="hs-identifier hs-var">toAttrVal</span></span><span> </span><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621679114915"><span class="hs-identifier hs-var">bool</span></a></span><span>
+</span><span id="line-199"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">PersistDay</span></span><span> </span><span id="local-6989586621679114913"><span class="annot"><span class="annottext">Day
+</span><a href="#local-6989586621679114913"><span class="hs-identifier hs-var">day</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall a. Text -&gt; Key a
+</span><span class="hs-identifier hs-var">Key</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679114930"><span class="hs-identifier hs-var">keyText</span></a></span><span> </span><span class="annot"><span class="annottext">forall kv from to.
+(KV kv, KVConstraints kv from to) =&gt;
+Key to -&gt; from -&gt; kv
+</span><span class="hs-operator hs-var">.@</span></span><span> </span><span class="annot"><span class="annottext">forall from to. ToAttrVal from to =&gt; from -&gt; to
+</span><span class="hs-identifier hs-var">toAttrVal</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. Show a =&gt; a -&gt; String
+</span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">Day
+</span><a href="#local-6989586621679114913"><span class="hs-identifier hs-var">day</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-200"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">PersistTimeOfDay</span></span><span> </span><span id="local-6989586621679114911"><span class="annot"><span class="annottext">TimeOfDay
+</span><a href="#local-6989586621679114911"><span class="hs-identifier hs-var">timeOfDay</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall a. Text -&gt; Key a
+</span><span class="hs-identifier hs-var">Key</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679114930"><span class="hs-identifier hs-var">keyText</span></a></span><span> </span><span class="annot"><span class="annottext">forall kv from to.
+(KV kv, KVConstraints kv from to) =&gt;
+Key to -&gt; from -&gt; kv
+</span><span class="hs-operator hs-var">.@</span></span><span> </span><span class="annot"><span class="annottext">forall from to. ToAttrVal from to =&gt; from -&gt; to
+</span><span class="hs-identifier hs-var">toAttrVal</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. Show a =&gt; a -&gt; String
+</span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">TimeOfDay
+</span><a href="#local-6989586621679114911"><span class="hs-identifier hs-var">timeOfDay</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-201"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">PersistUTCTime</span></span><span> </span><span id="local-6989586621679114909"><span class="annot"><span class="annottext">UTCTime
+</span><a href="#local-6989586621679114909"><span class="hs-identifier hs-var">utcTime</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall a. Text -&gt; Key a
+</span><span class="hs-identifier hs-var">Key</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679114930"><span class="hs-identifier hs-var">keyText</span></a></span><span> </span><span class="annot"><span class="annottext">forall kv from to.
+(KV kv, KVConstraints kv from to) =&gt;
+Key to -&gt; from -&gt; kv
+</span><span class="hs-operator hs-var">.@</span></span><span> </span><span class="annot"><span class="annottext">forall from to. ToAttrVal from to =&gt; from -&gt; to
+</span><span class="hs-identifier hs-var">toAttrVal</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. Show a =&gt; a -&gt; String
+</span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">UTCTime
+</span><a href="#local-6989586621679114909"><span class="hs-identifier hs-var">utcTime</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-202"></span><span>    </span><span class="annot"><span class="annottext">PersistValue
+</span><span class="hs-identifier hs-var">PersistNull</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall a. Text -&gt; Key a
+</span><span class="hs-identifier hs-var">Key</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679114930"><span class="hs-identifier hs-var">keyText</span></a></span><span> </span><span class="annot"><span class="annottext">forall kv from to.
+(KV kv, KVConstraints kv from to) =&gt;
+Key to -&gt; from -&gt; kv
+</span><span class="hs-operator hs-var">.@</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;(null)&quot;</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">)</span><span>
+</span><span id="line-203"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">PersistList</span></span><span> </span><span id="local-6989586621679114906"><span class="annot"><span class="annottext">[PersistValue]
+</span><a href="#local-6989586621679114906"><span class="hs-identifier hs-var">innerPersistValues</span></a></span></span><span>
+</span><span id="line-204"></span><span>      </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Bool
+</span><span class="hs-identifier hs-var">null</span></span><span> </span><span class="annot"><span class="annottext">[PersistValue]
+</span><a href="#local-6989586621679114906"><span class="hs-identifier hs-var">innerPersistValues</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall a. Text -&gt; Key a
+</span><span class="hs-identifier hs-var">Key</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679114930"><span class="hs-identifier hs-var">keyText</span></a></span><span> </span><span class="annot"><span class="annottext">forall kv from to.
+(KV kv, KVConstraints kv from to) =&gt;
+Key to -&gt; from -&gt; kv
+</span><span class="hs-operator hs-var">.@</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;(empty list)&quot;</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">)</span><span>
+</span><span id="line-205"></span><span>      </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-206"></span><span>          </span><span class="annot"><span class="annottext">[Text] -&gt; [PersistValue] -&gt; AttrsBuilder 'AttrsForSpan
+</span><a href="#local-6989586621679114937"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621679114904"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679114904"><span class="hs-identifier hs-var">i</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679114930"><span class="hs-identifier hs-var">keyText</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;.&quot;</span></span><span> </span><span class="annot"><span class="annottext">forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; Text
+</span><span class="hs-identifier hs-var">pack</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. Show a =&gt; a -&gt; String
+</span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679114904"><span class="hs-identifier hs-var">i</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span class="hs-glyph">..</span><span class="hs-special">]</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[PersistValue]
+</span><a href="#local-6989586621679114906"><span class="hs-identifier hs-var">innerPersistValues</span></a></span><span>
+</span><span id="line-207"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">PersistMap</span></span><span> </span><span id="local-6989586621679114902"><span class="annot"><span class="annottext">[(Text, PersistValue)]
+</span><a href="#local-6989586621679114902"><span class="hs-identifier hs-var">assocList</span></a></span></span><span>
+</span><span id="line-208"></span><span>      </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Bool
+</span><span class="hs-identifier hs-var">null</span></span><span> </span><span class="annot"><span class="annottext">[(Text, PersistValue)]
+</span><a href="#local-6989586621679114902"><span class="hs-identifier hs-var">assocList</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall a. Text -&gt; Key a
+</span><span class="hs-identifier hs-var">Key</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679114930"><span class="hs-identifier hs-var">keyText</span></a></span><span> </span><span class="annot"><span class="annottext">forall kv from to.
+(KV kv, KVConstraints kv from to) =&gt;
+Key to -&gt; from -&gt; kv
+</span><span class="hs-operator hs-var">.@</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;(empty map)&quot;</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">)</span><span>
+</span><span id="line-209"></span><span>      </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">[Text] -&gt; [PersistValue] -&gt; AttrsBuilder 'AttrsForSpan
+</span><a href="#local-6989586621679114937"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="annot"><span class="annottext">[Text]
+</span><a href="#local-6989586621679114901"><span class="hs-identifier hs-var">keys</span></a></span><span> </span><span class="annot"><span class="annottext">[PersistValue]
+</span><a href="#local-6989586621679114900"><span class="hs-identifier hs-var">vals</span></a></span><span>
+</span><span id="line-210"></span><span>          </span><span class="hs-keyword">where</span><span>
+</span><span id="line-211"></span><span>          </span><span class="hs-special">(</span><span id="local-6989586621679114901"><span class="annot"><span class="annottext">[Text]
+</span><a href="#local-6989586621679114901"><span class="hs-identifier hs-var">keys</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679114900"><span class="annot"><span class="annottext">[PersistValue]
+</span><a href="#local-6989586621679114900"><span class="hs-identifier hs-var">vals</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall (p :: * -&gt; * -&gt; *) a b c.
+Bifunctor p =&gt;
+(a -&gt; b) -&gt; p a c -&gt; p b c
+</span><span class="hs-identifier hs-var">first</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679114892"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679114892"><span class="hs-identifier hs-var">k</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679114930"><span class="hs-identifier hs-var">keyText</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;.&quot;</span></span><span> </span><span class="annot"><span class="annottext">forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679114892"><span class="hs-identifier hs-var">k</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall a b. [(a, b)] -&gt; ([a], [b])
+</span><span class="hs-identifier hs-var">unzip</span></span><span> </span><span class="annot"><span class="annottext">[(Text, PersistValue)]
+</span><a href="#local-6989586621679114902"><span class="hs-identifier hs-var">assocList</span></a></span><span>
+</span><span id="line-212"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">PersistObjectId</span></span><span> </span><span id="local-6989586621679114889"><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679114889"><span class="hs-identifier hs-var">bytes</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall a. Text -&gt; Key a
+</span><span class="hs-identifier hs-var">Key</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679114930"><span class="hs-identifier hs-var">keyText</span></a></span><span> </span><span class="annot"><span class="annottext">forall kv from to.
+(KV kv, KVConstraints kv from to) =&gt;
+Key to -&gt; from -&gt; kv
+</span><span class="hs-operator hs-var">.@</span></span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; Bytes
+</span><a href="OTel.Instrumentation.Persistent.Internal.html#Bytes"><span class="hs-identifier hs-var">Bytes</span></a></span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679114889"><span class="hs-identifier hs-var">bytes</span></a></span><span>
+</span><span id="line-213"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">PersistArray</span></span><span> </span><span id="local-6989586621679114887"><span class="annot"><span class="annottext">[PersistValue]
+</span><a href="#local-6989586621679114887"><span class="hs-identifier hs-var">innerPersistValues</span></a></span></span><span>
+</span><span id="line-214"></span><span>      </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Bool
+</span><span class="hs-identifier hs-var">null</span></span><span> </span><span class="annot"><span class="annottext">[PersistValue]
+</span><a href="#local-6989586621679114887"><span class="hs-identifier hs-var">innerPersistValues</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall a. Text -&gt; Key a
+</span><span class="hs-identifier hs-var">Key</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679114930"><span class="hs-identifier hs-var">keyText</span></a></span><span> </span><span class="annot"><span class="annottext">forall kv from to.
+(KV kv, KVConstraints kv from to) =&gt;
+Key to -&gt; from -&gt; kv
+</span><span class="hs-operator hs-var">.@</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;(empty array)&quot;</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">)</span><span>
+</span><span id="line-215"></span><span>      </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-216"></span><span>          </span><span class="annot"><span class="annottext">[Text] -&gt; [PersistValue] -&gt; AttrsBuilder 'AttrsForSpan
+</span><a href="#local-6989586621679114937"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621679114886"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679114886"><span class="hs-identifier hs-var">i</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679114930"><span class="hs-identifier hs-var">keyText</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;.&quot;</span></span><span> </span><span class="annot"><span class="annottext">forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; Text
+</span><span class="hs-identifier hs-var">pack</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. Show a =&gt; a -&gt; String
+</span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679114886"><span class="hs-identifier hs-var">i</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span class="hs-glyph">..</span><span class="hs-special">]</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[PersistValue]
+</span><a href="#local-6989586621679114887"><span class="hs-identifier hs-var">innerPersistValues</span></a></span><span>
+</span><span id="line-217"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">PersistLiteral_</span></span><span> </span><span class="annot"><span class="annottext">LiteralType
+</span><span class="hs-identifier hs-var">Escaped</span></span><span> </span><span id="local-6989586621679114883"><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679114883"><span class="hs-identifier hs-var">bytes</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall a. Text -&gt; Key a
+</span><span class="hs-identifier hs-var">Key</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679114930"><span class="hs-identifier hs-var">keyText</span></a></span><span> </span><span class="annot"><span class="annottext">forall kv from to.
+(KV kv, KVConstraints kv from to) =&gt;
+Key to -&gt; from -&gt; kv
+</span><span class="hs-operator hs-var">.@</span></span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; Bytes
+</span><a href="OTel.Instrumentation.Persistent.Internal.html#Bytes"><span class="hs-identifier hs-var">Bytes</span></a></span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679114883"><span class="hs-identifier hs-var">bytes</span></a></span><span>
+</span><span id="line-218"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">PersistLiteral_</span></span><span> </span><span class="annot"><span class="annottext">LiteralType
+</span><span class="hs-identifier hs-var">Unescaped</span></span><span> </span><span id="local-6989586621679114881"><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679114881"><span class="hs-identifier hs-var">bytes</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall a. Text -&gt; Key a
+</span><span class="hs-identifier hs-var">Key</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679114930"><span class="hs-identifier hs-var">keyText</span></a></span><span> </span><span class="annot"><span class="annottext">forall kv from to.
+(KV kv, KVConstraints kv from to) =&gt;
+Key to -&gt; from -&gt; kv
+</span><span class="hs-operator hs-var">.@</span></span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; Bytes
+</span><a href="OTel.Instrumentation.Persistent.Internal.html#Bytes"><span class="hs-identifier hs-var">Bytes</span></a></span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679114881"><span class="hs-identifier hs-var">bytes</span></a></span><span>
+</span><span id="line-219"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">PersistLiteral_</span></span><span> </span><span class="annot"><span class="annottext">LiteralType
+</span><span class="hs-identifier hs-var">DbSpecific</span></span><span> </span><span id="local-6989586621679114879"><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679114879"><span class="hs-identifier hs-var">bytes</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall a. Text -&gt; Key a
+</span><span class="hs-identifier hs-var">Key</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679114930"><span class="hs-identifier hs-var">keyText</span></a></span><span> </span><span class="annot"><span class="annottext">forall kv from to.
+(KV kv, KVConstraints kv from to) =&gt;
+Key to -&gt; from -&gt; kv
+</span><span class="hs-operator hs-var">.@</span></span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; Bytes
+</span><a href="OTel.Instrumentation.Persistent.Internal.html#Bytes"><span class="hs-identifier hs-var">Bytes</span></a></span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679114879"><span class="hs-identifier hs-var">bytes</span></a></span><span>
+</span><span id="line-220"></span><span>
+</span><span id="line-221"></span><span class="hs-keyword">newtype</span><span> </span><span id="Bytes"><span class="annot"><a href="OTel.Instrumentation.Persistent.Internal.html#Bytes"><span class="hs-identifier hs-var">Bytes</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Bytes"><span class="annot"><a href="OTel.Instrumentation.Persistent.Internal.html#Bytes"><span class="hs-identifier hs-var">Bytes</span></a></span></span><span>
+</span><span id="line-222"></span><span>  </span><span class="hs-special">{</span><span> </span><span id="unBytes"><span class="annot"><span class="annottext">Bytes -&gt; ByteString
+</span><a href="OTel.Instrumentation.Persistent.Internal.html#unBytes"><span class="hs-identifier hs-var hs-var">unBytes</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ByteString</span></span><span>
+</span><span id="line-223"></span><span>  </span><span class="hs-special">}</span><span>
+</span><span id="line-224"></span><span>
+</span><span id="line-225"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ToAttrVal</span></span><span> </span><span class="annot"><a href="OTel.Instrumentation.Persistent.Internal.html#Bytes"><span class="hs-identifier hs-type">Bytes</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-226"></span><span>  </span><span id="local-6989586621679114872"><span class="annot"><span class="annottext">toAttrVal :: Bytes -&gt; Text
+</span><a href="#local-6989586621679114872"><span class="hs-identifier hs-var hs-var hs-var hs-var">toAttrVal</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">OnDecodeError -&gt; ByteString -&gt; Text
+</span><span class="hs-identifier hs-var">decodeUtf8With</span></span><span> </span><span class="annot"><span class="annottext">OnDecodeError
+</span><span class="hs-identifier hs-var">lenientDecode</span></span><span> </span><span class="annot"><span class="annottext">forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Bytes -&gt; ByteString
+</span><a href="OTel.Instrumentation.Persistent.Internal.html#unBytes"><span class="hs-identifier hs-var">unBytes</span></a></span><span>
+</span><span id="line-227"></span><span>
+</span><span id="line-228"></span><span class="hs-comment">-- $disclaimer</span><span>
+</span><span id="line-229"></span><span class="hs-comment">--</span><span>
+</span><span id="line-230"></span><span class="hs-comment">-- In general, changes to this module will not be reflected in the library's</span><span>
+</span><span id="line-231"></span><span class="hs-comment">-- version updates. Direct use of this module should be done with utmost care,</span><span>
+</span><span id="line-232"></span><span class="hs-comment">-- otherwise invariants will easily be violated.</span><span>
+</span><span id="line-233"></span></pre></body></html>

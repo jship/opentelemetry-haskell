@@ -1,0 +1,762 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE DeriveAnyClass #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE DeriveGeneric #-}</span><span>
+</span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE DerivingStrategies #-}</span><span>
+</span><span id="line-4"></span><span class="hs-pragma">{-# LANGUAGE DuplicateRecordFields #-}</span><span>
+</span><span id="line-5"></span><span class="hs-pragma">{-# LANGUAGE ExistentialQuantification #-}</span><span>
+</span><span id="line-6"></span><span class="hs-pragma">{-# LANGUAGE GADTs #-}</span><span>
+</span><span id="line-7"></span><span class="hs-pragma">{-# LANGUAGE LambdaCase #-}</span><span>
+</span><span id="line-8"></span><span class="hs-pragma">{-# LANGUAGE NamedFieldPuns #-}</span><span>
+</span><span id="line-9"></span><span class="hs-pragma">{-# LANGUAGE NoImplicitPrelude #-}</span><span>
+</span><span id="line-10"></span><span class="hs-pragma">{-# LANGUAGE ScopedTypeVariables #-}</span><span>
+</span><span id="line-11"></span><span class="hs-pragma">{-# LANGUAGE StrictData #-}</span><span>
+</span><span id="line-12"></span><span>
+</span><span id="line-13"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Context.Internal</span><span>
+</span><span id="line-14"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-comment">-- * Disclaimer</span></span><span>
+</span><span id="line-15"></span><span>    </span><span class="annot"><span class="hs-comment">-- $disclaimer</span></span><span>
+</span><span id="line-16"></span><span>
+</span><span id="line-17"></span><span>    </span><span class="annot"><span class="hs-comment">-- ** Store-related</span></span><span>
+</span><span id="line-18"></span><span>    </span><span class="annot"><a href="Context.Internal.html#Store"><span class="hs-identifier">Store</span></a></span><span class="hs-special">(</span><span class="annot"><a href="Context.Internal.html#Store"><span class="hs-identifier">Store</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Context.Internal.html#%24sel%3Aref%3AStore"><span class="hs-identifier">ref</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Context.Internal.html#%24sel%3Akey%3AStore"><span class="hs-identifier">key</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-19"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Context.Internal.html#State"><span class="hs-identifier">State</span></a></span><span class="hs-special">(</span><span class="annot"><a href="Context.Internal.html#State"><span class="hs-identifier">State</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Context.Internal.html#%24sel%3Astacks%3AState"><span class="hs-identifier">stacks</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Context.Internal.html#%24sel%3Adef%3AState"><span class="hs-identifier">def</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-20"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Context.Internal.html#NotFoundException"><span class="hs-identifier">NotFoundException</span></a></span><span class="hs-special">(</span><span class="annot"><a href="Context.Internal.html#NotFoundException"><span class="hs-identifier">NotFoundException</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Context.Internal.html#%24sel%3AthreadId%3ANotFoundException"><span class="hs-identifier">threadId</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-21"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Context.Internal.html#withStore"><span class="hs-identifier">withStore</span></a></span><span>
+</span><span id="line-22"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Context.Internal.html#newStore"><span class="hs-identifier">newStore</span></a></span><span>
+</span><span id="line-23"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Context.Internal.html#use"><span class="hs-identifier">use</span></a></span><span>
+</span><span id="line-24"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Context.Internal.html#push"><span class="hs-identifier">push</span></a></span><span>
+</span><span id="line-25"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Context.Internal.html#pop"><span class="hs-identifier">pop</span></a></span><span>
+</span><span id="line-26"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Context.Internal.html#mineMay"><span class="hs-identifier">mineMay</span></a></span><span>
+</span><span id="line-27"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Context.Internal.html#mineMayOnDefault"><span class="hs-identifier">mineMayOnDefault</span></a></span><span>
+</span><span id="line-28"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Context.Internal.html#setDefault"><span class="hs-identifier">setDefault</span></a></span><span>
+</span><span id="line-29"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Context.Internal.html#throwContextNotFound"><span class="hs-identifier">throwContextNotFound</span></a></span><span>
+</span><span id="line-30"></span><span>
+</span><span id="line-31"></span><span>    </span><span class="annot"><span class="hs-comment">-- ** View-related</span></span><span>
+</span><span id="line-32"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Context.Internal.html#View"><span class="hs-identifier">View</span></a></span><span class="hs-special">(</span><span class="annot"><a href="Context.Internal.html#MkView"><span class="hs-identifier">MkView</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-33"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Context.Internal.html#view"><span class="hs-identifier">view</span></a></span><span>
+</span><span id="line-34"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Context.Internal.html#viewMay"><span class="hs-identifier">viewMay</span></a></span><span>
+</span><span id="line-35"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Context.Internal.html#toView"><span class="hs-identifier">toView</span></a></span><span>
+</span><span id="line-36"></span><span>
+</span><span id="line-37"></span><span>    </span><span class="annot"><span class="hs-comment">-- ** Propagation-related</span></span><span>
+</span><span id="line-38"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Context.Internal.html#PropagationStrategy"><span class="hs-identifier">PropagationStrategy</span></a></span><span class="hs-special">(</span><span class="annot"><a href="Context.Internal.html#NoPropagation"><span class="hs-identifier">NoPropagation</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Context.Internal.html#LatestPropagation"><span class="hs-identifier">LatestPropagation</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-39"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Context.Internal.html#Registry"><span class="hs-identifier">Registry</span></a></span><span class="hs-special">(</span><span class="annot"><a href="Context.Internal.html#Registry"><span class="hs-identifier">Registry</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Context.Internal.html#%24sel%3Aref%3ARegistry"><span class="hs-identifier">ref</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-40"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Context.Internal.html#AnyStore"><span class="hs-identifier">AnyStore</span></a></span><span class="hs-special">(</span><span class="annot"><a href="Context.Internal.html#MkAnyStore"><span class="hs-identifier">MkAnyStore</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-41"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Context.Internal.html#registry"><span class="hs-identifier">registry</span></a></span><span>
+</span><span id="line-42"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Context.Internal.html#emptyRegistry"><span class="hs-identifier">emptyRegistry</span></a></span><span>
+</span><span id="line-43"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Context.Internal.html#withPropagator"><span class="hs-identifier">withPropagator</span></a></span><span>
+</span><span id="line-44"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Context.Internal.html#withRegisteredPropagator"><span class="hs-identifier">withRegisteredPropagator</span></a></span><span>
+</span><span id="line-45"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Context.Internal.html#register"><span class="hs-identifier">register</span></a></span><span>
+</span><span id="line-46"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Context.Internal.html#unregister"><span class="hs-identifier">unregister</span></a></span><span>
+</span><span id="line-47"></span><span>
+</span><span id="line-48"></span><span>    </span><span class="annot"><span class="hs-comment">-- ** Miscellaneous</span></span><span>
+</span><span id="line-49"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Context.Internal.html#bug"><span class="hs-identifier">bug</span></a></span><span>
+</span><span id="line-50"></span><span>  </span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-51"></span><span>
+</span><span id="line-52"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Concurrent</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">ThreadId</span></span><span class="hs-special">)</span><span>
+</span><span id="line-53"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Exception</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Exception</span></span><span class="hs-special">)</span><span>
+</span><span id="line-54"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-operator">(&lt;=&lt;)</span></span><span class="hs-special">)</span><span>
+</span><span id="line-55"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.Catch</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">MonadMask</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">MonadThrow</span></span><span class="hs-special">)</span><span>
+</span><span id="line-56"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.IO.Class</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">MonadIO</span></span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">liftIO</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-57"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.IORef</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">IORef</span></span><span class="hs-special">)</span><span>
+</span><span id="line-58"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Map.Strict</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Map</span></span><span class="hs-special">)</span><span>
+</span><span id="line-59"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Unique</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Unique</span></span><span class="hs-special">)</span><span>
+</span><span id="line-60"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">GHC.Generics</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Generic</span></span><span class="hs-special">)</span><span>
+</span><span id="line-61"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">GHC.Stack</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">HasCallStack</span></span><span class="hs-special">)</span><span>
+</span><span id="line-62"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Prelude</span></span><span>
+</span><span id="line-63"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">System.IO.Unsafe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">unsafePerformIO</span></span><span class="hs-special">)</span><span>
+</span><span id="line-64"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Control.Concurrent</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Concurrent</span></span><span>
+</span><span id="line-65"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.Catch</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Catch</span></span><span>
+</span><span id="line-66"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.IORef</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">IORef</span></span><span>
+</span><span id="line-67"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Map.Strict</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Map</span></span><span>
+</span><span id="line-68"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Traversable</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Traversable</span></span><span>
+</span><span id="line-69"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Unique</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Unique</span></span><span>
+</span><span id="line-70"></span><span>
+</span><span id="line-71"></span><span class="hs-comment">-- | Opaque type that manages thread-indexed storage of context values.</span><span>
+</span><span id="line-72"></span><span class="hs-comment">--</span><span>
+</span><span id="line-73"></span><span class="hs-comment">-- @since 0.1.0.0</span><span>
+</span><span id="line-74"></span><span class="hs-keyword">data</span><span> </span><span id="Store"><span class="annot"><a href="Context.Internal.html#Store"><span class="hs-identifier hs-var">Store</span></a></span></span><span> </span><span id="local-6989586621679049904"><span class="annot"><a href="#local-6989586621679049904"><span class="hs-identifier hs-type">ctx</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Store"><span class="annot"><a href="Context.Internal.html#Store"><span class="hs-identifier hs-var">Store</span></a></span></span><span>
+</span><span id="line-75"></span><span>  </span><span class="hs-special">{</span><span> </span><span id="%24sel%3Aref%3AStore"><span class="annot"><span class="annottext">forall ctx. Store ctx -&gt; IORef (State ctx)
+</span><a href="Context.Internal.html#%24sel%3Aref%3AStore"><span class="hs-identifier hs-var hs-var">ref</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IORef</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Context.Internal.html#State"><span class="hs-identifier hs-type">State</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679049904"><span class="hs-identifier hs-type">ctx</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-76"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="%24sel%3Akey%3AStore"><span class="annot"><span class="annottext">forall ctx. Store ctx -&gt; Unique
+</span><a href="Context.Internal.html#%24sel%3Akey%3AStore"><span class="hs-identifier hs-var hs-var">key</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Unique</span></span><span>
+</span><span id="line-77"></span><span>  </span><span class="hs-special">}</span><span>
+</span><span id="line-78"></span><span>
+</span><span id="line-79"></span><span class="hs-keyword">data</span><span> </span><span id="State"><span class="annot"><a href="Context.Internal.html#State"><span class="hs-identifier hs-var">State</span></a></span></span><span> </span><span id="local-6989586621679049897"><span class="annot"><a href="#local-6989586621679049897"><span class="hs-identifier hs-type">ctx</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="State"><span class="annot"><a href="Context.Internal.html#State"><span class="hs-identifier hs-var">State</span></a></span></span><span>
+</span><span id="line-80"></span><span>  </span><span class="hs-special">{</span><span> </span><span id="%24sel%3Astacks%3AState"><span class="annot"><span class="annottext">forall ctx. State ctx -&gt; Map ThreadId [ctx]
+</span><a href="Context.Internal.html#%24sel%3Astacks%3AState"><span class="hs-identifier hs-var hs-var">stacks</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Map</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">ThreadId</span></span><span> </span><span class="hs-special">[</span><span class="annot"><a href="#local-6989586621679049897"><span class="hs-identifier hs-type">ctx</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-81"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="%24sel%3Adef%3AState"><span class="annot"><span class="annottext">forall ctx. State ctx -&gt; Maybe ctx
+</span><a href="Context.Internal.html#%24sel%3Adef%3AState"><span class="hs-identifier hs-var hs-var">def</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="#local-6989586621679049897"><span class="hs-identifier hs-type">ctx</span></a></span><span>
+</span><span id="line-82"></span><span>  </span><span class="hs-special">}</span><span>
+</span><span id="line-83"></span><span>
+</span><span id="line-84"></span><span class="hs-comment">-- | An exception which may be thrown when the calling thread does not have a</span><span>
+</span><span id="line-85"></span><span class="hs-comment">-- registered context.</span><span>
+</span><span id="line-86"></span><span class="hs-comment">--</span><span>
+</span><span id="line-87"></span><span class="hs-comment">-- @since 0.1.0.0</span><span>
+</span><span id="line-88"></span><span id="local-6989586621679049700"><span id="local-6989586621679049701"></span></span><span class="hs-keyword">data</span><span> </span><span id="NotFoundException"><span class="annot"><a href="Context.Internal.html#NotFoundException"><span class="hs-identifier hs-var">NotFoundException</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="NotFoundException"><span class="annot"><a href="Context.Internal.html#NotFoundException"><span class="hs-identifier hs-var">NotFoundException</span></a></span></span><span>
+</span><span id="line-89"></span><span>  </span><span class="hs-special">{</span><span> </span><span id="%24sel%3AthreadId%3ANotFoundException"><span class="annot"><span class="annottext">NotFoundException -&gt; ThreadId
+</span><a href="Context.Internal.html#%24sel%3AthreadId%3ANotFoundException"><span class="hs-identifier hs-var hs-var">threadId</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ThreadId</span></span><span>
+</span><span id="line-90"></span><span>  </span><span class="hs-special">}</span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">stock</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679049694"><span id="local-6989586621679049698"><span class="annot"><span class="annottext">NotFoundException -&gt; NotFoundException -&gt; Bool
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+/= :: NotFoundException -&gt; NotFoundException -&gt; Bool
+$c/= :: NotFoundException -&gt; NotFoundException -&gt; Bool
+== :: NotFoundException -&gt; NotFoundException -&gt; Bool
+$c== :: NotFoundException -&gt; NotFoundException -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">forall x. Rep NotFoundException x -&gt; NotFoundException
+forall x. NotFoundException -&gt; Rep NotFoundException x
+forall a.
+(forall x. a -&gt; Rep a x) -&gt; (forall x. Rep a x -&gt; a) -&gt; Generic a
+$cto :: forall x. Rep NotFoundException x -&gt; NotFoundException
+$cfrom :: forall x. NotFoundException -&gt; Rep NotFoundException x
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">Generic</span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679049679"><span id="local-6989586621679049681"><span id="local-6989586621679049687"><span class="annot"><span class="annottext">Int -&gt; NotFoundException -&gt; ShowS
+[NotFoundException] -&gt; ShowS
+NotFoundException -&gt; String
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+showList :: [NotFoundException] -&gt; ShowS
+$cshowList :: [NotFoundException] -&gt; ShowS
+show :: NotFoundException -&gt; String
+$cshow :: NotFoundException -&gt; String
+showsPrec :: Int -&gt; NotFoundException -&gt; ShowS
+$cshowsPrec :: Int -&gt; NotFoundException -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-91"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">anyclass</span></span><span> </span><span id="local-6989586621679049668"><span id="local-6989586621679049670"><span id="local-6989586621679049672"><span class="annot"><span class="annottext">Show NotFoundException
+Typeable NotFoundException
+SomeException -&gt; Maybe NotFoundException
+NotFoundException -&gt; String
+NotFoundException -&gt; SomeException
+forall e.
+Typeable e
+-&gt; Show e
+-&gt; (e -&gt; SomeException)
+-&gt; (SomeException -&gt; Maybe e)
+-&gt; (e -&gt; String)
+-&gt; Exception e
+displayException :: NotFoundException -&gt; String
+$cdisplayException :: NotFoundException -&gt; String
+fromException :: SomeException -&gt; Maybe NotFoundException
+$cfromException :: SomeException -&gt; Maybe NotFoundException
+toException :: NotFoundException -&gt; SomeException
+$ctoException :: NotFoundException -&gt; SomeException
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Exception</span></span></span></span></span><span>
+</span><span id="line-92"></span><span>
+</span><span id="line-93"></span><span class="hs-comment">-- | The 'PropagationStrategy' controls the behavior used by</span><span>
+</span><span id="line-94"></span><span class="hs-comment">-- &quot;Context.Concurrent&quot; when propagating context from a &quot;parent&quot; thread to a new</span><span>
+</span><span id="line-95"></span><span class="hs-comment">-- thread.</span><span>
+</span><span id="line-96"></span><span class="hs-comment">--</span><span>
+</span><span id="line-97"></span><span class="hs-comment">-- @since 0.1.0.0</span><span>
+</span><span id="line-98"></span><span class="hs-keyword">data</span><span> </span><span id="PropagationStrategy"><span class="annot"><a href="Context.Internal.html#PropagationStrategy"><span class="hs-identifier hs-var">PropagationStrategy</span></a></span></span><span>
+</span><span id="line-99"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="NoPropagation"><span class="annot"><a href="Context.Internal.html#NoPropagation"><span class="hs-identifier hs-var">NoPropagation</span></a></span></span><span>
+</span><span id="line-100"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span id="LatestPropagation"><span class="annot"><a href="Context.Internal.html#LatestPropagation"><span class="hs-identifier hs-var">LatestPropagation</span></a></span></span><span>
+</span><span id="line-101"></span><span>
+</span><span id="line-102"></span><span class="hs-comment">-- | Set the default context value for a store. If the store was initialized as</span><span>
+</span><span id="line-103"></span><span class="hs-comment">-- an empty store, this function converts it to a non-empty store. If the store</span><span>
+</span><span id="line-104"></span><span class="hs-comment">-- was initialized as a non-empty store, this overwrites the default context</span><span>
+</span><span id="line-105"></span><span class="hs-comment">-- value.</span><span>
+</span><span id="line-106"></span><span class="hs-comment">--</span><span>
+</span><span id="line-107"></span><span class="hs-comment">-- One common use case for this function is to convert an empty store in a</span><span>
+</span><span id="line-108"></span><span class="hs-comment">-- global variable to a non-empty store while the application is</span><span>
+</span><span id="line-109"></span><span class="hs-comment">-- initializing/acquiring resources:</span><span>
+</span><span id="line-110"></span><span class="hs-comment">--</span><span>
+</span><span id="line-111"></span><span class="hs-comment">-- &gt; depsStore :: Store Dependencies</span><span>
+</span><span id="line-112"></span><span class="hs-comment">-- &gt; depsStore = unsafePerformIO $ Context.newStore Context.defaultPropagation Nothing</span><span>
+</span><span id="line-113"></span><span class="hs-comment">-- &gt; {-# NOINLINE depsStore #-}</span><span>
+</span><span id="line-114"></span><span class="hs-comment">-- &gt;</span><span>
+</span><span id="line-115"></span><span class="hs-comment">-- &gt; main :: IO ()</span><span>
+</span><span id="line-116"></span><span class="hs-comment">-- &gt; main = do</span><span>
+</span><span id="line-117"></span><span class="hs-comment">-- &gt;   let config = -- ...</span><span>
+</span><span id="line-118"></span><span class="hs-comment">-- &gt;   withDependencies config \deps -&gt; do</span><span>
+</span><span id="line-119"></span><span class="hs-comment">-- &gt;     Context.setDefault depsStore deps</span><span>
+</span><span id="line-120"></span><span class="hs-comment">-- &gt;     -- ...</span><span>
+</span><span id="line-121"></span><span class="hs-comment">--</span><span>
+</span><span id="line-122"></span><span class="hs-comment">-- @since 0.1.0.0</span><span>
+</span><span id="line-123"></span><span class="annot"><a href="Context.Internal.html#setDefault"><span class="hs-identifier hs-type">setDefault</span></a></span><span>
+</span><span id="line-124"></span><span>  </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679049884"><span class="annot"><a href="#local-6989586621679049884"><span class="hs-identifier hs-type">m</span></a></span></span><span> </span><span id="local-6989586621679049882"><span class="annot"><a href="#local-6989586621679049882"><span class="hs-identifier hs-type">ctx</span></a></span></span><span>
+</span><span id="line-125"></span><span>   </span><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679049884"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-126"></span><span>  </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Context.Internal.html#Store"><span class="hs-identifier hs-type">Store</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679049882"><span class="hs-identifier hs-type">ctx</span></a></span><span>
+</span><span id="line-127"></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679049882"><span class="hs-identifier hs-type">ctx</span></a></span><span>
+</span><span id="line-128"></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679049884"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><span id="line-129"></span><span id="setDefault"><span class="annot"><span class="annottext">setDefault :: forall (m :: * -&gt; *) ctx. MonadIO m =&gt; Store ctx -&gt; ctx -&gt; m ()
+</span><a href="Context.Internal.html#setDefault"><span class="hs-identifier hs-var hs-var">setDefault</span></a></span></span><span> </span><span class="annot"><a href="Context.Internal.html#Store"><span class="hs-identifier hs-type">Store</span></a></span><span> </span><span class="hs-special">{</span><span> </span><span id="local-6989586621679049664"><span class="annot"><span class="annottext">IORef (State ctx)
+ref :: IORef (State ctx)
+$sel:ref:Store :: forall ctx. Store ctx -&gt; IORef (State ctx)
+</span><a href="#local-6989586621679049664"><span class="hs-identifier hs-var hs-var">ref</span></a></span></span><span> </span><span class="hs-special">}</span><span> </span><span id="local-6989586621679049663"><span class="annot"><span class="annottext">ctx
+</span><a href="#local-6989586621679049663"><span class="hs-identifier hs-var">context</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-130"></span><span>  </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a. MonadIO m =&gt; IO a -&gt; m a
+</span><span class="hs-identifier hs-var">liftIO</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall a b. IORef a -&gt; (a -&gt; (a, b)) -&gt; IO b
+</span><span class="hs-identifier hs-var">IORef.atomicModifyIORef'</span></span><span> </span><span class="annot"><span class="annottext">IORef (State ctx)
+</span><a href="#local-6989586621679049664"><span class="hs-identifier hs-var">ref</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679049661"><span class="annot"><span class="annottext">State ctx
+</span><a href="#local-6989586621679049661"><span class="hs-identifier hs-var">state</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-131"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">State ctx
+</span><a href="#local-6989586621679049661"><span class="hs-identifier hs-var">state</span></a></span><span> </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">$sel:def:State :: Maybe ctx
+</span><a href="Context.Internal.html#%24sel%3Adef%3AState"><span class="hs-identifier hs-var">def</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">ctx
+</span><a href="#local-6989586621679049663"><span class="hs-identifier hs-var">context</span></a></span><span> </span><span class="hs-special">}</span><span class="hs-special">,</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-132"></span><span>
+</span><span id="line-133"></span><span class="annot"><a href="Context.Internal.html#throwContextNotFound"><span class="hs-identifier hs-type">throwContextNotFound</span></a></span><span>
+</span><span id="line-134"></span><span>  </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679049871"><span class="annot"><a href="#local-6989586621679049871"><span class="hs-identifier hs-type">m</span></a></span></span><span> </span><span id="local-6989586621679049869"><span class="annot"><a href="#local-6989586621679049869"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-135"></span><span>   </span><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679049871"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadThrow</span></span><span> </span><span class="annot"><a href="#local-6989586621679049871"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-136"></span><span>  </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679049871"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679049869"><span class="hs-identifier hs-type">a</span></a></span><span>
+</span><span id="line-137"></span><span id="throwContextNotFound"><span class="annot"><span class="annottext">throwContextNotFound :: forall (m :: * -&gt; *) a. (MonadIO m, MonadThrow m) =&gt; m a
+</span><a href="Context.Internal.html#throwContextNotFound"><span class="hs-identifier hs-var hs-var">throwContextNotFound</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-138"></span><span>  </span><span id="local-6989586621679049652"><span class="annot"><span class="annottext">ThreadId
+</span><a href="#local-6989586621679049652"><span class="hs-identifier hs-var">threadId</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a. MonadIO m =&gt; IO a -&gt; m a
+</span><span class="hs-identifier hs-var">liftIO</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">IO ThreadId
+</span><span class="hs-identifier hs-var">Concurrent.myThreadId</span></span><span>
+</span><span id="line-139"></span><span>  </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) e a. (MonadThrow m, Exception e) =&gt; e -&gt; m a
+</span><span class="hs-identifier hs-var">Catch.throwM</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><a href="Context.Internal.html#NotFoundException"><span class="hs-identifier hs-type">NotFoundException</span></a></span><span> </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">ThreadId
+threadId :: ThreadId
+$sel:threadId:NotFoundException :: ThreadId
+</span><a href="#local-6989586621679049652"><span class="hs-identifier hs-var hs-var">threadId</span></a></span><span> </span><span class="hs-special">}</span><span>
+</span><span id="line-140"></span><span>
+</span><span id="line-141"></span><span class="hs-comment">-- | Provide the calling thread its current context from the specified</span><span>
+</span><span id="line-142"></span><span class="hs-comment">-- 'Store', if present.</span><span>
+</span><span id="line-143"></span><span class="hs-comment">--</span><span>
+</span><span id="line-144"></span><span class="hs-comment">-- @since 0.1.0.0</span><span>
+</span><span id="line-145"></span><span class="annot"><a href="Context.Internal.html#mineMay"><span class="hs-identifier hs-type">mineMay</span></a></span><span>
+</span><span id="line-146"></span><span>  </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679049863"><span class="annot"><a href="#local-6989586621679049863"><span class="hs-identifier hs-type">m</span></a></span></span><span> </span><span id="local-6989586621679049862"><span class="annot"><a href="#local-6989586621679049862"><span class="hs-identifier hs-type">ctx</span></a></span></span><span>
+</span><span id="line-147"></span><span>   </span><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679049863"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-148"></span><span>  </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Context.Internal.html#Store"><span class="hs-identifier hs-type">Store</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679049862"><span class="hs-identifier hs-type">ctx</span></a></span><span>
+</span><span id="line-149"></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679049863"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="#local-6989586621679049862"><span class="hs-identifier hs-type">ctx</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-150"></span><span id="mineMay"><span class="annot"><span class="annottext">mineMay :: forall (m :: * -&gt; *) ctx. MonadIO m =&gt; Store ctx -&gt; m (Maybe ctx)
+</span><a href="Context.Internal.html#mineMay"><span class="hs-identifier hs-var hs-var">mineMay</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) ctx.
+MonadIO m =&gt;
+(Maybe ctx -&gt; Maybe ctx) -&gt; Store ctx -&gt; m (Maybe ctx)
+</span><a href="Context.Internal.html#mineMayOnDefault"><span class="hs-identifier hs-var">mineMayOnDefault</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; a
+</span><span class="hs-identifier hs-var">id</span></span><span>
+</span><span id="line-151"></span><span>
+</span><span id="line-152"></span><span class="annot"><a href="Context.Internal.html#mineMayOnDefault"><span class="hs-identifier hs-type">mineMayOnDefault</span></a></span><span>
+</span><span id="line-153"></span><span>  </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679049860"><span class="annot"><a href="#local-6989586621679049860"><span class="hs-identifier hs-type">m</span></a></span></span><span> </span><span id="local-6989586621679049859"><span class="annot"><a href="#local-6989586621679049859"><span class="hs-identifier hs-type">ctx</span></a></span></span><span>
+</span><span id="line-154"></span><span>   </span><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679049860"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-155"></span><span>  </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="#local-6989586621679049859"><span class="hs-identifier hs-type">ctx</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="#local-6989586621679049859"><span class="hs-identifier hs-type">ctx</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-156"></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Context.Internal.html#Store"><span class="hs-identifier hs-type">Store</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679049859"><span class="hs-identifier hs-type">ctx</span></a></span><span>
+</span><span id="line-157"></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679049860"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="#local-6989586621679049859"><span class="hs-identifier hs-type">ctx</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-158"></span><span id="mineMayOnDefault"><span class="annot"><span class="annottext">mineMayOnDefault :: forall (m :: * -&gt; *) ctx.
+MonadIO m =&gt;
+(Maybe ctx -&gt; Maybe ctx) -&gt; Store ctx -&gt; m (Maybe ctx)
+</span><a href="Context.Internal.html#mineMayOnDefault"><span class="hs-identifier hs-var hs-var">mineMayOnDefault</span></a></span></span><span> </span><span id="local-6989586621679049633"><span class="annot"><span class="annottext">Maybe ctx -&gt; Maybe ctx
+</span><a href="#local-6989586621679049633"><span class="hs-identifier hs-var">onDefault</span></a></span></span><span> </span><span class="annot"><a href="Context.Internal.html#Store"><span class="hs-identifier hs-type">Store</span></a></span><span> </span><span class="hs-special">{</span><span> </span><span id="local-6989586621679049632"><span class="annot"><span class="annottext">IORef (State ctx)
+ref :: IORef (State ctx)
+$sel:ref:Store :: forall ctx. Store ctx -&gt; IORef (State ctx)
+</span><a href="#local-6989586621679049632"><span class="hs-identifier hs-var hs-var">ref</span></a></span></span><span> </span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-159"></span><span>  </span><span id="local-6989586621679049631"><span class="annot"><span class="annottext">ThreadId
+</span><a href="#local-6989586621679049631"><span class="hs-identifier hs-var">threadId</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a. MonadIO m =&gt; IO a -&gt; m a
+</span><span class="hs-identifier hs-var">liftIO</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">IO ThreadId
+</span><span class="hs-identifier hs-var">Concurrent.myThreadId</span></span><span>
+</span><span id="line-160"></span><span>  </span><span class="annot"><a href="Context.Internal.html#State"><span class="hs-identifier hs-type">State</span></a></span><span> </span><span class="hs-special">{</span><span> </span><span id="local-6989586621679049630"><span class="annot"><span class="annottext">Map ThreadId [ctx]
+stacks :: Map ThreadId [ctx]
+$sel:stacks:State :: forall ctx. State ctx -&gt; Map ThreadId [ctx]
+</span><a href="#local-6989586621679049630"><span class="hs-identifier hs-var hs-var">stacks</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679049629"><span class="annot"><span class="annottext">Maybe ctx
+def :: Maybe ctx
+$sel:def:State :: forall ctx. State ctx -&gt; Maybe ctx
+</span><a href="#local-6989586621679049629"><span class="hs-identifier hs-var hs-var">def</span></a></span></span><span> </span><span class="hs-special">}</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a. MonadIO m =&gt; IO a -&gt; m a
+</span><span class="hs-identifier hs-var">liftIO</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall a. IORef a -&gt; IO a
+</span><span class="hs-identifier hs-var">IORef.readIORef</span></span><span> </span><span class="annot"><span class="annottext">IORef (State ctx)
+</span><a href="#local-6989586621679049632"><span class="hs-identifier hs-var">ref</span></a></span><span>
+</span><span id="line-161"></span><span>  </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">forall k a. Ord k =&gt; k -&gt; Map k a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Map.lookup</span></span><span> </span><span class="annot"><span class="annottext">ThreadId
+</span><a href="#local-6989586621679049631"><span class="hs-identifier hs-var">threadId</span></a></span><span> </span><span class="annot"><span class="annottext">Map ThreadId [ctx]
+</span><a href="#local-6989586621679049630"><span class="hs-identifier hs-var">stacks</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-162"></span><span>    </span><span class="annot"><span class="annottext">Maybe [ctx]
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Maybe ctx -&gt; Maybe ctx
+</span><a href="#local-6989586621679049633"><span class="hs-identifier hs-var">onDefault</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe ctx
+</span><a href="#local-6989586621679049629"><span class="hs-identifier hs-var">def</span></a></span><span>
+</span><span id="line-163"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall a. HasCallStack =&gt; String -&gt; a
+</span><a href="Context.Internal.html#bug"><span class="hs-identifier hs-var">bug</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;mineMayOnDefault&quot;</span></span><span>
+</span><span id="line-164"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679049626"><span class="annot"><span class="annottext">ctx
+</span><a href="#local-6989586621679049626"><span class="hs-identifier hs-var">context</span></a></span></span><span> </span><span class="annot"><span class="hs-glyph hs-type">:</span></span><span> </span><span id="local-6989586621679049625"><span class="annot"><span class="annottext">[ctx]
+</span><a href="#local-6989586621679049625"><span class="hs-identifier hs-var">_rest</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">ctx
+</span><a href="#local-6989586621679049626"><span class="hs-identifier hs-var">context</span></a></span><span>
+</span><span id="line-165"></span><span>
+</span><span id="line-166"></span><span class="hs-comment">-- | Register a context in the specified 'Store' on behalf of the calling</span><span>
+</span><span id="line-167"></span><span class="hs-comment">-- thread, for the duration of the specified action.</span><span>
+</span><span id="line-168"></span><span class="hs-comment">--</span><span>
+</span><span id="line-169"></span><span class="hs-comment">-- @since 0.1.0.0</span><span>
+</span><span id="line-170"></span><span class="annot"><a href="Context.Internal.html#use"><span class="hs-identifier hs-type">use</span></a></span><span>
+</span><span id="line-171"></span><span>  </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679049847"><span class="annot"><a href="#local-6989586621679049847"><span class="hs-identifier hs-type">m</span></a></span></span><span> </span><span id="local-6989586621679049845"><span class="annot"><a href="#local-6989586621679049845"><span class="hs-identifier hs-type">ctx</span></a></span></span><span> </span><span id="local-6989586621679049844"><span class="annot"><a href="#local-6989586621679049844"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-172"></span><span>   </span><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679049847"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadMask</span></span><span> </span><span class="annot"><a href="#local-6989586621679049847"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-173"></span><span>  </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Context.Internal.html#Store"><span class="hs-identifier hs-type">Store</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679049845"><span class="hs-identifier hs-type">ctx</span></a></span><span>
+</span><span id="line-174"></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679049845"><span class="hs-identifier hs-type">ctx</span></a></span><span>
+</span><span id="line-175"></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679049847"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679049844"><span class="hs-identifier hs-type">a</span></a></span><span>
+</span><span id="line-176"></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679049847"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679049844"><span class="hs-identifier hs-type">a</span></a></span><span>
+</span><span id="line-177"></span><span id="use"><span class="annot"><span class="annottext">use :: forall (m :: * -&gt; *) ctx a.
+(MonadIO m, MonadMask m) =&gt;
+Store ctx -&gt; ctx -&gt; m a -&gt; m a
+</span><a href="Context.Internal.html#use"><span class="hs-identifier hs-var hs-var">use</span></a></span></span><span> </span><span id="local-6989586621679049619"><span class="annot"><span class="annottext">Store ctx
+</span><a href="#local-6989586621679049619"><span class="hs-identifier hs-var">store</span></a></span></span><span> </span><span id="local-6989586621679049618"><span class="annot"><span class="annottext">ctx
+</span><a href="#local-6989586621679049618"><span class="hs-identifier hs-var">context</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-178"></span><span>  </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a c b. MonadMask m =&gt; m a -&gt; m c -&gt; m b -&gt; m b
+</span><span class="hs-identifier hs-var">Catch.bracket_</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a. MonadIO m =&gt; IO a -&gt; m a
+</span><span class="hs-identifier hs-var">liftIO</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall ctx. Store ctx -&gt; ctx -&gt; IO ()
+</span><a href="Context.Internal.html#push"><span class="hs-identifier hs-var">push</span></a></span><span> </span><span class="annot"><span class="annottext">Store ctx
+</span><a href="#local-6989586621679049619"><span class="hs-identifier hs-var">store</span></a></span><span> </span><span class="annot"><span class="annottext">ctx
+</span><a href="#local-6989586621679049618"><span class="hs-identifier hs-var">context</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a. MonadIO m =&gt; IO a -&gt; m a
+</span><span class="hs-identifier hs-var">liftIO</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall ctx. Store ctx -&gt; IO ()
+</span><a href="Context.Internal.html#pop"><span class="hs-identifier hs-var">pop</span></a></span><span> </span><span class="annot"><span class="annottext">Store ctx
+</span><a href="#local-6989586621679049619"><span class="hs-identifier hs-var">store</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-179"></span><span>
+</span><span id="line-180"></span><span class="hs-comment">-- | Provides a new 'Store'. This is a lower-level function and is provided</span><span>
+</span><span id="line-181"></span><span class="hs-comment">-- mainly to give library authors more fine-grained control when using a 'Store'</span><span>
+</span><span id="line-182"></span><span class="hs-comment">-- as an implementation detail.</span><span>
+</span><span id="line-183"></span><span class="hs-comment">--</span><span>
+</span><span id="line-184"></span><span class="hs-comment">-- 'Context.withNonEmptyStore'/'Context.withEmptyStore' should generally be preferred over this</span><span>
+</span><span id="line-185"></span><span class="hs-comment">-- function when acquiring a 'Store'.</span><span>
+</span><span id="line-186"></span><span class="hs-comment">--</span><span>
+</span><span id="line-187"></span><span class="hs-comment">-- @since 0.1.0.0</span><span>
+</span><span id="line-188"></span><span class="annot"><a href="Context.Internal.html#withStore"><span class="hs-identifier hs-type">withStore</span></a></span><span>
+</span><span id="line-189"></span><span>  </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679049835"><span class="annot"><a href="#local-6989586621679049835"><span class="hs-identifier hs-type">m</span></a></span></span><span> </span><span id="local-6989586621679049833"><span class="annot"><a href="#local-6989586621679049833"><span class="hs-identifier hs-type">ctx</span></a></span></span><span> </span><span id="local-6989586621679049832"><span class="annot"><a href="#local-6989586621679049832"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-190"></span><span>   </span><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679049835"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadMask</span></span><span> </span><span class="annot"><a href="#local-6989586621679049835"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-191"></span><span>  </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Context.Internal.html#PropagationStrategy"><span class="hs-identifier hs-type">PropagationStrategy</span></a></span><span>
+</span><span id="line-192"></span><span>  </span><span class="hs-comment">-- ^ The strategy used by &quot;Context.Concurrent&quot; for propagating context from a</span><span>
+</span><span id="line-193"></span><span>  </span><span class="hs-comment">-- &quot;parent&quot; thread to a new thread.</span><span>
+</span><span id="line-194"></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="#local-6989586621679049833"><span class="hs-identifier hs-type">ctx</span></a></span><span>
+</span><span id="line-195"></span><span>  </span><span class="hs-comment">-- ^ The default value for the 'Store'.</span><span>
+</span><span id="line-196"></span><span>  </span><span class="hs-comment">--</span><span>
+</span><span id="line-197"></span><span>  </span><span class="hs-comment">-- Providing a value will produce a non-empty 'Store' such that 'Context.mine',</span><span>
+</span><span id="line-198"></span><span>  </span><span class="hs-comment">-- 'Context.mines', and 'Context.adjust' are guaranteed to never throw 'Context.NotFoundException'</span><span>
+</span><span id="line-199"></span><span>  </span><span class="hs-comment">-- when applied to this 'Store'.</span><span>
+</span><span id="line-200"></span><span>  </span><span class="hs-comment">--</span><span>
+</span><span id="line-201"></span><span>  </span><span class="hs-comment">-- Providing 'Nothing' will produce an empty 'Store' such that 'Context.mine',</span><span>
+</span><span id="line-202"></span><span>  </span><span class="hs-comment">-- 'Context.mines', and 'Context.adjust' will throw 'Context.NotFoundException' when the calling</span><span>
+</span><span id="line-203"></span><span>  </span><span class="hs-comment">-- thread has no registered context. Providing 'Nothing' is useful when the</span><span>
+</span><span id="line-204"></span><span>  </span><span class="hs-comment">-- 'Store' will contain context values that are always thread-specific.</span><span>
+</span><span id="line-205"></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Context.Internal.html#Store"><span class="hs-identifier hs-type">Store</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679049833"><span class="hs-identifier hs-type">ctx</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679049835"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679049832"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-206"></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679049835"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679049832"><span class="hs-identifier hs-type">a</span></a></span><span>
+</span><span id="line-207"></span><span id="withStore"><span class="annot"><span class="annottext">withStore :: forall (m :: * -&gt; *) ctx a.
+(MonadIO m, MonadMask m) =&gt;
+PropagationStrategy -&gt; Maybe ctx -&gt; (Store ctx -&gt; m a) -&gt; m a
+</span><a href="Context.Internal.html#withStore"><span class="hs-identifier hs-var hs-var">withStore</span></a></span></span><span> </span><span id="local-6989586621679049607"><span class="annot"><span class="annottext">PropagationStrategy
+</span><a href="#local-6989586621679049607"><span class="hs-identifier hs-var">propagationStrategy</span></a></span></span><span> </span><span id="local-6989586621679049606"><span class="annot"><span class="annottext">Maybe ctx
+</span><a href="#local-6989586621679049606"><span class="hs-identifier hs-var">mContext</span></a></span></span><span> </span><span id="local-6989586621679049605"><span class="annot"><span class="annottext">Store ctx -&gt; m a
+</span><a href="#local-6989586621679049605"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-208"></span><span>  </span><span id="local-6989586621679049604"><span class="annot"><span class="annottext">Store ctx
+</span><a href="#local-6989586621679049604"><span class="hs-identifier hs-var">store</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) ctx.
+MonadIO m =&gt;
+PropagationStrategy -&gt; Maybe ctx -&gt; m (Store ctx)
+</span><a href="Context.Internal.html#newStore"><span class="hs-identifier hs-var">newStore</span></a></span><span> </span><span class="annot"><span class="annottext">PropagationStrategy
+</span><a href="#local-6989586621679049607"><span class="hs-identifier hs-var">propagationStrategy</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe ctx
+</span><a href="#local-6989586621679049606"><span class="hs-identifier hs-var">mContext</span></a></span><span>
+</span><span id="line-209"></span><span>  </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a b. MonadMask m =&gt; m a -&gt; m b -&gt; m a
+</span><span class="hs-identifier hs-var">Catch.finally</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Store ctx -&gt; m a
+</span><a href="#local-6989586621679049605"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Store ctx
+</span><a href="#local-6989586621679049604"><span class="hs-identifier hs-var">store</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-210"></span><span>    </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">PropagationStrategy
+</span><a href="#local-6989586621679049607"><span class="hs-identifier hs-var">propagationStrategy</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-211"></span><span>      </span><span class="annot"><span class="annottext">PropagationStrategy
+</span><a href="Context.Internal.html#NoPropagation"><span class="hs-identifier hs-var">NoPropagation</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><span id="line-212"></span><span>      </span><span class="annot"><span class="annottext">PropagationStrategy
+</span><a href="Context.Internal.html#LatestPropagation"><span class="hs-identifier hs-var">LatestPropagation</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a. MonadIO m =&gt; IO a -&gt; m a
+</span><span class="hs-identifier hs-var">liftIO</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall ctx. Registry -&gt; Store ctx -&gt; IO ()
+</span><a href="Context.Internal.html#unregister"><span class="hs-identifier hs-var">unregister</span></a></span><span> </span><span class="annot"><span class="annottext">Registry
+</span><a href="Context.Internal.html#registry"><span class="hs-identifier hs-var">registry</span></a></span><span> </span><span class="annot"><span class="annottext">Store ctx
+</span><a href="#local-6989586621679049604"><span class="hs-identifier hs-var">store</span></a></span><span>
+</span><span id="line-213"></span><span>
+</span><span id="line-214"></span><span class="hs-comment">-- | Creates a new 'Store'. This is a lower-level function and is provided</span><span>
+</span><span id="line-215"></span><span class="hs-comment">-- /only/ to support the use case of creating a 'Store' as a global:</span><span>
+</span><span id="line-216"></span><span class="hs-comment">--</span><span>
+</span><span id="line-217"></span><span class="hs-comment">-- &gt; store :: Store Int</span><span>
+</span><span id="line-218"></span><span class="hs-comment">-- &gt; store = unsafePerformIO $ Context.newStore Context.defaultPropagation Nothing</span><span>
+</span><span id="line-219"></span><span class="hs-comment">-- &gt; {-# NOINLINE store #-}</span><span>
+</span><span id="line-220"></span><span class="hs-comment">--</span><span>
+</span><span id="line-221"></span><span class="hs-comment">-- Outside of the global variable use case, 'Context.withNonEmptyStore',</span><span>
+</span><span id="line-222"></span><span class="hs-comment">-- 'Context.withEmptyStore', or even the lower-level</span><span>
+</span><span id="line-223"></span><span class="hs-comment">-- 'Context.Storage.withStore' should /always/ be preferred over this function</span><span>
+</span><span id="line-224"></span><span class="hs-comment">-- when acquiring a 'Store'.</span><span>
+</span><span id="line-225"></span><span class="hs-comment">--</span><span>
+</span><span id="line-226"></span><span class="hs-comment">-- @since 0.1.0.0</span><span>
+</span><span id="line-227"></span><span class="annot"><a href="Context.Internal.html#newStore"><span class="hs-identifier hs-type">newStore</span></a></span><span>
+</span><span id="line-228"></span><span>  </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679049828"><span class="annot"><a href="#local-6989586621679049828"><span class="hs-identifier hs-type">m</span></a></span></span><span> </span><span id="local-6989586621679049827"><span class="annot"><a href="#local-6989586621679049827"><span class="hs-identifier hs-type">ctx</span></a></span></span><span>
+</span><span id="line-229"></span><span>   </span><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679049828"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-230"></span><span>  </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Context.Internal.html#PropagationStrategy"><span class="hs-identifier hs-type">PropagationStrategy</span></a></span><span>
+</span><span id="line-231"></span><span>  </span><span class="hs-comment">-- ^ The strategy used by &quot;Context.Concurrent&quot; for propagating context from a</span><span>
+</span><span id="line-232"></span><span>  </span><span class="hs-comment">-- &quot;parent&quot; thread to a new thread.</span><span>
+</span><span id="line-233"></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="#local-6989586621679049827"><span class="hs-identifier hs-type">ctx</span></a></span><span>
+</span><span id="line-234"></span><span>  </span><span class="hs-comment">-- ^ The default value for the 'Store'.</span><span>
+</span><span id="line-235"></span><span>  </span><span class="hs-comment">--</span><span>
+</span><span id="line-236"></span><span>  </span><span class="hs-comment">-- Providing a value will produce a non-empty 'Store' such that 'Context.mine',</span><span>
+</span><span id="line-237"></span><span>  </span><span class="hs-comment">-- 'Context.mines', and 'Context.adjust' are guaranteed to never throw 'Context.NotFoundException'</span><span>
+</span><span id="line-238"></span><span>  </span><span class="hs-comment">-- when applied to this 'Store'.</span><span>
+</span><span id="line-239"></span><span>  </span><span class="hs-comment">--</span><span>
+</span><span id="line-240"></span><span>  </span><span class="hs-comment">-- Providing 'Nothing' will produce an empty 'Store' such that 'Context.mine',</span><span>
+</span><span id="line-241"></span><span>  </span><span class="hs-comment">-- 'Context.mines', and 'Context.adjust' will throw 'Context.NotFoundException' when the calling</span><span>
+</span><span id="line-242"></span><span>  </span><span class="hs-comment">-- thread has no registered context. Providing 'Nothing' is useful when the</span><span>
+</span><span id="line-243"></span><span>  </span><span class="hs-comment">-- 'Store' will contain context values that are always thread-specific.</span><span>
+</span><span id="line-244"></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679049828"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Context.Internal.html#Store"><span class="hs-identifier hs-type">Store</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679049827"><span class="hs-identifier hs-type">ctx</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-245"></span><span id="newStore"><span class="annot"><span class="annottext">newStore :: forall (m :: * -&gt; *) ctx.
+MonadIO m =&gt;
+PropagationStrategy -&gt; Maybe ctx -&gt; m (Store ctx)
+</span><a href="Context.Internal.html#newStore"><span class="hs-identifier hs-var hs-var">newStore</span></a></span></span><span> </span><span id="local-6989586621679049591"><span class="annot"><span class="annottext">PropagationStrategy
+</span><a href="#local-6989586621679049591"><span class="hs-identifier hs-var">propagationStrategy</span></a></span></span><span> </span><span id="local-6989586621679049590"><span class="annot"><span class="annottext">Maybe ctx
+</span><a href="#local-6989586621679049590"><span class="hs-identifier hs-var">def</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-246"></span><span>  </span><span id="local-6989586621679049589"><span class="annot"><span class="annottext">Unique
+</span><a href="#local-6989586621679049589"><span class="hs-identifier hs-var">key</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a. MonadIO m =&gt; IO a -&gt; m a
+</span><span class="hs-identifier hs-var">liftIO</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">IO Unique
+</span><span class="hs-identifier hs-var">Unique.newUnique</span></span><span>
+</span><span id="line-247"></span><span>  </span><span id="local-6989586621679049587"><span class="annot"><span class="annottext">IORef (State ctx)
+</span><a href="#local-6989586621679049587"><span class="hs-identifier hs-var">ref</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a. MonadIO m =&gt; IO a -&gt; m a
+</span><span class="hs-identifier hs-var">liftIO</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; IO (IORef a)
+</span><span class="hs-identifier hs-var">IORef.newIORef</span></span><span> </span><span class="annot"><a href="Context.Internal.html#State"><span class="hs-identifier hs-type">State</span></a></span><span> </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">$sel:stacks:State :: Map ThreadId [ctx]
+</span><a href="Context.Internal.html#%24sel%3Astacks%3AState"><span class="hs-identifier hs-var">stacks</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall k a. Map k a
+</span><span class="hs-identifier hs-var">Map.empty</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Maybe ctx
+def :: Maybe ctx
+$sel:def:State :: Maybe ctx
+</span><a href="#local-6989586621679049590"><span class="hs-identifier hs-var hs-var">def</span></a></span><span> </span><span class="hs-special">}</span><span>
+</span><span id="line-248"></span><span>  </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679049584"><span class="annot"><span class="annottext">store :: Store ctx
+</span><a href="#local-6989586621679049584"><span class="hs-identifier hs-var hs-var">store</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><a href="Context.Internal.html#Store"><span class="hs-identifier hs-type">Store</span></a></span><span> </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">IORef (State ctx)
+ref :: IORef (State ctx)
+$sel:ref:Store :: IORef (State ctx)
+</span><a href="#local-6989586621679049587"><span class="hs-identifier hs-var hs-var">ref</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Unique
+key :: Unique
+$sel:key:Store :: Unique
+</span><a href="#local-6989586621679049589"><span class="hs-identifier hs-var hs-var">key</span></a></span><span> </span><span class="hs-special">}</span><span>
+</span><span id="line-249"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">PropagationStrategy
+</span><a href="#local-6989586621679049591"><span class="hs-identifier hs-var">propagationStrategy</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-250"></span><span>    </span><span class="annot"><span class="annottext">PropagationStrategy
+</span><a href="Context.Internal.html#NoPropagation"><span class="hs-identifier hs-var">NoPropagation</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><span id="line-251"></span><span>    </span><span class="annot"><span class="annottext">PropagationStrategy
+</span><a href="Context.Internal.html#LatestPropagation"><span class="hs-identifier hs-var">LatestPropagation</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a. MonadIO m =&gt; IO a -&gt; m a
+</span><span class="hs-identifier hs-var">liftIO</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall ctx. Registry -&gt; Store ctx -&gt; IO ()
+</span><a href="Context.Internal.html#register"><span class="hs-identifier hs-var">register</span></a></span><span> </span><span class="annot"><span class="annottext">Registry
+</span><a href="Context.Internal.html#registry"><span class="hs-identifier hs-var">registry</span></a></span><span> </span><span class="annot"><span class="annottext">Store ctx
+</span><a href="#local-6989586621679049584"><span class="hs-identifier hs-var">store</span></a></span><span>
+</span><span id="line-252"></span><span>  </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">Store ctx
+</span><a href="#local-6989586621679049584"><span class="hs-identifier hs-var">store</span></a></span><span>
+</span><span id="line-253"></span><span>
+</span><span id="line-254"></span><span id="local-6989586621679049837"><span class="annot"><a href="Context.Internal.html#push"><span class="hs-identifier hs-type">push</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Context.Internal.html#Store"><span class="hs-identifier hs-type">Store</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679049837"><span class="hs-identifier hs-type">ctx</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679049837"><span class="hs-identifier hs-type">ctx</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span></span><span>
+</span><span id="line-255"></span><span id="push"><span class="annot"><span class="annottext">push :: forall ctx. Store ctx -&gt; ctx -&gt; IO ()
+</span><a href="Context.Internal.html#push"><span class="hs-identifier hs-var hs-var">push</span></a></span></span><span> </span><span class="annot"><a href="Context.Internal.html#Store"><span class="hs-identifier hs-type">Store</span></a></span><span> </span><span class="hs-special">{</span><span> </span><span id="local-6989586621679049579"><span class="annot"><span class="annottext">IORef (State ctx)
+ref :: IORef (State ctx)
+$sel:ref:Store :: forall ctx. Store ctx -&gt; IORef (State ctx)
+</span><a href="#local-6989586621679049579"><span class="hs-identifier hs-var hs-var">ref</span></a></span></span><span> </span><span class="hs-special">}</span><span> </span><span id="local-6989586621679049578"><span class="annot"><span class="annottext">ctx
+</span><a href="#local-6989586621679049578"><span class="hs-identifier hs-var">context</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-256"></span><span>  </span><span id="local-6989586621679049577"><span class="annot"><span class="annottext">ThreadId
+</span><a href="#local-6989586621679049577"><span class="hs-identifier hs-var">threadId</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">IO ThreadId
+</span><span class="hs-identifier hs-var">Concurrent.myThreadId</span></span><span>
+</span><span id="line-257"></span><span>  </span><span class="annot"><span class="annottext">forall a b. IORef a -&gt; (a -&gt; (a, b)) -&gt; IO b
+</span><span class="hs-identifier hs-var">IORef.atomicModifyIORef'</span></span><span> </span><span class="annot"><span class="annottext">IORef (State ctx)
+</span><a href="#local-6989586621679049579"><span class="hs-identifier hs-var">ref</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679049576"><span class="annot"><span class="annottext">state :: State ctx
+</span><a href="#local-6989586621679049576"><span class="hs-identifier hs-var">state</span></a></span></span><span class="hs-glyph">@</span><span class="annot"><a href="Context.Internal.html#State"><span class="hs-identifier hs-type">State</span></a></span><span> </span><span class="hs-special">{</span><span> </span><span id="local-6989586621679049575"><span class="annot"><span class="annottext">Map ThreadId [ctx]
+stacks :: Map ThreadId [ctx]
+$sel:stacks:State :: forall ctx. State ctx -&gt; Map ThreadId [ctx]
+</span><a href="#local-6989586621679049575"><span class="hs-identifier hs-var hs-var">stacks</span></a></span></span><span> </span><span class="hs-special">}</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-258"></span><span>    </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">forall k a. Ord k =&gt; k -&gt; Map k a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Map.lookup</span></span><span> </span><span class="annot"><span class="annottext">ThreadId
+</span><a href="#local-6989586621679049577"><span class="hs-identifier hs-var">threadId</span></a></span><span> </span><span class="annot"><span class="annottext">Map ThreadId [ctx]
+</span><a href="#local-6989586621679049575"><span class="hs-identifier hs-var">stacks</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-259"></span><span>      </span><span class="annot"><span class="annottext">Maybe [ctx]
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-260"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">State ctx
+</span><a href="#local-6989586621679049576"><span class="hs-identifier hs-var">state</span></a></span><span> </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">$sel:stacks:State :: Map ThreadId [ctx]
+</span><a href="Context.Internal.html#%24sel%3Astacks%3AState"><span class="hs-identifier hs-var">stacks</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall k a. Ord k =&gt; k -&gt; a -&gt; Map k a -&gt; Map k a
+</span><span class="hs-identifier hs-var">Map.insert</span></span><span> </span><span class="annot"><span class="annottext">ThreadId
+</span><a href="#local-6989586621679049577"><span class="hs-identifier hs-var">threadId</span></a></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">ctx
+</span><a href="#local-6989586621679049578"><span class="hs-identifier hs-var">context</span></a></span><span class="hs-special">]</span><span> </span><span class="annot"><span class="annottext">Map ThreadId [ctx]
+</span><a href="#local-6989586621679049575"><span class="hs-identifier hs-var">stacks</span></a></span><span> </span><span class="hs-special">}</span><span class="hs-special">,</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-261"></span><span>      </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679049573"><span class="annot"><span class="annottext">[ctx]
+</span><a href="#local-6989586621679049573"><span class="hs-identifier hs-var">contexts</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-262"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">State ctx
+</span><a href="#local-6989586621679049576"><span class="hs-identifier hs-var">state</span></a></span><span> </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">$sel:stacks:State :: Map ThreadId [ctx]
+</span><a href="Context.Internal.html#%24sel%3Astacks%3AState"><span class="hs-identifier hs-var">stacks</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall k a. Ord k =&gt; k -&gt; a -&gt; Map k a -&gt; Map k a
+</span><span class="hs-identifier hs-var">Map.insert</span></span><span> </span><span class="annot"><span class="annottext">ThreadId
+</span><a href="#local-6989586621679049577"><span class="hs-identifier hs-var">threadId</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ctx
+</span><a href="#local-6989586621679049578"><span class="hs-identifier hs-var">context</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; [a] -&gt; [a]
+</span><span class="hs-glyph hs-var">:</span></span><span> </span><span class="annot"><span class="annottext">[ctx]
+</span><a href="#local-6989586621679049573"><span class="hs-identifier hs-var">contexts</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Map ThreadId [ctx]
+</span><a href="#local-6989586621679049575"><span class="hs-identifier hs-var">stacks</span></a></span><span class="hs-special">}</span><span class="hs-special">,</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-263"></span><span>
+</span><span id="line-264"></span><span id="local-6989586621679049836"><span class="annot"><a href="Context.Internal.html#pop"><span class="hs-identifier hs-type">pop</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Context.Internal.html#Store"><span class="hs-identifier hs-type">Store</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679049836"><span class="hs-identifier hs-type">ctx</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span></span><span>
+</span><span id="line-265"></span><span id="pop"><span class="annot"><span class="annottext">pop :: forall ctx. Store ctx -&gt; IO ()
+</span><a href="Context.Internal.html#pop"><span class="hs-identifier hs-var hs-var">pop</span></a></span></span><span> </span><span class="annot"><a href="Context.Internal.html#Store"><span class="hs-identifier hs-type">Store</span></a></span><span> </span><span class="hs-special">{</span><span> </span><span id="local-6989586621679049564"><span class="annot"><span class="annottext">IORef (State ctx)
+ref :: IORef (State ctx)
+$sel:ref:Store :: forall ctx. Store ctx -&gt; IORef (State ctx)
+</span><a href="#local-6989586621679049564"><span class="hs-identifier hs-var hs-var">ref</span></a></span></span><span> </span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-266"></span><span>  </span><span id="local-6989586621679049563"><span class="annot"><span class="annottext">ThreadId
+</span><a href="#local-6989586621679049563"><span class="hs-identifier hs-var">threadId</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">IO ThreadId
+</span><span class="hs-identifier hs-var">Concurrent.myThreadId</span></span><span>
+</span><span id="line-267"></span><span>  </span><span class="annot"><span class="annottext">forall a b. IORef a -&gt; (a -&gt; (a, b)) -&gt; IO b
+</span><span class="hs-identifier hs-var">IORef.atomicModifyIORef'</span></span><span> </span><span class="annot"><span class="annottext">IORef (State ctx)
+</span><a href="#local-6989586621679049564"><span class="hs-identifier hs-var">ref</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679049562"><span class="annot"><span class="annottext">state :: State ctx
+</span><a href="#local-6989586621679049562"><span class="hs-identifier hs-var">state</span></a></span></span><span class="hs-glyph">@</span><span class="annot"><a href="Context.Internal.html#State"><span class="hs-identifier hs-type">State</span></a></span><span> </span><span class="hs-special">{</span><span> </span><span id="local-6989586621679049561"><span class="annot"><span class="annottext">Map ThreadId [ctx]
+stacks :: Map ThreadId [ctx]
+$sel:stacks:State :: forall ctx. State ctx -&gt; Map ThreadId [ctx]
+</span><a href="#local-6989586621679049561"><span class="hs-identifier hs-var hs-var">stacks</span></a></span></span><span> </span><span class="hs-special">}</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-268"></span><span>    </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">forall k a. Ord k =&gt; k -&gt; Map k a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Map.lookup</span></span><span> </span><span class="annot"><span class="annottext">ThreadId
+</span><a href="#local-6989586621679049563"><span class="hs-identifier hs-var">threadId</span></a></span><span> </span><span class="annot"><span class="annottext">Map ThreadId [ctx]
+</span><a href="#local-6989586621679049561"><span class="hs-identifier hs-var">stacks</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-269"></span><span>      </span><span class="annot"><span class="annottext">Maybe [ctx]
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall a. HasCallStack =&gt; String -&gt; a
+</span><a href="Context.Internal.html#bug"><span class="hs-identifier hs-var">bug</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;pop-1&quot;</span></span><span>
+</span><span id="line-270"></span><span>      </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall a. HasCallStack =&gt; String -&gt; a
+</span><a href="Context.Internal.html#bug"><span class="hs-identifier hs-var">bug</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;pop-2&quot;</span></span><span>
+</span><span id="line-271"></span><span>
+</span><span id="line-272"></span><span>      </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="hs-special">[</span><span id="local-6989586621679049560"><span class="annot"><span class="annottext">ctx
+</span><a href="#local-6989586621679049560"><span class="hs-identifier hs-var">_context</span></a></span></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-273"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">State ctx
+</span><a href="#local-6989586621679049562"><span class="hs-identifier hs-var">state</span></a></span><span> </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">$sel:stacks:State :: Map ThreadId [ctx]
+</span><a href="Context.Internal.html#%24sel%3Astacks%3AState"><span class="hs-identifier hs-var">stacks</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall k a. Ord k =&gt; k -&gt; Map k a -&gt; Map k a
+</span><span class="hs-identifier hs-var">Map.delete</span></span><span> </span><span class="annot"><span class="annottext">ThreadId
+</span><a href="#local-6989586621679049563"><span class="hs-identifier hs-var">threadId</span></a></span><span> </span><span class="annot"><span class="annottext">Map ThreadId [ctx]
+</span><a href="#local-6989586621679049561"><span class="hs-identifier hs-var">stacks</span></a></span><span> </span><span class="hs-special">}</span><span class="hs-special">,</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-274"></span><span>      </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679049558"><span class="annot"><span class="annottext">ctx
+</span><a href="#local-6989586621679049558"><span class="hs-identifier hs-var">_context</span></a></span></span><span> </span><span class="annot"><span class="hs-glyph hs-type">:</span></span><span> </span><span id="local-6989586621679049557"><span class="annot"><span class="annottext">[ctx]
+</span><a href="#local-6989586621679049557"><span class="hs-identifier hs-var">rest</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-275"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">State ctx
+</span><a href="#local-6989586621679049562"><span class="hs-identifier hs-var">state</span></a></span><span> </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">$sel:stacks:State :: Map ThreadId [ctx]
+</span><a href="Context.Internal.html#%24sel%3Astacks%3AState"><span class="hs-identifier hs-var">stacks</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall k a. Ord k =&gt; k -&gt; a -&gt; Map k a -&gt; Map k a
+</span><span class="hs-identifier hs-var">Map.insert</span></span><span> </span><span class="annot"><span class="annottext">ThreadId
+</span><a href="#local-6989586621679049563"><span class="hs-identifier hs-var">threadId</span></a></span><span> </span><span class="annot"><span class="annottext">[ctx]
+</span><a href="#local-6989586621679049557"><span class="hs-identifier hs-var">rest</span></a></span><span> </span><span class="annot"><span class="annottext">Map ThreadId [ctx]
+</span><a href="#local-6989586621679049561"><span class="hs-identifier hs-var">stacks</span></a></span><span> </span><span class="hs-special">}</span><span class="hs-special">,</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-276"></span><span>
+</span><span id="line-277"></span><span class="hs-comment">-- | A 'Context.View.View' provides a read-only view into a 'Context.Store'.</span><span>
+</span><span id="line-278"></span><span class="hs-comment">-- 'Context.View.View' trades the 'Context.Store' ability to register new</span><span>
+</span><span id="line-279"></span><span class="hs-comment">-- context for the ability to arbitrarily transform context values locally to</span><span>
+</span><span id="line-280"></span><span class="hs-comment">-- the 'Context.View.View'.</span><span>
+</span><span id="line-281"></span><span class="hs-comment">--</span><span>
+</span><span id="line-282"></span><span class="hs-comment">-- @since 0.1.1.0</span><span>
+</span><span id="line-283"></span><span class="hs-keyword">data</span><span> </span><span id="View"><span class="annot"><a href="Context.Internal.html#View"><span class="hs-identifier hs-var">View</span></a></span></span><span> </span><span id="local-6989586621679049556"><span class="annot"><a href="#local-6989586621679049556"><span class="hs-identifier hs-type">ctx</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-284"></span><span>  </span><span id="local-6989586621679049555"><span id="local-6989586621679049801"><span id="MkView"><span class="annot"><a href="Context.Internal.html#MkView"><span class="hs-identifier hs-var">MkView</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679049555"><span class="hs-identifier hs-type">ctx'</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679049801"><span class="hs-identifier hs-type">ctx</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Context.Internal.html#Store"><span class="hs-identifier hs-type">Store</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679049555"><span class="hs-identifier hs-type">ctx'</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Context.Internal.html#View"><span class="hs-identifier hs-type">View</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679049801"><span class="hs-identifier hs-type">ctx</span></a></span></span></span><span>
+</span><span id="line-285"></span><span>
+</span><span id="line-286"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679049552"><span class="annot"><span class="hs-identifier hs-type">Functor</span></span><span> </span><span class="annot"><a href="Context.Internal.html#View"><span class="hs-identifier hs-type">View</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-287"></span><span>  </span><span id="local-6989586621679049550"><span class="annot"><span class="annottext">fmap :: forall a b. (a -&gt; b) -&gt; View a -&gt; View b
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">fmap</span></span></span><span> </span><span id="local-6989586621679049549"><span class="annot"><span class="annottext">a -&gt; b
+</span><a href="#local-6989586621679049549"><span class="hs-identifier hs-var">g</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Context.Internal.html#MkView"><span class="hs-identifier hs-type">MkView</span></a></span><span> </span><span id="local-6989586621679049548"><span class="annot"><span class="annottext">ctx' -&gt; a
+</span><a href="#local-6989586621679049548"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621679049547"><span class="annot"><span class="annottext">Store ctx'
+</span><a href="#local-6989586621679049547"><span class="hs-identifier hs-var">store</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall ctx ctx. (ctx -&gt; ctx) -&gt; Store ctx -&gt; View ctx
+</span><a href="Context.Internal.html#MkView"><span class="hs-identifier hs-var">MkView</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; b
+</span><a href="#local-6989586621679049549"><span class="hs-identifier hs-var">g</span></a></span><span> </span><span class="annot"><span class="annottext">forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">ctx' -&gt; a
+</span><a href="#local-6989586621679049548"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Store ctx'
+</span><a href="#local-6989586621679049547"><span class="hs-identifier hs-var">store</span></a></span><span>
+</span><span id="line-288"></span><span>
+</span><span id="line-289"></span><span class="hs-comment">-- | Provide the calling thread a view of its current context from the specified</span><span>
+</span><span id="line-290"></span><span class="hs-comment">-- 'Context.View.View'. Throws a 'Context.NotFoundException' when the calling</span><span>
+</span><span id="line-291"></span><span class="hs-comment">-- thread has no registered context.</span><span>
+</span><span id="line-292"></span><span class="hs-comment">--</span><span>
+</span><span id="line-293"></span><span class="hs-comment">-- @since 0.1.1.0</span><span>
+</span><span id="line-294"></span><span id="local-6989586621679049796"><span id="local-6989586621679049797"><span class="annot"><a href="Context.Internal.html#view"><span class="hs-identifier hs-type">view</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679049797"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadThrow</span></span><span> </span><span class="annot"><a href="#local-6989586621679049797"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Context.Internal.html#View"><span class="hs-identifier hs-type">View</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679049796"><span class="hs-identifier hs-type">ctx</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679049797"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679049796"><span class="hs-identifier hs-type">ctx</span></a></span></span></span><span>
+</span><span id="line-295"></span><span id="view"><span class="annot"><span class="annottext">view :: forall (m :: * -&gt; *) ctx.
+(MonadIO m, MonadThrow m) =&gt;
+View ctx -&gt; m ctx
+</span><a href="Context.Internal.html#view"><span class="hs-identifier hs-var hs-var">view</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall b a. b -&gt; (a -&gt; b) -&gt; Maybe a -&gt; b
+</span><span class="hs-identifier hs-var">maybe</span></span><span> </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a. (MonadIO m, MonadThrow m) =&gt; m a
+</span><a href="Context.Internal.html#throwContextNotFound"><span class="hs-identifier hs-var">throwContextNotFound</span></a></span><span> </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) b c a.
+Monad m =&gt;
+(b -&gt; m c) -&gt; (a -&gt; m b) -&gt; a -&gt; m c
+</span><span class="hs-operator hs-var">&lt;=&lt;</span></span><span> </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) ctx. MonadIO m =&gt; View ctx -&gt; m (Maybe ctx)
+</span><a href="Context.Internal.html#viewMay"><span class="hs-identifier hs-var">viewMay</span></a></span><span>
+</span><span id="line-296"></span><span>
+</span><span id="line-297"></span><span class="hs-comment">-- | Provide the calling thread a view of its current context from the specified</span><span>
+</span><span id="line-298"></span><span class="hs-comment">-- 'Context.View.View', if present.</span><span>
+</span><span id="line-299"></span><span class="hs-comment">--</span><span>
+</span><span id="line-300"></span><span class="hs-comment">-- @since 0.1.1.0</span><span>
+</span><span id="line-301"></span><span id="local-6989586621679049786"><span id="local-6989586621679049787"><span class="annot"><a href="Context.Internal.html#viewMay"><span class="hs-identifier hs-type">viewMay</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679049787"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Context.Internal.html#View"><span class="hs-identifier hs-type">View</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679049786"><span class="hs-identifier hs-type">ctx</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679049787"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="#local-6989586621679049786"><span class="hs-identifier hs-type">ctx</span></a></span><span class="hs-special">)</span></span></span><span>
+</span><span id="line-302"></span><span id="viewMay"><span class="annot"><span class="annottext">viewMay :: forall (m :: * -&gt; *) ctx. MonadIO m =&gt; View ctx -&gt; m (Maybe ctx)
+</span><a href="Context.Internal.html#viewMay"><span class="hs-identifier hs-var hs-var">viewMay</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span>
+</span><span id="line-303"></span><span>  </span><span class="annot"><a href="Context.Internal.html#MkView"><span class="hs-identifier hs-type">MkView</span></a></span><span> </span><span id="local-6989586621679049526"><span class="annot"><span class="annottext">ctx' -&gt; ctx
+</span><a href="#local-6989586621679049526"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621679049525"><span class="annot"><span class="annottext">Store ctx'
+</span><a href="#local-6989586621679049525"><span class="hs-identifier hs-var">store</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">ctx' -&gt; ctx
+</span><a href="#local-6989586621679049526"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) ctx. MonadIO m =&gt; Store ctx -&gt; m (Maybe ctx)
+</span><a href="Context.Internal.html#mineMay"><span class="hs-identifier hs-var">mineMay</span></a></span><span> </span><span class="annot"><span class="annottext">Store ctx'
+</span><a href="#local-6989586621679049525"><span class="hs-identifier hs-var">store</span></a></span><span>
+</span><span id="line-304"></span><span>
+</span><span id="line-305"></span><span class="hs-comment">-- | Create a 'Context.View.View' from the provided 'Context.Store'.</span><span>
+</span><span id="line-306"></span><span class="hs-comment">--</span><span>
+</span><span id="line-307"></span><span class="hs-comment">-- @since 0.1.1.0</span><span>
+</span><span id="line-308"></span><span id="local-6989586621679049782"><span class="annot"><a href="Context.Internal.html#toView"><span class="hs-identifier hs-type">toView</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Context.Internal.html#Store"><span class="hs-identifier hs-type">Store</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679049782"><span class="hs-identifier hs-type">ctx</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Context.Internal.html#View"><span class="hs-identifier hs-type">View</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679049782"><span class="hs-identifier hs-type">ctx</span></a></span></span><span>
+</span><span id="line-309"></span><span id="toView"><span class="annot"><span class="annottext">toView :: forall ctx. Store ctx -&gt; View ctx
+</span><a href="Context.Internal.html#toView"><span class="hs-identifier hs-var hs-var">toView</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall ctx ctx. (ctx -&gt; ctx) -&gt; Store ctx -&gt; View ctx
+</span><a href="Context.Internal.html#MkView"><span class="hs-identifier hs-var">MkView</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; a
+</span><span class="hs-identifier hs-var">id</span></span><span>
+</span><span id="line-310"></span><span>
+</span><span id="line-311"></span><span class="hs-keyword">data</span><span> </span><span id="AnyStore"><span class="annot"><a href="Context.Internal.html#AnyStore"><span class="hs-identifier hs-var">AnyStore</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-312"></span><span>  </span><span id="MkAnyStore"><span class="annot"><a href="Context.Internal.html#MkAnyStore"><span class="hs-identifier hs-var">MkAnyStore</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679049524"><span class="annot"><a href="#local-6989586621679049524"><span class="hs-identifier hs-type">ctx</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="annot"><a href="Context.Internal.html#Store"><span class="hs-identifier hs-type">Store</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679049524"><span class="hs-identifier hs-type">ctx</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Context.Internal.html#AnyStore"><span class="hs-identifier hs-type">AnyStore</span></a></span><span>
+</span><span id="line-313"></span><span>
+</span><span id="line-314"></span><span class="hs-keyword">newtype</span><span> </span><span id="Registry"><span class="annot"><a href="Context.Internal.html#Registry"><span class="hs-identifier hs-var">Registry</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Registry"><span class="annot"><a href="Context.Internal.html#Registry"><span class="hs-identifier hs-var">Registry</span></a></span></span><span>
+</span><span id="line-315"></span><span>  </span><span class="hs-special">{</span><span> </span><span id="%24sel%3Aref%3ARegistry"><span class="annot"><span class="annottext">Registry -&gt; IORef (Map Unique AnyStore)
+</span><a href="Context.Internal.html#%24sel%3Aref%3ARegistry"><span class="hs-identifier hs-var hs-var">ref</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IORef</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Map</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Unique</span></span><span> </span><span class="annot"><a href="Context.Internal.html#AnyStore"><span class="hs-identifier hs-type">AnyStore</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-316"></span><span>  </span><span class="hs-special">}</span><span>
+</span><span id="line-317"></span><span>
+</span><span id="line-318"></span><span class="annot"><a href="Context.Internal.html#registry"><span class="hs-identifier hs-type">registry</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Context.Internal.html#Registry"><span class="hs-identifier hs-type">Registry</span></a></span><span>
+</span><span id="line-319"></span><span id="registry"><span class="annot"><span class="annottext">registry :: Registry
+</span><a href="Context.Internal.html#registry"><span class="hs-identifier hs-var hs-var">registry</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. IO a -&gt; a
+</span><span class="hs-identifier hs-var">unsafePerformIO</span></span><span> </span><span class="annot"><span class="annottext">IO Registry
+</span><a href="Context.Internal.html#emptyRegistry"><span class="hs-identifier hs-var">emptyRegistry</span></a></span><span>
+</span><span id="line-320"></span><span class="hs-pragma">{-# NOINLINE</span><span> </span><span class="annot"><a href="Context.Internal.html#registry"><span class="hs-pragma hs-type">registry</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-321"></span><span>
+</span><span id="line-322"></span><span class="annot"><a href="Context.Internal.html#emptyRegistry"><span class="hs-identifier hs-type">emptyRegistry</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="Context.Internal.html#Registry"><span class="hs-identifier hs-type">Registry</span></a></span><span>
+</span><span id="line-323"></span><span id="emptyRegistry"><span class="annot"><span class="annottext">emptyRegistry :: IO Registry
+</span><a href="Context.Internal.html#emptyRegistry"><span class="hs-identifier hs-var hs-var">emptyRegistry</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-324"></span><span>  </span><span id="local-6989586621679049523"><span class="annot"><span class="annottext">IORef (Map Unique AnyStore)
+</span><a href="#local-6989586621679049523"><span class="hs-identifier hs-var">ref</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; IO (IORef a)
+</span><span class="hs-identifier hs-var">IORef.newIORef</span></span><span> </span><span class="annot"><span class="annottext">forall k a. Map k a
+</span><span class="hs-identifier hs-var">Map.empty</span></span><span>
+</span><span id="line-325"></span><span>  </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><a href="Context.Internal.html#Registry"><span class="hs-identifier hs-type">Registry</span></a></span><span> </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">IORef (Map Unique AnyStore)
+ref :: IORef (Map Unique AnyStore)
+$sel:ref:Registry :: IORef (Map Unique AnyStore)
+</span><a href="#local-6989586621679049523"><span class="hs-identifier hs-var hs-var">ref</span></a></span><span> </span><span class="hs-special">}</span><span>
+</span><span id="line-326"></span><span>
+</span><span id="line-327"></span><span id="local-6989586621679049778"><span id="local-6989586621679049779"><span class="annot"><a href="Context.Internal.html#withPropagator"><span class="hs-identifier hs-type">withPropagator</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679049779"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679049779"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679049778"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679049778"><span class="hs-identifier hs-type">b</span></a></span></span></span><span>
+</span><span id="line-328"></span><span id="withPropagator"><span class="annot"><span class="annottext">withPropagator :: forall a b. ((IO a -&gt; IO a) -&gt; IO b) -&gt; IO b
+</span><a href="Context.Internal.html#withPropagator"><span class="hs-identifier hs-var hs-var">withPropagator</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a b. Registry -&gt; ((IO a -&gt; IO a) -&gt; IO b) -&gt; IO b
+</span><a href="Context.Internal.html#withRegisteredPropagator"><span class="hs-identifier hs-var">withRegisteredPropagator</span></a></span><span> </span><span class="annot"><span class="annottext">Registry
+</span><a href="Context.Internal.html#registry"><span class="hs-identifier hs-var">registry</span></a></span><span>
+</span><span id="line-329"></span><span>
+</span><span id="line-330"></span><span class="hs-comment">-- The with-style here is not necessary but it helps keep calling code honest by</span><span>
+</span><span id="line-331"></span><span class="hs-comment">-- encouraging not holding onto the propagator any longer than needed. It also</span><span>
+</span><span id="line-332"></span><span class="hs-comment">-- makes the signature compatible if the registry's state is ever changed to an</span><span>
+</span><span id="line-333"></span><span class="hs-comment">-- MVar and withMVar is used within this function. At this time, an IORef is</span><span>
+</span><span id="line-334"></span><span class="hs-comment">-- sufficient because while other stores could be registered after the calling</span><span>
+</span><span id="line-335"></span><span class="hs-comment">-- thread reads from the IORef, it would be impossible for the calling thread to</span><span>
+</span><span id="line-336"></span><span class="hs-comment">-- have any contexts in those new stores, so there would be nothing to propagate</span><span>
+</span><span id="line-337"></span><span class="hs-comment">-- from them.</span><span>
+</span><span id="line-338"></span><span id="local-6989586621679049776"><span id="local-6989586621679049777"><span class="annot"><a href="Context.Internal.html#withRegisteredPropagator"><span class="hs-identifier hs-type">withRegisteredPropagator</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Context.Internal.html#Registry"><span class="hs-identifier hs-type">Registry</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679049777"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679049777"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679049776"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679049776"><span class="hs-identifier hs-type">b</span></a></span></span></span><span>
+</span><span id="line-339"></span><span id="withRegisteredPropagator"><span class="annot"><span class="annottext">withRegisteredPropagator :: forall a b. Registry -&gt; ((IO a -&gt; IO a) -&gt; IO b) -&gt; IO b
+</span><a href="Context.Internal.html#withRegisteredPropagator"><span class="hs-identifier hs-var hs-var">withRegisteredPropagator</span></a></span></span><span> </span><span class="annot"><a href="Context.Internal.html#Registry"><span class="hs-identifier hs-type">Registry</span></a></span><span> </span><span class="hs-special">{</span><span> </span><span id="local-6989586621679049513"><span class="annot"><span class="annottext">IORef (Map Unique AnyStore)
+ref :: IORef (Map Unique AnyStore)
+$sel:ref:Registry :: Registry -&gt; IORef (Map Unique AnyStore)
+</span><a href="#local-6989586621679049513"><span class="hs-identifier hs-var hs-var">ref</span></a></span></span><span> </span><span class="hs-special">}</span><span> </span><span id="local-6989586621679049512"><span class="annot"><span class="annottext">(IO a -&gt; IO a) -&gt; IO b
+</span><a href="#local-6989586621679049512"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-340"></span><span>  </span><span id="local-6989586621679049511"><span class="annot"><span class="annottext">Map Unique AnyStore
+</span><a href="#local-6989586621679049511"><span class="hs-identifier hs-var">stores</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall a. IORef a -&gt; IO a
+</span><span class="hs-identifier hs-var">IORef.readIORef</span></span><span> </span><span class="annot"><span class="annottext">IORef (Map Unique AnyStore)
+</span><a href="#local-6989586621679049513"><span class="hs-identifier hs-var">ref</span></a></span><span>
+</span><span id="line-341"></span><span>  </span><span id="local-6989586621679049510"><span class="annot"><span class="annottext">IO a -&gt; IO a
+</span><a href="#local-6989586621679049510"><span class="hs-identifier hs-var">propagator</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-342"></span><span>    </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (t :: * -&gt; *) a b.
+Foldable t =&gt;
+(a -&gt; b -&gt; b) -&gt; b -&gt; t a -&gt; b
+</span><span class="hs-identifier hs-var">foldr</span></span><span> </span><span class="annot"><span class="annottext">forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">(.)</span></span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; a
+</span><span class="hs-identifier hs-var">id</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-343"></span><span>      </span><span class="annot"><span class="annottext">forall (t :: * -&gt; *) (f :: * -&gt; *) a b.
+(Traversable t, Applicative f) =&gt;
+t a -&gt; (a -&gt; f b) -&gt; f (t b)
+</span><span class="hs-identifier hs-var">Traversable.for</span></span><span> </span><span class="annot"><span class="annottext">Map Unique AnyStore
+</span><a href="#local-6989586621679049511"><span class="hs-identifier hs-var">stores</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span>
+</span><span id="line-344"></span><span>        </span><span class="annot"><a href="Context.Internal.html#MkAnyStore"><span class="hs-identifier hs-type">MkAnyStore</span></a></span><span> </span><span id="local-6989586621679049499"><span class="annot"><span class="annottext">Store ctx
+</span><a href="#local-6989586621679049499"><span class="hs-identifier hs-var">store</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-345"></span><span>          </span><span class="hs-comment">-- N.B. When propagating context and the &quot;parent&quot; thread doesn't</span><span>
+</span><span id="line-346"></span><span>          </span><span class="hs-comment">-- have any specific context in this particular store but there is</span><span>
+</span><span id="line-347"></span><span>          </span><span class="hs-comment">-- a default, if we just used mineMay directly we would grab the</span><span>
+</span><span id="line-348"></span><span>          </span><span class="hs-comment">-- default and then unnecessarily propagate it as a specific context</span><span>
+</span><span id="line-349"></span><span>          </span><span class="hs-comment">-- for the new thread. Here we override the default value to Nothing</span><span>
+</span><span id="line-350"></span><span>          </span><span class="hs-comment">-- as an optimization.</span><span>
+</span><span id="line-351"></span><span>          </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) ctx.
+MonadIO m =&gt;
+(Maybe ctx -&gt; Maybe ctx) -&gt; Store ctx -&gt; m (Maybe ctx)
+</span><a href="Context.Internal.html#mineMayOnDefault"><span class="hs-identifier hs-var">mineMayOnDefault</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a b. a -&gt; b -&gt; a
+</span><span class="hs-identifier hs-var">const</span></span><span> </span><span class="annot"><span class="annottext">forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Store ctx
+</span><a href="#local-6989586621679049499"><span class="hs-identifier hs-var">store</span></a></span><span> </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a b. Monad m =&gt; m a -&gt; (a -&gt; m b) -&gt; m b
+</span><span class="hs-operator hs-var">&gt;&gt;=</span></span><span> </span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span>
+</span><span id="line-352"></span><span>            </span><span class="annot"><span class="annottext">Maybe ctx
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; a
+</span><span class="hs-identifier hs-var">id</span></span><span>
+</span><span id="line-353"></span><span>            </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679049497"><span class="annot"><span class="annottext">ctx
+</span><a href="#local-6989586621679049497"><span class="hs-identifier hs-var">context</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) ctx a.
+(MonadIO m, MonadMask m) =&gt;
+Store ctx -&gt; ctx -&gt; m a -&gt; m a
+</span><a href="Context.Internal.html#use"><span class="hs-identifier hs-var">use</span></a></span><span> </span><span class="annot"><span class="annottext">Store ctx
+</span><a href="#local-6989586621679049499"><span class="hs-identifier hs-var">store</span></a></span><span> </span><span class="annot"><span class="annottext">ctx
+</span><a href="#local-6989586621679049497"><span class="hs-identifier hs-var">context</span></a></span><span>
+</span><span id="line-354"></span><span>  </span><span class="annot"><span class="annottext">(IO a -&gt; IO a) -&gt; IO b
+</span><a href="#local-6989586621679049512"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">IO a -&gt; IO a
+</span><a href="#local-6989586621679049510"><span class="hs-identifier hs-var">propagator</span></a></span><span>
+</span><span id="line-355"></span><span>
+</span><span id="line-356"></span><span id="local-6989586621679049496"><span class="annot"><a href="Context.Internal.html#register"><span class="hs-identifier hs-type">register</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Context.Internal.html#Registry"><span class="hs-identifier hs-type">Registry</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Context.Internal.html#Store"><span class="hs-identifier hs-type">Store</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679049496"><span class="hs-identifier hs-type">ctx</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span></span><span>
+</span><span id="line-357"></span><span id="register"><span class="annot"><span class="annottext">register :: forall ctx. Registry -&gt; Store ctx -&gt; IO ()
+</span><a href="Context.Internal.html#register"><span class="hs-identifier hs-var hs-var">register</span></a></span></span><span> </span><span class="annot"><a href="Context.Internal.html#Registry"><span class="hs-identifier hs-type">Registry</span></a></span><span> </span><span class="hs-special">{</span><span> </span><span id="local-6989586621679049493"><span class="annot"><span class="annottext">IORef (Map Unique AnyStore)
+ref :: IORef (Map Unique AnyStore)
+$sel:ref:Registry :: Registry -&gt; IORef (Map Unique AnyStore)
+</span><a href="#local-6989586621679049493"><span class="hs-identifier hs-var hs-var">ref</span></a></span></span><span> </span><span class="hs-special">}</span><span> </span><span id="local-6989586621679049492"><span class="annot"><span class="annottext">store :: Store ctx
+</span><a href="#local-6989586621679049492"><span class="hs-identifier hs-var">store</span></a></span></span><span class="hs-glyph">@</span><span class="annot"><a href="Context.Internal.html#Store"><span class="hs-identifier hs-type">Store</span></a></span><span> </span><span class="hs-special">{</span><span> </span><span id="local-6989586621679049491"><span class="annot"><span class="annottext">Unique
+key :: Unique
+$sel:key:Store :: forall ctx. Store ctx -&gt; Unique
+</span><a href="#local-6989586621679049491"><span class="hs-identifier hs-var hs-var">key</span></a></span></span><span> </span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-358"></span><span>  </span><span class="annot"><span class="annottext">forall a b. IORef a -&gt; (a -&gt; (a, b)) -&gt; IO b
+</span><span class="hs-identifier hs-var">IORef.atomicModifyIORef'</span></span><span> </span><span class="annot"><span class="annottext">IORef (Map Unique AnyStore)
+</span><a href="#local-6989586621679049493"><span class="hs-identifier hs-var">ref</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679049490"><span class="annot"><span class="annottext">Map Unique AnyStore
+</span><a href="#local-6989586621679049490"><span class="hs-identifier hs-var">stores</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-359"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall k a. Ord k =&gt; k -&gt; a -&gt; Map k a -&gt; Map k a
+</span><span class="hs-identifier hs-var">Map.insert</span></span><span> </span><span class="annot"><span class="annottext">Unique
+</span><a href="#local-6989586621679049491"><span class="hs-identifier hs-var">key</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall ctx. Store ctx -&gt; AnyStore
+</span><a href="Context.Internal.html#MkAnyStore"><span class="hs-identifier hs-var">MkAnyStore</span></a></span><span> </span><span class="annot"><span class="annottext">Store ctx
+</span><a href="#local-6989586621679049492"><span class="hs-identifier hs-var">store</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Map Unique AnyStore
+</span><a href="#local-6989586621679049490"><span class="hs-identifier hs-var">stores</span></a></span><span class="hs-special">,</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-360"></span><span>
+</span><span id="line-361"></span><span id="local-6989586621679049822"><span class="annot"><a href="Context.Internal.html#unregister"><span class="hs-identifier hs-type">unregister</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Context.Internal.html#Registry"><span class="hs-identifier hs-type">Registry</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Context.Internal.html#Store"><span class="hs-identifier hs-type">Store</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679049822"><span class="hs-identifier hs-type">ctx</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span></span><span>
+</span><span id="line-362"></span><span id="unregister"><span class="annot"><span class="annottext">unregister :: forall ctx. Registry -&gt; Store ctx -&gt; IO ()
+</span><a href="Context.Internal.html#unregister"><span class="hs-identifier hs-var hs-var">unregister</span></a></span></span><span> </span><span class="annot"><a href="Context.Internal.html#Registry"><span class="hs-identifier hs-type">Registry</span></a></span><span> </span><span class="hs-special">{</span><span> </span><span id="local-6989586621679049488"><span class="annot"><span class="annottext">IORef (Map Unique AnyStore)
+ref :: IORef (Map Unique AnyStore)
+$sel:ref:Registry :: Registry -&gt; IORef (Map Unique AnyStore)
+</span><a href="#local-6989586621679049488"><span class="hs-identifier hs-var hs-var">ref</span></a></span></span><span> </span><span class="hs-special">}</span><span> </span><span class="annot"><a href="Context.Internal.html#Store"><span class="hs-identifier hs-type">Store</span></a></span><span> </span><span class="hs-special">{</span><span> </span><span id="local-6989586621679049487"><span class="annot"><span class="annottext">Unique
+key :: Unique
+$sel:key:Store :: forall ctx. Store ctx -&gt; Unique
+</span><a href="#local-6989586621679049487"><span class="hs-identifier hs-var hs-var">key</span></a></span></span><span> </span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-363"></span><span>  </span><span class="annot"><span class="annottext">forall a b. IORef a -&gt; (a -&gt; (a, b)) -&gt; IO b
+</span><span class="hs-identifier hs-var">IORef.atomicModifyIORef'</span></span><span> </span><span class="annot"><span class="annottext">IORef (Map Unique AnyStore)
+</span><a href="#local-6989586621679049488"><span class="hs-identifier hs-var">ref</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679049486"><span class="annot"><span class="annottext">Map Unique AnyStore
+</span><a href="#local-6989586621679049486"><span class="hs-identifier hs-var">stores</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-364"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall k a. Ord k =&gt; k -&gt; Map k a -&gt; Map k a
+</span><span class="hs-identifier hs-var">Map.delete</span></span><span> </span><span class="annot"><span class="annottext">Unique
+</span><a href="#local-6989586621679049487"><span class="hs-identifier hs-var">key</span></a></span><span> </span><span class="annot"><span class="annottext">Map Unique AnyStore
+</span><a href="#local-6989586621679049486"><span class="hs-identifier hs-var">stores</span></a></span><span class="hs-special">,</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-365"></span><span>
+</span><span id="line-366"></span><span id="local-6989586621679049848"><span class="annot"><a href="Context.Internal.html#bug"><span class="hs-identifier hs-type">bug</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">HasCallStack</span></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679049848"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-367"></span><span id="bug"><span class="annot"><span class="annottext">bug :: forall a. HasCallStack =&gt; String -&gt; a
+</span><a href="Context.Internal.html#bug"><span class="hs-identifier hs-var hs-var">bug</span></a></span></span><span> </span><span id="local-6989586621679049478"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679049478"><span class="hs-identifier hs-var">prefix</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-368"></span><span>  </span><span class="annot"><span class="annottext">forall a. HasCallStack =&gt; String -&gt; a
+</span><span class="hs-identifier hs-var">error</span></span><span>
+</span><span id="line-369"></span><span>    </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;Context.&quot;</span></span><span> </span><span class="annot"><span class="annottext">forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679049478"><span class="hs-identifier hs-var">prefix</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;: Impossible! (if you see this message, please &quot;</span></span><span>
+</span><span id="line-370"></span><span>        </span><span class="annot"><span class="annottext">forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;report it as a bug at https://github.com/jship/context)&quot;</span></span><span>
+</span><span id="line-371"></span><span>
+</span><span id="line-372"></span><span class="hs-comment">-- $disclaimer</span><span>
+</span><span id="line-373"></span><span class="hs-comment">--</span><span>
+</span><span id="line-374"></span><span class="hs-comment">-- In general, changes to this module will not be reflected in the library's</span><span>
+</span><span id="line-375"></span><span class="hs-comment">-- version updates. Direct use of this module should be done with /extreme/ care</span><span>
+</span><span id="line-376"></span><span class="hs-comment">-- as it becomes very easy to violate the library's invariants.</span><span>
+</span><span id="line-377"></span></pre></body></html>
