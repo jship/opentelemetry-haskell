@@ -147,7 +147,7 @@ data OTLPProtocol
 OTLPProtocolHTTPProtobuf :: OTLPProtocol
 httpProtobufProtocol :: OTLPProtocol
 
--- | An ad-hoc helper type for use in <tt>otlpSpanExporterIO</tt>.
+-- | Little ad-hoc helper type for use in <tt>otlpSpanExporterIO</tt>.
 data OTLPSpanExporterItem
 OTLPSpanExporterItem :: Batch (Span Attrs) -> (SpanExportResult -> IO ()) -> Resource Attrs -> OTLPSpanExporterItem
 [otlpSpanExporterItemBatch] :: OTLPSpanExporterItem -> Batch (Span Attrs)
