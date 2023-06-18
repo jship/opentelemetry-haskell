@@ -12,6 +12,5 @@ packages:
 - ./otel-sdk-otlp-bindings
 - ./otel-sdk-resource-core
 - ./otel-sdk-trace
-extra-deps:
 ghc-options:
   '$everything': -haddock
