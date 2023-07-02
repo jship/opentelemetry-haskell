@@ -215,7 +215,7 @@ instance Witherable.WitherableWithIndex GHC.Types.Int Control.Applicative.ZipLis
 instance Witherable.WitherableWithIndex GHC.Types.Int Data.IntMap.Internal.IntMap
 instance Witherable.WitherableWithIndex k (Data.Map.Internal.Map k)
 instance (GHC.Classes.Eq k, Data.Hashable.Class.Hashable k) => Witherable.WitherableWithIndex k (Data.HashMap.Internal.HashMap k)
-instance Witherable.WitherableWithIndex Data.Void.Void Data.Proxy.Proxy
+instance Witherable.WitherableWithIndex GHC.Base.Void Data.Proxy.Proxy
 instance Witherable.WitherableWithIndex GHC.Types.Int Data.Vector.Vector
 instance Witherable.WitherableWithIndex GHC.Types.Int Data.Sequence.Internal.Seq
 instance (WithIndex.TraversableWithIndex i f, Witherable.WitherableWithIndex j g) => Witherable.WitherableWithIndex (i, j) (Data.Functor.Compose.Compose f g)
@@ -230,7 +230,7 @@ instance Witherable.FilterableWithIndex GHC.Types.Int Control.Applicative.ZipLis
 instance Witherable.FilterableWithIndex GHC.Types.Int Data.IntMap.Internal.IntMap
 instance Witherable.FilterableWithIndex k (Data.Map.Internal.Map k)
 instance (GHC.Classes.Eq k, Data.Hashable.Class.Hashable k) => Witherable.FilterableWithIndex k (Data.HashMap.Internal.HashMap k)
-instance Witherable.FilterableWithIndex Data.Void.Void Data.Proxy.Proxy
+instance Witherable.FilterableWithIndex GHC.Base.Void Data.Proxy.Proxy
 instance Witherable.FilterableWithIndex GHC.Types.Int Data.Vector.Vector
 instance Witherable.FilterableWithIndex GHC.Types.Int Data.Sequence.Internal.Seq
 instance (WithIndex.FunctorWithIndex i f, Witherable.FilterableWithIndex j g) => Witherable.FilterableWithIndex (i, j) (Data.Functor.Compose.Compose f g)

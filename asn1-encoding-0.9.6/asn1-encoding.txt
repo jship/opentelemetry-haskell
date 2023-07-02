@@ -54,7 +54,7 @@ instance GHC.Exception.Type.Exception Data.ASN1.Error.ASN1Error
 module Data.ASN1.Object
 
 -- | Define an object that can be converted to and from ASN.1
-class ASN1Object a
+class () => ASN1Object a
 
 -- | transform an object into a chunk of ASN1 stream.
 toASN1 :: ASN1Object a => a -> ASN1S
@@ -67,11 +67,11 @@ fromASN1 :: ASN1Object a => [ASN1] -> Either String (a, [ASN1])
 module Data.ASN1.BinaryEncoding.Raw
 
 -- | ASN1 Header with the class, tag, constructed flag and length.
-data ASN1Header
+data () => ASN1Header
 ASN1Header :: !ASN1Class -> !ASN1Tag -> !Bool -> !ASN1Length -> ASN1Header
 
 -- | Element class
-data ASN1Class
+data () => ASN1Class
 Universal :: ASN1Class
 Application :: ASN1Class
 Context :: ASN1Class
@@ -81,7 +81,7 @@ Private :: ASN1Class
 type ASN1Tag = Int
 
 -- | ASN1 Length with all different formats
-data ASN1Length
+data () => ASN1Length
 
 -- | Short form with only one byte. length has to be &lt; 127.
 LenShort :: Int -> ASN1Length
@@ -93,7 +93,7 @@ LenLong :: Int -> Int -> ASN1Length
 LenIndefinite :: ASN1Length
 
 -- | represent one event from an asn1 data stream
-data ASN1Event
+data () => ASN1Event
 
 -- | ASN1 Header
 Header :: ASN1Header -> ASN1Event
@@ -132,7 +132,7 @@ getConstructedEndRepr :: [ASN1Repr] -> ([ASN1Repr], [ASN1Repr])
 module Data.ASN1.Prim
 
 -- | Define high level ASN1 object.
-data ASN1
+data () => ASN1
 Boolean :: Bool -> ASN1
 IntVal :: Integer -> ASN1
 BitString :: BitArray -> ASN1
@@ -148,7 +148,7 @@ Start :: ASN1ConstructionType -> ASN1
 End :: ASN1ConstructionType -> ASN1
 
 -- | Define the type of container
-data ASN1ConstructionType
+data () => ASN1ConstructionType
 Sequence :: ASN1ConstructionType
 Set :: ASN1ConstructionType
 Container :: ASN1Class -> ASN1Tag -> ASN1ConstructionType

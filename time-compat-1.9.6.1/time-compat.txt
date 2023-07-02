@@ -23,7 +23,7 @@ module Data.Time.Calendar.Month.Compat
 
 -- | An absolute count of common calendar months. Number is equal to
 --   <tt>(year * 12) + (monthOfYear - 1)</tt>.
-newtype Month
+newtype () => Month
 MkMonth :: Integer -> Month
 addMonths :: Integer -> Month -> Month
 diffMonths :: Month -> Month -> Integer
@@ -53,7 +53,7 @@ toMonthDay :: Day -> (Month, DayOfMonth)
 module Data.Time.Calendar.Quarter.Compat
 
 -- | Quarters of each year. Each quarter corresponds to three months.
-data QuarterOfYear
+data () => QuarterOfYear
 Q1 :: QuarterOfYear
 Q2 :: QuarterOfYear
 Q3 :: QuarterOfYear
@@ -63,13 +63,19 @@ diffQuarters :: Quarter -> Quarter -> Integer
 
 -- | An absolute count of year quarters. Number is equal to <tt>(year * 4)
 --   + (quarterOfYear - 1)</tt>.
-newtype Quarter
+newtype () => Quarter
 MkQuarter :: Integer -> Quarter
 
 -- | Bidirectional abstract constructor.
 pattern YearQuarter :: Year -> QuarterOfYear -> Quarter
+
+-- | The <a>QuarterOfYear</a> this <a>MonthOfYear</a> is in.
 monthOfYearQuarter :: MonthOfYear -> QuarterOfYear
+
+-- | The <a>Quarter</a> this <a>Month</a> is in.
 monthQuarter :: Month -> Quarter
+
+-- | The <a>Quarter</a> this <a>Day</a> is in.
 dayQuarter :: Day -> Quarter
 
 -- | Part of <tt>YearQuarter</tt> pattern
@@ -81,7 +87,7 @@ toYearQuarter :: Quarter -> (Year, QuarterOfYear)
 module Data.Time.Format.ISO8601.Compat
 
 -- | A text format for a type
-data Format t
+data () => Format t
 
 -- | Show a value in the format, if representable
 formatShowM :: Format t -> t -> Maybe String
@@ -94,7 +100,7 @@ formatReadP :: Format t -> ReadP t
 
 -- | Parse a value in the format
 formatParseM :: MonadFail m => Format t -> String -> m t
-class ISO8601 t
+class () => ISO8601 t
 
 -- | The most commonly used ISO 8601 format for this type.
 iso8601Format :: ISO8601 t => Format t
@@ -104,7 +110,7 @@ iso8601Show :: ISO8601 t => t -> String
 
 -- | Parse the most commonly used ISO 8601 format.
 iso8601ParseM :: (MonadFail m, ISO8601 t) => String -> m t
-data FormatExtension
+data () => FormatExtension
 
 -- | ISO 8601:2004(E) sec. 2.3.4. Use hyphens and colons.
 ExtendedFormat :: FormatExtension
@@ -216,7 +222,7 @@ intervalFormat :: Format a -> Format b -> Format (a, b)
 recurringIntervalFormat :: Format a -> Format b -> Format (Int, a, b)
 
 module Data.Time.Format.Compat
-class FormatTime t
+class () => FormatTime t
 
 -- | Substitute various time-related information for each %-code in the
 --   string, as per <a>formatCharacter</a>.
@@ -541,8 +547,8 @@ readsTime :: ParseTime t => TimeLocale -> String -> ReadS t
 
 -- | The class of types which can be parsed given a UNIX-style time format
 --   string.
-class ParseTime t
-data TimeLocale
+class () => ParseTime t
+data () => TimeLocale
 TimeLocale :: [(String, String)] -> [(String, String)] -> (String, String) -> String -> String -> String -> String -> [TimeZone] -> TimeLocale
 
 -- | full and abbreviated week days, starting with Sunday
@@ -572,7 +578,7 @@ TimeLocale :: [(String, String)] -> [(String, String)] -> (String, String) -> St
 -- | Locale representing American usage.
 --   
 --   <a>knownTimeZones</a> contains only the ten time-zones mentioned in
---   RFC 802 sec. 5: "UT", "GMT", "EST", "EDT", "CST", "CDT", "MST", "MDT",
+--   RFC 822 sec. 5: "UT", "GMT", "EST", "EDT", "CST", "CDT", "MST", "MDT",
 --   "PST", "PDT". Note that the parsing functions will regardless parse
 --   "UTC", single-letter military time-zones, and +HHMM format.
 defaultTimeLocale :: TimeLocale
@@ -600,7 +606,7 @@ systemEpochDay :: Day
 --   semantics depends on the clock function, but the epoch is typically
 --   the beginning of 1970. Note that <a>systemNanoseconds</a> of 1E9 to
 --   2E9-1 can be used to represent leap seconds.
-data SystemTime
+data () => SystemTime
 MkSystemTime :: {-# UNPACK #-} !Int64 -> {-# UNPACK #-} !Word32 -> SystemTime
 [systemSeconds] :: SystemTime -> {-# UNPACK #-} !Int64
 [systemNanoseconds] :: SystemTime -> {-# UNPACK #-} !Word32
@@ -652,7 +658,7 @@ module Data.Time.Clock.Compat
 -- | The Modified Julian Date is the day with the fraction of the day,
 --   measured from UT midnight. It's used to represent UT1, which is time
 --   as measured by the earth's rotation, adjusted for various wobbles.
-newtype UniversalTime
+newtype () => UniversalTime
 ModJulianDate :: Rational -> UniversalTime
 [getModJulianDate] :: UniversalTime -> Rational
 
@@ -663,7 +669,7 @@ ModJulianDate :: Rational -> UniversalTime
 --   
 --   It has a precision of one picosecond (= 10^-12 s). Enumeration
 --   functions will treat it as picoseconds.
-data DiffTime
+data () => DiffTime
 
 -- | Create a <a>DiffTime</a> which represents an integral number of
 --   seconds.
@@ -678,7 +684,7 @@ diffTimeToPicoseconds :: DiffTime -> Integer
 -- | This is the simplest representation of UTC. It consists of the day
 --   number, and a time offset from midnight. Note that if a day has a leap
 --   second added to it, it will have 86401 seconds.
-data UTCTime
+data () => UTCTime
 UTCTime :: Day -> DiffTime -> UTCTime
 
 -- | the day
@@ -701,7 +707,7 @@ UTCTime :: Day -> DiffTime -> UTCTime
 --   It ignores leap-seconds, so it's not necessarily a fixed amount of
 --   clock time. For instance, 23:00 UTC + 2 hours of NominalDiffTime =
 --   01:00 UTC (+ 1 day), regardless of whether a leap-second intervened.
-data NominalDiffTime
+data () => NominalDiffTime
 
 -- | Create a <a>NominalDiffTime</a> from a number of seconds.
 secondsToNominalDiffTime :: Pico -> NominalDiffTime
@@ -726,7 +732,7 @@ getCurrentTime :: IO UTCTime
 --   <tt>clock_getres</tt>, which may be <a>wrong on WSL2</a>.
 getTime_resolution :: DiffTime
 
--- | Year of Common Era.
+-- | Year of Common Era (when positive).
 type Year = Integer
 
 -- | Month of year, in range 1 (January) to 12 (December).
@@ -737,13 +743,13 @@ type DayOfMonth = Int
 
 module Data.Time.Calendar.WeekDate.Compat
 
--- | Year of Common Era.
+-- | Year of Common Era (when positive).
 type Year = Integer
 
 -- | Week of year, by various reckonings, generally in range 0-53 depending
---   on reckoning
+--   on reckoning.
 type WeekOfYear = Int
-data DayOfWeek
+data () => DayOfWeek
 Monday :: DayOfWeek
 Tuesday :: DayOfWeek
 Wednesday :: DayOfWeek
@@ -752,7 +758,7 @@ Friday :: DayOfWeek
 Saturday :: DayOfWeek
 Sunday :: DayOfWeek
 dayOfWeek :: Day -> DayOfWeek
-data FirstWeekType
+data () => FirstWeekType
 
 -- | first week is the first whole week of the year
 FirstWholeWeek :: FirstWeekType
@@ -803,9 +809,9 @@ module Data.Time.Calendar.OrdinalDate.Compat
 
 -- | The Modified Julian Day is a standard count of days, with zero being
 --   the day 1858-11-17.
-data Day
+data () => Day
 
--- | Year of Common Era.
+-- | Year of Common Era (when positive).
 type Year = Integer
 
 -- | Day of year, in range 1 (January 1st) to 366. December 31st is 365 in
@@ -813,7 +819,7 @@ type Year = Integer
 type DayOfYear = Int
 
 -- | Week of year, by various reckonings, generally in range 0-53 depending
---   on reckoning
+--   on reckoning.
 type WeekOfYear = Int
 
 -- | Convert to ISO 8601 Ordinal Date format.
@@ -916,12 +922,12 @@ module Data.Time.Calendar.Compat
 
 -- | The Modified Julian Day is a standard count of days, with zero being
 --   the day 1858-11-17.
-newtype Day
+newtype () => Day
 ModifiedJulianDay :: Integer -> Day
 [toModifiedJulianDay] :: Day -> Integer
 addDays :: Integer -> Day -> Day
 diffDays :: Day -> Day -> Integer
-data CalendarDiffDays
+data () => CalendarDiffDays
 CalendarDiffDays :: Integer -> Integer -> CalendarDiffDays
 [cdMonths] :: CalendarDiffDays -> Integer
 [cdDays] :: CalendarDiffDays -> Integer
@@ -984,7 +990,7 @@ diffGregorianDurationRollOver :: Day -> Day -> CalendarDiffDays
 -- | Is this year a leap year according to the proleptic Gregorian
 --   calendar?
 isLeapYear :: Year -> Bool
-data DayOfWeek
+data () => DayOfWeek
 Monday :: DayOfWeek
 Tuesday :: DayOfWeek
 Wednesday :: DayOfWeek
@@ -1007,7 +1013,7 @@ type DayOfMonth = Int
 -- | Month of year, in range 1 (January) to 12 (December).
 type MonthOfYear = Int
 
--- | Year of Common Era.
+-- | Year of Common Era (when positive).
 type Year = Integer
 
 -- | Bidirectional abstract constructor for the proleptic Gregorian
@@ -1019,7 +1025,7 @@ module Data.Time.LocalTime.Compat
 
 -- | A TimeZone is a whole number of minutes offset from UTC, together with
 --   a name and a "just for summer" flag.
-data TimeZone
+data () => TimeZone
 TimeZone :: Int -> Bool -> String -> TimeZone
 
 -- | The number of minutes offset from UTC. Positive means local time will
@@ -1049,16 +1055,50 @@ hoursToTimeZone :: Int -> TimeZone
 -- | The UTC time zone.
 utc :: TimeZone
 
--- | Get the local time-zone for a given time (varying as per summertime
---   adjustments).
+-- | Get the configured time-zone for a given time (varying as per
+--   summertime adjustments).
+--   
+--   On Unix systems the output of this function depends on:
+--   
+--   <ol>
+--   <li>The value of <tt>TZ</tt> environment variable (if set)</li>
+--   <li>The system time zone (usually configured by
+--   <tt>/etc/localtime</tt> symlink)</li>
+--   </ol>
+--   
+--   For details see tzset(3) and localtime(3).
+--   
+--   Example:
+--   
+--   <pre>
+--   &gt; let t = <a>UTCTime</a> (<a>fromGregorian</a> 2021 7 1) 0
+--   &gt; <a>getTimeZone</a> t
+--   CEST
+--   &gt; <a>setEnv</a> "TZ" "America/New_York" &gt;&gt; <a>getTimeZone</a> t
+--   EDT
+--   &gt; <a>setEnv</a> "TZ" "Europe/Berlin" &gt;&gt; <a>getTimeZone</a> t
+--   CEST
+--   </pre>
+--   
+--   On Windows systems the output of this function depends on:
+--   
+--   <ol>
+--   <li>The value of <tt>TZ</tt> environment variable (if set). See
+--   <a>here</a> for how Windows interprets this variable.</li>
+--   <li>The system time zone, configured in Settings</li>
+--   </ol>
 getTimeZone :: UTCTime -> IO TimeZone
 
--- | Get the current time-zone.
+-- | Get the configured time-zone for the current time.
 getCurrentTimeZone :: IO TimeZone
 
 -- | Time of day as represented in hour, minute and second (with
 --   picoseconds), typically used to express local time of day.
-data TimeOfDay
+--   
+--   <tt>TimeOfDay 24 0 0</tt> is considered invalid for the purposes of
+--   <a>makeTimeOfDayValid</a>, as well as reading and parsing, but valid
+--   for ISO 8601 parsing in <a>Data.Time.Format.ISO8601</a>.
+data () => TimeOfDay
 TimeOfDay :: Int -> Int -> Pico -> TimeOfDay
 
 -- | range 0 - 23
@@ -1113,7 +1153,7 @@ pastMidnight :: DiffTime -> TimeOfDay
 
 -- | Same as <a>timeOfDayToTime</a>.
 sinceMidnight :: TimeOfDay -> DiffTime
-data CalendarDiffTime
+data () => CalendarDiffTime
 CalendarDiffTime :: Integer -> NominalDiffTime -> CalendarDiffTime
 [ctMonths] :: CalendarDiffTime -> Integer
 [ctTime] :: CalendarDiffTime -> NominalDiffTime
@@ -1128,7 +1168,7 @@ scaleCalendarDiffTime :: Integer -> CalendarDiffTime -> CalendarDiffTime
 --   parameter, and the time is a TimeOfDay. Conversion of this (as local
 --   civil time) to UTC depends on the time zone. Conversion of this (as
 --   local mean time) to UT1 depends on the longitude.
-data LocalTime
+data () => LocalTime
 LocalTime :: Day -> TimeOfDay -> LocalTime
 [localDay] :: LocalTime -> Day
 [localTimeOfDay] :: LocalTime -> TimeOfDay
@@ -1158,14 +1198,13 @@ localTimeToUT1 :: Rational -> LocalTime -> UniversalTime
 --   There is no <a>Eq</a> instance for <tt>ZonedTime</tt>. If you want to
 --   compare local times, use <a>zonedTimeToLocalTime</a>. If you want to
 --   compare absolute times, use <a>zonedTimeToUTC</a>.
-data ZonedTime
+data () => ZonedTime
 ZonedTime :: LocalTime -> TimeZone -> ZonedTime
 [zonedTimeToLocalTime] :: ZonedTime -> LocalTime
 [zonedTimeZone] :: ZonedTime -> TimeZone
 utcToZonedTime :: TimeZone -> UTCTime -> ZonedTime
 zonedTimeToUTC :: ZonedTime -> UTCTime
 getZonedTime :: IO ZonedTime
-
 utcToLocalZonedTime :: UTCTime -> IO ZonedTime
 
 module Data.Time.Compat
@@ -1173,7 +1212,7 @@ module Data.Time.Compat
 module Data.Time.Clock.TAI.Compat
 
 -- | AbsoluteTime is TAI, time as measured by a clock.
-data AbsoluteTime
+data () => AbsoluteTime
 
 -- | The epoch of TAI, which is 1858-11-17 00:00:00 TAI.
 taiEpoch :: AbsoluteTime
@@ -1198,7 +1237,7 @@ taiClock :: Maybe (DiffTime, IO AbsoluteTime)
 
 module Data.Time.Calendar.Julian.Compat
 
--- | Year of Common Era.
+-- | Year of Common Era (when positive).
 type Year = Integer
 
 -- | Month of year, in range 1 (January) to 12 (December).

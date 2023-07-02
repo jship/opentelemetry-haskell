@@ -20,7 +20,6 @@ defaultBaggageBackend :: BaggageBackend
 instance (GHC.Base.Applicative m, GHC.Base.Monoid a) => GHC.Base.Monoid (OTel.API.Baggage.Internal.BaggageT m a)
 instance (GHC.Base.Applicative m, GHC.Base.Semigroup a) => GHC.Base.Semigroup (OTel.API.Baggage.Internal.BaggageT m a)
 instance Control.Monad.Trans.Control.MonadTransControl OTel.API.Baggage.Internal.BaggageT
-instance Control.Monad.Trans.Class.MonadTrans OTel.API.Baggage.Internal.BaggageT
 instance OTel.API.Trace.Core.Internal.MonadTracingIO m => OTel.API.Trace.Core.Internal.MonadTracingIO (OTel.API.Baggage.Internal.BaggageT m)
 instance OTel.API.Trace.Core.Internal.MonadTracing m => OTel.API.Trace.Core.Internal.MonadTracing (OTel.API.Baggage.Internal.BaggageT m)
 instance Control.Monad.Trans.Resource.Internal.MonadResource m => Control.Monad.Trans.Resource.Internal.MonadResource (OTel.API.Baggage.Internal.BaggageT m)
@@ -31,6 +30,8 @@ instance Control.Monad.IO.Unlift.MonadUnliftIO m => Control.Monad.IO.Unlift.Mona
 instance Control.Monad.Catch.MonadThrow m => Control.Monad.Catch.MonadThrow (OTel.API.Baggage.Internal.BaggageT m)
 instance Control.Monad.Catch.MonadMask m => Control.Monad.Catch.MonadMask (OTel.API.Baggage.Internal.BaggageT m)
 instance Control.Monad.Catch.MonadCatch m => Control.Monad.Catch.MonadCatch (OTel.API.Baggage.Internal.BaggageT m)
+instance Control.Monad.Select.MonadSelect r m => Control.Monad.Select.MonadSelect r (OTel.API.Baggage.Internal.BaggageT m)
+instance Control.Monad.Accum.MonadAccum w m => Control.Monad.Accum.MonadAccum w (OTel.API.Baggage.Internal.BaggageT m)
 instance Control.Monad.Writer.Class.MonadWriter w m => Control.Monad.Writer.Class.MonadWriter w (OTel.API.Baggage.Internal.BaggageT m)
 instance Control.Monad.State.Class.MonadState s m => Control.Monad.State.Class.MonadState s (OTel.API.Baggage.Internal.BaggageT m)
 instance Control.Monad.Error.Class.MonadError e m => Control.Monad.Error.Class.MonadError e (OTel.API.Baggage.Internal.BaggageT m)
@@ -42,6 +43,7 @@ instance Control.Monad.Fail.MonadFail m => Control.Monad.Fail.MonadFail (OTel.AP
 instance GHC.Base.Monad m => GHC.Base.Monad (OTel.API.Baggage.Internal.BaggageT m)
 instance GHC.Base.Functor m => GHC.Base.Functor (OTel.API.Baggage.Internal.BaggageT m)
 instance GHC.Base.Applicative m => GHC.Base.Applicative (OTel.API.Baggage.Internal.BaggageT m)
+instance Control.Monad.Trans.Class.MonadTrans OTel.API.Baggage.Internal.BaggageT
 instance Control.Monad.Reader.Class.MonadReader r m => Control.Monad.Reader.Class.MonadReader r (OTel.API.Baggage.Internal.BaggageT m)
 instance Control.Monad.RWS.Class.MonadRWS r w s m => Control.Monad.RWS.Class.MonadRWS r w s (OTel.API.Baggage.Internal.BaggageT m)
 instance (Control.Monad.IO.Class.MonadIO m, Control.Monad.Catch.MonadMask m) => OTel.API.Baggage.Core.Internal.MonadBaggage (OTel.API.Baggage.Internal.BaggageT m)

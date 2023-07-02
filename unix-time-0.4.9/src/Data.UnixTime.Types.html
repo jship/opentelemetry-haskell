@@ -30,25 +30,36 @@
 </span><span id="line-28"></span><span class="hs-comment">-- as 'Data.UnixTime.microSecondsToUnixDiffTime' which will ensure</span><span>
 </span><span id="line-29"></span><span class="hs-comment">-- that such unusual values are never created.</span><span>
 </span><span id="line-30"></span><span class="hs-keyword">data</span><span> </span><span id="UnixTime"><span class="annot"><a href="Data.UnixTime.Types.html#UnixTime"><span class="hs-identifier hs-var">UnixTime</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="UnixTime"><span class="annot"><a href="Data.UnixTime.Types.html#UnixTime"><span class="hs-identifier hs-var">UnixTime</span></a></span></span><span> </span><span class="hs-special">{</span><span>
-</span><span id="line-31"></span><span>    </span><span class="hs-comment">-- | Seconds from 1st Jan 1970</span><span>
+</span><span id="line-31"></span><span>    </span><span class="annot"><span class="hs-comment">-- | Seconds from 1st Jan 1970</span></span><span>
 </span><span id="line-32"></span><span>    </span><span id="utSeconds"><span class="annot"><span class="annottext">UnixTime -&gt; CTime
 </span><a href="Data.UnixTime.Types.html#utSeconds"><span class="hs-identifier hs-var hs-var">utSeconds</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-pragma">{-# UNPACK</span><span> </span><span class="hs-pragma">#-}</span><span> </span><span class="hs-glyph">!</span><span class="annot"><span class="hs-identifier hs-type">CTime</span></span><span>
-</span><span id="line-33"></span><span>    </span><span class="hs-comment">-- | Micro seconds (i.e. 10^(-6))</span><span>
+</span><span id="line-33"></span><span>    </span><span class="annot"><span class="hs-comment">-- | Micro seconds (i.e. 10^(-6))</span></span><span>
 </span><span id="line-34"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="utMicroSeconds"><span class="annot"><span class="annottext">UnixTime -&gt; Int32
 </span><a href="Data.UnixTime.Types.html#utMicroSeconds"><span class="hs-identifier hs-var hs-var">utMicroSeconds</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-pragma">{-# UNPACK</span><span> </span><span class="hs-pragma">#-}</span><span> </span><span class="hs-glyph">!</span><span class="annot"><span class="hs-identifier hs-type">Int32</span></span><span>
-</span><span id="line-35"></span><span>  </span><span class="hs-special">}</span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679045722"><span id="local-6989586621679045728"><span class="annot"><span class="annottext">UnixTime -&gt; UnixTime -&gt; Bool
+</span><span id="line-35"></span><span>  </span><span class="hs-special">}</span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679046474"><span id="local-6989586621679046480"><span class="annot"><span class="annottext">UnixTime -&gt; UnixTime -&gt; Bool
+(UnixTime -&gt; UnixTime -&gt; Bool)
+-&gt; (UnixTime -&gt; UnixTime -&gt; Bool) -&gt; Eq UnixTime
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
-/= :: UnixTime -&gt; UnixTime -&gt; Bool
-$c/= :: UnixTime -&gt; UnixTime -&gt; Bool
-== :: UnixTime -&gt; UnixTime -&gt; Bool
 $c== :: UnixTime -&gt; UnixTime -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span id="local-6989586621679045696"><span id="local-6989586621679045698"><span id="local-6989586621679045701"><span id="local-6989586621679045704"><span id="local-6989586621679045707"><span id="local-6989586621679045711"><span id="local-6989586621679045717"><span class="annot"><span class="annottext">Eq UnixTime
+== :: UnixTime -&gt; UnixTime -&gt; Bool
+$c/= :: UnixTime -&gt; UnixTime -&gt; Bool
+/= :: UnixTime -&gt; UnixTime -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span id="local-6989586621679046487"><span id="local-6989586621679046493"><span id="local-6989586621679046497"><span id="local-6989586621679046501"><span id="local-6989586621679046504"><span id="local-6989586621679046507"><span id="local-6989586621679046510"><span class="annot"><span class="annottext">Eq UnixTime
+Eq UnixTime =&gt;
+(UnixTime -&gt; UnixTime -&gt; Ordering)
+-&gt; (UnixTime -&gt; UnixTime -&gt; Bool)
+-&gt; (UnixTime -&gt; UnixTime -&gt; Bool)
+-&gt; (UnixTime -&gt; UnixTime -&gt; Bool)
+-&gt; (UnixTime -&gt; UnixTime -&gt; Bool)
+-&gt; (UnixTime -&gt; UnixTime -&gt; UnixTime)
+-&gt; (UnixTime -&gt; UnixTime -&gt; UnixTime)
+-&gt; Ord UnixTime
 UnixTime -&gt; UnixTime -&gt; Bool
 UnixTime -&gt; UnixTime -&gt; Ordering
 UnixTime -&gt; UnixTime -&gt; UnixTime
 forall a.
-Eq a
--&gt; (a -&gt; a -&gt; Ordering)
+Eq a =&gt;
+(a -&gt; a -&gt; Ordering)
 -&gt; (a -&gt; a -&gt; Bool)
 -&gt; (a -&gt; a -&gt; Bool)
 -&gt; (a -&gt; a -&gt; Bool)
@@ -56,36 +67,38 @@ Eq a
 -&gt; (a -&gt; a -&gt; a)
 -&gt; (a -&gt; a -&gt; a)
 -&gt; Ord a
-min :: UnixTime -&gt; UnixTime -&gt; UnixTime
-$cmin :: UnixTime -&gt; UnixTime -&gt; UnixTime
-max :: UnixTime -&gt; UnixTime -&gt; UnixTime
-$cmax :: UnixTime -&gt; UnixTime -&gt; UnixTime
-&gt;= :: UnixTime -&gt; UnixTime -&gt; Bool
-$c&gt;= :: UnixTime -&gt; UnixTime -&gt; Bool
-&gt; :: UnixTime -&gt; UnixTime -&gt; Bool
-$c&gt; :: UnixTime -&gt; UnixTime -&gt; Bool
-&lt;= :: UnixTime -&gt; UnixTime -&gt; Bool
-$c&lt;= :: UnixTime -&gt; UnixTime -&gt; Bool
-&lt; :: UnixTime -&gt; UnixTime -&gt; Bool
-$c&lt; :: UnixTime -&gt; UnixTime -&gt; Bool
-compare :: UnixTime -&gt; UnixTime -&gt; Ordering
 $ccompare :: UnixTime -&gt; UnixTime -&gt; Ordering
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Ord</span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span id="local-6989586621679045683"><span id="local-6989586621679045685"><span id="local-6989586621679045693"><span class="annot"><span class="annottext">Int -&gt; UnixTime -&gt; ShowS
+compare :: UnixTime -&gt; UnixTime -&gt; Ordering
+$c&lt; :: UnixTime -&gt; UnixTime -&gt; Bool
+&lt; :: UnixTime -&gt; UnixTime -&gt; Bool
+$c&lt;= :: UnixTime -&gt; UnixTime -&gt; Bool
+&lt;= :: UnixTime -&gt; UnixTime -&gt; Bool
+$c&gt; :: UnixTime -&gt; UnixTime -&gt; Bool
+&gt; :: UnixTime -&gt; UnixTime -&gt; Bool
+$c&gt;= :: UnixTime -&gt; UnixTime -&gt; Bool
+&gt;= :: UnixTime -&gt; UnixTime -&gt; Bool
+$cmax :: UnixTime -&gt; UnixTime -&gt; UnixTime
+max :: UnixTime -&gt; UnixTime -&gt; UnixTime
+$cmin :: UnixTime -&gt; UnixTime -&gt; UnixTime
+min :: UnixTime -&gt; UnixTime -&gt; UnixTime
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Ord</span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span id="local-6989586621679046514"><span id="local-6989586621679046522"><span id="local-6989586621679046526"><span class="annot"><span class="annottext">Int -&gt; UnixTime -&gt; ShowS
 [UnixTime] -&gt; ShowS
 UnixTime -&gt; String
+(Int -&gt; UnixTime -&gt; ShowS)
+-&gt; (UnixTime -&gt; String) -&gt; ([UnixTime] -&gt; ShowS) -&gt; Show UnixTime
 forall a.
 (Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
-showList :: [UnixTime] -&gt; ShowS
-$cshowList :: [UnixTime] -&gt; ShowS
-show :: UnixTime -&gt; String
-$cshow :: UnixTime -&gt; String
-showsPrec :: Int -&gt; UnixTime -&gt; ShowS
 $cshowsPrec :: Int -&gt; UnixTime -&gt; ShowS
+showsPrec :: Int -&gt; UnixTime -&gt; ShowS
+$cshow :: UnixTime -&gt; String
+show :: UnixTime -&gt; String
+$cshowList :: [UnixTime] -&gt; ShowS
+showList :: [UnixTime] -&gt; ShowS
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
 </span><span id="line-36"></span><span>
-</span><span id="line-37"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679045672"><span id="local-6989586621679045674"><span id="local-6989586621679045676"><span id="local-6989586621679045678"><span class="annot"><span class="hs-identifier hs-type">Storable</span></span><span> </span><span class="annot"><a href="Data.UnixTime.Types.html#UnixTime"><span class="hs-identifier hs-type">UnixTime</span></a></span></span></span></span></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-38"></span><span>    </span><span id="local-6989586621679045668"><span class="annot"><span class="annottext">sizeOf :: UnixTime -&gt; Int
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var">sizeOf</span></span></span><span> </span><span class="annot"><span class="annottext">UnixTime
+</span><span id="line-37"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679046532"><span id="local-6989586621679046536"><span id="local-6989586621679046539"><span id="local-6989586621679046542"><span class="annot"><span class="hs-identifier hs-type">Storable</span></span><span> </span><span class="annot"><a href="Data.UnixTime.Types.html#UnixTime"><span class="hs-identifier hs-type">UnixTime</span></a></span></span></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-38"></span><span>    </span><span id="local-6989586621679046547"><span class="annot"><span class="annottext">sizeOf :: UnixTime -&gt; Int
+</span><a href="#local-6989586621679046547"><span class="hs-identifier hs-var hs-var hs-var hs-var">sizeOf</span></a></span></span><span> </span><span class="annot"><span class="annottext">UnixTime
 </span><span class="hs-identifier">_</span></span><span>    </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">16</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
 </span><span id="line-39"></span><span class="hs-pragma">{-# LINE 39 &quot;Data/UnixTime/Types.hsc&quot; #-}</span><span>
@@ -93,25 +106,32 @@ $cshowsPrec :: Int -&gt; UnixTime -&gt; ShowS
 </span><span id="line-40"></span><span class="hs-pragma">{-# LINE 40 &quot;Data/UnixTime/Types.hsc&quot; #-}</span><span>
 </span><span id="line-40"></span><span>
 </span><span id="line-41"></span><span class="hs-pragma">{-# LINE 64 &quot;Data/UnixTime/Types.hsc&quot; #-}</span><span>
-</span><span id="line-64"></span><span>    </span><span id="local-6989586621679045656"><span class="annot"><span class="annottext">peek :: Ptr UnixTime -&gt; IO UnixTime
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var">peek</span></span></span><span> </span><span id="local-6989586621679045654"><span class="annot"><span class="annottext">Ptr UnixTime
-</span><a href="#local-6989586621679045654"><span class="hs-identifier hs-var">ptr</span></a></span></span><span>    </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">CTime -&gt; Int32 -&gt; UnixTime
+</span><span id="line-64"></span><span>    </span><span id="local-6989586621679046559"><span class="annot"><span class="annottext">peek :: Ptr UnixTime -&gt; IO UnixTime
+</span><a href="#local-6989586621679046559"><span class="hs-identifier hs-var hs-var hs-var hs-var">peek</span></a></span></span><span> </span><span id="local-6989586621679046561"><span class="annot"><span class="annottext">Ptr UnixTime
+</span><a href="#local-6989586621679046561"><span class="hs-identifier hs-var">ptr</span></a></span></span><span>    </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">CTime -&gt; Int32 -&gt; UnixTime
 </span><a href="Data.UnixTime.Types.html#UnixTime"><span class="hs-identifier hs-var">UnixTime</span></a></span><span>
-</span><span id="line-65"></span><span>            </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
-</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621679045653"><span class="annot"><span class="annottext">Ptr UnixTime
-</span><a href="#local-6989586621679045653"><span class="hs-identifier hs-var">hsc_ptr</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall a b. Storable a =&gt; Ptr b -&gt; Int -&gt; IO a
+</span><span id="line-65"></span><span>            </span><span class="annot"><span class="annottext">(CTime -&gt; Int32 -&gt; UnixTime) -&gt; IO CTime -&gt; IO (Int32 -&gt; UnixTime)
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621679046562"><span class="annot"><span class="annottext">Ptr UnixTime
+</span><a href="#local-6989586621679046562"><span class="hs-identifier hs-var">hsc_ptr</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Ptr UnixTime -&gt; Int -&gt; IO CTime
+forall b. Ptr b -&gt; Int -&gt; IO CTime
+forall a b. Storable a =&gt; Ptr b -&gt; Int -&gt; IO a
 </span><span class="hs-identifier hs-var">peekByteOff</span></span><span> </span><span class="annot"><span class="annottext">Ptr UnixTime
-</span><a href="#local-6989586621679045653"><span class="hs-identifier hs-var">hsc_ptr</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679046562"><span class="hs-identifier hs-var">hsc_ptr</span></a></span><span> </span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">0</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>  </span><span class="annot"><span class="annottext">Ptr UnixTime
-</span><a href="#local-6989586621679045654"><span class="hs-identifier hs-var">ptr</span></a></span><span>
+</span><a href="#local-6989586621679046561"><span class="hs-identifier hs-var">ptr</span></a></span><span>
 </span><span id="line-66"></span><span class="hs-pragma">{-# LINE 66 &quot;Data/UnixTime/Types.hsc&quot; #-}</span><span>
-</span><span id="line-66"></span><span>            </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
-</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621679045651"><span class="annot"><span class="annottext">Ptr UnixTime
-</span><a href="#local-6989586621679045651"><span class="hs-identifier hs-var">hsc_ptr</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall a b. Storable a =&gt; Ptr b -&gt; Int -&gt; IO a
+</span><span id="line-66"></span><span>            </span><span class="annot"><span class="annottext">IO (Int32 -&gt; UnixTime) -&gt; IO Int32 -&gt; IO UnixTime
+forall a b. IO (a -&gt; b) -&gt; IO a -&gt; IO b
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621679046564"><span class="annot"><span class="annottext">Ptr UnixTime
+</span><a href="#local-6989586621679046564"><span class="hs-identifier hs-var">hsc_ptr</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Ptr UnixTime -&gt; Int -&gt; IO Int32
+forall b. Ptr b -&gt; Int -&gt; IO Int32
+forall a b. Storable a =&gt; Ptr b -&gt; Int -&gt; IO a
 </span><span class="hs-identifier hs-var">peekByteOff</span></span><span> </span><span class="annot"><span class="annottext">Ptr UnixTime
-</span><a href="#local-6989586621679045651"><span class="hs-identifier hs-var">hsc_ptr</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679046564"><span class="hs-identifier hs-var">hsc_ptr</span></a></span><span> </span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">8</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Ptr UnixTime
-</span><a href="#local-6989586621679045654"><span class="hs-identifier hs-var">ptr</span></a></span><span>
+</span><a href="#local-6989586621679046561"><span class="hs-identifier hs-var">ptr</span></a></span><span>
 </span><span id="line-67"></span><span class="hs-pragma">{-# LINE 67 &quot;Data/UnixTime/Types.hsc&quot; #-}</span><span>
 </span><span id="line-67"></span><span>    </span><span class="hs-identifier">poke</span><span> </span><span class="hs-identifier">ptr</span><span> </span><span class="hs-identifier">ut</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
 </span><span id="line-68"></span><span>            </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="hs-glyph">\</span><span class="hs-identifier">hsc_ptr</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier">pokeByteOff</span><span> </span><span class="hs-identifier">hsc_ptr</span><span> </span><span class="hs-number">0</span><span class="hs-special">)</span><span class="hs-special">)</span><span>  </span><span class="hs-identifier">ptr</span><span> </span><span class="hs-special">(</span><span class="hs-identifier">utSeconds</span><span> </span><span class="hs-identifier">ut</span><span class="hs-special">)</span><span>
@@ -122,7 +142,7 @@ $cshowsPrec :: Int -&gt; UnixTime -&gt; ShowS
 </span><span id="line-71"></span><span class="hs-pragma">{-# LINE 71 &quot;Data/UnixTime/Types.hsc&quot; #-}</span><span>
 </span><span id="line-71"></span><span>
 </span><span id="line-72"></span><span>
-</span><span id="line-73"></span><span class="hs-pragma">{-# LINE 73 &quot;Data/UnixTime/Types.hsc&quot; #-}</span><span id="local-6989586621679045636"></span><span>
+</span><span id="line-73"></span><span class="hs-pragma">{-# LINE 73 &quot;Data/UnixTime/Types.hsc&quot; #-}</span><span id="local-6989586621679046579"></span><span>
 </span><span id="line-73"></span><span class="hs-keyword">instance</span><span> </span><span class="hs-identifier">Binary</span><span> </span><span class="hs-identifier">UnixTime</span><span> </span><span class="hs-keyword">where</span><span>
 </span><span id="line-74"></span><span>        </span><span class="hs-identifier">put</span><span> </span><span class="hs-special">(</span><span class="hs-identifier">UnixTime</span><span> </span><span class="hs-special">(</span><span class="hs-identifier">CTime</span><span> </span><span class="hs-identifier">sec</span><span class="hs-special">)</span><span> </span><span class="hs-identifier">msec</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
 </span><span id="line-75"></span><span>            </span><span class="hs-identifier">put</span><span> </span><span class="hs-identifier">sec</span><span>
@@ -147,25 +167,36 @@ $cshowsPrec :: Int -&gt; UnixTime -&gt; ShowS
 </span><span id="line-93"></span><span class="hs-comment">-- create values that are in-range. This avoids any gotchas when then</span><span>
 </span><span id="line-94"></span><span class="hs-comment">-- doing comparisons.</span><span>
 </span><span id="line-95"></span><span class="hs-keyword">data</span><span> </span><span id="UnixDiffTime"><span class="annot"><a href="Data.UnixTime.Types.html#UnixDiffTime"><span class="hs-identifier hs-var">UnixDiffTime</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="UnixDiffTime"><span class="annot"><a href="Data.UnixTime.Types.html#UnixDiffTime"><span class="hs-identifier hs-var">UnixDiffTime</span></a></span></span><span> </span><span class="hs-special">{</span><span>
-</span><span id="line-96"></span><span>    </span><span class="hs-comment">-- | Seconds</span><span>
+</span><span id="line-96"></span><span>    </span><span class="annot"><span class="hs-comment">-- | Seconds</span></span><span>
 </span><span id="line-97"></span><span>    </span><span id="udtSeconds"><span class="annot"><span class="annottext">UnixDiffTime -&gt; CTime
 </span><a href="Data.UnixTime.Types.html#udtSeconds"><span class="hs-identifier hs-var hs-var">udtSeconds</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-pragma">{-# UNPACK</span><span> </span><span class="hs-pragma">#-}</span><span> </span><span class="hs-glyph">!</span><span class="annot"><span class="hs-identifier hs-type">CTime</span></span><span>
-</span><span id="line-98"></span><span>    </span><span class="hs-comment">-- | Micro seconds (i.e. 10^(-6))</span><span>
+</span><span id="line-98"></span><span>    </span><span class="annot"><span class="hs-comment">-- | Micro seconds (i.e. 10^(-6))</span></span><span>
 </span><span id="line-99"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="udtMicroSeconds"><span class="annot"><span class="annottext">UnixDiffTime -&gt; Int32
 </span><a href="Data.UnixTime.Types.html#udtMicroSeconds"><span class="hs-identifier hs-var hs-var">udtMicroSeconds</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-pragma">{-# UNPACK</span><span> </span><span class="hs-pragma">#-}</span><span> </span><span class="hs-glyph">!</span><span class="annot"><span class="hs-identifier hs-type">Int32</span></span><span>
-</span><span id="line-100"></span><span>  </span><span class="hs-special">}</span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679045604"><span id="local-6989586621679045608"><span class="annot"><span class="annottext">UnixDiffTime -&gt; UnixDiffTime -&gt; Bool
+</span><span id="line-100"></span><span>  </span><span class="hs-special">}</span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679046608"><span id="local-6989586621679046612"><span class="annot"><span class="annottext">UnixDiffTime -&gt; UnixDiffTime -&gt; Bool
+(UnixDiffTime -&gt; UnixDiffTime -&gt; Bool)
+-&gt; (UnixDiffTime -&gt; UnixDiffTime -&gt; Bool) -&gt; Eq UnixDiffTime
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
-/= :: UnixDiffTime -&gt; UnixDiffTime -&gt; Bool
-$c/= :: UnixDiffTime -&gt; UnixDiffTime -&gt; Bool
-== :: UnixDiffTime -&gt; UnixDiffTime -&gt; Bool
 $c== :: UnixDiffTime -&gt; UnixDiffTime -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span id="local-6989586621679045581"><span id="local-6989586621679045583"><span id="local-6989586621679045586"><span id="local-6989586621679045589"><span id="local-6989586621679045592"><span id="local-6989586621679045596"><span id="local-6989586621679045600"><span class="annot"><span class="annottext">Eq UnixDiffTime
+== :: UnixDiffTime -&gt; UnixDiffTime -&gt; Bool
+$c/= :: UnixDiffTime -&gt; UnixDiffTime -&gt; Bool
+/= :: UnixDiffTime -&gt; UnixDiffTime -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span id="local-6989586621679046618"><span id="local-6989586621679046622"><span id="local-6989586621679046626"><span id="local-6989586621679046630"><span id="local-6989586621679046633"><span id="local-6989586621679046636"><span id="local-6989586621679046639"><span class="annot"><span class="annottext">Eq UnixDiffTime
+Eq UnixDiffTime =&gt;
+(UnixDiffTime -&gt; UnixDiffTime -&gt; Ordering)
+-&gt; (UnixDiffTime -&gt; UnixDiffTime -&gt; Bool)
+-&gt; (UnixDiffTime -&gt; UnixDiffTime -&gt; Bool)
+-&gt; (UnixDiffTime -&gt; UnixDiffTime -&gt; Bool)
+-&gt; (UnixDiffTime -&gt; UnixDiffTime -&gt; Bool)
+-&gt; (UnixDiffTime -&gt; UnixDiffTime -&gt; UnixDiffTime)
+-&gt; (UnixDiffTime -&gt; UnixDiffTime -&gt; UnixDiffTime)
+-&gt; Ord UnixDiffTime
 UnixDiffTime -&gt; UnixDiffTime -&gt; Bool
 UnixDiffTime -&gt; UnixDiffTime -&gt; Ordering
 UnixDiffTime -&gt; UnixDiffTime -&gt; UnixDiffTime
 forall a.
-Eq a
--&gt; (a -&gt; a -&gt; Ordering)
+Eq a =&gt;
+(a -&gt; a -&gt; Ordering)
 -&gt; (a -&gt; a -&gt; Bool)
 -&gt; (a -&gt; a -&gt; Bool)
 -&gt; (a -&gt; a -&gt; Bool)
@@ -173,30 +204,34 @@ Eq a
 -&gt; (a -&gt; a -&gt; a)
 -&gt; (a -&gt; a -&gt; a)
 -&gt; Ord a
-min :: UnixDiffTime -&gt; UnixDiffTime -&gt; UnixDiffTime
-$cmin :: UnixDiffTime -&gt; UnixDiffTime -&gt; UnixDiffTime
-max :: UnixDiffTime -&gt; UnixDiffTime -&gt; UnixDiffTime
-$cmax :: UnixDiffTime -&gt; UnixDiffTime -&gt; UnixDiffTime
-&gt;= :: UnixDiffTime -&gt; UnixDiffTime -&gt; Bool
-$c&gt;= :: UnixDiffTime -&gt; UnixDiffTime -&gt; Bool
-&gt; :: UnixDiffTime -&gt; UnixDiffTime -&gt; Bool
-$c&gt; :: UnixDiffTime -&gt; UnixDiffTime -&gt; Bool
-&lt;= :: UnixDiffTime -&gt; UnixDiffTime -&gt; Bool
-$c&lt;= :: UnixDiffTime -&gt; UnixDiffTime -&gt; Bool
-&lt; :: UnixDiffTime -&gt; UnixDiffTime -&gt; Bool
-$c&lt; :: UnixDiffTime -&gt; UnixDiffTime -&gt; Bool
-compare :: UnixDiffTime -&gt; UnixDiffTime -&gt; Ordering
 $ccompare :: UnixDiffTime -&gt; UnixDiffTime -&gt; Ordering
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Ord</span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span id="local-6989586621679045572"><span id="local-6989586621679045574"><span id="local-6989586621679045579"><span class="annot"><span class="annottext">Int -&gt; UnixDiffTime -&gt; ShowS
+compare :: UnixDiffTime -&gt; UnixDiffTime -&gt; Ordering
+$c&lt; :: UnixDiffTime -&gt; UnixDiffTime -&gt; Bool
+&lt; :: UnixDiffTime -&gt; UnixDiffTime -&gt; Bool
+$c&lt;= :: UnixDiffTime -&gt; UnixDiffTime -&gt; Bool
+&lt;= :: UnixDiffTime -&gt; UnixDiffTime -&gt; Bool
+$c&gt; :: UnixDiffTime -&gt; UnixDiffTime -&gt; Bool
+&gt; :: UnixDiffTime -&gt; UnixDiffTime -&gt; Bool
+$c&gt;= :: UnixDiffTime -&gt; UnixDiffTime -&gt; Bool
+&gt;= :: UnixDiffTime -&gt; UnixDiffTime -&gt; Bool
+$cmax :: UnixDiffTime -&gt; UnixDiffTime -&gt; UnixDiffTime
+max :: UnixDiffTime -&gt; UnixDiffTime -&gt; UnixDiffTime
+$cmin :: UnixDiffTime -&gt; UnixDiffTime -&gt; UnixDiffTime
+min :: UnixDiffTime -&gt; UnixDiffTime -&gt; UnixDiffTime
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Ord</span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span id="local-6989586621679046642"><span id="local-6989586621679046647"><span id="local-6989586621679046651"><span class="annot"><span class="annottext">Int -&gt; UnixDiffTime -&gt; ShowS
 [UnixDiffTime] -&gt; ShowS
 UnixDiffTime -&gt; String
+(Int -&gt; UnixDiffTime -&gt; ShowS)
+-&gt; (UnixDiffTime -&gt; String)
+-&gt; ([UnixDiffTime] -&gt; ShowS)
+-&gt; Show UnixDiffTime
 forall a.
 (Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
-showList :: [UnixDiffTime] -&gt; ShowS
-$cshowList :: [UnixDiffTime] -&gt; ShowS
-show :: UnixDiffTime -&gt; String
-$cshow :: UnixDiffTime -&gt; String
-showsPrec :: Int -&gt; UnixDiffTime -&gt; ShowS
 $cshowsPrec :: Int -&gt; UnixDiffTime -&gt; ShowS
+showsPrec :: Int -&gt; UnixDiffTime -&gt; ShowS
+$cshow :: UnixDiffTime -&gt; String
+show :: UnixDiffTime -&gt; String
+$cshowList :: [UnixDiffTime] -&gt; ShowS
+showList :: [UnixDiffTime] -&gt; ShowS
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
 </span><span id="line-101"></span></pre></body></html>

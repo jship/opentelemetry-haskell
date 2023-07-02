@@ -18,42 +18,50 @@
 </span><span id="line-18"></span><span class="hs-keyword">newtype</span><span> </span><span id="BaggageErrors"><span class="annot"><a href="OTel.API.Baggage.Core.Builder.Errors.html#BaggageErrors"><span class="hs-identifier hs-var">BaggageErrors</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="BaggageErrors"><span class="annot"><a href="OTel.API.Baggage.Core.Builder.Errors.html#BaggageErrors"><span class="hs-identifier hs-var">BaggageErrors</span></a></span></span><span>
 </span><span id="line-19"></span><span>  </span><span class="hs-special">{</span><span> </span><span id="%24sel%3AunBaggageErrors%3ABaggageErrors"><span class="annot"><span class="annottext">BaggageErrors -&gt; [BaggageError]
 </span><a href="OTel.API.Baggage.Core.Builder.Errors.html#%24sel%3AunBaggageErrors%3ABaggageErrors"><span class="hs-identifier hs-var hs-var">unBaggageErrors</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="OTel.API.Baggage.Core.Builder.Errors.html#BaggageError"><span class="hs-identifier hs-type">BaggageError</span></a></span><span class="hs-special">]</span><span>
-</span><span id="line-20"></span><span>  </span><span class="hs-special">}</span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">stock</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679117248"><span id="local-6989586621679117253"><span class="annot"><span class="annottext">BaggageErrors -&gt; BaggageErrors -&gt; Bool
+</span><span id="line-20"></span><span>  </span><span class="hs-special">}</span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">stock</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679092852"><span id="local-6989586621679092857"><span class="annot"><span class="annottext">BaggageErrors -&gt; BaggageErrors -&gt; Bool
+(BaggageErrors -&gt; BaggageErrors -&gt; Bool)
+-&gt; (BaggageErrors -&gt; BaggageErrors -&gt; Bool) -&gt; Eq BaggageErrors
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
-/= :: BaggageErrors -&gt; BaggageErrors -&gt; Bool
-$c/= :: BaggageErrors -&gt; BaggageErrors -&gt; Bool
-== :: BaggageErrors -&gt; BaggageErrors -&gt; Bool
 $c== :: BaggageErrors -&gt; BaggageErrors -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679117236"><span id="local-6989586621679117238"><span id="local-6989586621679117245"><span class="annot"><span class="annottext">Int -&gt; BaggageErrors -&gt; ShowS
+== :: BaggageErrors -&gt; BaggageErrors -&gt; Bool
+$c/= :: BaggageErrors -&gt; BaggageErrors -&gt; Bool
+/= :: BaggageErrors -&gt; BaggageErrors -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679092863"><span id="local-6989586621679092870"><span id="local-6989586621679092874"><span class="annot"><span class="annottext">Int -&gt; BaggageErrors -&gt; ShowS
 [BaggageErrors] -&gt; ShowS
 BaggageErrors -&gt; String
+(Int -&gt; BaggageErrors -&gt; ShowS)
+-&gt; (BaggageErrors -&gt; String)
+-&gt; ([BaggageErrors] -&gt; ShowS)
+-&gt; Show BaggageErrors
 forall a.
 (Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
-showList :: [BaggageErrors] -&gt; ShowS
-$cshowList :: [BaggageErrors] -&gt; ShowS
-show :: BaggageErrors -&gt; String
-$cshow :: BaggageErrors -&gt; String
-showsPrec :: Int -&gt; BaggageErrors -&gt; ShowS
 $cshowsPrec :: Int -&gt; BaggageErrors -&gt; ShowS
+showsPrec :: Int -&gt; BaggageErrors -&gt; ShowS
+$cshow :: BaggageErrors -&gt; String
+show :: BaggageErrors -&gt; String
+$cshowList :: [BaggageErrors] -&gt; ShowS
+showList :: [BaggageErrors] -&gt; ShowS
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
-</span><span id="line-21"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">anyclass</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679117225"><span id="local-6989586621679117227"><span id="local-6989586621679117229"><span class="annot"><span class="annottext">Show BaggageErrors
+</span><span id="line-21"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">anyclass</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679092883"><span id="local-6989586621679092887"><span id="local-6989586621679092890"><span class="annot"><span class="annottext">Show BaggageErrors
 Typeable BaggageErrors
+(Typeable BaggageErrors, Show BaggageErrors) =&gt;
+(BaggageErrors -&gt; SomeException)
+-&gt; (SomeException -&gt; Maybe BaggageErrors)
+-&gt; (BaggageErrors -&gt; String)
+-&gt; Exception BaggageErrors
 SomeException -&gt; Maybe BaggageErrors
 BaggageErrors -&gt; String
 BaggageErrors -&gt; SomeException
 forall e.
-Typeable e
--&gt; Show e
--&gt; (e -&gt; SomeException)
--&gt; (SomeException -&gt; Maybe e)
--&gt; (e -&gt; String)
--&gt; Exception e
-displayException :: BaggageErrors -&gt; String
-$cdisplayException :: BaggageErrors -&gt; String
-fromException :: SomeException -&gt; Maybe BaggageErrors
-$cfromException :: SomeException -&gt; Maybe BaggageErrors
-toException :: BaggageErrors -&gt; SomeException
+(Typeable e, Show e) =&gt;
+(e -&gt; SomeException)
+-&gt; (SomeException -&gt; Maybe e) -&gt; (e -&gt; String) -&gt; Exception e
 $ctoException :: BaggageErrors -&gt; SomeException
+toException :: BaggageErrors -&gt; SomeException
+$cfromException :: SomeException -&gt; Maybe BaggageErrors
+fromException :: SomeException -&gt; Maybe BaggageErrors
+$cdisplayException :: BaggageErrors -&gt; String
+displayException :: BaggageErrors -&gt; String
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Exception</span></span></span></span></span><span class="hs-special">)</span><span>
 </span><span id="line-22"></span><span>
 </span><span id="line-23"></span><span class="hs-keyword">data</span><span> </span><span id="BaggageError"><span class="annot"><a href="OTel.API.Baggage.Core.Builder.Errors.html#BaggageError"><span class="hs-identifier hs-var">BaggageError</span></a></span></span><span>
@@ -61,45 +69,58 @@ $ctoException :: BaggageErrors -&gt; SomeException
 </span><span id="line-25"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span id="BaggageKeyContainsInvalidChars"><span class="annot"><a href="OTel.API.Baggage.Core.Builder.Errors.html#BaggageKeyContainsInvalidChars"><span class="hs-identifier hs-var">BaggageKeyContainsInvalidChars</span></a></span></span><span> </span><span class="annot"><a href="OTel.API.Baggage.Core.Builder.Errors.html#BaggageKeyContainsInvalidCharsError"><span class="hs-identifier hs-type">BaggageKeyContainsInvalidCharsError</span></a></span><span>
 </span><span id="line-26"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span id="BaggageValueIsEmpty"><span class="annot"><a href="OTel.API.Baggage.Core.Builder.Errors.html#BaggageValueIsEmpty"><span class="hs-identifier hs-var">BaggageValueIsEmpty</span></a></span></span><span> </span><span class="annot"><a href="OTel.API.Baggage.Core.Builder.Errors.html#BaggageValueIsEmptyError"><span class="hs-identifier hs-type">BaggageValueIsEmptyError</span></a></span><span>
 </span><span id="line-27"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span id="BaggageValueContainsInvalidChars"><span class="annot"><a href="OTel.API.Baggage.Core.Builder.Errors.html#BaggageValueContainsInvalidChars"><span class="hs-identifier hs-var">BaggageValueContainsInvalidChars</span></a></span></span><span> </span><span class="annot"><a href="OTel.API.Baggage.Core.Builder.Errors.html#BaggageValueContainsInvalidCharsError"><span class="hs-identifier hs-type">BaggageValueContainsInvalidCharsError</span></a></span><span>
-</span><span id="line-28"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">stock</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679117212"><span id="local-6989586621679117218"><span class="annot"><span class="annottext">BaggageError -&gt; BaggageError -&gt; Bool
+</span><span id="line-28"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">stock</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679092898"><span id="local-6989586621679092908"><span class="annot"><span class="annottext">BaggageError -&gt; BaggageError -&gt; Bool
+(BaggageError -&gt; BaggageError -&gt; Bool)
+-&gt; (BaggageError -&gt; BaggageError -&gt; Bool) -&gt; Eq BaggageError
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
-/= :: BaggageError -&gt; BaggageError -&gt; Bool
-$c/= :: BaggageError -&gt; BaggageError -&gt; Bool
-== :: BaggageError -&gt; BaggageError -&gt; Bool
 $c== :: BaggageError -&gt; BaggageError -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679117198"><span id="local-6989586621679117200"><span id="local-6989586621679117210"><span class="annot"><span class="annottext">Int -&gt; BaggageError -&gt; ShowS
+== :: BaggageError -&gt; BaggageError -&gt; Bool
+$c/= :: BaggageError -&gt; BaggageError -&gt; Bool
+/= :: BaggageError -&gt; BaggageError -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679092911"><span id="local-6989586621679092925"><span id="local-6989586621679092928"><span class="annot"><span class="annottext">Int -&gt; BaggageError -&gt; ShowS
 [BaggageError] -&gt; ShowS
 BaggageError -&gt; String
+(Int -&gt; BaggageError -&gt; ShowS)
+-&gt; (BaggageError -&gt; String)
+-&gt; ([BaggageError] -&gt; ShowS)
+-&gt; Show BaggageError
 forall a.
 (Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
-showList :: [BaggageError] -&gt; ShowS
-$cshowList :: [BaggageError] -&gt; ShowS
-show :: BaggageError -&gt; String
-$cshow :: BaggageError -&gt; String
-showsPrec :: Int -&gt; BaggageError -&gt; ShowS
 $cshowsPrec :: Int -&gt; BaggageError -&gt; ShowS
+showsPrec :: Int -&gt; BaggageError -&gt; ShowS
+$cshow :: BaggageError -&gt; String
+show :: BaggageError -&gt; String
+$cshowList :: [BaggageError] -&gt; ShowS
+showList :: [BaggageError] -&gt; ShowS
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
 </span><span id="line-29"></span><span>
 </span><span id="line-30"></span><span class="hs-keyword">newtype</span><span> </span><span id="BaggageKeyIsEmptyError"><span class="annot"><a href="OTel.API.Baggage.Core.Builder.Errors.html#BaggageKeyIsEmptyError"><span class="hs-identifier hs-var">BaggageKeyIsEmptyError</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="BaggageKeyIsEmptyError"><span class="annot"><a href="OTel.API.Baggage.Core.Builder.Errors.html#BaggageKeyIsEmptyError"><span class="hs-identifier hs-var">BaggageKeyIsEmptyError</span></a></span></span><span>
 </span><span id="line-31"></span><span>  </span><span class="hs-special">{</span><span> </span><span id="%24sel%3ArawValue%3ABaggageKeyIsEmptyError"><span class="annot"><span class="annottext">BaggageKeyIsEmptyError -&gt; Text
 </span><a href="OTel.API.Baggage.Core.Builder.Errors.html#%24sel%3ArawValue%3ABaggageKeyIsEmptyError"><span class="hs-identifier hs-var hs-var">rawValue</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
-</span><span id="line-32"></span><span>  </span><span class="hs-special">}</span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">stock</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679117190"><span id="local-6989586621679117194"><span class="annot"><span class="annottext">BaggageKeyIsEmptyError -&gt; BaggageKeyIsEmptyError -&gt; Bool
+</span><span id="line-32"></span><span>  </span><span class="hs-special">}</span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">stock</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679092933"><span id="local-6989586621679092937"><span class="annot"><span class="annottext">BaggageKeyIsEmptyError -&gt; BaggageKeyIsEmptyError -&gt; Bool
+(BaggageKeyIsEmptyError -&gt; BaggageKeyIsEmptyError -&gt; Bool)
+-&gt; (BaggageKeyIsEmptyError -&gt; BaggageKeyIsEmptyError -&gt; Bool)
+-&gt; Eq BaggageKeyIsEmptyError
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
-/= :: BaggageKeyIsEmptyError -&gt; BaggageKeyIsEmptyError -&gt; Bool
-$c/= :: BaggageKeyIsEmptyError -&gt; BaggageKeyIsEmptyError -&gt; Bool
-== :: BaggageKeyIsEmptyError -&gt; BaggageKeyIsEmptyError -&gt; Bool
 $c== :: BaggageKeyIsEmptyError -&gt; BaggageKeyIsEmptyError -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679117181"><span id="local-6989586621679117183"><span id="local-6989586621679117188"><span class="annot"><span class="annottext">Int -&gt; BaggageKeyIsEmptyError -&gt; ShowS
+== :: BaggageKeyIsEmptyError -&gt; BaggageKeyIsEmptyError -&gt; Bool
+$c/= :: BaggageKeyIsEmptyError -&gt; BaggageKeyIsEmptyError -&gt; Bool
+/= :: BaggageKeyIsEmptyError -&gt; BaggageKeyIsEmptyError -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679092940"><span id="local-6989586621679092945"><span id="local-6989586621679092948"><span class="annot"><span class="annottext">Int -&gt; BaggageKeyIsEmptyError -&gt; ShowS
 [BaggageKeyIsEmptyError] -&gt; ShowS
 BaggageKeyIsEmptyError -&gt; String
+(Int -&gt; BaggageKeyIsEmptyError -&gt; ShowS)
+-&gt; (BaggageKeyIsEmptyError -&gt; String)
+-&gt; ([BaggageKeyIsEmptyError] -&gt; ShowS)
+-&gt; Show BaggageKeyIsEmptyError
 forall a.
 (Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
-showList :: [BaggageKeyIsEmptyError] -&gt; ShowS
-$cshowList :: [BaggageKeyIsEmptyError] -&gt; ShowS
-show :: BaggageKeyIsEmptyError -&gt; String
-$cshow :: BaggageKeyIsEmptyError -&gt; String
-showsPrec :: Int -&gt; BaggageKeyIsEmptyError -&gt; ShowS
 $cshowsPrec :: Int -&gt; BaggageKeyIsEmptyError -&gt; ShowS
+showsPrec :: Int -&gt; BaggageKeyIsEmptyError -&gt; ShowS
+$cshow :: BaggageKeyIsEmptyError -&gt; String
+show :: BaggageKeyIsEmptyError -&gt; String
+$cshowList :: [BaggageKeyIsEmptyError] -&gt; ShowS
+showList :: [BaggageKeyIsEmptyError] -&gt; ShowS
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
 </span><span id="line-33"></span><span>
 </span><span id="line-34"></span><span class="hs-keyword">data</span><span> </span><span id="BaggageKeyContainsInvalidCharsError"><span class="annot"><a href="OTel.API.Baggage.Core.Builder.Errors.html#BaggageKeyContainsInvalidCharsError"><span class="hs-identifier hs-var">BaggageKeyContainsInvalidCharsError</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="BaggageKeyContainsInvalidCharsError"><span class="annot"><a href="OTel.API.Baggage.Core.Builder.Errors.html#BaggageKeyContainsInvalidCharsError"><span class="hs-identifier hs-var">BaggageKeyContainsInvalidCharsError</span></a></span></span><span>
@@ -109,50 +130,66 @@ $cshowsPrec :: Int -&gt; BaggageKeyIsEmptyError -&gt; ShowS
 </span><a href="OTel.API.Baggage.Core.Builder.Errors.html#%24sel%3ArawValue%3ABaggageKeyContainsInvalidCharsError"><span class="hs-identifier hs-var hs-var">rawValue</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
 </span><span id="line-37"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="%24sel%3AinvalidChars%3ABaggageKeyContainsInvalidCharsError"><span class="annot"><span class="annottext">BaggageKeyContainsInvalidCharsError -&gt; Text
 </span><a href="OTel.API.Baggage.Core.Builder.Errors.html#%24sel%3AinvalidChars%3ABaggageKeyContainsInvalidCharsError"><span class="hs-identifier hs-var hs-var">invalidChars</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
-</span><span id="line-38"></span><span>  </span><span class="hs-special">}</span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">stock</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679117169"><span id="local-6989586621679117175"><span class="annot"><span class="annottext">BaggageKeyContainsInvalidCharsError
+</span><span id="line-38"></span><span>  </span><span class="hs-special">}</span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">stock</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679092955"><span id="local-6989586621679092961"><span class="annot"><span class="annottext">BaggageKeyContainsInvalidCharsError
 -&gt; BaggageKeyContainsInvalidCharsError -&gt; Bool
+(BaggageKeyContainsInvalidCharsError
+ -&gt; BaggageKeyContainsInvalidCharsError -&gt; Bool)
+-&gt; (BaggageKeyContainsInvalidCharsError
+    -&gt; BaggageKeyContainsInvalidCharsError -&gt; Bool)
+-&gt; Eq BaggageKeyContainsInvalidCharsError
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
-/= :: BaggageKeyContainsInvalidCharsError
--&gt; BaggageKeyContainsInvalidCharsError -&gt; Bool
-$c/= :: BaggageKeyContainsInvalidCharsError
+$c== :: BaggageKeyContainsInvalidCharsError
 -&gt; BaggageKeyContainsInvalidCharsError -&gt; Bool
 == :: BaggageKeyContainsInvalidCharsError
 -&gt; BaggageKeyContainsInvalidCharsError -&gt; Bool
-$c== :: BaggageKeyContainsInvalidCharsError
+$c/= :: BaggageKeyContainsInvalidCharsError
 -&gt; BaggageKeyContainsInvalidCharsError -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679117158"><span id="local-6989586621679117160"><span id="local-6989586621679117167"><span class="annot"><span class="annottext">Int -&gt; BaggageKeyContainsInvalidCharsError -&gt; ShowS
+/= :: BaggageKeyContainsInvalidCharsError
+-&gt; BaggageKeyContainsInvalidCharsError -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679092964"><span id="local-6989586621679092971"><span id="local-6989586621679092974"><span class="annot"><span class="annottext">Int -&gt; BaggageKeyContainsInvalidCharsError -&gt; ShowS
 [BaggageKeyContainsInvalidCharsError] -&gt; ShowS
 BaggageKeyContainsInvalidCharsError -&gt; String
+(Int -&gt; BaggageKeyContainsInvalidCharsError -&gt; ShowS)
+-&gt; (BaggageKeyContainsInvalidCharsError -&gt; String)
+-&gt; ([BaggageKeyContainsInvalidCharsError] -&gt; ShowS)
+-&gt; Show BaggageKeyContainsInvalidCharsError
 forall a.
 (Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
-showList :: [BaggageKeyContainsInvalidCharsError] -&gt; ShowS
-$cshowList :: [BaggageKeyContainsInvalidCharsError] -&gt; ShowS
-show :: BaggageKeyContainsInvalidCharsError -&gt; String
-$cshow :: BaggageKeyContainsInvalidCharsError -&gt; String
-showsPrec :: Int -&gt; BaggageKeyContainsInvalidCharsError -&gt; ShowS
 $cshowsPrec :: Int -&gt; BaggageKeyContainsInvalidCharsError -&gt; ShowS
+showsPrec :: Int -&gt; BaggageKeyContainsInvalidCharsError -&gt; ShowS
+$cshow :: BaggageKeyContainsInvalidCharsError -&gt; String
+show :: BaggageKeyContainsInvalidCharsError -&gt; String
+$cshowList :: [BaggageKeyContainsInvalidCharsError] -&gt; ShowS
+showList :: [BaggageKeyContainsInvalidCharsError] -&gt; ShowS
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
 </span><span id="line-39"></span><span>
 </span><span id="line-40"></span><span class="hs-keyword">newtype</span><span> </span><span id="BaggageValueIsEmptyError"><span class="annot"><a href="OTel.API.Baggage.Core.Builder.Errors.html#BaggageValueIsEmptyError"><span class="hs-identifier hs-var">BaggageValueIsEmptyError</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="BaggageValueIsEmptyError"><span class="annot"><a href="OTel.API.Baggage.Core.Builder.Errors.html#BaggageValueIsEmptyError"><span class="hs-identifier hs-var">BaggageValueIsEmptyError</span></a></span></span><span>
 </span><span id="line-41"></span><span>  </span><span class="hs-special">{</span><span> </span><span id="%24sel%3ArawKey%3ABaggageValueIsEmptyError"><span class="annot"><span class="annottext">BaggageValueIsEmptyError -&gt; Key Text
 </span><a href="OTel.API.Baggage.Core.Builder.Errors.html#%24sel%3ArawKey%3ABaggageValueIsEmptyError"><span class="hs-identifier hs-var hs-var">rawKey</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Key</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
-</span><span id="line-42"></span><span>  </span><span class="hs-special">}</span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">stock</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679117151"><span id="local-6989586621679117154"><span class="annot"><span class="annottext">BaggageValueIsEmptyError -&gt; BaggageValueIsEmptyError -&gt; Bool
+</span><span id="line-42"></span><span>  </span><span class="hs-special">}</span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">stock</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679092979"><span id="local-6989586621679092982"><span class="annot"><span class="annottext">BaggageValueIsEmptyError -&gt; BaggageValueIsEmptyError -&gt; Bool
+(BaggageValueIsEmptyError -&gt; BaggageValueIsEmptyError -&gt; Bool)
+-&gt; (BaggageValueIsEmptyError -&gt; BaggageValueIsEmptyError -&gt; Bool)
+-&gt; Eq BaggageValueIsEmptyError
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
-/= :: BaggageValueIsEmptyError -&gt; BaggageValueIsEmptyError -&gt; Bool
-$c/= :: BaggageValueIsEmptyError -&gt; BaggageValueIsEmptyError -&gt; Bool
-== :: BaggageValueIsEmptyError -&gt; BaggageValueIsEmptyError -&gt; Bool
 $c== :: BaggageValueIsEmptyError -&gt; BaggageValueIsEmptyError -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679117143"><span id="local-6989586621679117145"><span id="local-6989586621679117149"><span class="annot"><span class="annottext">Int -&gt; BaggageValueIsEmptyError -&gt; ShowS
+== :: BaggageValueIsEmptyError -&gt; BaggageValueIsEmptyError -&gt; Bool
+$c/= :: BaggageValueIsEmptyError -&gt; BaggageValueIsEmptyError -&gt; Bool
+/= :: BaggageValueIsEmptyError -&gt; BaggageValueIsEmptyError -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679092985"><span id="local-6989586621679092989"><span id="local-6989586621679092992"><span class="annot"><span class="annottext">Int -&gt; BaggageValueIsEmptyError -&gt; ShowS
 [BaggageValueIsEmptyError] -&gt; ShowS
 BaggageValueIsEmptyError -&gt; String
+(Int -&gt; BaggageValueIsEmptyError -&gt; ShowS)
+-&gt; (BaggageValueIsEmptyError -&gt; String)
+-&gt; ([BaggageValueIsEmptyError] -&gt; ShowS)
+-&gt; Show BaggageValueIsEmptyError
 forall a.
 (Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
-showList :: [BaggageValueIsEmptyError] -&gt; ShowS
-$cshowList :: [BaggageValueIsEmptyError] -&gt; ShowS
-show :: BaggageValueIsEmptyError -&gt; String
-$cshow :: BaggageValueIsEmptyError -&gt; String
-showsPrec :: Int -&gt; BaggageValueIsEmptyError -&gt; ShowS
 $cshowsPrec :: Int -&gt; BaggageValueIsEmptyError -&gt; ShowS
+showsPrec :: Int -&gt; BaggageValueIsEmptyError -&gt; ShowS
+$cshow :: BaggageValueIsEmptyError -&gt; String
+show :: BaggageValueIsEmptyError -&gt; String
+$cshowList :: [BaggageValueIsEmptyError] -&gt; ShowS
+showList :: [BaggageValueIsEmptyError] -&gt; ShowS
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
 </span><span id="line-43"></span><span>
 </span><span id="line-44"></span><span class="hs-keyword">data</span><span> </span><span id="BaggageValueContainsInvalidCharsError"><span class="annot"><a href="OTel.API.Baggage.Core.Builder.Errors.html#BaggageValueContainsInvalidCharsError"><span class="hs-identifier hs-var">BaggageValueContainsInvalidCharsError</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="BaggageValueContainsInvalidCharsError"><span class="annot"><a href="OTel.API.Baggage.Core.Builder.Errors.html#BaggageValueContainsInvalidCharsError"><span class="hs-identifier hs-var">BaggageValueContainsInvalidCharsError</span></a></span></span><span>
@@ -162,27 +199,36 @@ $cshowsPrec :: Int -&gt; BaggageValueIsEmptyError -&gt; ShowS
 </span><a href="OTel.API.Baggage.Core.Builder.Errors.html#%24sel%3ArawValue%3ABaggageValueContainsInvalidCharsError"><span class="hs-identifier hs-var hs-var">rawValue</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
 </span><span id="line-47"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="%24sel%3AinvalidChars%3ABaggageValueContainsInvalidCharsError"><span class="annot"><span class="annottext">BaggageValueContainsInvalidCharsError -&gt; Text
 </span><a href="OTel.API.Baggage.Core.Builder.Errors.html#%24sel%3AinvalidChars%3ABaggageValueContainsInvalidCharsError"><span class="hs-identifier hs-var hs-var">invalidChars</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
-</span><span id="line-48"></span><span>  </span><span class="hs-special">}</span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">stock</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679117132"><span id="local-6989586621679117137"><span class="annot"><span class="annottext">BaggageValueContainsInvalidCharsError
+</span><span id="line-48"></span><span>  </span><span class="hs-special">}</span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">stock</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679092999"><span id="local-6989586621679093004"><span class="annot"><span class="annottext">BaggageValueContainsInvalidCharsError
 -&gt; BaggageValueContainsInvalidCharsError -&gt; Bool
+(BaggageValueContainsInvalidCharsError
+ -&gt; BaggageValueContainsInvalidCharsError -&gt; Bool)
+-&gt; (BaggageValueContainsInvalidCharsError
+    -&gt; BaggageValueContainsInvalidCharsError -&gt; Bool)
+-&gt; Eq BaggageValueContainsInvalidCharsError
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
-/= :: BaggageValueContainsInvalidCharsError
--&gt; BaggageValueContainsInvalidCharsError -&gt; Bool
-$c/= :: BaggageValueContainsInvalidCharsError
+$c== :: BaggageValueContainsInvalidCharsError
 -&gt; BaggageValueContainsInvalidCharsError -&gt; Bool
 == :: BaggageValueContainsInvalidCharsError
 -&gt; BaggageValueContainsInvalidCharsError -&gt; Bool
-$c== :: BaggageValueContainsInvalidCharsError
+$c/= :: BaggageValueContainsInvalidCharsError
 -&gt; BaggageValueContainsInvalidCharsError -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679117122"><span id="local-6989586621679117124"><span id="local-6989586621679117130"><span class="annot"><span class="annottext">Int -&gt; BaggageValueContainsInvalidCharsError -&gt; ShowS
+/= :: BaggageValueContainsInvalidCharsError
+-&gt; BaggageValueContainsInvalidCharsError -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679093007"><span id="local-6989586621679093013"><span id="local-6989586621679093016"><span class="annot"><span class="annottext">Int -&gt; BaggageValueContainsInvalidCharsError -&gt; ShowS
 [BaggageValueContainsInvalidCharsError] -&gt; ShowS
 BaggageValueContainsInvalidCharsError -&gt; String
+(Int -&gt; BaggageValueContainsInvalidCharsError -&gt; ShowS)
+-&gt; (BaggageValueContainsInvalidCharsError -&gt; String)
+-&gt; ([BaggageValueContainsInvalidCharsError] -&gt; ShowS)
+-&gt; Show BaggageValueContainsInvalidCharsError
 forall a.
 (Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
-showList :: [BaggageValueContainsInvalidCharsError] -&gt; ShowS
-$cshowList :: [BaggageValueContainsInvalidCharsError] -&gt; ShowS
-show :: BaggageValueContainsInvalidCharsError -&gt; String
-$cshow :: BaggageValueContainsInvalidCharsError -&gt; String
-showsPrec :: Int -&gt; BaggageValueContainsInvalidCharsError -&gt; ShowS
 $cshowsPrec :: Int -&gt; BaggageValueContainsInvalidCharsError -&gt; ShowS
+showsPrec :: Int -&gt; BaggageValueContainsInvalidCharsError -&gt; ShowS
+$cshow :: BaggageValueContainsInvalidCharsError -&gt; String
+show :: BaggageValueContainsInvalidCharsError -&gt; String
+$cshowList :: [BaggageValueContainsInvalidCharsError] -&gt; ShowS
+showList :: [BaggageValueContainsInvalidCharsError] -&gt; ShowS
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
 </span><span id="line-49"></span></pre></body></html>

@@ -1,6 +1,6 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE CPP #-}</span><span>
 </span><span id="line-2"></span><span>
-</span><span id="line-3"></span><span class="hs-comment">{-|
+</span><span id="line-3"></span><span class="annot"><span class="hs-comment">{-|
 Module:      Data.Functor.Classes.Generic
 Copyright:   (C) 2015-2016 Edward Kmett, Ryan Scott
 License:     BSD-style (see the file LICENSE)
@@ -10,7 +10,7 @@ Portability: GHC
 
 Functions to generically derive 'C.Eq1', 'C.Ord1', 'C.Read1', and 'C.Show1'
 instances from &quot;Data.Functor.Classes&quot;.
--}</span><span>
+-}</span></span><span>
 </span><span id="line-14"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Data.Functor.Classes.Generic</span><span>
 </span><span id="line-15"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-comment">-- * Options</span></span><span>
 </span><span id="line-16"></span><span>    </span><span class="annot"><a href="Data.Functor.Classes.Generic.Internal.html#Options"><span class="hs-identifier">Options</span></a></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
@@ -53,7 +53,7 @@ instances from &quot;Data.Functor.Classes&quot;.
 </span><span id="line-53"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="Data.Functor.Classes.Generic.Internal.html"><span class="hs-identifier">Data.Functor.Classes.Generic.Internal</span></a></span><span class="hs-cpp">
 
 #undef MIN_VERSION_transformers
-</span><span class="hs-comment">{- $example
+</span><span class="annot"><span class="hs-comment">{- $example
 The most straightforward way to use the defaults in this module is to use
 @DerivingVia@ on GHC 8.6 or later. For example:
 
@@ -112,5 +112,5 @@ instance 'C.Show1' Pair where
     'C.liftShowsPrec' = 'liftShowsPrecDefault'
 \#endif
 @
--}</span><span>
+-}</span></span><span>
 </span><span id="line-116"></span></pre></body></html>

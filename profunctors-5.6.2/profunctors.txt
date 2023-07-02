@@ -1418,13 +1418,13 @@ Rift :: (forall x. p b x -> q a x) -> Rift p q a b
 --   (-&gt;)</tt> then <a>decomposeRift</a> is the <a>counit</a> of the
 --   adjunction.
 decomposeRift :: Procompose p (Rift p q) :-> q
-instance forall k (p :: k -> * -> *). Data.Profunctor.Monad.ProfunctorFunctor (Data.Profunctor.Composition.Rift p)
+instance forall k1 (p :: k1 -> * -> *). Data.Profunctor.Monad.ProfunctorFunctor (Data.Profunctor.Composition.Rift p)
 instance Control.Category.Category p => Data.Profunctor.Monad.ProfunctorComonad (Data.Profunctor.Composition.Rift p)
 instance (Data.Profunctor.Unsafe.Profunctor p, Data.Profunctor.Unsafe.Profunctor q) => Data.Profunctor.Unsafe.Profunctor (Data.Profunctor.Composition.Rift p q)
 instance forall k (p :: * -> * -> *) (q :: k -> * -> *) (a :: k). Data.Profunctor.Unsafe.Profunctor p => GHC.Base.Functor (Data.Profunctor.Composition.Rift p q a)
 instance forall k1 k2 (p :: k1 -> k2 -> *) (q :: k1 -> k2 -> *). (p GHC.Types.~ q) => Control.Category.Category (Data.Profunctor.Composition.Rift p q)
 instance Data.Profunctor.Adjunction.ProfunctorAdjunction (Data.Profunctor.Composition.Procompose p) (Data.Profunctor.Composition.Rift p)
-instance forall k (p :: * -> k -> *). Data.Profunctor.Monad.ProfunctorFunctor (Data.Profunctor.Composition.Procompose p)
+instance forall k1 (p :: * -> k1 -> *). Data.Profunctor.Monad.ProfunctorFunctor (Data.Profunctor.Composition.Procompose p)
 instance Control.Category.Category p => Data.Profunctor.Monad.ProfunctorMonad (Data.Profunctor.Composition.Procompose p)
 instance (Data.Profunctor.Unsafe.Profunctor p, Data.Profunctor.Unsafe.Profunctor q) => Data.Profunctor.Unsafe.Profunctor (Data.Profunctor.Composition.Procompose p q)
 instance forall k (p :: * -> * -> *) (q :: k -> * -> *) (a :: k). Data.Profunctor.Unsafe.Profunctor p => GHC.Base.Functor (Data.Profunctor.Composition.Procompose p q a)

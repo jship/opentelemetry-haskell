@@ -727,7 +727,7 @@ instance (GHC.Classes.Ord k, GHC.Classes.Ord v) => GHC.Classes.Ord (Data.HashMap
 instance Data.Hashable.Class.Hashable2 Data.HashMap.Internal.HashMap
 instance Data.Hashable.Class.Hashable k => Data.Hashable.Class.Hashable1 (Data.HashMap.Internal.HashMap k)
 instance (Data.Hashable.Class.Hashable k, Data.Hashable.Class.Hashable v) => Data.Hashable.Class.Hashable (Data.HashMap.Internal.HashMap k v)
-instance (GHC.Classes.Eq k, Data.Hashable.Class.Hashable k) => GHC.Exts.IsList (Data.HashMap.Internal.HashMap k v)
+instance (GHC.Classes.Eq k, Data.Hashable.Class.Hashable k) => GHC.IsList.IsList (Data.HashMap.Internal.HashMap k v)
 instance (Control.DeepSeq.NFData k, Control.DeepSeq.NFData v) => Control.DeepSeq.NFData (Data.HashMap.Internal.Leaf k v)
 instance (Language.Haskell.TH.Syntax.Lift k, Language.Haskell.TH.Syntax.Lift v) => Language.Haskell.TH.Syntax.Lift (Data.HashMap.Internal.Leaf k v)
 instance Control.DeepSeq.NFData k => Control.DeepSeq.NFData1 (Data.HashMap.Internal.Leaf k)
@@ -1397,7 +1397,7 @@ instance GHC.Show.Show a => GHC.Show.Show (Data.HashSet.Internal.HashSet a)
 instance (Data.Data.Data a, GHC.Classes.Eq a, Data.Hashable.Class.Hashable a) => Data.Data.Data (Data.HashSet.Internal.HashSet a)
 instance Data.Hashable.Class.Hashable1 Data.HashSet.Internal.HashSet
 instance Data.Hashable.Class.Hashable a => Data.Hashable.Class.Hashable (Data.HashSet.Internal.HashSet a)
-instance (GHC.Classes.Eq a, Data.Hashable.Class.Hashable a) => GHC.Exts.IsList (Data.HashSet.Internal.HashSet a)
+instance (GHC.Classes.Eq a, Data.Hashable.Class.Hashable a) => GHC.IsList.IsList (Data.HashSet.Internal.HashSet a)
 
 
 -- | <h1>Introduction</h1>

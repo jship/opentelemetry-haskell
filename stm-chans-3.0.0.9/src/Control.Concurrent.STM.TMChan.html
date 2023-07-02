@@ -55,89 +55,109 @@
 </span><span id="line-55"></span><span>
 </span><span id="line-56"></span><span class="hs-comment">-- | @TMChan@ is an abstract type representing a closeable FIFO</span><span>
 </span><span id="line-57"></span><span class="hs-comment">-- channel.</span><span>
-</span><span id="line-58"></span><span class="hs-keyword">data</span><span> </span><span id="TMChan"><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-var">TMChan</span></a></span></span><span> </span><span id="local-6989586621679031262"><span class="annot"><a href="#local-6989586621679031262"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="TMChan"><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-var">TMChan</span></a></span></span><span>
+</span><span id="line-58"></span><span class="hs-keyword">data</span><span> </span><span id="TMChan"><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-var">TMChan</span></a></span></span><span> </span><span id="local-6989586621679032383"><span class="annot"><a href="#local-6989586621679032383"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="TMChan"><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-var">TMChan</span></a></span></span><span>
 </span><span id="line-59"></span><span>    </span><span class="hs-pragma">{-# UNPACK</span><span> </span><span class="hs-pragma">#-}</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">TVar</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span class="hs-special">)</span><span>
-</span><span id="line-60"></span><span>    </span><span class="hs-pragma">{-# UNPACK</span><span> </span><span class="hs-pragma">#-}</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">TChan</span></span><span> </span><span class="annot"><a href="#local-6989586621679031262"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-60"></span><span>    </span><span class="hs-pragma">{-# UNPACK</span><span> </span><span class="hs-pragma">#-}</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">TChan</span></span><span> </span><span class="annot"><a href="#local-6989586621679032383"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-61"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Typeable</span></span><span>
 </span><span id="line-62"></span><span>
 </span><span id="line-63"></span><span>
-</span><span id="line-64"></span><span class="hs-comment">-- | Build and returns a new instance of @TMChan@.</span><span>
-</span><span id="line-65"></span><span id="local-6989586621679031272"><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#newTMChan"><span class="hs-identifier hs-type">newTMChan</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">STM</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-type">TMChan</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679031272"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span><span>
+</span><span id="line-64"></span><span class="annot"><span class="hs-comment">-- | Build and returns a new instance of @TMChan@.</span></span><span>
+</span><span id="line-65"></span><span id="local-6989586621679032373"><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#newTMChan"><span class="hs-identifier hs-type">newTMChan</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">STM</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-type">TMChan</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679032373"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span><span>
 </span><span id="line-66"></span><span id="newTMChan"><span class="annot"><span class="annottext">newTMChan :: forall a. STM (TMChan a)
 </span><a href="Control.Concurrent.STM.TMChan.html#newTMChan"><span class="hs-identifier hs-var hs-var">newTMChan</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-67"></span><span>    </span><span id="local-6989586621679031206"><span class="annot"><span class="annottext">TVar Bool
-</span><a href="#local-6989586621679031206"><span class="hs-identifier hs-var">closed</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; STM (TVar a)
+</span><span id="line-67"></span><span>    </span><span id="local-6989586621679032439"><span class="annot"><span class="annottext">TVar Bool
+</span><a href="#local-6989586621679032439"><span class="hs-identifier hs-var">closed</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; STM (TVar Bool)
+forall a. a -&gt; STM (TVar a)
 </span><span class="hs-identifier hs-var">newTVar</span></span><span> </span><span class="annot"><span class="annottext">Bool
 </span><span class="hs-identifier hs-var">False</span></span><span>
-</span><span id="line-68"></span><span>    </span><span id="local-6989586621679031204"><span class="annot"><span class="annottext">TChan a
-</span><a href="#local-6989586621679031204"><span class="hs-identifier hs-var">chan</span></a></span></span><span>   </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall a. STM (TChan a)
+</span><span id="line-68"></span><span>    </span><span id="local-6989586621679032441"><span class="annot"><span class="annottext">TChan a
+</span><a href="#local-6989586621679032441"><span class="hs-identifier hs-var">chan</span></a></span></span><span>   </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">STM (TChan a)
+forall a. STM (TChan a)
 </span><span class="hs-identifier hs-var">newTChan</span></span><span>
-</span><span id="line-69"></span><span>    </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
-</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. TVar Bool -&gt; TChan a -&gt; TMChan a
+</span><span id="line-69"></span><span>    </span><span class="annot"><span class="annottext">TMChan a -&gt; STM (TMChan a)
+forall a. a -&gt; STM a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">TVar Bool -&gt; TChan a -&gt; TMChan a
+forall a. TVar Bool -&gt; TChan a -&gt; TMChan a
 </span><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-var">TMChan</span></a></span><span> </span><span class="annot"><span class="annottext">TVar Bool
-</span><a href="#local-6989586621679031206"><span class="hs-identifier hs-var">closed</span></a></span><span> </span><span class="annot"><span class="annottext">TChan a
-</span><a href="#local-6989586621679031204"><span class="hs-identifier hs-var">chan</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679032439"><span class="hs-identifier hs-var">closed</span></a></span><span> </span><span class="annot"><span class="annottext">TChan a
+</span><a href="#local-6989586621679032441"><span class="hs-identifier hs-var">chan</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-70"></span><span>
 </span><span id="line-71"></span><span>
 </span><span id="line-72"></span><span class="hs-comment">-- | @IO@ version of 'newTMChan'. This is useful for creating</span><span>
 </span><span id="line-73"></span><span class="hs-comment">-- top-level @TMChan@s using 'System.IO.Unsafe.unsafePerformIO',</span><span>
 </span><span id="line-74"></span><span class="hs-comment">-- because using 'Control.Monad.STM.atomically' inside</span><span>
 </span><span id="line-75"></span><span class="hs-comment">-- 'System.IO.Unsafe.unsafePerformIO' isn't possible.</span><span>
-</span><span id="line-76"></span><span id="local-6989586621679031261"><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#newTMChanIO"><span class="hs-identifier hs-type">newTMChanIO</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-type">TMChan</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679031261"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span><span>
+</span><span id="line-76"></span><span id="local-6989586621679032384"><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#newTMChanIO"><span class="hs-identifier hs-type">newTMChanIO</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-type">TMChan</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679032384"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span><span>
 </span><span id="line-77"></span><span id="newTMChanIO"><span class="annot"><span class="annottext">newTMChanIO :: forall a. IO (TMChan a)
 </span><a href="Control.Concurrent.STM.TMChan.html#newTMChanIO"><span class="hs-identifier hs-var hs-var">newTMChanIO</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-78"></span><span>    </span><span id="local-6989586621679031198"><span class="annot"><span class="annottext">TVar Bool
-</span><a href="#local-6989586621679031198"><span class="hs-identifier hs-var">closed</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; IO (TVar a)
+</span><span id="line-78"></span><span>    </span><span id="local-6989586621679032447"><span class="annot"><span class="annottext">TVar Bool
+</span><a href="#local-6989586621679032447"><span class="hs-identifier hs-var">closed</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; IO (TVar Bool)
+forall a. a -&gt; IO (TVar a)
 </span><span class="hs-identifier hs-var">newTVarIO</span></span><span> </span><span class="annot"><span class="annottext">Bool
 </span><span class="hs-identifier hs-var">False</span></span><span>
-</span><span id="line-79"></span><span>    </span><span id="local-6989586621679031196"><span class="annot"><span class="annottext">TChan a
-</span><a href="#local-6989586621679031196"><span class="hs-identifier hs-var">chan</span></a></span></span><span>   </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall a. IO (TChan a)
+</span><span id="line-79"></span><span>    </span><span id="local-6989586621679032449"><span class="annot"><span class="annottext">TChan a
+</span><a href="#local-6989586621679032449"><span class="hs-identifier hs-var">chan</span></a></span></span><span>   </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">IO (TChan a)
+forall a. IO (TChan a)
 </span><span class="hs-identifier hs-var">newTChanIO</span></span><span>
-</span><span id="line-80"></span><span>    </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
-</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. TVar Bool -&gt; TChan a -&gt; TMChan a
+</span><span id="line-80"></span><span>    </span><span class="annot"><span class="annottext">TMChan a -&gt; IO (TMChan a)
+forall a. a -&gt; IO a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">TVar Bool -&gt; TChan a -&gt; TMChan a
+forall a. TVar Bool -&gt; TChan a -&gt; TMChan a
 </span><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-var">TMChan</span></a></span><span> </span><span class="annot"><span class="annottext">TVar Bool
-</span><a href="#local-6989586621679031198"><span class="hs-identifier hs-var">closed</span></a></span><span> </span><span class="annot"><span class="annottext">TChan a
-</span><a href="#local-6989586621679031196"><span class="hs-identifier hs-var">chan</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679032447"><span class="hs-identifier hs-var">closed</span></a></span><span> </span><span class="annot"><span class="annottext">TChan a
+</span><a href="#local-6989586621679032449"><span class="hs-identifier hs-var">chan</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-81"></span><span>
 </span><span id="line-82"></span><span>
 </span><span id="line-83"></span><span class="hs-comment">-- | Like 'newBroadcastTChan'.</span><span>
 </span><span id="line-84"></span><span class="hs-comment">--</span><span>
 </span><span id="line-85"></span><span class="hs-comment">-- /Since: 2.1.0/</span><span>
-</span><span id="line-86"></span><span id="local-6989586621679031194"><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#newBroadcastTMChan"><span class="hs-identifier hs-type">newBroadcastTMChan</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">STM</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-type">TMChan</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679031194"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span><span>
+</span><span id="line-86"></span><span id="local-6989586621679032452"><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#newBroadcastTMChan"><span class="hs-identifier hs-type">newBroadcastTMChan</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">STM</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-type">TMChan</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679032452"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span><span>
 </span><span id="line-87"></span><span id="newBroadcastTMChan"><span class="annot"><span class="annottext">newBroadcastTMChan :: forall a. STM (TMChan a)
 </span><a href="Control.Concurrent.STM.TMChan.html#newBroadcastTMChan"><span class="hs-identifier hs-var hs-var">newBroadcastTMChan</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-88"></span><span>    </span><span id="local-6989586621679031190"><span class="annot"><span class="annottext">TVar Bool
-</span><a href="#local-6989586621679031190"><span class="hs-identifier hs-var">closed</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; STM (TVar a)
+</span><span id="line-88"></span><span>    </span><span id="local-6989586621679032456"><span class="annot"><span class="annottext">TVar Bool
+</span><a href="#local-6989586621679032456"><span class="hs-identifier hs-var">closed</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; STM (TVar Bool)
+forall a. a -&gt; STM (TVar a)
 </span><span class="hs-identifier hs-var">newTVar</span></span><span> </span><span class="annot"><span class="annottext">Bool
 </span><span class="hs-identifier hs-var">False</span></span><span>
-</span><span id="line-89"></span><span>    </span><span id="local-6989586621679031189"><span class="annot"><span class="annottext">TChan a
-</span><a href="#local-6989586621679031189"><span class="hs-identifier hs-var">chan</span></a></span></span><span>   </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall a. STM (TChan a)
+</span><span id="line-89"></span><span>    </span><span id="local-6989586621679032457"><span class="annot"><span class="annottext">TChan a
+</span><a href="#local-6989586621679032457"><span class="hs-identifier hs-var">chan</span></a></span></span><span>   </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">STM (TChan a)
+forall a. STM (TChan a)
 </span><span class="hs-identifier hs-var">newBroadcastTChan</span></span><span>
-</span><span id="line-90"></span><span>    </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
-</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. TVar Bool -&gt; TChan a -&gt; TMChan a
+</span><span id="line-90"></span><span>    </span><span class="annot"><span class="annottext">TMChan a -&gt; STM (TMChan a)
+forall a. a -&gt; STM a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">TVar Bool -&gt; TChan a -&gt; TMChan a
+forall a. TVar Bool -&gt; TChan a -&gt; TMChan a
 </span><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-var">TMChan</span></a></span><span> </span><span class="annot"><span class="annottext">TVar Bool
-</span><a href="#local-6989586621679031190"><span class="hs-identifier hs-var">closed</span></a></span><span> </span><span class="annot"><span class="annottext">TChan a
-</span><a href="#local-6989586621679031189"><span class="hs-identifier hs-var">chan</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679032456"><span class="hs-identifier hs-var">closed</span></a></span><span> </span><span class="annot"><span class="annottext">TChan a
+</span><a href="#local-6989586621679032457"><span class="hs-identifier hs-var">chan</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-91"></span><span>
 </span><span id="line-92"></span><span>
 </span><span id="line-93"></span><span class="hs-comment">-- | @IO@ version of 'newBroadcastTMChan'.</span><span>
 </span><span id="line-94"></span><span class="hs-comment">--</span><span>
 </span><span id="line-95"></span><span class="hs-comment">-- /Since: 2.1.0/</span><span>
-</span><span id="line-96"></span><span id="local-6989586621679031187"><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#newBroadcastTMChanIO"><span class="hs-identifier hs-type">newBroadcastTMChanIO</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-type">TMChan</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679031187"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span><span>
+</span><span id="line-96"></span><span id="local-6989586621679032458"><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#newBroadcastTMChanIO"><span class="hs-identifier hs-type">newBroadcastTMChanIO</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-type">TMChan</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679032458"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span><span>
 </span><span id="line-97"></span><span id="newBroadcastTMChanIO"><span class="annot"><span class="annottext">newBroadcastTMChanIO :: forall a. IO (TMChan a)
 </span><a href="Control.Concurrent.STM.TMChan.html#newBroadcastTMChanIO"><span class="hs-identifier hs-var hs-var">newBroadcastTMChanIO</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-98"></span><span>    </span><span id="local-6989586621679031183"><span class="annot"><span class="annottext">TVar Bool
-</span><a href="#local-6989586621679031183"><span class="hs-identifier hs-var">closed</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; IO (TVar a)
+</span><span id="line-98"></span><span>    </span><span id="local-6989586621679032462"><span class="annot"><span class="annottext">TVar Bool
+</span><a href="#local-6989586621679032462"><span class="hs-identifier hs-var">closed</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; IO (TVar Bool)
+forall a. a -&gt; IO (TVar a)
 </span><span class="hs-identifier hs-var">newTVarIO</span></span><span> </span><span class="annot"><span class="annottext">Bool
 </span><span class="hs-identifier hs-var">False</span></span><span>
-</span><span id="line-99"></span><span>    </span><span id="local-6989586621679031182"><span class="annot"><span class="annottext">TChan a
-</span><a href="#local-6989586621679031182"><span class="hs-identifier hs-var">chan</span></a></span></span><span>   </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall a. IO (TChan a)
+</span><span id="line-99"></span><span>    </span><span id="local-6989586621679032463"><span class="annot"><span class="annottext">TChan a
+</span><a href="#local-6989586621679032463"><span class="hs-identifier hs-var">chan</span></a></span></span><span>   </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">IO (TChan a)
+forall a. IO (TChan a)
 </span><span class="hs-identifier hs-var">newBroadcastTChanIO</span></span><span>
-</span><span id="line-100"></span><span>    </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
-</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. TVar Bool -&gt; TChan a -&gt; TMChan a
+</span><span id="line-100"></span><span>    </span><span class="annot"><span class="annottext">TMChan a -&gt; IO (TMChan a)
+forall a. a -&gt; IO a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">TVar Bool -&gt; TChan a -&gt; TMChan a
+forall a. TVar Bool -&gt; TChan a -&gt; TMChan a
 </span><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-var">TMChan</span></a></span><span> </span><span class="annot"><span class="annottext">TVar Bool
-</span><a href="#local-6989586621679031183"><span class="hs-identifier hs-var">closed</span></a></span><span> </span><span class="annot"><span class="annottext">TChan a
-</span><a href="#local-6989586621679031182"><span class="hs-identifier hs-var">chan</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679032462"><span class="hs-identifier hs-var">closed</span></a></span><span> </span><span class="annot"><span class="annottext">TChan a
+</span><a href="#local-6989586621679032463"><span class="hs-identifier hs-var">chan</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-101"></span><span>
 </span><span id="line-102"></span><span>
 </span><span id="line-103"></span><span class="hs-comment">-- | Duplicate a @TMChan@: the duplicate channel begins empty, but</span><span>
@@ -145,44 +165,53 @@
 </span><span id="line-105"></span><span class="hs-comment">-- from both, and closing one copy will close them all. Hence this</span><span>
 </span><span id="line-106"></span><span class="hs-comment">-- creates a kind of broadcast channel, where data written by anyone</span><span>
 </span><span id="line-107"></span><span class="hs-comment">-- is seen by everyone else.</span><span>
-</span><span id="line-108"></span><span id="local-6989586621679031255"><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#dupTMChan"><span class="hs-identifier hs-type">dupTMChan</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-type">TMChan</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679031255"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">STM</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-type">TMChan</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679031255"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span><span>
+</span><span id="line-108"></span><span id="local-6989586621679032390"><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#dupTMChan"><span class="hs-identifier hs-type">dupTMChan</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-type">TMChan</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679032390"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">STM</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-type">TMChan</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679032390"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span><span>
 </span><span id="line-109"></span><span id="dupTMChan"><span class="annot"><span class="annottext">dupTMChan :: forall a. TMChan a -&gt; STM (TMChan a)
-</span><a href="Control.Concurrent.STM.TMChan.html#dupTMChan"><span class="hs-identifier hs-var hs-var">dupTMChan</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-type">TMChan</span></a></span><span> </span><span id="local-6989586621679031178"><span class="annot"><span class="annottext">TVar Bool
-</span><a href="#local-6989586621679031178"><span class="hs-identifier hs-var">closed</span></a></span></span><span> </span><span id="local-6989586621679031177"><span class="annot"><span class="annottext">TChan a
-</span><a href="#local-6989586621679031177"><span class="hs-identifier hs-var">chan</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-110"></span><span>    </span><span id="local-6989586621679031176"><span class="annot"><span class="annottext">TChan a
-</span><a href="#local-6989586621679031176"><span class="hs-identifier hs-var">new_chan</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall a. TChan a -&gt; STM (TChan a)
+</span><a href="Control.Concurrent.STM.TMChan.html#dupTMChan"><span class="hs-identifier hs-var hs-var">dupTMChan</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-type">TMChan</span></a></span><span> </span><span id="local-6989586621679032467"><span class="annot"><span class="annottext">TVar Bool
+</span><a href="#local-6989586621679032467"><span class="hs-identifier hs-var">closed</span></a></span></span><span> </span><span id="local-6989586621679032468"><span class="annot"><span class="annottext">TChan a
+</span><a href="#local-6989586621679032468"><span class="hs-identifier hs-var">chan</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-110"></span><span>    </span><span id="local-6989586621679032469"><span class="annot"><span class="annottext">TChan a
+</span><a href="#local-6989586621679032469"><span class="hs-identifier hs-var">new_chan</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">TChan a -&gt; STM (TChan a)
+forall a. TChan a -&gt; STM (TChan a)
 </span><span class="hs-identifier hs-var">dupTChan</span></span><span> </span><span class="annot"><span class="annottext">TChan a
-</span><a href="#local-6989586621679031177"><span class="hs-identifier hs-var">chan</span></a></span><span>
-</span><span id="line-111"></span><span>    </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
-</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. TVar Bool -&gt; TChan a -&gt; TMChan a
+</span><a href="#local-6989586621679032468"><span class="hs-identifier hs-var">chan</span></a></span><span>
+</span><span id="line-111"></span><span>    </span><span class="annot"><span class="annottext">TMChan a -&gt; STM (TMChan a)
+forall a. a -&gt; STM a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">TVar Bool -&gt; TChan a -&gt; TMChan a
+forall a. TVar Bool -&gt; TChan a -&gt; TMChan a
 </span><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-var">TMChan</span></a></span><span> </span><span class="annot"><span class="annottext">TVar Bool
-</span><a href="#local-6989586621679031178"><span class="hs-identifier hs-var">closed</span></a></span><span> </span><span class="annot"><span class="annottext">TChan a
-</span><a href="#local-6989586621679031176"><span class="hs-identifier hs-var">new_chan</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679032467"><span class="hs-identifier hs-var">closed</span></a></span><span> </span><span class="annot"><span class="annottext">TChan a
+</span><a href="#local-6989586621679032469"><span class="hs-identifier hs-var">new_chan</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-112"></span><span>
 </span><span id="line-113"></span><span>
 </span><span id="line-114"></span><span class="hs-comment">-- | Read the next value from the @TMChan@, retrying if the channel</span><span>
 </span><span id="line-115"></span><span class="hs-comment">-- is empty (and not closed). We return @Nothing@ immediately if</span><span>
 </span><span id="line-116"></span><span class="hs-comment">-- the channel is closed and empty.</span><span>
-</span><span id="line-117"></span><span id="local-6989586621679031252"><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#readTMChan"><span class="hs-identifier hs-type">readTMChan</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-type">TMChan</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679031252"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">STM</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="#local-6989586621679031252"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span><span>
+</span><span id="line-117"></span><span id="local-6989586621679032393"><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#readTMChan"><span class="hs-identifier hs-type">readTMChan</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-type">TMChan</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679032393"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">STM</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="#local-6989586621679032393"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span><span>
 </span><span id="line-118"></span><span id="readTMChan"><span class="annot"><span class="annottext">readTMChan :: forall a. TMChan a -&gt; STM (Maybe a)
-</span><a href="Control.Concurrent.STM.TMChan.html#readTMChan"><span class="hs-identifier hs-var hs-var">readTMChan</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-type">TMChan</span></a></span><span> </span><span id="local-6989586621679031171"><span class="annot"><span class="annottext">TVar Bool
-</span><a href="#local-6989586621679031171"><span class="hs-identifier hs-var">closed</span></a></span></span><span> </span><span id="local-6989586621679031170"><span class="annot"><span class="annottext">TChan a
-</span><a href="#local-6989586621679031170"><span class="hs-identifier hs-var">chan</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-119"></span><span>    </span><span id="local-6989586621679031169"><span class="annot"><span class="annottext">Bool
-</span><a href="#local-6989586621679031169"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall a. TVar a -&gt; STM a
+</span><a href="Control.Concurrent.STM.TMChan.html#readTMChan"><span class="hs-identifier hs-var hs-var">readTMChan</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-type">TMChan</span></a></span><span> </span><span id="local-6989586621679032474"><span class="annot"><span class="annottext">TVar Bool
+</span><a href="#local-6989586621679032474"><span class="hs-identifier hs-var">closed</span></a></span></span><span> </span><span id="local-6989586621679032475"><span class="annot"><span class="annottext">TChan a
+</span><a href="#local-6989586621679032475"><span class="hs-identifier hs-var">chan</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-119"></span><span>    </span><span id="local-6989586621679032476"><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621679032476"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">TVar Bool -&gt; STM Bool
+forall a. TVar a -&gt; STM a
 </span><span class="hs-identifier hs-var">readTVar</span></span><span> </span><span class="annot"><span class="annottext">TVar Bool
-</span><a href="#local-6989586621679031171"><span class="hs-identifier hs-var">closed</span></a></span><span>
+</span><a href="#local-6989586621679032474"><span class="hs-identifier hs-var">closed</span></a></span><span>
 </span><span id="line-120"></span><span>    </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">Bool
-</span><a href="#local-6989586621679031169"><span class="hs-identifier hs-var">b</span></a></span><span>
-</span><span id="line-121"></span><span>        </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">forall a. TChan a -&gt; STM (Maybe a)
+</span><a href="#local-6989586621679032476"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><span id="line-121"></span><span>        </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">TChan a -&gt; STM (Maybe a)
+forall a. TChan a -&gt; STM (Maybe a)
 </span><span class="hs-identifier hs-var">tryReadTChan</span></span><span> </span><span class="annot"><span class="annottext">TChan a
-</span><a href="#local-6989586621679031170"><span class="hs-identifier hs-var">chan</span></a></span><span>
-</span><span id="line-122"></span><span>        </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; Maybe a
-</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
-</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">forall a. TChan a -&gt; STM a
+</span><a href="#local-6989586621679032475"><span class="hs-identifier hs-var">chan</span></a></span><span>
+</span><span id="line-122"></span><span>        </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">a -&gt; Maybe a
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(a -&gt; Maybe a) -&gt; STM a -&gt; STM (Maybe a)
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">TChan a -&gt; STM a
+forall a. TChan a -&gt; STM a
 </span><span class="hs-identifier hs-var">readTChan</span></span><span> </span><span class="annot"><span class="annottext">TChan a
-</span><a href="#local-6989586621679031170"><span class="hs-identifier hs-var">chan</span></a></span><span>
+</span><a href="#local-6989586621679032475"><span class="hs-identifier hs-var">chan</span></a></span><span>
 </span><span id="line-123"></span><span class="hs-comment">{-
 -- The above is lazier reading from @chan@, and slightly optimized, compared to the clearer:
 readTMChan (TMChan closed chan) = do
@@ -199,28 +228,39 @@ readTMChan (TMChan closed chan) = do
 </span><span id="line-136"></span><span class="hs-comment">-- returns @Just Nothing@ if the channel is open but no value is</span><span>
 </span><span id="line-137"></span><span class="hs-comment">-- available; it still returns @Nothing@ if the channel is closed</span><span>
 </span><span id="line-138"></span><span class="hs-comment">-- and empty.</span><span>
-</span><span id="line-139"></span><span id="local-6989586621679031243"><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#tryReadTMChan"><span class="hs-identifier hs-type">tryReadTMChan</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-type">TMChan</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679031243"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">STM</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="#local-6989586621679031243"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span></span><span>
+</span><span id="line-139"></span><span id="local-6989586621679032402"><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#tryReadTMChan"><span class="hs-identifier hs-type">tryReadTMChan</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-type">TMChan</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679032402"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">STM</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="#local-6989586621679032402"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span></span><span>
 </span><span id="line-140"></span><span id="tryReadTMChan"><span class="annot"><span class="annottext">tryReadTMChan :: forall a. TMChan a -&gt; STM (Maybe (Maybe a))
-</span><a href="Control.Concurrent.STM.TMChan.html#tryReadTMChan"><span class="hs-identifier hs-var hs-var">tryReadTMChan</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-type">TMChan</span></a></span><span> </span><span id="local-6989586621679031159"><span class="annot"><span class="annottext">TVar Bool
-</span><a href="#local-6989586621679031159"><span class="hs-identifier hs-var">closed</span></a></span></span><span> </span><span id="local-6989586621679031158"><span class="annot"><span class="annottext">TChan a
-</span><a href="#local-6989586621679031158"><span class="hs-identifier hs-var">chan</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-141"></span><span>    </span><span id="local-6989586621679031157"><span class="annot"><span class="annottext">Bool
-</span><a href="#local-6989586621679031157"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall a. TVar a -&gt; STM a
+</span><a href="Control.Concurrent.STM.TMChan.html#tryReadTMChan"><span class="hs-identifier hs-var hs-var">tryReadTMChan</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-type">TMChan</span></a></span><span> </span><span id="local-6989586621679032486"><span class="annot"><span class="annottext">TVar Bool
+</span><a href="#local-6989586621679032486"><span class="hs-identifier hs-var">closed</span></a></span></span><span> </span><span id="local-6989586621679032487"><span class="annot"><span class="annottext">TChan a
+</span><a href="#local-6989586621679032487"><span class="hs-identifier hs-var">chan</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-141"></span><span>    </span><span id="local-6989586621679032488"><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621679032488"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">TVar Bool -&gt; STM Bool
+forall a. TVar a -&gt; STM a
 </span><span class="hs-identifier hs-var">readTVar</span></span><span> </span><span class="annot"><span class="annottext">TVar Bool
-</span><a href="#local-6989586621679031159"><span class="hs-identifier hs-var">closed</span></a></span><span>
+</span><a href="#local-6989586621679032486"><span class="hs-identifier hs-var">closed</span></a></span><span>
 </span><span id="line-142"></span><span>    </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">Bool
-</span><a href="#local-6989586621679031157"><span class="hs-identifier hs-var">b</span></a></span><span>
-</span><span id="line-143"></span><span>        </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
-</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; Maybe a
-</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
-</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">forall a. TChan a -&gt; STM (Maybe a)
+</span><a href="#local-6989586621679032488"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><span id="line-143"></span><span>        </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">(a -&gt; Maybe a) -&gt; Maybe a -&gt; Maybe (Maybe a)
+forall a b. (a -&gt; b) -&gt; Maybe a -&gt; Maybe b
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; Maybe a
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(Maybe a -&gt; Maybe (Maybe a))
+-&gt; STM (Maybe a) -&gt; STM (Maybe (Maybe a))
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">TChan a -&gt; STM (Maybe a)
+forall a. TChan a -&gt; STM (Maybe a)
 </span><span class="hs-identifier hs-var">tryReadTChan</span></span><span> </span><span class="annot"><span class="annottext">TChan a
-</span><a href="#local-6989586621679031158"><span class="hs-identifier hs-var">chan</span></a></span><span>
-</span><span id="line-144"></span><span>        </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; Maybe a
-</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
-</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">forall a. TChan a -&gt; STM (Maybe a)
+</span><a href="#local-6989586621679032487"><span class="hs-identifier hs-var">chan</span></a></span><span>
+</span><span id="line-144"></span><span>        </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">Maybe a -&gt; Maybe (Maybe a)
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(Maybe a -&gt; Maybe (Maybe a))
+-&gt; STM (Maybe a) -&gt; STM (Maybe (Maybe a))
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">TChan a -&gt; STM (Maybe a)
+forall a. TChan a -&gt; STM (Maybe a)
 </span><span class="hs-identifier hs-var">tryReadTChan</span></span><span> </span><span class="annot"><span class="annottext">TChan a
-</span><a href="#local-6989586621679031158"><span class="hs-identifier hs-var">chan</span></a></span><span>
+</span><a href="#local-6989586621679032487"><span class="hs-identifier hs-var">chan</span></a></span><span>
 </span><span id="line-145"></span><span class="hs-comment">{-
 -- The above is lazier reading from @chan@ (and removes an extraneous isEmptyTChan when using the compatibility layer) than the clearer:
 tryReadTMChan (TMChan closed chan) = do
@@ -235,37 +275,48 @@ tryReadTMChan (TMChan closed chan) = do
 </span><span id="line-156"></span><span>
 </span><span id="line-157"></span><span class="hs-comment">-- | Get the next value from the @TMChan@ without removing it,</span><span>
 </span><span id="line-158"></span><span class="hs-comment">-- retrying if the channel is empty.</span><span>
-</span><span id="line-159"></span><span id="local-6989586621679031156"><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#peekTMChan"><span class="hs-identifier hs-type">peekTMChan</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-type">TMChan</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679031156"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">STM</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="#local-6989586621679031156"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span><span>
+</span><span id="line-159"></span><span id="local-6989586621679032489"><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#peekTMChan"><span class="hs-identifier hs-type">peekTMChan</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-type">TMChan</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679032489"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">STM</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="#local-6989586621679032489"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span><span>
 </span><span id="line-160"></span><span id="peekTMChan"><span class="annot"><span class="annottext">peekTMChan :: forall a. TMChan a -&gt; STM (Maybe a)
-</span><a href="Control.Concurrent.STM.TMChan.html#peekTMChan"><span class="hs-identifier hs-var hs-var">peekTMChan</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-type">TMChan</span></a></span><span> </span><span id="local-6989586621679031150"><span class="annot"><span class="annottext">TVar Bool
-</span><a href="#local-6989586621679031150"><span class="hs-identifier hs-var">closed</span></a></span></span><span> </span><span id="local-6989586621679031149"><span class="annot"><span class="annottext">TChan a
-</span><a href="#local-6989586621679031149"><span class="hs-identifier hs-var">chan</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-161"></span><span>    </span><span id="local-6989586621679031148"><span class="annot"><span class="annottext">Bool
-</span><a href="#local-6989586621679031148"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall a. TVar a -&gt; STM a
+</span><a href="Control.Concurrent.STM.TMChan.html#peekTMChan"><span class="hs-identifier hs-var hs-var">peekTMChan</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-type">TMChan</span></a></span><span> </span><span id="local-6989586621679032495"><span class="annot"><span class="annottext">TVar Bool
+</span><a href="#local-6989586621679032495"><span class="hs-identifier hs-var">closed</span></a></span></span><span> </span><span id="local-6989586621679032496"><span class="annot"><span class="annottext">TChan a
+</span><a href="#local-6989586621679032496"><span class="hs-identifier hs-var">chan</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-161"></span><span>    </span><span id="local-6989586621679032497"><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621679032497"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">TVar Bool -&gt; STM Bool
+forall a. TVar a -&gt; STM a
 </span><span class="hs-identifier hs-var">readTVar</span></span><span> </span><span class="annot"><span class="annottext">TVar Bool
-</span><a href="#local-6989586621679031150"><span class="hs-identifier hs-var">closed</span></a></span><span>
+</span><a href="#local-6989586621679032495"><span class="hs-identifier hs-var">closed</span></a></span><span>
 </span><span id="line-162"></span><span>    </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">Bool
-</span><a href="#local-6989586621679031148"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><a href="#local-6989586621679032497"><span class="hs-identifier hs-var">b</span></a></span><span>
 </span><span id="line-163"></span><span>        </span><span class="hs-keyword">then</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-164"></span><span>            </span><span id="local-6989586621679031147"><span class="annot"><span class="annottext">Bool
-</span><a href="#local-6989586621679031147"><span class="hs-identifier hs-var">b'</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall a. TChan a -&gt; STM Bool
+</span><span id="line-164"></span><span>            </span><span id="local-6989586621679032498"><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621679032498"><span class="hs-identifier hs-var">b'</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">TChan a -&gt; STM Bool
+forall a. TChan a -&gt; STM Bool
 </span><span class="hs-identifier hs-var">isEmptyTChan</span></span><span> </span><span class="annot"><span class="annottext">TChan a
-</span><a href="#local-6989586621679031149"><span class="hs-identifier hs-var">chan</span></a></span><span>
+</span><a href="#local-6989586621679032496"><span class="hs-identifier hs-var">chan</span></a></span><span>
 </span><span id="line-165"></span><span>            </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">Bool
-</span><a href="#local-6989586621679031147"><span class="hs-identifier hs-var">b'</span></a></span><span>
-</span><span id="line-166"></span><span>                </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
-</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">forall a. Maybe a
+</span><a href="#local-6989586621679032498"><span class="hs-identifier hs-var">b'</span></a></span><span>
+</span><span id="line-166"></span><span>                </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">Maybe a -&gt; STM (Maybe a)
+forall a. a -&gt; STM a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">Maybe a
+forall a. Maybe a
 </span><span class="hs-identifier hs-var">Nothing</span></span><span>
-</span><span id="line-167"></span><span>                </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; Maybe a
-</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
-</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">forall a. TChan a -&gt; STM a
+</span><span id="line-167"></span><span>                </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">a -&gt; Maybe a
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(a -&gt; Maybe a) -&gt; STM a -&gt; STM (Maybe a)
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">TChan a -&gt; STM a
+forall a. TChan a -&gt; STM a
 </span><span class="hs-identifier hs-var">peekTChan</span></span><span> </span><span class="annot"><span class="annottext">TChan a
-</span><a href="#local-6989586621679031149"><span class="hs-identifier hs-var">chan</span></a></span><span>
-</span><span id="line-168"></span><span>        </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; Maybe a
-</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
-</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">forall a. TChan a -&gt; STM a
+</span><a href="#local-6989586621679032496"><span class="hs-identifier hs-var">chan</span></a></span><span>
+</span><span id="line-168"></span><span>        </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">a -&gt; Maybe a
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(a -&gt; Maybe a) -&gt; STM a -&gt; STM (Maybe a)
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">TChan a -&gt; STM a
+forall a. TChan a -&gt; STM a
 </span><span class="hs-identifier hs-var">peekTChan</span></span><span> </span><span class="annot"><span class="annottext">TChan a
-</span><a href="#local-6989586621679031149"><span class="hs-identifier hs-var">chan</span></a></span><span>
+</span><a href="#local-6989586621679032496"><span class="hs-identifier hs-var">chan</span></a></span><span>
 </span><span id="line-169"></span><span class="hs-comment">{-
 -- The above is lazier reading from @chan@ than the clearer:
 peekTMChan (TMChan closed chan) = do
@@ -282,28 +333,39 @@ peekTMChan (TMChan closed chan) = do
 </span><span id="line-182"></span><span class="hs-comment">-- returns @Just Nothing@ if the channel is open but no value is</span><span>
 </span><span id="line-183"></span><span class="hs-comment">-- available; it still returns @Nothing@ if the channel is closed</span><span>
 </span><span id="line-184"></span><span class="hs-comment">-- and empty.</span><span>
-</span><span id="line-185"></span><span id="local-6989586621679031144"><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#tryPeekTMChan"><span class="hs-identifier hs-type">tryPeekTMChan</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-type">TMChan</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679031144"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">STM</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="#local-6989586621679031144"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span></span><span>
+</span><span id="line-185"></span><span id="local-6989586621679032501"><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#tryPeekTMChan"><span class="hs-identifier hs-type">tryPeekTMChan</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-type">TMChan</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679032501"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">STM</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="#local-6989586621679032501"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span></span><span>
 </span><span id="line-186"></span><span id="tryPeekTMChan"><span class="annot"><span class="annottext">tryPeekTMChan :: forall a. TMChan a -&gt; STM (Maybe (Maybe a))
-</span><a href="Control.Concurrent.STM.TMChan.html#tryPeekTMChan"><span class="hs-identifier hs-var hs-var">tryPeekTMChan</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-type">TMChan</span></a></span><span> </span><span id="local-6989586621679031139"><span class="annot"><span class="annottext">TVar Bool
-</span><a href="#local-6989586621679031139"><span class="hs-identifier hs-var">closed</span></a></span></span><span> </span><span id="local-6989586621679031138"><span class="annot"><span class="annottext">TChan a
-</span><a href="#local-6989586621679031138"><span class="hs-identifier hs-var">chan</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-187"></span><span>    </span><span id="local-6989586621679031137"><span class="annot"><span class="annottext">Bool
-</span><a href="#local-6989586621679031137"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall a. TVar a -&gt; STM a
+</span><a href="Control.Concurrent.STM.TMChan.html#tryPeekTMChan"><span class="hs-identifier hs-var hs-var">tryPeekTMChan</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-type">TMChan</span></a></span><span> </span><span id="local-6989586621679032506"><span class="annot"><span class="annottext">TVar Bool
+</span><a href="#local-6989586621679032506"><span class="hs-identifier hs-var">closed</span></a></span></span><span> </span><span id="local-6989586621679032507"><span class="annot"><span class="annottext">TChan a
+</span><a href="#local-6989586621679032507"><span class="hs-identifier hs-var">chan</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-187"></span><span>    </span><span id="local-6989586621679032508"><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621679032508"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">TVar Bool -&gt; STM Bool
+forall a. TVar a -&gt; STM a
 </span><span class="hs-identifier hs-var">readTVar</span></span><span> </span><span class="annot"><span class="annottext">TVar Bool
-</span><a href="#local-6989586621679031139"><span class="hs-identifier hs-var">closed</span></a></span><span>
+</span><a href="#local-6989586621679032506"><span class="hs-identifier hs-var">closed</span></a></span><span>
 </span><span id="line-188"></span><span>    </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">Bool
-</span><a href="#local-6989586621679031137"><span class="hs-identifier hs-var">b</span></a></span><span>
-</span><span id="line-189"></span><span>        </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
-</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; Maybe a
-</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
-</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">forall a. TChan a -&gt; STM (Maybe a)
+</span><a href="#local-6989586621679032508"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><span id="line-189"></span><span>        </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">(a -&gt; Maybe a) -&gt; Maybe a -&gt; Maybe (Maybe a)
+forall a b. (a -&gt; b) -&gt; Maybe a -&gt; Maybe b
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; Maybe a
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(Maybe a -&gt; Maybe (Maybe a))
+-&gt; STM (Maybe a) -&gt; STM (Maybe (Maybe a))
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">TChan a -&gt; STM (Maybe a)
+forall a. TChan a -&gt; STM (Maybe a)
 </span><span class="hs-identifier hs-var">tryPeekTChan</span></span><span> </span><span class="annot"><span class="annottext">TChan a
-</span><a href="#local-6989586621679031138"><span class="hs-identifier hs-var">chan</span></a></span><span>
-</span><span id="line-190"></span><span>        </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; Maybe a
-</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
-</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">forall a. TChan a -&gt; STM (Maybe a)
+</span><a href="#local-6989586621679032507"><span class="hs-identifier hs-var">chan</span></a></span><span>
+</span><span id="line-190"></span><span>        </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">Maybe a -&gt; Maybe (Maybe a)
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(Maybe a -&gt; Maybe (Maybe a))
+-&gt; STM (Maybe a) -&gt; STM (Maybe (Maybe a))
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">TChan a -&gt; STM (Maybe a)
+forall a. TChan a -&gt; STM (Maybe a)
 </span><span class="hs-identifier hs-var">tryPeekTChan</span></span><span> </span><span class="annot"><span class="annottext">TChan a
-</span><a href="#local-6989586621679031138"><span class="hs-identifier hs-var">chan</span></a></span><span>
+</span><a href="#local-6989586621679032507"><span class="hs-identifier hs-var">chan</span></a></span><span>
 </span><span id="line-191"></span><span class="hs-comment">{-
 -- The above is lazier reading from @chan@ (and removes an extraneous isEmptyTChan when using the compatibility layer) than the clearer:
 tryPeekTMChan (TMChan closed chan) = do
@@ -319,71 +381,81 @@ tryPeekTMChan (TMChan closed chan) = do
 </span><span id="line-203"></span><span class="hs-comment">-- | Write a value to a @TMChan@. If the channel is closed then the</span><span>
 </span><span id="line-204"></span><span class="hs-comment">-- value is silently discarded. Use 'isClosedTMChan' to determine</span><span>
 </span><span id="line-205"></span><span class="hs-comment">-- if the channel is closed before writing, as needed.</span><span>
-</span><span id="line-206"></span><span id="local-6989586621679031235"><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#writeTMChan"><span class="hs-identifier hs-type">writeTMChan</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-type">TMChan</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679031235"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679031235"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">STM</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span></span><span>
+</span><span id="line-206"></span><span id="local-6989586621679032410"><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#writeTMChan"><span class="hs-identifier hs-type">writeTMChan</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-type">TMChan</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679032410"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679032410"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">STM</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span></span><span>
 </span><span id="line-207"></span><span id="writeTMChan"><span class="annot"><span class="annottext">writeTMChan :: forall a. TMChan a -&gt; a -&gt; STM ()
-</span><a href="Control.Concurrent.STM.TMChan.html#writeTMChan"><span class="hs-identifier hs-var hs-var">writeTMChan</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-type">TMChan</span></a></span><span> </span><span id="local-6989586621679031133"><span class="annot"><span class="annottext">TVar Bool
-</span><a href="#local-6989586621679031133"><span class="hs-identifier hs-var">closed</span></a></span></span><span> </span><span id="local-6989586621679031132"><span class="annot"><span class="annottext">TChan a
-</span><a href="#local-6989586621679031132"><span class="hs-identifier hs-var">chan</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621679031131"><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621679031131"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-208"></span><span>    </span><span id="local-6989586621679031130"><span class="annot"><span class="annottext">Bool
-</span><a href="#local-6989586621679031130"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall a. TVar a -&gt; STM a
+</span><a href="Control.Concurrent.STM.TMChan.html#writeTMChan"><span class="hs-identifier hs-var hs-var">writeTMChan</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-type">TMChan</span></a></span><span> </span><span id="local-6989586621679032512"><span class="annot"><span class="annottext">TVar Bool
+</span><a href="#local-6989586621679032512"><span class="hs-identifier hs-var">closed</span></a></span></span><span> </span><span id="local-6989586621679032513"><span class="annot"><span class="annottext">TChan a
+</span><a href="#local-6989586621679032513"><span class="hs-identifier hs-var">chan</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621679032514"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679032514"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-208"></span><span>    </span><span id="local-6989586621679032515"><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621679032515"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">TVar Bool -&gt; STM Bool
+forall a. TVar a -&gt; STM a
 </span><span class="hs-identifier hs-var">readTVar</span></span><span> </span><span class="annot"><span class="annottext">TVar Bool
-</span><a href="#local-6989586621679031133"><span class="hs-identifier hs-var">closed</span></a></span><span>
+</span><a href="#local-6989586621679032512"><span class="hs-identifier hs-var">closed</span></a></span><span>
 </span><span id="line-209"></span><span>    </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">Bool
-</span><a href="#local-6989586621679031130"><span class="hs-identifier hs-var">b</span></a></span><span>
-</span><span id="line-210"></span><span>        </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><a href="#local-6989586621679032515"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><span id="line-210"></span><span>        </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">() -&gt; STM ()
+forall a. a -&gt; STM a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
 </span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span> </span><span class="hs-comment">-- discard silently</span><span>
-</span><span id="line-211"></span><span>        </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">forall a. TChan a -&gt; a -&gt; STM ()
+</span><span id="line-211"></span><span>        </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">TChan a -&gt; a -&gt; STM ()
+forall a. TChan a -&gt; a -&gt; STM ()
 </span><span class="hs-identifier hs-var">writeTChan</span></span><span> </span><span class="annot"><span class="annottext">TChan a
-</span><a href="#local-6989586621679031132"><span class="hs-identifier hs-var">chan</span></a></span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621679031131"><span class="hs-identifier hs-var">x</span></a></span><span>
+</span><a href="#local-6989586621679032513"><span class="hs-identifier hs-var">chan</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679032514"><span class="hs-identifier hs-var">x</span></a></span><span>
 </span><span id="line-212"></span><span>
 </span><span id="line-213"></span><span>
 </span><span id="line-214"></span><span class="hs-comment">-- | Put a data item back onto a channel, where it will be the next</span><span>
 </span><span id="line-215"></span><span class="hs-comment">-- item read. If the channel is closed then the value is silently</span><span>
 </span><span id="line-216"></span><span class="hs-comment">-- discarded; you can use 'peekTMChan' to circumvent this in certain</span><span>
 </span><span id="line-217"></span><span class="hs-comment">-- circumstances.</span><span>
-</span><span id="line-218"></span><span id="local-6989586621679031128"><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#unGetTMChan"><span class="hs-identifier hs-type">unGetTMChan</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-type">TMChan</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679031128"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679031128"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">STM</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span></span><span>
+</span><span id="line-218"></span><span id="local-6989586621679032517"><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#unGetTMChan"><span class="hs-identifier hs-type">unGetTMChan</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-type">TMChan</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679032517"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679032517"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">STM</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span></span><span>
 </span><span id="line-219"></span><span id="unGetTMChan"><span class="annot"><span class="annottext">unGetTMChan :: forall a. TMChan a -&gt; a -&gt; STM ()
-</span><a href="Control.Concurrent.STM.TMChan.html#unGetTMChan"><span class="hs-identifier hs-var hs-var">unGetTMChan</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-type">TMChan</span></a></span><span> </span><span id="local-6989586621679031125"><span class="annot"><span class="annottext">TVar Bool
-</span><a href="#local-6989586621679031125"><span class="hs-identifier hs-var">closed</span></a></span></span><span> </span><span id="local-6989586621679031124"><span class="annot"><span class="annottext">TChan a
-</span><a href="#local-6989586621679031124"><span class="hs-identifier hs-var">chan</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621679031123"><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621679031123"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-220"></span><span>    </span><span id="local-6989586621679031122"><span class="annot"><span class="annottext">Bool
-</span><a href="#local-6989586621679031122"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall a. TVar a -&gt; STM a
+</span><a href="Control.Concurrent.STM.TMChan.html#unGetTMChan"><span class="hs-identifier hs-var hs-var">unGetTMChan</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-type">TMChan</span></a></span><span> </span><span id="local-6989586621679032520"><span class="annot"><span class="annottext">TVar Bool
+</span><a href="#local-6989586621679032520"><span class="hs-identifier hs-var">closed</span></a></span></span><span> </span><span id="local-6989586621679032521"><span class="annot"><span class="annottext">TChan a
+</span><a href="#local-6989586621679032521"><span class="hs-identifier hs-var">chan</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621679032522"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679032522"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-220"></span><span>    </span><span id="local-6989586621679032523"><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621679032523"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">TVar Bool -&gt; STM Bool
+forall a. TVar a -&gt; STM a
 </span><span class="hs-identifier hs-var">readTVar</span></span><span> </span><span class="annot"><span class="annottext">TVar Bool
-</span><a href="#local-6989586621679031125"><span class="hs-identifier hs-var">closed</span></a></span><span>
+</span><a href="#local-6989586621679032520"><span class="hs-identifier hs-var">closed</span></a></span><span>
 </span><span id="line-221"></span><span>    </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">Bool
-</span><a href="#local-6989586621679031122"><span class="hs-identifier hs-var">b</span></a></span><span>
-</span><span id="line-222"></span><span>        </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><a href="#local-6989586621679032523"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><span id="line-222"></span><span>        </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">() -&gt; STM ()
+forall a. a -&gt; STM a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
 </span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span> </span><span class="hs-comment">-- discard silently</span><span>
-</span><span id="line-223"></span><span>        </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">forall a. TChan a -&gt; a -&gt; STM ()
+</span><span id="line-223"></span><span>        </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">TChan a -&gt; a -&gt; STM ()
+forall a. TChan a -&gt; a -&gt; STM ()
 </span><span class="hs-identifier hs-var">unGetTChan</span></span><span> </span><span class="annot"><span class="annottext">TChan a
-</span><a href="#local-6989586621679031124"><span class="hs-identifier hs-var">chan</span></a></span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621679031123"><span class="hs-identifier hs-var">x</span></a></span><span>
+</span><a href="#local-6989586621679032521"><span class="hs-identifier hs-var">chan</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679032522"><span class="hs-identifier hs-var">x</span></a></span><span>
 </span><span id="line-224"></span><span>
 </span><span id="line-225"></span><span>
-</span><span id="line-226"></span><span class="hs-comment">-- | Closes the @TMChan@, preventing any further writes.</span><span>
-</span><span id="line-227"></span><span id="local-6989586621679031231"><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#closeTMChan"><span class="hs-identifier hs-type">closeTMChan</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-type">TMChan</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679031231"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">STM</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span></span><span>
+</span><span id="line-226"></span><span class="annot"><span class="hs-comment">-- | Closes the @TMChan@, preventing any further writes.</span></span><span>
+</span><span id="line-227"></span><span id="local-6989586621679032414"><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#closeTMChan"><span class="hs-identifier hs-type">closeTMChan</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-type">TMChan</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679032414"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">STM</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span></span><span>
 </span><span id="line-228"></span><span id="closeTMChan"><span class="annot"><span class="annottext">closeTMChan :: forall a. TMChan a -&gt; STM ()
-</span><a href="Control.Concurrent.STM.TMChan.html#closeTMChan"><span class="hs-identifier hs-var hs-var">closeTMChan</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-type">TMChan</span></a></span><span> </span><span id="local-6989586621679031120"><span class="annot"><span class="annottext">TVar Bool
-</span><a href="#local-6989586621679031120"><span class="hs-identifier hs-var">closed</span></a></span></span><span> </span><span id="local-6989586621679031119"><span class="annot"><span class="annottext">TChan a
-</span><a href="#local-6989586621679031119"><span class="hs-identifier hs-var">_chan</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-229"></span><span>    </span><span class="annot"><span class="annottext">forall a. TVar a -&gt; a -&gt; STM ()
+</span><a href="Control.Concurrent.STM.TMChan.html#closeTMChan"><span class="hs-identifier hs-var hs-var">closeTMChan</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-type">TMChan</span></a></span><span> </span><span id="local-6989586621679032525"><span class="annot"><span class="annottext">TVar Bool
+</span><a href="#local-6989586621679032525"><span class="hs-identifier hs-var">closed</span></a></span></span><span> </span><span id="local-6989586621679032526"><span class="annot"><span class="annottext">TChan a
+</span><a href="#local-6989586621679032526"><span class="hs-identifier hs-var">_chan</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-229"></span><span>    </span><span class="annot"><span class="annottext">TVar Bool -&gt; Bool -&gt; STM ()
+forall a. TVar a -&gt; a -&gt; STM ()
 </span><span class="hs-identifier hs-var">writeTVar</span></span><span> </span><span class="annot"><span class="annottext">TVar Bool
-</span><a href="#local-6989586621679031120"><span class="hs-identifier hs-var">closed</span></a></span><span> </span><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621679032525"><span class="hs-identifier hs-var">closed</span></a></span><span> </span><span class="annot"><span class="annottext">Bool
 </span><span class="hs-identifier hs-var">True</span></span><span>
 </span><span id="line-230"></span><span>
 </span><span id="line-231"></span><span>
-</span><span id="line-232"></span><span class="hs-comment">-- | Returns @True@ if the supplied @TMChan@ has been closed.</span><span>
-</span><span id="line-233"></span><span id="local-6989586621679031228"><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#isClosedTMChan"><span class="hs-identifier hs-type">isClosedTMChan</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-type">TMChan</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679031228"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">STM</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span></span><span>
+</span><span id="line-232"></span><span class="annot"><span class="hs-comment">-- | Returns @True@ if the supplied @TMChan@ has been closed.</span></span><span>
+</span><span id="line-233"></span><span id="local-6989586621679032417"><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#isClosedTMChan"><span class="hs-identifier hs-type">isClosedTMChan</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-type">TMChan</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679032417"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">STM</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span></span><span>
 </span><span id="line-234"></span><span id="isClosedTMChan"><span class="annot"><span class="annottext">isClosedTMChan :: forall a. TMChan a -&gt; STM Bool
-</span><a href="Control.Concurrent.STM.TMChan.html#isClosedTMChan"><span class="hs-identifier hs-var hs-var">isClosedTMChan</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-type">TMChan</span></a></span><span> </span><span id="local-6989586621679031117"><span class="annot"><span class="annottext">TVar Bool
-</span><a href="#local-6989586621679031117"><span class="hs-identifier hs-var">closed</span></a></span></span><span> </span><span id="local-6989586621679031116"><span class="annot"><span class="annottext">TChan a
-</span><a href="#local-6989586621679031116"><span class="hs-identifier hs-var">_chan</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-235"></span><span>    </span><span class="annot"><span class="annottext">forall a. TVar a -&gt; STM a
+</span><a href="Control.Concurrent.STM.TMChan.html#isClosedTMChan"><span class="hs-identifier hs-var hs-var">isClosedTMChan</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-type">TMChan</span></a></span><span> </span><span id="local-6989586621679032528"><span class="annot"><span class="annottext">TVar Bool
+</span><a href="#local-6989586621679032528"><span class="hs-identifier hs-var">closed</span></a></span></span><span> </span><span id="local-6989586621679032529"><span class="annot"><span class="annottext">TChan a
+</span><a href="#local-6989586621679032529"><span class="hs-identifier hs-var">_chan</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-235"></span><span>    </span><span class="annot"><span class="annottext">TVar Bool -&gt; STM Bool
+forall a. TVar a -&gt; STM a
 </span><span class="hs-identifier hs-var">readTVar</span></span><span> </span><span class="annot"><span class="annottext">TVar Bool
-</span><a href="#local-6989586621679031117"><span class="hs-identifier hs-var">closed</span></a></span><span>
+</span><a href="#local-6989586621679032528"><span class="hs-identifier hs-var">closed</span></a></span><span>
 </span><span id="line-236"></span><span>
 </span><span id="line-237"></span><span class="hs-comment">{-
 -- | Returns @True@ if the supplied @TMChan@ has been closed.
@@ -393,15 +465,16 @@ isClosedTMChanIO (TMChan closed _chan) =
 -}</span><span>
 </span><span id="line-243"></span><span>
 </span><span id="line-244"></span><span>
-</span><span id="line-245"></span><span class="hs-comment">-- | Returns @True@ if the supplied @TMChan@ is empty.</span><span>
-</span><span id="line-246"></span><span id="local-6989586621679031115"><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#isEmptyTMChan"><span class="hs-identifier hs-type">isEmptyTMChan</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-type">TMChan</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679031115"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">STM</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span></span><span>
+</span><span id="line-245"></span><span class="annot"><span class="hs-comment">-- | Returns @True@ if the supplied @TMChan@ is empty.</span></span><span>
+</span><span id="line-246"></span><span id="local-6989586621679032530"><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#isEmptyTMChan"><span class="hs-identifier hs-type">isEmptyTMChan</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-type">TMChan</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679032530"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">STM</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span></span><span>
 </span><span id="line-247"></span><span id="isEmptyTMChan"><span class="annot"><span class="annottext">isEmptyTMChan :: forall a. TMChan a -&gt; STM Bool
-</span><a href="Control.Concurrent.STM.TMChan.html#isEmptyTMChan"><span class="hs-identifier hs-var hs-var">isEmptyTMChan</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-type">TMChan</span></a></span><span> </span><span id="local-6989586621679031114"><span class="annot"><span class="annottext">TVar Bool
-</span><a href="#local-6989586621679031114"><span class="hs-identifier hs-var">_closed</span></a></span></span><span> </span><span id="local-6989586621679031113"><span class="annot"><span class="annottext">TChan a
-</span><a href="#local-6989586621679031113"><span class="hs-identifier hs-var">chan</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-248"></span><span>    </span><span class="annot"><span class="annottext">forall a. TChan a -&gt; STM Bool
+</span><a href="Control.Concurrent.STM.TMChan.html#isEmptyTMChan"><span class="hs-identifier hs-var hs-var">isEmptyTMChan</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Control.Concurrent.STM.TMChan.html#TMChan"><span class="hs-identifier hs-type">TMChan</span></a></span><span> </span><span id="local-6989586621679032531"><span class="annot"><span class="annottext">TVar Bool
+</span><a href="#local-6989586621679032531"><span class="hs-identifier hs-var">_closed</span></a></span></span><span> </span><span id="local-6989586621679032532"><span class="annot"><span class="annottext">TChan a
+</span><a href="#local-6989586621679032532"><span class="hs-identifier hs-var">chan</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-248"></span><span>    </span><span class="annot"><span class="annottext">TChan a -&gt; STM Bool
+forall a. TChan a -&gt; STM Bool
 </span><span class="hs-identifier hs-var">isEmptyTChan</span></span><span> </span><span class="annot"><span class="annottext">TChan a
-</span><a href="#local-6989586621679031113"><span class="hs-identifier hs-var">chan</span></a></span><span>
+</span><a href="#local-6989586621679032532"><span class="hs-identifier hs-var">chan</span></a></span><span>
 </span><span id="line-249"></span><span>
 </span><span id="line-250"></span><span class="hs-comment">----------------------------------------------------------------</span><span>
 </span><span id="line-251"></span><span class="hs-comment">----------------------------------------------------------- fin.</span><span>

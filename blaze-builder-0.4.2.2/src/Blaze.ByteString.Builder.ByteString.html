@@ -43,34 +43,39 @@
 </span><span id="line-43"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ByteString.Lazy</span></span><span>          </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">L</span></span><span>
 </span><span id="line-44"></span><span>
 </span><span id="line-45"></span><span>
-</span><span id="line-46"></span><span class="hs-comment">-- | Write a strict 'S.ByteString' to a buffer.</span><span>
+</span><span id="line-46"></span><span class="annot"><span class="hs-comment">-- | Write a strict 'S.ByteString' to a buffer.</span></span><span>
 </span><span id="line-47"></span><span class="annot"><a href="Blaze.ByteString.Builder.ByteString.html#writeByteString"><span class="hs-identifier hs-type">writeByteString</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">S.ByteString</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Blaze.ByteString.Builder.Internal.Write.html#Write"><span class="hs-identifier hs-type">Write</span></a></span><span>
 </span><span id="line-48"></span><span id="writeByteString"><span class="annot"><span class="annottext">writeByteString :: ByteString -&gt; Write
-</span><a href="Blaze.ByteString.Builder.ByteString.html#writeByteString"><span class="hs-identifier hs-var hs-var">writeByteString</span></a></span></span><span> </span><span id="local-6989586621679045281"><span class="annot"><span class="annottext">ByteString
-</span><a href="#local-6989586621679045281"><span class="hs-identifier hs-var">bs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int -&gt; (Ptr Word8 -&gt; IO ()) -&gt; Write
+</span><a href="Blaze.ByteString.Builder.ByteString.html#writeByteString"><span class="hs-identifier hs-var hs-var">writeByteString</span></a></span></span><span> </span><span id="local-6989586621679046440"><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679046440"><span class="hs-identifier hs-var">bs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int -&gt; (Ptr Word8 -&gt; IO ()) -&gt; Write
 </span><a href="Blaze.ByteString.Builder.Internal.Write.html#exactWrite"><span class="hs-identifier hs-var">exactWrite</span></a></span><span> </span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621679045280"><span class="hs-identifier hs-var">l</span></a></span><span> </span><span class="annot"><span class="annottext">forall {a}. Ptr a -&gt; IO ()
-</span><a href="#local-6989586621679045279"><span class="hs-identifier hs-var">io</span></a></span><span>
+</span><a href="#local-6989586621679046441"><span class="hs-identifier hs-var">l</span></a></span><span> </span><span class="annot"><span class="annottext">Ptr Word8 -&gt; IO ()
+forall {a}. Ptr a -&gt; IO ()
+</span><a href="#local-6989586621679046442"><span class="hs-identifier hs-var">io</span></a></span><span>
 </span><span id="line-49"></span><span>  </span><span class="hs-keyword">where</span><span>
-</span><span id="line-50"></span><span>  </span><span class="hs-special">(</span><span id="local-6989586621679045278"><span class="annot"><span class="annottext">ForeignPtr Word8
-</span><a href="#local-6989586621679045278"><span class="hs-identifier hs-var">fptr</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679045277"><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621679045277"><span class="hs-identifier hs-var">o</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679045280"><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621679045280"><span class="hs-identifier hs-var">l</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; (ForeignPtr Word8, Int, Int)
+</span><span id="line-50"></span><span>  </span><span class="hs-special">(</span><span id="local-6989586621679046443"><span class="annot"><span class="annottext">ForeignPtr Word8
+</span><a href="#local-6989586621679046443"><span class="hs-identifier hs-var">fptr</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679046444"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679046444"><span class="hs-identifier hs-var">o</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679046441"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679046441"><span class="hs-identifier hs-var">l</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; (ForeignPtr Word8, Int, Int)
 </span><span class="hs-identifier hs-var">S.toForeignPtr</span></span><span> </span><span class="annot"><span class="annottext">ByteString
-</span><a href="#local-6989586621679045281"><span class="hs-identifier hs-var">bs</span></a></span><span>
-</span><span id="line-51"></span><span>  </span><span id="local-6989586621679045279"><span class="annot"><span class="annottext">io :: Ptr a -&gt; IO ()
-</span><a href="#local-6989586621679045279"><span class="hs-identifier hs-var hs-var">io</span></a></span></span><span> </span><span id="local-6989586621679045275"><span class="annot"><span class="annottext">Ptr a
-</span><a href="#local-6989586621679045275"><span class="hs-identifier hs-var">pf</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a b. ForeignPtr a -&gt; (Ptr a -&gt; IO b) -&gt; IO b
+</span><a href="#local-6989586621679046440"><span class="hs-identifier hs-var">bs</span></a></span><span>
+</span><span id="line-51"></span><span>  </span><span id="local-6989586621679046442"><span class="annot"><span class="annottext">io :: Ptr a -&gt; IO ()
+</span><a href="#local-6989586621679046442"><span class="hs-identifier hs-var hs-var">io</span></a></span></span><span> </span><span id="local-6989586621679046446"><span class="annot"><span class="annottext">Ptr a
+</span><a href="#local-6989586621679046446"><span class="hs-identifier hs-var">pf</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ForeignPtr Word8 -&gt; (Ptr Word8 -&gt; IO ()) -&gt; IO ()
+forall a b. ForeignPtr a -&gt; (Ptr a -&gt; IO b) -&gt; IO b
 </span><span class="hs-identifier hs-var">withForeignPtr</span></span><span> </span><span class="annot"><span class="annottext">ForeignPtr Word8
-</span><a href="#local-6989586621679045278"><span class="hs-identifier hs-var">fptr</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679045273"><span class="annot"><span class="annottext">Ptr Word8
-</span><a href="#local-6989586621679045273"><span class="hs-identifier hs-var">p</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall a. Ptr a -&gt; Ptr a -&gt; Int -&gt; IO ()
+</span><a href="#local-6989586621679046443"><span class="hs-identifier hs-var">fptr</span></a></span><span> </span><span class="annot"><span class="annottext">((Ptr Word8 -&gt; IO ()) -&gt; IO ()) -&gt; (Ptr Word8 -&gt; IO ()) -&gt; IO ()
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679046448"><span class="annot"><span class="annottext">Ptr Word8
+</span><a href="#local-6989586621679046448"><span class="hs-identifier hs-var">p</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Ptr a -&gt; Ptr a -&gt; Int -&gt; IO ()
+forall a. Ptr a -&gt; Ptr a -&gt; Int -&gt; IO ()
 </span><span class="hs-identifier hs-var">copyBytes</span></span><span> </span><span class="annot"><span class="annottext">Ptr a
-</span><a href="#local-6989586621679045275"><span class="hs-identifier hs-var">pf</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Ptr Word8
-</span><a href="#local-6989586621679045273"><span class="hs-identifier hs-var">p</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. Ptr a -&gt; Int -&gt; Ptr b
+</span><a href="#local-6989586621679046446"><span class="hs-identifier hs-var">pf</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Ptr Word8
+</span><a href="#local-6989586621679046448"><span class="hs-identifier hs-var">p</span></a></span><span> </span><span class="annot"><span class="annottext">Ptr Word8 -&gt; Int -&gt; Ptr a
+forall a b. Ptr a -&gt; Int -&gt; Ptr b
 </span><span class="hs-operator hs-var">`plusPtr`</span></span><span> </span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621679045277"><span class="hs-identifier hs-var">o</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621679045280"><span class="hs-identifier hs-var">l</span></a></span><span>
+</span><a href="#local-6989586621679046444"><span class="hs-identifier hs-var">o</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679046441"><span class="hs-identifier hs-var">l</span></a></span><span>
 </span><span id="line-52"></span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="annot"><a href="Blaze.ByteString.Builder.ByteString.html#writeByteString"><span class="hs-pragma hs-type">writeByteString</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
 </span><span id="line-53"></span><span>
 </span><span id="line-54"></span><span class="hs-comment">-- | Create a 'B.Builder' denoting the same sequence of bytes as a strict</span><span>
@@ -93,9 +98,9 @@
 </span><span id="line-69"></span><span class="hs-comment">-- low as 513 bytes, as there could always be just a single byte between the</span><span>
 </span><span id="line-70"></span><span class="hs-comment">-- directly inserted 1025 byte, strict 'S.ByteString's.</span><span>
 </span><span id="line-71"></span><span class="hs-comment">--</span><span>
-</span><span id="line-72"></span><span class="annot"><a href="Blaze.ByteString.Builder.ByteString.html#fromByteStringWith"><span class="hs-identifier hs-type">fromByteStringWith</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span>          </span><span class="hs-comment">-- ^ Maximal number of bytes to copy.</span><span>
-</span><span id="line-73"></span><span>                   </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">S.ByteString</span></span><span> </span><span class="hs-comment">-- ^ Strict 'S.ByteString' to serialize.</span><span>
-</span><span id="line-74"></span><span>                   </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">B.Builder</span></span><span>    </span><span class="hs-comment">-- ^ Resulting 'B.Builder'.</span><span>
+</span><span id="line-72"></span><span class="annot"><a href="Blaze.ByteString.Builder.ByteString.html#fromByteStringWith"><span class="hs-identifier hs-type">fromByteStringWith</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span>          </span><span class="annot"><span class="hs-comment">-- ^ Maximal number of bytes to copy.</span></span><span>
+</span><span id="line-73"></span><span>                   </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">S.ByteString</span></span><span> </span><span class="annot"><span class="hs-comment">-- ^ Strict 'S.ByteString' to serialize.</span></span><span>
+</span><span id="line-74"></span><span>                   </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">B.Builder</span></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Resulting 'B.Builder'.</span></span><span>
 </span><span id="line-75"></span><span id="fromByteStringWith"><span class="annot"><span class="annottext">fromByteStringWith :: Int -&gt; ByteString -&gt; Builder
 </span><a href="Blaze.ByteString.Builder.ByteString.html#fromByteStringWith"><span class="hs-identifier hs-var hs-var">fromByteStringWith</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int -&gt; ByteString -&gt; Builder
 </span><span class="hs-identifier hs-var">B.byteStringThreshold</span></span><span>

@@ -358,7 +358,7 @@ scientificP :: ReadP Scientific
 formatScientific :: FPFormat -> Maybe Int -> Scientific -> String
 
 -- | Control the rendering of floating point numbers.
-data FPFormat
+data () => FPFormat
 
 -- | Scientific notation (e.g. <tt>2.3e123</tt>).
 Exponent :: FPFormat
@@ -425,7 +425,7 @@ scientificBuilder :: Scientific -> Builder
 formatScientificBuilder :: FPFormat -> Maybe Int -> Scientific -> Builder
 
 -- | Control the rendering of floating point numbers.
-data FPFormat
+data () => FPFormat
 
 -- | Scientific notation (e.g. <tt>2.3e123</tt>).
 Exponent :: FPFormat
@@ -449,7 +449,7 @@ scientificBuilder :: Scientific -> Builder
 formatScientificBuilder :: FPFormat -> Maybe Int -> Scientific -> Builder
 
 -- | Control the rendering of floating point numbers.
-data FPFormat
+data () => FPFormat
 
 -- | Scientific notation (e.g. <tt>2.3e123</tt>).
 Exponent :: FPFormat

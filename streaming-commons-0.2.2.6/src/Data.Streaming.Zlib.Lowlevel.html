@@ -1,4 +1,4 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span id="local-6989586621679069003"><span id="local-6989586621679069004"></span></span><span class="hs-pragma">{-# LANGUAGE ForeignFunctionInterface #-}</span><span>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span id="local-6989586621679075979"><span id="local-6989586621679075980"></span></span><span class="hs-pragma">{-# LANGUAGE ForeignFunctionInterface #-}</span><span>
 </span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE EmptyDataDecls #-}</span><span>
 </span><span id="line-3"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Data.Streaming.Zlib.Lowlevel</span><span>
 </span><span id="line-4"></span><span>    </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Data.Streaming.Zlib.Lowlevel.html#ZStreamStruct"><span class="hs-identifier">ZStreamStruct</span></a></span><span>
@@ -36,30 +36,43 @@
 </span><span id="line-36"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span id="StrategyHuffman"><span class="annot"><a href="Data.Streaming.Zlib.Lowlevel.html#StrategyHuffman"><span class="hs-identifier hs-var">StrategyHuffman</span></a></span></span><span>
 </span><span id="line-37"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span id="StrategyRLE"><span class="annot"><a href="Data.Streaming.Zlib.Lowlevel.html#StrategyRLE"><span class="hs-identifier hs-var">StrategyRLE</span></a></span></span><span>
 </span><span id="line-38"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span id="StrategyFixed"><span class="annot"><a href="Data.Streaming.Zlib.Lowlevel.html#StrategyFixed"><span class="hs-identifier hs-var">StrategyFixed</span></a></span></span><span>
-</span><span id="line-39"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679068961"><span id="local-6989586621679068963"><span id="local-6989586621679068965"><span class="annot"><span class="annottext">Int -&gt; Strategy -&gt; ShowS
+</span><span id="line-39"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679076019"><span id="local-6989586621679076021"><span id="local-6989586621679076025"><span class="annot"><span class="annottext">Int -&gt; Strategy -&gt; ShowS
 [Strategy] -&gt; ShowS
 Strategy -&gt; String
+(Int -&gt; Strategy -&gt; ShowS)
+-&gt; (Strategy -&gt; String) -&gt; ([Strategy] -&gt; ShowS) -&gt; Show Strategy
 forall a.
 (Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
-showList :: [Strategy] -&gt; ShowS
-$cshowList :: [Strategy] -&gt; ShowS
-show :: Strategy -&gt; String
-$cshow :: Strategy -&gt; String
-showsPrec :: Int -&gt; Strategy -&gt; ShowS
 $cshowsPrec :: Int -&gt; Strategy -&gt; ShowS
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span id="local-6989586621679068956"><span id="local-6989586621679068958"><span class="annot"><span class="annottext">Strategy -&gt; Strategy -&gt; Bool
+showsPrec :: Int -&gt; Strategy -&gt; ShowS
+$cshow :: Strategy -&gt; String
+show :: Strategy -&gt; String
+$cshowList :: [Strategy] -&gt; ShowS
+showList :: [Strategy] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span id="local-6989586621679076029"><span id="local-6989586621679076031"><span class="annot"><span class="annottext">Strategy -&gt; Strategy -&gt; Bool
+(Strategy -&gt; Strategy -&gt; Bool)
+-&gt; (Strategy -&gt; Strategy -&gt; Bool) -&gt; Eq Strategy
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
-/= :: Strategy -&gt; Strategy -&gt; Bool
-$c/= :: Strategy -&gt; Strategy -&gt; Bool
-== :: Strategy -&gt; Strategy -&gt; Bool
 $c== :: Strategy -&gt; Strategy -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span id="local-6989586621679068936"><span id="local-6989586621679068938"><span id="local-6989586621679068941"><span id="local-6989586621679068944"><span id="local-6989586621679068947"><span id="local-6989586621679068949"><span id="local-6989586621679068951"><span class="annot"><span class="annottext">Eq Strategy
+== :: Strategy -&gt; Strategy -&gt; Bool
+$c/= :: Strategy -&gt; Strategy -&gt; Bool
+/= :: Strategy -&gt; Strategy -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span id="local-6989586621679076038"><span id="local-6989586621679076040"><span id="local-6989586621679076042"><span id="local-6989586621679076046"><span id="local-6989586621679076049"><span id="local-6989586621679076052"><span id="local-6989586621679076055"><span class="annot"><span class="annottext">Eq Strategy
+Eq Strategy =&gt;
+(Strategy -&gt; Strategy -&gt; Ordering)
+-&gt; (Strategy -&gt; Strategy -&gt; Bool)
+-&gt; (Strategy -&gt; Strategy -&gt; Bool)
+-&gt; (Strategy -&gt; Strategy -&gt; Bool)
+-&gt; (Strategy -&gt; Strategy -&gt; Bool)
+-&gt; (Strategy -&gt; Strategy -&gt; Strategy)
+-&gt; (Strategy -&gt; Strategy -&gt; Strategy)
+-&gt; Ord Strategy
 Strategy -&gt; Strategy -&gt; Bool
 Strategy -&gt; Strategy -&gt; Ordering
 Strategy -&gt; Strategy -&gt; Strategy
 forall a.
-Eq a
--&gt; (a -&gt; a -&gt; Ordering)
+Eq a =&gt;
+(a -&gt; a -&gt; Ordering)
 -&gt; (a -&gt; a -&gt; Bool)
 -&gt; (a -&gt; a -&gt; Bool)
 -&gt; (a -&gt; a -&gt; Bool)
@@ -67,26 +80,35 @@ Eq a
 -&gt; (a -&gt; a -&gt; a)
 -&gt; (a -&gt; a -&gt; a)
 -&gt; Ord a
-min :: Strategy -&gt; Strategy -&gt; Strategy
-$cmin :: Strategy -&gt; Strategy -&gt; Strategy
-max :: Strategy -&gt; Strategy -&gt; Strategy
-$cmax :: Strategy -&gt; Strategy -&gt; Strategy
-&gt;= :: Strategy -&gt; Strategy -&gt; Bool
-$c&gt;= :: Strategy -&gt; Strategy -&gt; Bool
-&gt; :: Strategy -&gt; Strategy -&gt; Bool
-$c&gt; :: Strategy -&gt; Strategy -&gt; Bool
-&lt;= :: Strategy -&gt; Strategy -&gt; Bool
-$c&lt;= :: Strategy -&gt; Strategy -&gt; Bool
-&lt; :: Strategy -&gt; Strategy -&gt; Bool
-$c&lt; :: Strategy -&gt; Strategy -&gt; Bool
-compare :: Strategy -&gt; Strategy -&gt; Ordering
 $ccompare :: Strategy -&gt; Strategy -&gt; Ordering
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Ord</span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span id="local-6989586621679068897"><span id="local-6989586621679068899"><span id="local-6989586621679068903"><span id="local-6989586621679068907"><span id="local-6989586621679068909"><span id="local-6989586621679068919"><span id="local-6989586621679068925"><span id="local-6989586621679068933"><span class="annot"><span class="annottext">Int -&gt; Strategy
+compare :: Strategy -&gt; Strategy -&gt; Ordering
+$c&lt; :: Strategy -&gt; Strategy -&gt; Bool
+&lt; :: Strategy -&gt; Strategy -&gt; Bool
+$c&lt;= :: Strategy -&gt; Strategy -&gt; Bool
+&lt;= :: Strategy -&gt; Strategy -&gt; Bool
+$c&gt; :: Strategy -&gt; Strategy -&gt; Bool
+&gt; :: Strategy -&gt; Strategy -&gt; Bool
+$c&gt;= :: Strategy -&gt; Strategy -&gt; Bool
+&gt;= :: Strategy -&gt; Strategy -&gt; Bool
+$cmax :: Strategy -&gt; Strategy -&gt; Strategy
+max :: Strategy -&gt; Strategy -&gt; Strategy
+$cmin :: Strategy -&gt; Strategy -&gt; Strategy
+min :: Strategy -&gt; Strategy -&gt; Strategy
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Ord</span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span id="local-6989586621679076059"><span id="local-6989586621679076067"><span id="local-6989586621679076073"><span id="local-6989586621679076083"><span id="local-6989586621679076085"><span id="local-6989586621679076089"><span id="local-6989586621679076093"><span id="local-6989586621679076096"><span class="annot"><span class="annottext">Int -&gt; Strategy
 Strategy -&gt; Int
 Strategy -&gt; [Strategy]
 Strategy -&gt; Strategy
 Strategy -&gt; Strategy -&gt; [Strategy]
 Strategy -&gt; Strategy -&gt; Strategy -&gt; [Strategy]
+(Strategy -&gt; Strategy)
+-&gt; (Strategy -&gt; Strategy)
+-&gt; (Int -&gt; Strategy)
+-&gt; (Strategy -&gt; Int)
+-&gt; (Strategy -&gt; [Strategy])
+-&gt; (Strategy -&gt; Strategy -&gt; [Strategy])
+-&gt; (Strategy -&gt; Strategy -&gt; [Strategy])
+-&gt; (Strategy -&gt; Strategy -&gt; Strategy -&gt; [Strategy])
+-&gt; Enum Strategy
 forall a.
 (a -&gt; a)
 -&gt; (a -&gt; a)
@@ -97,22 +119,22 @@ forall a.
 -&gt; (a -&gt; a -&gt; [a])
 -&gt; (a -&gt; a -&gt; a -&gt; [a])
 -&gt; Enum a
-enumFromThenTo :: Strategy -&gt; Strategy -&gt; Strategy -&gt; [Strategy]
-$cenumFromThenTo :: Strategy -&gt; Strategy -&gt; Strategy -&gt; [Strategy]
-enumFromTo :: Strategy -&gt; Strategy -&gt; [Strategy]
-$cenumFromTo :: Strategy -&gt; Strategy -&gt; [Strategy]
-enumFromThen :: Strategy -&gt; Strategy -&gt; [Strategy]
-$cenumFromThen :: Strategy -&gt; Strategy -&gt; [Strategy]
-enumFrom :: Strategy -&gt; [Strategy]
-$cenumFrom :: Strategy -&gt; [Strategy]
-fromEnum :: Strategy -&gt; Int
-$cfromEnum :: Strategy -&gt; Int
-toEnum :: Int -&gt; Strategy
-$ctoEnum :: Int -&gt; Strategy
-pred :: Strategy -&gt; Strategy
-$cpred :: Strategy -&gt; Strategy
-succ :: Strategy -&gt; Strategy
 $csucc :: Strategy -&gt; Strategy
+succ :: Strategy -&gt; Strategy
+$cpred :: Strategy -&gt; Strategy
+pred :: Strategy -&gt; Strategy
+$ctoEnum :: Int -&gt; Strategy
+toEnum :: Int -&gt; Strategy
+$cfromEnum :: Strategy -&gt; Int
+fromEnum :: Strategy -&gt; Int
+$cenumFrom :: Strategy -&gt; [Strategy]
+enumFrom :: Strategy -&gt; [Strategy]
+$cenumFromThen :: Strategy -&gt; Strategy -&gt; [Strategy]
+enumFromThen :: Strategy -&gt; Strategy -&gt; [Strategy]
+$cenumFromTo :: Strategy -&gt; Strategy -&gt; [Strategy]
+enumFromTo :: Strategy -&gt; Strategy -&gt; [Strategy]
+$cenumFromThenTo :: Strategy -&gt; Strategy -&gt; Strategy -&gt; [Strategy]
+enumFromThenTo :: Strategy -&gt; Strategy -&gt; Strategy -&gt; [Strategy]
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Enum</span></span></span></span></span></span></span></span></span></span><span class="hs-special">)</span><span>
 </span><span id="line-40"></span><span>
 </span><span id="line-41"></span><span class="hs-keyword">foreign</span><span> </span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-keyword">ccall</span></span><span> </span><span class="annot"><span class="hs-keyword">unsafe</span></span><span> </span><span class="annot"><span class="hs-string">&quot;streaming_commons_create_z_stream&quot;</span></span><span>
@@ -124,40 +146,45 @@ $csucc :: Strategy -&gt; Strategy
 </span><span id="line-47"></span><span>
 </span><span id="line-48"></span><span class="annot"><a href="Data.Streaming.Zlib.Lowlevel.html#deflateInit2"><span class="hs-identifier hs-type">deflateInit2</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.Streaming.Zlib.Lowlevel.html#ZStream%27"><span class="hs-identifier hs-type">ZStream'</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">WindowBits</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.Streaming.Zlib.Lowlevel.html#Strategy"><span class="hs-identifier hs-type">Strategy</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
 </span><span id="line-49"></span><span id="deflateInit2"><span class="annot"><span class="annottext">deflateInit2 :: ZStream' -&gt; Int -&gt; WindowBits -&gt; Int -&gt; Strategy -&gt; IO ()
-</span><a href="Data.Streaming.Zlib.Lowlevel.html#deflateInit2"><span class="hs-identifier hs-var hs-var">deflateInit2</span></a></span></span><span> </span><span id="local-6989586621679068894"><span class="annot"><span class="annottext">ZStream'
-</span><a href="#local-6989586621679068894"><span class="hs-identifier hs-var">zstream</span></a></span></span><span> </span><span id="local-6989586621679068893"><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621679068893"><span class="hs-identifier hs-var">level</span></a></span></span><span> </span><span id="local-6989586621679068892"><span class="annot"><span class="annottext">WindowBits
-</span><a href="#local-6989586621679068892"><span class="hs-identifier hs-var">windowBits</span></a></span></span><span> </span><span id="local-6989586621679068891"><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621679068891"><span class="hs-identifier hs-var">memlevel</span></a></span></span><span> </span><span id="local-6989586621679068890"><span class="annot"><span class="annottext">Strategy
-</span><a href="#local-6989586621679068890"><span class="hs-identifier hs-var">strategy</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="Data.Streaming.Zlib.Lowlevel.html#deflateInit2"><span class="hs-identifier hs-var hs-var">deflateInit2</span></a></span></span><span> </span><span id="local-6989586621679076100"><span class="annot"><span class="annottext">ZStream'
+</span><a href="#local-6989586621679076100"><span class="hs-identifier hs-var">zstream</span></a></span></span><span> </span><span id="local-6989586621679076101"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679076101"><span class="hs-identifier hs-var">level</span></a></span></span><span> </span><span id="local-6989586621679076102"><span class="annot"><span class="annottext">WindowBits
+</span><a href="#local-6989586621679076102"><span class="hs-identifier hs-var">windowBits</span></a></span></span><span> </span><span id="local-6989586621679076103"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679076103"><span class="hs-identifier hs-var">memlevel</span></a></span></span><span> </span><span id="local-6989586621679076104"><span class="annot"><span class="annottext">Strategy
+</span><a href="#local-6989586621679076104"><span class="hs-identifier hs-var">strategy</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-50"></span><span>    </span><span class="annot"><span class="annottext">ZStream' -&gt; CInt -&gt; CInt -&gt; CInt -&gt; CInt -&gt; IO ()
 </span><a href="Data.Streaming.Zlib.Lowlevel.html#c_deflateInit2"><span class="hs-identifier hs-var">c_deflateInit2</span></a></span><span> </span><span class="annot"><span class="annottext">ZStream'
-</span><a href="#local-6989586621679068894"><span class="hs-identifier hs-var">zstream</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><a href="#local-6989586621679076100"><span class="hs-identifier hs-var">zstream</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int -&gt; CInt
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
 </span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621679068893"><span class="hs-identifier hs-var">level</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">WindowBits -&gt; CInt
+</span><a href="#local-6989586621679076101"><span class="hs-identifier hs-var">level</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">WindowBits -&gt; CInt
 </span><a href="Data.Streaming.Zlib.Lowlevel.html#wbToInt"><span class="hs-identifier hs-var">wbToInt</span></a></span><span> </span><span class="annot"><span class="annottext">WindowBits
-</span><a href="#local-6989586621679068892"><span class="hs-identifier hs-var">windowBits</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-51"></span><span>                   </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><a href="#local-6989586621679076102"><span class="hs-identifier hs-var">windowBits</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-51"></span><span>                   </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int -&gt; CInt
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
 </span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621679068891"><span class="hs-identifier hs-var">memlevel</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-52"></span><span>                   </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a b. (Integral a, Num b) =&gt; a -&gt; b
-</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall a. Enum a =&gt; a -&gt; Int
+</span><a href="#local-6989586621679076103"><span class="hs-identifier hs-var">memlevel</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-52"></span><span>                   </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int -&gt; CInt
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">(Int -&gt; CInt) -&gt; Int -&gt; CInt
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Strategy -&gt; Int
+forall a. Enum a =&gt; a -&gt; Int
 </span><span class="hs-identifier hs-var">fromEnum</span></span><span> </span><span class="annot"><span class="annottext">Strategy
-</span><a href="#local-6989586621679068890"><span class="hs-identifier hs-var">strategy</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679076104"><span class="hs-identifier hs-var">strategy</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-53"></span><span>
 </span><span id="line-54"></span><span class="hs-keyword">foreign</span><span> </span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-keyword">ccall</span></span><span> </span><span class="annot"><span class="hs-keyword">unsafe</span></span><span> </span><span class="annot"><span class="hs-string">&quot;streaming_commons_inflate_init2&quot;</span></span><span>
 </span><span id="line-55"></span><span>    </span><span id="c_inflateInit2"><span class="annot"><a href="Data.Streaming.Zlib.Lowlevel.html#c_inflateInit2"><span class="hs-identifier hs-var">c_inflateInit2</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.Streaming.Zlib.Lowlevel.html#ZStream%27"><span class="hs-identifier hs-type">ZStream'</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">CInt</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
 </span><span id="line-56"></span><span>
 </span><span id="line-57"></span><span class="annot"><a href="Data.Streaming.Zlib.Lowlevel.html#inflateInit2"><span class="hs-identifier hs-type">inflateInit2</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.Streaming.Zlib.Lowlevel.html#ZStream%27"><span class="hs-identifier hs-type">ZStream'</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">WindowBits</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
 </span><span id="line-58"></span><span id="inflateInit2"><span class="annot"><span class="annottext">inflateInit2 :: ZStream' -&gt; WindowBits -&gt; IO ()
-</span><a href="Data.Streaming.Zlib.Lowlevel.html#inflateInit2"><span class="hs-identifier hs-var hs-var">inflateInit2</span></a></span></span><span> </span><span id="local-6989586621679068886"><span class="annot"><span class="annottext">ZStream'
-</span><a href="#local-6989586621679068886"><span class="hs-identifier hs-var">zstream</span></a></span></span><span> </span><span id="local-6989586621679068885"><span class="annot"><span class="annottext">WindowBits
-</span><a href="#local-6989586621679068885"><span class="hs-identifier hs-var">wb</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ZStream' -&gt; CInt -&gt; IO ()
+</span><a href="Data.Streaming.Zlib.Lowlevel.html#inflateInit2"><span class="hs-identifier hs-var hs-var">inflateInit2</span></a></span></span><span> </span><span id="local-6989586621679076108"><span class="annot"><span class="annottext">ZStream'
+</span><a href="#local-6989586621679076108"><span class="hs-identifier hs-var">zstream</span></a></span></span><span> </span><span id="local-6989586621679076109"><span class="annot"><span class="annottext">WindowBits
+</span><a href="#local-6989586621679076109"><span class="hs-identifier hs-var">wb</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ZStream' -&gt; CInt -&gt; IO ()
 </span><a href="Data.Streaming.Zlib.Lowlevel.html#c_inflateInit2"><span class="hs-identifier hs-var">c_inflateInit2</span></a></span><span> </span><span class="annot"><span class="annottext">ZStream'
-</span><a href="#local-6989586621679068886"><span class="hs-identifier hs-var">zstream</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">WindowBits -&gt; CInt
+</span><a href="#local-6989586621679076108"><span class="hs-identifier hs-var">zstream</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">WindowBits -&gt; CInt
 </span><a href="Data.Streaming.Zlib.Lowlevel.html#wbToInt"><span class="hs-identifier hs-var">wbToInt</span></a></span><span> </span><span class="annot"><span class="annottext">WindowBits
-</span><a href="#local-6989586621679068885"><span class="hs-identifier hs-var">wb</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679076109"><span class="hs-identifier hs-var">wb</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-59"></span><span>
 </span><span id="line-60"></span><span class="hs-keyword">foreign</span><span> </span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-keyword">ccall</span></span><span> </span><span class="annot"><span class="hs-keyword">unsafe</span></span><span> </span><span class="annot"><span class="hs-string">&quot;&amp;streaming_commons_free_z_stream_inflate&quot;</span></span><span>
 </span><span id="line-61"></span><span>    </span><span id="c_free_z_stream_inflate"><span class="annot"><a href="Data.Streaming.Zlib.Lowlevel.html#c_free_z_stream_inflate"><span class="hs-identifier hs-var">c_free_z_stream_inflate</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">FunPtr</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Streaming.Zlib.Lowlevel.html#ZStream%27"><span class="hs-identifier hs-type">ZStream'</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
@@ -203,10 +230,11 @@ $csucc :: Strategy -&gt; Strategy
 </span><span id="line-101"></span><span>
 </span><span id="line-102"></span><span class="annot"><a href="Data.Streaming.Zlib.Lowlevel.html#wbToInt"><span class="hs-identifier hs-type">wbToInt</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">WindowBits</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">CInt</span></span><span>
 </span><span id="line-103"></span><span id="wbToInt"><span class="annot"><span class="annottext">wbToInt :: WindowBits -&gt; CInt
-</span><a href="Data.Streaming.Zlib.Lowlevel.html#wbToInt"><span class="hs-identifier hs-var hs-var">wbToInt</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">WindowBits</span></span><span> </span><span id="local-6989586621679068882"><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621679068882"><span class="hs-identifier hs-var">i</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><a href="Data.Streaming.Zlib.Lowlevel.html#wbToInt"><span class="hs-identifier hs-var hs-var">wbToInt</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">WindowBits</span></span><span> </span><span id="local-6989586621679076112"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679076112"><span class="hs-identifier hs-var">i</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int -&gt; CInt
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
 </span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621679068882"><span class="hs-identifier hs-var">i</span></a></span><span>
+</span><a href="#local-6989586621679076112"><span class="hs-identifier hs-var">i</span></a></span><span>
 </span><span id="line-104"></span><span class="annot"><a href="Data.Streaming.Zlib.Lowlevel.html#wbToInt"><span class="hs-identifier hs-var">wbToInt</span></a></span><span> </span><span class="annot"><span class="annottext">WindowBits
 </span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">CInt
 </span><span class="hs-number">15</span></span><span>

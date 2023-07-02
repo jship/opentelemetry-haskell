@@ -153,6 +153,19 @@ infixl 4 <$>
 -- | Replace all locations in the input with the same value. The default
 --   definition is <tt><a>fmap</a> . <a>const</a></tt>, but this may be
 --   overridden with a more efficient version.
+--   
+--   <h4><b>Examples</b></h4>
+--   
+--   Perform a computation with <a>Maybe</a> and replace the result with a
+--   constant value if it is <a>Just</a>:
+--   
+--   <pre>
+--   &gt;&gt;&gt; 'a' &lt;$ Just 2
+--   Just 'a'
+--   
+--   &gt;&gt;&gt; 'a' &lt;$ Nothing
+--   Nothing
+--   </pre>
 (<$) :: Functor f => a -> f b -> f a
 infixl 4 <$
 
@@ -413,6 +426,19 @@ infixl 4 <$>
 -- | Replace all locations in the input with the same value. The default
 --   definition is <tt><a>fmap</a> . <a>const</a></tt>, but this may be
 --   overridden with a more efficient version.
+--   
+--   <h4><b>Examples</b></h4>
+--   
+--   Perform a computation with <a>Maybe</a> and replace the result with a
+--   constant value if it is <a>Just</a>:
+--   
+--   <pre>
+--   &gt;&gt;&gt; 'a' &lt;$ Just 2
+--   Just 'a'
+--   
+--   &gt;&gt;&gt; 'a' &lt;$ Nothing
+--   Nothing
+--   </pre>
 (<$) :: Functor f => a -> f b -> f a
 infixl 4 <$
 
@@ -673,6 +699,19 @@ infixl 4 <$>
 -- | Replace all locations in the input with the same value. The default
 --   definition is <tt><a>fmap</a> . <a>const</a></tt>, but this may be
 --   overridden with a more efficient version.
+--   
+--   <h4><b>Examples</b></h4>
+--   
+--   Perform a computation with <a>Maybe</a> and replace the result with a
+--   constant value if it is <a>Just</a>:
+--   
+--   <pre>
+--   &gt;&gt;&gt; 'a' &lt;$ Just 2
+--   Just 'a'
+--   
+--   &gt;&gt;&gt; 'a' &lt;$ Nothing
+--   Nothing
+--   </pre>
 (<$) :: Functor f => a -> f b -> f a
 infixl 4 <$
 

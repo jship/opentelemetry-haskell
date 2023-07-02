@@ -24,7 +24,7 @@
 </span><span id="line-23"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="serverHost"><span class="annot"><span class="annottext">ServerSettings -&gt; HostPreference
 </span><a href="Data.Streaming.Network.Internal.html#serverHost"><span class="hs-identifier hs-var hs-var">serverHost</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="Data.Streaming.Network.Internal.html#HostPreference"><span class="hs-identifier hs-type">HostPreference</span></a></span><span>
 </span><span id="line-24"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="serverSocket"><span class="annot"><span class="annottext">ServerSettings -&gt; Maybe Socket
-</span><a href="Data.Streaming.Network.Internal.html#serverSocket"><span class="hs-identifier hs-var hs-var">serverSocket</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Socket</span></span><span class="hs-special">)</span><span> </span><span class="hs-comment">-- ^ listening socket</span><span>
+</span><a href="Data.Streaming.Network.Internal.html#serverSocket"><span class="hs-identifier hs-var hs-var">serverSocket</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Socket</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="hs-comment">-- ^ listening socket</span></span><span>
 </span><span id="line-25"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="serverAfterBind"><span class="annot"><span class="annottext">ServerSettings -&gt; Socket -&gt; IO ()
 </span><a href="Data.Streaming.Network.Internal.html#serverAfterBind"><span class="hs-identifier hs-var hs-var">serverAfterBind</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Socket</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
 </span><span id="line-26"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="serverNeedLocalAddr"><span class="annot"><span class="annottext">ServerSettings -&gt; Bool
@@ -33,7 +33,7 @@
 </span><a href="Data.Streaming.Network.Internal.html#serverReadBufferSize"><span class="hs-identifier hs-var hs-var">serverReadBufferSize</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span>
 </span><span id="line-28"></span><span>    </span><span class="hs-special">}</span><span>
 </span><span id="line-29"></span><span>
-</span><span id="line-30"></span><span class="hs-comment">-- | Settings for a TCP client, specifying how to connect to the server.</span><span>
+</span><span id="line-30"></span><span class="annot"><span class="hs-comment">-- | Settings for a TCP client, specifying how to connect to the server.</span></span><span>
 </span><span id="line-31"></span><span class="hs-keyword">data</span><span> </span><span id="ClientSettings"><span class="annot"><a href="Data.Streaming.Network.Internal.html#ClientSettings"><span class="hs-identifier hs-var">ClientSettings</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="ClientSettings"><span class="annot"><a href="Data.Streaming.Network.Internal.html#ClientSettings"><span class="hs-identifier hs-var">ClientSettings</span></a></span></span><span>
 </span><span id="line-32"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="clientPort"><span class="annot"><span class="annottext">ClientSettings -&gt; Int
 </span><a href="Data.Streaming.Network.Internal.html#clientPort"><span class="hs-identifier hs-var hs-var">clientPort</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span>
@@ -73,19 +73,30 @@
 </span><span id="line-63"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span id="HostIPv6"><span class="annot"><a href="Data.Streaming.Network.Internal.html#HostIPv6"><span class="hs-identifier hs-var">HostIPv6</span></a></span></span><span>
 </span><span id="line-64"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span id="HostIPv6Only"><span class="annot"><a href="Data.Streaming.Network.Internal.html#HostIPv6Only"><span class="hs-identifier hs-var">HostIPv6Only</span></a></span></span><span>
 </span><span id="line-65"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span id="Host"><span class="annot"><a href="Data.Streaming.Network.Internal.html#Host"><span class="hs-identifier hs-var">Host</span></a></span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span>
-</span><span id="line-66"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679066665"><span id="local-6989586621679066670"><span class="annot"><span class="annottext">HostPreference -&gt; HostPreference -&gt; Bool
+</span><span id="line-66"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679073608"><span id="local-6989586621679073613"><span class="annot"><span class="annottext">HostPreference -&gt; HostPreference -&gt; Bool
+(HostPreference -&gt; HostPreference -&gt; Bool)
+-&gt; (HostPreference -&gt; HostPreference -&gt; Bool) -&gt; Eq HostPreference
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
-/= :: HostPreference -&gt; HostPreference -&gt; Bool
-$c/= :: HostPreference -&gt; HostPreference -&gt; Bool
-== :: HostPreference -&gt; HostPreference -&gt; Bool
 $c== :: HostPreference -&gt; HostPreference -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679066644"><span id="local-6989586621679066646"><span id="local-6989586621679066648"><span id="local-6989586621679066650"><span id="local-6989586621679066652"><span id="local-6989586621679066654"><span id="local-6989586621679066659"><span class="annot"><span class="annottext">Eq HostPreference
+== :: HostPreference -&gt; HostPreference -&gt; Bool
+$c/= :: HostPreference -&gt; HostPreference -&gt; Bool
+/= :: HostPreference -&gt; HostPreference -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679073621"><span id="local-6989586621679073626"><span id="local-6989586621679073630"><span id="local-6989586621679073633"><span id="local-6989586621679073636"><span id="local-6989586621679073639"><span id="local-6989586621679073642"><span class="annot"><span class="annottext">Eq HostPreference
+Eq HostPreference =&gt;
+(HostPreference -&gt; HostPreference -&gt; Ordering)
+-&gt; (HostPreference -&gt; HostPreference -&gt; Bool)
+-&gt; (HostPreference -&gt; HostPreference -&gt; Bool)
+-&gt; (HostPreference -&gt; HostPreference -&gt; Bool)
+-&gt; (HostPreference -&gt; HostPreference -&gt; Bool)
+-&gt; (HostPreference -&gt; HostPreference -&gt; HostPreference)
+-&gt; (HostPreference -&gt; HostPreference -&gt; HostPreference)
+-&gt; Ord HostPreference
 HostPreference -&gt; HostPreference -&gt; Bool
 HostPreference -&gt; HostPreference -&gt; Ordering
 HostPreference -&gt; HostPreference -&gt; HostPreference
 forall a.
-Eq a
--&gt; (a -&gt; a -&gt; Ordering)
+Eq a =&gt;
+(a -&gt; a -&gt; Ordering)
 -&gt; (a -&gt; a -&gt; Bool)
 -&gt; (a -&gt; a -&gt; Bool)
 -&gt; (a -&gt; a -&gt; Bool)
@@ -93,50 +104,59 @@ Eq a
 -&gt; (a -&gt; a -&gt; a)
 -&gt; (a -&gt; a -&gt; a)
 -&gt; Ord a
-min :: HostPreference -&gt; HostPreference -&gt; HostPreference
-$cmin :: HostPreference -&gt; HostPreference -&gt; HostPreference
-max :: HostPreference -&gt; HostPreference -&gt; HostPreference
-$cmax :: HostPreference -&gt; HostPreference -&gt; HostPreference
-&gt;= :: HostPreference -&gt; HostPreference -&gt; Bool
-$c&gt;= :: HostPreference -&gt; HostPreference -&gt; Bool
-&gt; :: HostPreference -&gt; HostPreference -&gt; Bool
-$c&gt; :: HostPreference -&gt; HostPreference -&gt; Bool
-&lt;= :: HostPreference -&gt; HostPreference -&gt; Bool
-$c&lt;= :: HostPreference -&gt; HostPreference -&gt; Bool
-&lt; :: HostPreference -&gt; HostPreference -&gt; Bool
-$c&lt; :: HostPreference -&gt; HostPreference -&gt; Bool
-compare :: HostPreference -&gt; HostPreference -&gt; Ordering
 $ccompare :: HostPreference -&gt; HostPreference -&gt; Ordering
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Ord</span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679066631"><span id="local-6989586621679066633"><span id="local-6989586621679066640"><span class="annot"><span class="annottext">Int -&gt; HostPreference -&gt; ShowS
+compare :: HostPreference -&gt; HostPreference -&gt; Ordering
+$c&lt; :: HostPreference -&gt; HostPreference -&gt; Bool
+&lt; :: HostPreference -&gt; HostPreference -&gt; Bool
+$c&lt;= :: HostPreference -&gt; HostPreference -&gt; Bool
+&lt;= :: HostPreference -&gt; HostPreference -&gt; Bool
+$c&gt; :: HostPreference -&gt; HostPreference -&gt; Bool
+&gt; :: HostPreference -&gt; HostPreference -&gt; Bool
+$c&gt;= :: HostPreference -&gt; HostPreference -&gt; Bool
+&gt;= :: HostPreference -&gt; HostPreference -&gt; Bool
+$cmax :: HostPreference -&gt; HostPreference -&gt; HostPreference
+max :: HostPreference -&gt; HostPreference -&gt; HostPreference
+$cmin :: HostPreference -&gt; HostPreference -&gt; HostPreference
+min :: HostPreference -&gt; HostPreference -&gt; HostPreference
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Ord</span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679073647"><span id="local-6989586621679073654"><span id="local-6989586621679073658"><span class="annot"><span class="annottext">Int -&gt; HostPreference -&gt; ShowS
 [HostPreference] -&gt; ShowS
 HostPreference -&gt; String
+(Int -&gt; HostPreference -&gt; ShowS)
+-&gt; (HostPreference -&gt; String)
+-&gt; ([HostPreference] -&gt; ShowS)
+-&gt; Show HostPreference
 forall a.
 (Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
-showList :: [HostPreference] -&gt; ShowS
-$cshowList :: [HostPreference] -&gt; ShowS
-show :: HostPreference -&gt; String
-$cshow :: HostPreference -&gt; String
-showsPrec :: Int -&gt; HostPreference -&gt; ShowS
 $cshowsPrec :: Int -&gt; HostPreference -&gt; ShowS
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679066608"><span id="local-6989586621679066622"><span id="local-6989586621679066625"><span id="local-6989586621679066627"><span class="annot"><span class="annottext">ReadPrec [HostPreference]
+showsPrec :: Int -&gt; HostPreference -&gt; ShowS
+$cshow :: HostPreference -&gt; String
+show :: HostPreference -&gt; String
+$cshowList :: [HostPreference] -&gt; ShowS
+showList :: [HostPreference] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679073663"><span id="local-6989586621679073667"><span id="local-6989586621679073670"><span id="local-6989586621679073684"><span class="annot"><span class="annottext">ReadPrec [HostPreference]
 ReadPrec HostPreference
 Int -&gt; ReadS HostPreference
 ReadS [HostPreference]
+(Int -&gt; ReadS HostPreference)
+-&gt; ReadS [HostPreference]
+-&gt; ReadPrec HostPreference
+-&gt; ReadPrec [HostPreference]
+-&gt; Read HostPreference
 forall a.
 (Int -&gt; ReadS a)
 -&gt; ReadS [a] -&gt; ReadPrec a -&gt; ReadPrec [a] -&gt; Read a
-readListPrec :: ReadPrec [HostPreference]
-$creadListPrec :: ReadPrec [HostPreference]
-readPrec :: ReadPrec HostPreference
-$creadPrec :: ReadPrec HostPreference
-readList :: ReadS [HostPreference]
-$creadList :: ReadS [HostPreference]
-readsPrec :: Int -&gt; ReadS HostPreference
 $creadsPrec :: Int -&gt; ReadS HostPreference
+readsPrec :: Int -&gt; ReadS HostPreference
+$creadList :: ReadS [HostPreference]
+readList :: ReadS [HostPreference]
+$creadPrec :: ReadPrec HostPreference
+readPrec :: ReadPrec HostPreference
+$creadListPrec :: ReadPrec [HostPreference]
+readListPrec :: ReadPrec [HostPreference]
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Read</span></span></span></span></span></span><span class="hs-special">)</span><span>
 </span><span id="line-67"></span><span>
 </span><span id="line-68"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IsString</span></span><span> </span><span class="annot"><a href="Data.Streaming.Network.Internal.html#HostPreference"><span class="hs-identifier hs-type">HostPreference</span></a></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-69"></span><span>    </span><span id="local-6989586621679066601"><span class="annot"><span class="annottext">fromString :: String -&gt; HostPreference
+</span><span id="line-69"></span><span>    </span><span id="local-6989586621679073691"><span class="annot"><span class="annottext">fromString :: String -&gt; HostPreference
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var">fromString</span></span></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;*&quot;</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">HostPreference
 </span><a href="Data.Streaming.Network.Internal.html#HostAny"><span class="hs-identifier hs-var">HostAny</span></a></span><span>
@@ -152,13 +172,13 @@ $creadsPrec :: Int -&gt; ReadS HostPreference
 </span><span id="line-73"></span><span>    </span><span class="annot"><span class="hs-identifier hs-var">fromString</span></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;!6&quot;</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">HostPreference
 </span><a href="Data.Streaming.Network.Internal.html#HostIPv6Only"><span class="hs-identifier hs-var">HostIPv6Only</span></a></span><span>
-</span><span id="line-74"></span><span>    </span><span class="annot"><span class="hs-identifier hs-var">fromString</span></span><span> </span><span id="local-6989586621679066600"><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621679066600"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; HostPreference
+</span><span id="line-74"></span><span>    </span><span class="annot"><span class="hs-identifier hs-var">fromString</span></span><span> </span><span id="local-6989586621679073692"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679073692"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; HostPreference
 </span><a href="Data.Streaming.Network.Internal.html#Host"><span class="hs-identifier hs-var">Host</span></a></span><span> </span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621679066600"><span class="hs-identifier hs-var">s</span></a></span><span class="hs-cpp">
+</span><a href="#local-6989586621679073692"><span class="hs-identifier hs-var">s</span></a></span><span class="hs-cpp">
 
 #if !WINDOWS
-</span><span class="hs-comment">-- | Settings for a Unix domain sockets server.</span><span>
+</span><span class="annot"><span class="hs-comment">-- | Settings for a Unix domain sockets server.</span></span><span>
 </span><span id="line-78"></span><span class="hs-keyword">data</span><span> </span><span id="ServerSettingsUnix"><span class="annot"><a href="Data.Streaming.Network.Internal.html#ServerSettingsUnix"><span class="hs-identifier hs-var">ServerSettingsUnix</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="ServerSettingsUnix"><span class="annot"><a href="Data.Streaming.Network.Internal.html#ServerSettingsUnix"><span class="hs-identifier hs-var">ServerSettingsUnix</span></a></span></span><span>
 </span><span id="line-79"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="serverPath"><span class="annot"><span class="annottext">ServerSettingsUnix -&gt; String
 </span><a href="Data.Streaming.Network.Internal.html#serverPath"><span class="hs-identifier hs-var hs-var">serverPath</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="annot"><span class="hs-identifier hs-type">FilePath</span></span><span>
@@ -168,7 +188,7 @@ $creadsPrec :: Int -&gt; ReadS HostPreference
 </span><a href="Data.Streaming.Network.Internal.html#serverReadBufferSizeUnix"><span class="hs-identifier hs-var hs-var">serverReadBufferSizeUnix</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span>
 </span><span id="line-82"></span><span>    </span><span class="hs-special">}</span><span>
 </span><span id="line-83"></span><span>
-</span><span id="line-84"></span><span class="hs-comment">-- | Settings for a Unix domain sockets client.</span><span>
+</span><span id="line-84"></span><span class="annot"><span class="hs-comment">-- | Settings for a Unix domain sockets client.</span></span><span>
 </span><span id="line-85"></span><span class="hs-keyword">data</span><span> </span><span id="ClientSettingsUnix"><span class="annot"><a href="Data.Streaming.Network.Internal.html#ClientSettingsUnix"><span class="hs-identifier hs-var">ClientSettingsUnix</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="ClientSettingsUnix"><span class="annot"><a href="Data.Streaming.Network.Internal.html#ClientSettingsUnix"><span class="hs-identifier hs-var">ClientSettingsUnix</span></a></span></span><span>
 </span><span id="line-86"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="clientPath"><span class="annot"><span class="annottext">ClientSettingsUnix -&gt; String
 </span><a href="Data.Streaming.Network.Internal.html#clientPath"><span class="hs-identifier hs-var hs-var">clientPath</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="annot"><span class="hs-identifier hs-type">FilePath</span></span><span>
@@ -176,7 +196,7 @@ $creadsPrec :: Int -&gt; ReadS HostPreference
 </span><a href="Data.Streaming.Network.Internal.html#clientReadBufferSizeUnix"><span class="hs-identifier hs-var hs-var">clientReadBufferSizeUnix</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span>
 </span><span id="line-88"></span><span>    </span><span class="hs-special">}</span><span>
 </span><span id="line-89"></span><span>
-</span><span id="line-90"></span><span class="hs-comment">-- | The data passed to a Unix domain sockets @Application@.</span><span>
+</span><span id="line-90"></span><span class="annot"><span class="hs-comment">-- | The data passed to a Unix domain sockets @Application@.</span></span><span>
 </span><span id="line-91"></span><span class="hs-keyword">data</span><span> </span><span id="AppDataUnix"><span class="annot"><a href="Data.Streaming.Network.Internal.html#AppDataUnix"><span class="hs-identifier hs-var">AppDataUnix</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="AppDataUnix"><span class="annot"><a href="Data.Streaming.Network.Internal.html#AppDataUnix"><span class="hs-identifier hs-var">AppDataUnix</span></a></span></span><span>
 </span><span id="line-92"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="appReadUnix"><span class="annot"><span class="annottext">AppDataUnix -&gt; IO ByteString
 </span><a href="Data.Streaming.Network.Internal.html#appReadUnix"><span class="hs-identifier hs-var hs-var">appReadUnix</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">ByteString</span></span><span class="hs-special">)</span><span>
@@ -185,14 +205,14 @@ $creadsPrec :: Int -&gt; ReadS HostPreference
 </span><span id="line-94"></span><span>    </span><span class="hs-special">}</span><span class="hs-cpp">
 #endif
 </span><span>
-</span><span id="line-97"></span><span class="hs-comment">-- | Representation of a single UDP message</span><span>
+</span><span id="line-97"></span><span class="annot"><span class="hs-comment">-- | Representation of a single UDP message</span></span><span>
 </span><span id="line-98"></span><span class="hs-keyword">data</span><span> </span><span id="Message"><span class="annot"><a href="Data.Streaming.Network.Internal.html#Message"><span class="hs-identifier hs-var">Message</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Message"><span class="annot"><a href="Data.Streaming.Network.Internal.html#Message"><span class="hs-identifier hs-var">Message</span></a></span></span><span> </span><span class="hs-special">{</span><span> </span><span id="msgData"><span class="annot"><span class="annottext">Message -&gt; ByteString
 </span><a href="Data.Streaming.Network.Internal.html#msgData"><span class="hs-identifier hs-var hs-var">msgData</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-pragma">{-# UNPACK</span><span> </span><span class="hs-pragma">#-}</span><span> </span><span class="hs-glyph">!</span><span class="annot"><span class="hs-identifier hs-type">ByteString</span></span><span>
 </span><span id="line-99"></span><span>                       </span><span class="hs-special">,</span><span> </span><span id="msgSender"><span class="annot"><span class="annottext">Message -&gt; SockAddr
 </span><a href="Data.Streaming.Network.Internal.html#msgSender"><span class="hs-identifier hs-var hs-var">msgSender</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="annot"><span class="hs-identifier hs-type">SockAddr</span></span><span>
 </span><span id="line-100"></span><span>                       </span><span class="hs-special">}</span><span>
 </span><span id="line-101"></span><span>
-</span><span id="line-102"></span><span class="hs-comment">-- | The data passed to an @Application@.</span><span>
+</span><span id="line-102"></span><span class="annot"><span class="hs-comment">-- | The data passed to an @Application@.</span></span><span>
 </span><span id="line-103"></span><span class="hs-keyword">data</span><span> </span><span id="AppData"><span class="annot"><a href="Data.Streaming.Network.Internal.html#AppData"><span class="hs-identifier hs-var">AppData</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="AppData"><span class="annot"><a href="Data.Streaming.Network.Internal.html#AppData"><span class="hs-identifier hs-var">AppData</span></a></span></span><span>
 </span><span id="line-104"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="appRead%27"><span class="annot"><span class="annottext">AppData -&gt; IO ByteString
 </span><a href="Data.Streaming.Network.Internal.html#appRead%27"><span class="hs-identifier hs-var hs-var">appRead'</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">ByteString</span></span><span class="hs-special">)</span><span>

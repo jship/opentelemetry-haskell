@@ -139,14 +139,6 @@ data TFGen
 -- | Create a generator from a random seed.
 seedTFGen :: (Word64, Word64, Word64, Word64) -> TFGen
 
--- | Use system time create the random seed. This method of seeding may not
---   be relible.
-mkSeedTime :: IO (Word64, Word64, Word64, Word64)
-
--- | Use the UNIX special file <tt>/dev/urandom</tt> to create the seed.
---   Inspired by <tt>random-mwc</tt>.
-mkSeedUnix :: IO (Word64, Word64, Word64, Word64)
-
 -- | Derive a new generator instance from the global RNG using split. This
 --   is the default way of obtaining a new RNG instance. Initial generator
 --   is seeded using <a>mkSeedUnix</a> on UNIX, and <a>mkSeedTime</a>
@@ -155,6 +147,14 @@ newTFGen :: IO TFGen
 
 -- | Quick and dirty way of creating a deterministically seeded generator.
 mkTFGen :: Int -> TFGen
+
+-- | Use system time create the random seed. This method of seeding may not
+--   be relible.
+mkSeedTime :: IO (Word64, Word64, Word64, Word64)
+
+-- | Use the UNIX special file <tt>/dev/urandom</tt> to create the seed.
+--   Inspired by <tt>random-mwc</tt>.
+mkSeedUnix :: IO (Word64, Word64, Word64, Word64)
 
 
 -- | This module defines alternative <a>Random</a> instances for common

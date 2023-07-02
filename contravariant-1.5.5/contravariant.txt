@@ -193,7 +193,6 @@ instance Data.Functor.Contravariant.Divisible.Decidable f => Data.Functor.Contra
 instance Data.Functor.Contravariant.Divisible.Decidable m => Data.Functor.Contravariant.Divisible.Decidable (Control.Monad.Trans.Reader.ReaderT r m)
 instance Data.Functor.Contravariant.Divisible.Decidable m => Data.Functor.Contravariant.Divisible.Decidable (Control.Monad.Trans.RWS.Lazy.RWST r w s m)
 instance Data.Functor.Contravariant.Divisible.Decidable m => Data.Functor.Contravariant.Divisible.Decidable (Control.Monad.Trans.RWS.Strict.RWST r w s m)
-instance Data.Functor.Contravariant.Divisible.Divisible m => Data.Functor.Contravariant.Divisible.Decidable (Control.Monad.Trans.List.ListT m)
 instance Data.Functor.Contravariant.Divisible.Divisible m => Data.Functor.Contravariant.Divisible.Decidable (Control.Monad.Trans.Maybe.MaybeT m)
 instance Data.Functor.Contravariant.Divisible.Decidable m => Data.Functor.Contravariant.Divisible.Decidable (Control.Monad.Trans.State.Lazy.StateT s m)
 instance Data.Functor.Contravariant.Divisible.Decidable m => Data.Functor.Contravariant.Divisible.Decidable (Control.Monad.Trans.State.Strict.StateT s m)
@@ -232,8 +231,6 @@ instance (Data.Functor.Contravariant.Divisible.Divisible f, Data.Functor.Contrav
 instance Data.Functor.Contravariant.Divisible.Divisible f => Data.Functor.Contravariant.Divisible.Divisible (Data.Functor.Reverse.Reverse f)
 instance Data.Functor.Contravariant.Divisible.Divisible Data.Proxy.Proxy
 instance Data.Functor.Contravariant.Divisible.Divisible Data.StateVar.SettableStateVar
-instance Data.Functor.Contravariant.Divisible.Divisible m => Data.Functor.Contravariant.Divisible.Divisible (Control.Monad.Trans.Error.ErrorT e m)
-instance Data.Functor.Contravariant.Divisible.Divisible m => Data.Functor.Contravariant.Divisible.Divisible (Control.Monad.Trans.List.ListT m)
 
 
 -- | Composition of contravariant functors.

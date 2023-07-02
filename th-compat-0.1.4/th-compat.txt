@@ -198,7 +198,7 @@ liftTypedQuote :: forall (r :: RuntimeRep) (t :: TYPE r) m. (Lift t, Quote m) =>
 --   guaranteed to use a <a>Quote</a> constraint, even on old versions of
 --   <tt>template-haskell</tt>.
 liftStringQuote :: Quote m => String -> m Exp
-newtype Code (m :: Type -> Type) (a :: TYPE r)
+newtype () => Code (m :: Type -> Type) (a :: TYPE r)
 Code :: m (TExp a) -> Code (m :: Type -> Type) (a :: TYPE r)
 
 -- | Underlying monadic value
@@ -530,11 +530,6 @@ expToSplice :: Applicative m => TExp a -> Splice m a
 --   directory where the cabal file resides. Projects such as
 --   haskell-language-server can't and don't change directory when
 --   compiling files but instead set the -package-root flag appropiately.
---   
---   This is best-effort compatibility implementation. This function looks
---   at the source location of the Haskell file calling it, finds the first
---   parent directory with a <tt>.cabal</tt> file, and uses that as the
---   root directory for fixing the relative path.
 getPackageRoot :: Q FilePath
 
 -- | The input is a filepath, which if relative is offset by the package

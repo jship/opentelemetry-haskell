@@ -359,7 +359,7 @@ type FoldLike r s t a b = LensLike Constant r :: Type -> Type s t a b
 type FoldLike' r s a = LensLike' Constant r :: Type -> Type s a
 
 -- | Constant functor.
-data Constant a (b :: k)
+data () => Constant a (b :: k)
 class Functor f => Phantom (f :: Type -> Type)
 class (Traversable f, Applicative f) => Identical (f :: Type -> Type)
 
@@ -585,10 +585,10 @@ choosing :: Functor f => LensLike f s0 t0 a b -> LensLike f s1 t1 a b -> LensLik
 --   
 --   Changes a Getter into a Reviewer and vice versa.
 from :: (Functor f, Functor g) => AdapterLike (FromF (g s -> f t) (f b) g) (FromG (f b) f) b a t s -> AdapterLike f g s t a b
-data AlongsideLeft (f :: Type -> Type) b a
-data AlongsideRight (f :: Type -> Type) a b
-data FromF i j (g :: Type -> Type) x
-data FromG e (f :: Type -> Type) x
+data () => AlongsideLeft (f :: Type -> Type) b a
+data () => AlongsideRight (f :: Type -> Type) a b
+data () => FromF i j (g :: Type -> Type) x
+data () => FromG e (f :: Type -> Type) x
 type Lens s t a b = forall f. Functor f => LensLike f s t a b
 type Lens' s a = forall f. Functor f => LensLike' f s a
 type Grate s t a b = forall g. Functor g => GrateLike g s t a b
@@ -604,7 +604,7 @@ class (Traversable f, Applicative f) => Identical (f :: Type -> Type)
 
 -- | The same functor, but with an <a>Applicative</a> instance that
 --   performs actions in the reverse order.
-data Backwards (f :: k -> Type) (a :: k)
+data () => Backwards (f :: k -> Type) (a :: k)
 
 -- | The <a>FiniteBits</a> class denotes types with a finite, fixed number
 --   of bits.
@@ -761,13 +761,13 @@ infixr 4 &&!=
 infixr 4 ||!=
 (<>!=) :: (MonadState s m, Monoid a) => Setter' s a -> a -> m ()
 infixr 4 <>!=
-data Zooming (m :: Type -> Type) c a
+data () => Zooming (m :: Type -> Type) c a
 type LensLike (f :: Type -> Type) s t a b = a -> f b -> s -> f t
 type LensLike' (f :: Type -> Type) s a = a -> f a -> s -> f s
 type FoldLike r s t a b = LensLike Constant r :: Type -> Type s t a b
 
 -- | Constant functor.
-data Constant a (b :: k)
+data () => Constant a (b :: k)
 type Setter s t a b = forall f. Identical f => LensLike f s t a b
 type Setter' s a = forall f. Identical f => LensLike' f s a
 class (Traversable f, Applicative f) => Identical (f :: Type -> Type)
@@ -782,7 +782,7 @@ class (Traversable f, Applicative f) => Identical (f :: Type -> Type)
 --   The <a>return</a> function leaves the state unchanged, while
 --   <tt>&gt;&gt;=</tt> uses the final state of the first computation as
 --   the initial state of the second.
-data StateT s (m :: Type -> Type) a
+data () => StateT s (m :: Type -> Type) a
 
 -- | Minimal definition is either both of <tt>get</tt> and <tt>put</tt> or
 --   just <tt>state</tt>
@@ -923,13 +923,13 @@ infixr 4 &&!=
 infixr 4 ||!=
 (<>!=) :: (MonadState s m, Monoid a) => Setter' s a -> a -> m ()
 infixr 4 <>!=
-data Zooming (m :: Type -> Type) c a
+data () => Zooming (m :: Type -> Type) c a
 type LensLike (f :: Type -> Type) s t a b = a -> f b -> s -> f t
 type LensLike' (f :: Type -> Type) s a = a -> f a -> s -> f s
 type FoldLike r s t a b = LensLike Constant r :: Type -> Type s t a b
 
 -- | Constant functor.
-data Constant a (b :: k)
+data () => Constant a (b :: k)
 type Setter s t a b = forall f. Identical f => LensLike f s t a b
 type Setter' s a = forall f. Identical f => LensLike' f s a
 class (Traversable f, Applicative f) => Identical (f :: Type -> Type)
@@ -944,7 +944,7 @@ class (Traversable f, Applicative f) => Identical (f :: Type -> Type)
 --   The <a>return</a> function leaves the state unchanged, while
 --   <tt>&gt;&gt;=</tt> uses the final state of the first computation as
 --   the initial state of the second.
-data StateT s (m :: Type -> Type) a
+data () => StateT s (m :: Type -> Type) a
 
 -- | Minimal definition is either both of <tt>get</tt> and <tt>put</tt> or
 --   just <tt>state</tt>

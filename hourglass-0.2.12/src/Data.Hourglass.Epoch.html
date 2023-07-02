@@ -1,4 +1,4 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span id="local-6989586621679063068"><span id="local-6989586621679063069"><span id="local-6989586621679063070"><span id="local-6989586621679063071"></span></span></span></span><span class="hs-pragma">{-# LANGUAGE GeneralizedNewtypeDeriving #-}</span><span>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span id="local-6989586621679064768"><span id="local-6989586621679064769"><span id="local-6989586621679064770"><span id="local-6989586621679064771"></span></span></span></span><span class="hs-pragma">{-# LANGUAGE GeneralizedNewtypeDeriving #-}</span><span>
 </span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE DeriveDataTypeable #-}</span><span>
 </span><span id="line-3"></span><span class="hs-comment">-- |</span><span>
 </span><span id="line-4"></span><span class="hs-comment">-- Module      : Data.Hourglass.Epoch</span><span>
@@ -26,23 +26,35 @@
 </span><span id="line-26"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Data.Hourglass.Types.html"><span class="hs-identifier">Data.Hourglass.Types</span></a></span><span>
 </span><span id="line-27"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Data.Hourglass.Time.html"><span class="hs-identifier">Data.Hourglass.Time</span></a></span><span>
 </span><span id="line-28"></span><span>
-</span><span id="line-29"></span><span class="hs-comment">-- | A number of seconds elapsed since an epoch.</span><span>
-</span><span id="line-30"></span><span class="hs-keyword">newtype</span><span> </span><span id="ElapsedSince"><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSince"><span class="hs-identifier hs-var">ElapsedSince</span></a></span></span><span> </span><span id="local-6989586621679063274"><span class="annot"><a href="#local-6989586621679063274"><span class="hs-identifier hs-type">epoch</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="ElapsedSince"><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSince"><span class="hs-identifier hs-var">ElapsedSince</span></a></span></span><span> </span><span class="annot"><a href="Time.Types.html#Seconds"><span class="hs-identifier hs-type">Seconds</span></a></span><span>
-</span><span id="line-31"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679063057"><span id="local-6989586621679063059"><span id="local-6989586621679063065"><span class="annot"><span class="annottext">Int -&gt; ElapsedSince epoch -&gt; ShowS
+</span><span id="line-29"></span><span class="annot"><span class="hs-comment">-- | A number of seconds elapsed since an epoch.</span></span><span>
+</span><span id="line-30"></span><span class="hs-keyword">newtype</span><span> </span><span id="ElapsedSince"><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSince"><span class="hs-identifier hs-var">ElapsedSince</span></a></span></span><span> </span><span id="local-6989586621679064688"><span class="annot"><a href="#local-6989586621679064688"><span class="hs-identifier hs-type">epoch</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="ElapsedSince"><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSince"><span class="hs-identifier hs-var">ElapsedSince</span></a></span></span><span> </span><span class="annot"><a href="Time.Types.html#Seconds"><span class="hs-identifier hs-type">Seconds</span></a></span><span>
+</span><span id="line-31"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679064774"><span id="local-6989586621679064780"><span id="local-6989586621679064784"><span class="annot"><span class="annottext">Int -&gt; ElapsedSince epoch -&gt; ShowS
+[ElapsedSince epoch] -&gt; ShowS
+ElapsedSince epoch -&gt; String
+(Int -&gt; ElapsedSince epoch -&gt; ShowS)
+-&gt; (ElapsedSince epoch -&gt; String)
+-&gt; ([ElapsedSince epoch] -&gt; ShowS)
+-&gt; Show (ElapsedSince epoch)
 forall epoch. Int -&gt; ElapsedSince epoch -&gt; ShowS
 forall epoch. [ElapsedSince epoch] -&gt; ShowS
 forall epoch. ElapsedSince epoch -&gt; String
 forall a.
 (Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
-showList :: [ElapsedSince epoch] -&gt; ShowS
-$cshowList :: forall epoch. [ElapsedSince epoch] -&gt; ShowS
-show :: ElapsedSince epoch -&gt; String
-$cshow :: forall epoch. ElapsedSince epoch -&gt; String
-showsPrec :: Int -&gt; ElapsedSince epoch -&gt; ShowS
 $cshowsPrec :: forall epoch. Int -&gt; ElapsedSince epoch -&gt; ShowS
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span id="local-6989586621679063041"><span id="local-6989586621679063049"><span id="local-6989586621679063052"><span id="local-6989586621679063054"><span class="annot"><span class="annottext">ReadPrec [ElapsedSince epoch]
+showsPrec :: Int -&gt; ElapsedSince epoch -&gt; ShowS
+$cshow :: forall epoch. ElapsedSince epoch -&gt; String
+show :: ElapsedSince epoch -&gt; String
+$cshowList :: forall epoch. [ElapsedSince epoch] -&gt; ShowS
+showList :: [ElapsedSince epoch] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span id="local-6989586621679064788"><span id="local-6989586621679064792"><span id="local-6989586621679064795"><span id="local-6989586621679064803"><span class="annot"><span class="annottext">ReadPrec [ElapsedSince epoch]
 ReadPrec (ElapsedSince epoch)
+Int -&gt; ReadS (ElapsedSince epoch)
 ReadS [ElapsedSince epoch]
+(Int -&gt; ReadS (ElapsedSince epoch))
+-&gt; ReadS [ElapsedSince epoch]
+-&gt; ReadPrec (ElapsedSince epoch)
+-&gt; ReadPrec [ElapsedSince epoch]
+-&gt; Read (ElapsedSince epoch)
 forall epoch. ReadPrec [ElapsedSince epoch]
 forall epoch. ReadPrec (ElapsedSince epoch)
 forall epoch. Int -&gt; ReadS (ElapsedSince epoch)
@@ -50,28 +62,41 @@ forall epoch. ReadS [ElapsedSince epoch]
 forall a.
 (Int -&gt; ReadS a)
 -&gt; ReadS [a] -&gt; ReadPrec a -&gt; ReadPrec [a] -&gt; Read a
-readListPrec :: ReadPrec [ElapsedSince epoch]
-$creadListPrec :: forall epoch. ReadPrec [ElapsedSince epoch]
-readPrec :: ReadPrec (ElapsedSince epoch)
-$creadPrec :: forall epoch. ReadPrec (ElapsedSince epoch)
-readList :: ReadS [ElapsedSince epoch]
-$creadList :: forall epoch. ReadS [ElapsedSince epoch]
-readsPrec :: Int -&gt; ReadS (ElapsedSince epoch)
 $creadsPrec :: forall epoch. Int -&gt; ReadS (ElapsedSince epoch)
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Read</span></span></span></span></span></span><span class="hs-special">,</span><span id="local-6989586621679063032"><span id="local-6989586621679063037"><span class="annot"><span class="annottext">ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; Bool
+readsPrec :: Int -&gt; ReadS (ElapsedSince epoch)
+$creadList :: forall epoch. ReadS [ElapsedSince epoch]
+readList :: ReadS [ElapsedSince epoch]
+$creadPrec :: forall epoch. ReadPrec (ElapsedSince epoch)
+readPrec :: ReadPrec (ElapsedSince epoch)
+$creadListPrec :: forall epoch. ReadPrec [ElapsedSince epoch]
+readListPrec :: ReadPrec [ElapsedSince epoch]
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Read</span></span></span></span></span></span><span class="hs-special">,</span><span id="local-6989586621679064807"><span id="local-6989586621679064812"><span class="annot"><span class="annottext">ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; Bool
+(ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; Bool)
+-&gt; (ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; Bool)
+-&gt; Eq (ElapsedSince epoch)
 forall epoch. ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; Bool
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
-/= :: ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; Bool
-$c/= :: forall epoch. ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; Bool
-== :: ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; Bool
 $c== :: forall epoch. ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span id="local-6989586621679062999"><span id="local-6989586621679063003"><span id="local-6989586621679063007"><span id="local-6989586621679063011"><span id="local-6989586621679063015"><span id="local-6989586621679063019"><span id="local-6989586621679063024"><span class="annot"><span class="annottext">ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; Bool
+== :: ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; Bool
+$c/= :: forall epoch. ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; Bool
+/= :: ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span id="local-6989586621679064820"><span id="local-6989586621679064825"><span id="local-6989586621679064829"><span id="local-6989586621679064833"><span id="local-6989586621679064837"><span id="local-6989586621679064841"><span id="local-6989586621679064845"><span class="annot"><span class="annottext">Eq (ElapsedSince epoch)
+Eq (ElapsedSince epoch) =&gt;
+(ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; Ordering)
+-&gt; (ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; Bool)
+-&gt; (ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; Bool)
+-&gt; (ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; Bool)
+-&gt; (ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; Bool)
+-&gt; (ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; ElapsedSince epoch)
+-&gt; (ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; ElapsedSince epoch)
+-&gt; Ord (ElapsedSince epoch)
+ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; Bool
 ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; Ordering
 ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; ElapsedSince epoch
 forall epoch. Eq (ElapsedSince epoch)
 forall a.
-Eq a
--&gt; (a -&gt; a -&gt; Ordering)
+Eq a =&gt;
+(a -&gt; a -&gt; Ordering)
 -&gt; (a -&gt; a -&gt; Bool)
 -&gt; (a -&gt; a -&gt; Bool)
 -&gt; (a -&gt; a -&gt; Bool)
@@ -83,25 +108,33 @@ forall epoch. ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; Bool
 forall epoch. ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; Ordering
 forall epoch.
 ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; ElapsedSince epoch
-min :: ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; ElapsedSince epoch
-$cmin :: forall epoch.
-ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; ElapsedSince epoch
-max :: ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; ElapsedSince epoch
+$ccompare :: forall epoch. ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; Ordering
+compare :: ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; Ordering
+$c&lt; :: forall epoch. ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; Bool
+&lt; :: ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; Bool
+$c&lt;= :: forall epoch. ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; Bool
+&lt;= :: ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; Bool
+$c&gt; :: forall epoch. ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; Bool
+&gt; :: ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; Bool
+$c&gt;= :: forall epoch. ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; Bool
+&gt;= :: ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; Bool
 $cmax :: forall epoch.
 ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; ElapsedSince epoch
-&gt;= :: ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; Bool
-$c&gt;= :: forall epoch. ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; Bool
-&gt; :: ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; Bool
-$c&gt; :: forall epoch. ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; Bool
-&lt;= :: ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; Bool
-$c&lt;= :: forall epoch. ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; Bool
-&lt; :: ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; Bool
-$c&lt; :: forall epoch. ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; Bool
-compare :: ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; Ordering
-$ccompare :: forall epoch. ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; Ordering
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Ord</span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span id="local-6989586621679062968"><span id="local-6989586621679062972"><span id="local-6989586621679062976"><span id="local-6989586621679062980"><span id="local-6989586621679062984"><span id="local-6989586621679062988"><span id="local-6989586621679062993"><span class="annot"><span class="annottext">Integer -&gt; ElapsedSince epoch
+max :: ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; ElapsedSince epoch
+$cmin :: forall epoch.
+ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; ElapsedSince epoch
+min :: ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; ElapsedSince epoch
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Ord</span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span id="local-6989586621679064851"><span id="local-6989586621679064856"><span id="local-6989586621679064860"><span id="local-6989586621679064864"><span id="local-6989586621679064868"><span id="local-6989586621679064872"><span id="local-6989586621679064876"><span class="annot"><span class="annottext">Integer -&gt; ElapsedSince epoch
 ElapsedSince epoch -&gt; ElapsedSince epoch
 ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; ElapsedSince epoch
+(ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; ElapsedSince epoch)
+-&gt; (ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; ElapsedSince epoch)
+-&gt; (ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; ElapsedSince epoch)
+-&gt; (ElapsedSince epoch -&gt; ElapsedSince epoch)
+-&gt; (ElapsedSince epoch -&gt; ElapsedSince epoch)
+-&gt; (ElapsedSince epoch -&gt; ElapsedSince epoch)
+-&gt; (Integer -&gt; ElapsedSince epoch)
+-&gt; Num (ElapsedSince epoch)
 forall epoch. Integer -&gt; ElapsedSince epoch
 forall epoch. ElapsedSince epoch -&gt; ElapsedSince epoch
 forall epoch.
@@ -115,28 +148,74 @@ forall a.
 -&gt; (a -&gt; a)
 -&gt; (Integer -&gt; a)
 -&gt; Num a
-fromInteger :: Integer -&gt; ElapsedSince epoch
-$cfromInteger :: forall epoch. Integer -&gt; ElapsedSince epoch
-signum :: ElapsedSince epoch -&gt; ElapsedSince epoch
-$csignum :: forall epoch. ElapsedSince epoch -&gt; ElapsedSince epoch
-abs :: ElapsedSince epoch -&gt; ElapsedSince epoch
-$cabs :: forall epoch. ElapsedSince epoch -&gt; ElapsedSince epoch
-negate :: ElapsedSince epoch -&gt; ElapsedSince epoch
-$cnegate :: forall epoch. ElapsedSince epoch -&gt; ElapsedSince epoch
-* :: ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; ElapsedSince epoch
-$c* :: forall epoch.
-ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; ElapsedSince epoch
-- :: ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; ElapsedSince epoch
-$c- :: forall epoch.
-ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; ElapsedSince epoch
-+ :: ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; ElapsedSince epoch
 $c+ :: forall epoch.
 ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; ElapsedSince epoch
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Num</span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span id="local-6989586621679062926"><span id="local-6989586621679062928"><span id="local-6989586621679062930"><span id="local-6989586621679062932"><span id="local-6989586621679062934"><span id="local-6989586621679062936"><span id="local-6989586621679062938"><span id="local-6989586621679062940"><span id="local-6989586621679062942"><span id="local-6989586621679062948"><span id="local-6989586621679062950"><span id="local-6989586621679062952"><span id="local-6989586621679062955"><span id="local-6989586621679062959"><span class="annot"><span class="annottext">ElapsedSince epoch -&gt; DataType
++ :: ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; ElapsedSince epoch
+$c- :: forall epoch.
+ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; ElapsedSince epoch
+- :: ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; ElapsedSince epoch
+$c* :: forall epoch.
+ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; ElapsedSince epoch
+* :: ElapsedSince epoch -&gt; ElapsedSince epoch -&gt; ElapsedSince epoch
+$cnegate :: forall epoch. ElapsedSince epoch -&gt; ElapsedSince epoch
+negate :: ElapsedSince epoch -&gt; ElapsedSince epoch
+$cabs :: forall epoch. ElapsedSince epoch -&gt; ElapsedSince epoch
+abs :: ElapsedSince epoch -&gt; ElapsedSince epoch
+$csignum :: forall epoch. ElapsedSince epoch -&gt; ElapsedSince epoch
+signum :: ElapsedSince epoch -&gt; ElapsedSince epoch
+$cfromInteger :: forall epoch. Integer -&gt; ElapsedSince epoch
+fromInteger :: Integer -&gt; ElapsedSince epoch
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Num</span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span id="local-6989586621679064887"><span id="local-6989586621679064891"><span id="local-6989586621679064894"><span id="local-6989586621679064896"><span id="local-6989586621679064898"><span id="local-6989586621679064904"><span id="local-6989586621679064910"><span id="local-6989586621679064913"><span id="local-6989586621679064916"><span id="local-6989586621679064919"><span id="local-6989586621679064922"><span id="local-6989586621679064925"><span id="local-6989586621679064930"><span id="local-6989586621679064935"><span class="annot"><span class="annottext">Typeable (ElapsedSince epoch)
+Typeable (ElapsedSince epoch) =&gt;
+(forall (c :: * -&gt; *).
+ (forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+ -&gt; (forall g. g -&gt; c g)
+ -&gt; ElapsedSince epoch
+ -&gt; c (ElapsedSince epoch))
+-&gt; (forall (c :: * -&gt; *).
+    (forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+    -&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c (ElapsedSince epoch))
+-&gt; (ElapsedSince epoch -&gt; Constr)
+-&gt; (ElapsedSince epoch -&gt; DataType)
+-&gt; (forall (t :: * -&gt; *) (c :: * -&gt; *).
+    Typeable t =&gt;
+    (forall d. Data d =&gt; c (t d)) -&gt; Maybe (c (ElapsedSince epoch)))
+-&gt; (forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+    Typeable t =&gt;
+    (forall d e. (Data d, Data e) =&gt; c (t d e))
+    -&gt; Maybe (c (ElapsedSince epoch)))
+-&gt; ((forall b. Data b =&gt; b -&gt; b)
+    -&gt; ElapsedSince epoch -&gt; ElapsedSince epoch)
+-&gt; (forall r r'.
+    (r -&gt; r' -&gt; r)
+    -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; ElapsedSince epoch -&gt; r)
+-&gt; (forall r r'.
+    (r' -&gt; r -&gt; r)
+    -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; ElapsedSince epoch -&gt; r)
+-&gt; (forall u.
+    (forall d. Data d =&gt; d -&gt; u) -&gt; ElapsedSince epoch -&gt; [u])
+-&gt; (forall u.
+    Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; ElapsedSince epoch -&gt; u)
+-&gt; (forall (m :: * -&gt; *).
+    Monad m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d)
+    -&gt; ElapsedSince epoch -&gt; m (ElapsedSince epoch))
+-&gt; (forall (m :: * -&gt; *).
+    MonadPlus m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d)
+    -&gt; ElapsedSince epoch -&gt; m (ElapsedSince epoch))
+-&gt; (forall (m :: * -&gt; *).
+    MonadPlus m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d)
+    -&gt; ElapsedSince epoch -&gt; m (ElapsedSince epoch))
+-&gt; Data (ElapsedSince epoch)
 ElapsedSince epoch -&gt; Constr
-forall {epoch}. Data epoch =&gt; Typeable (ElapsedSince epoch)
-forall epoch. Data epoch =&gt; ElapsedSince epoch -&gt; DataType
+ElapsedSince epoch -&gt; DataType
+(forall b. Data b =&gt; b -&gt; b)
+-&gt; ElapsedSince epoch -&gt; ElapsedSince epoch
+forall epoch. Data epoch =&gt; Typeable (ElapsedSince epoch)
 forall epoch. Data epoch =&gt; ElapsedSince epoch -&gt; Constr
+forall epoch. Data epoch =&gt; ElapsedSince epoch -&gt; DataType
 forall epoch.
 Data epoch =&gt;
 (forall b. Data b =&gt; b -&gt; b)
@@ -181,10 +260,10 @@ forall epoch (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
 (forall d e. (Data d, Data e) =&gt; c (t d e))
 -&gt; Maybe (c (ElapsedSince epoch))
 forall a.
-Typeable a
--&gt; (forall (c :: * -&gt; *).
-    (forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
-    -&gt; (forall g. g -&gt; c g) -&gt; a -&gt; c a)
+Typeable a =&gt;
+(forall (c :: * -&gt; *).
+ (forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+ -&gt; (forall g. g -&gt; c g) -&gt; a -&gt; c a)
 -&gt; (forall (c :: * -&gt; *).
     (forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
     -&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c a)
@@ -213,6 +292,23 @@ Typeable a
     MonadPlus m =&gt;
     (forall d. Data d =&gt; d -&gt; m d) -&gt; a -&gt; m a)
 -&gt; Data a
+forall u.
+Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; ElapsedSince epoch -&gt; u
+forall u. (forall d. Data d =&gt; d -&gt; u) -&gt; ElapsedSince epoch -&gt; [u]
+forall r r'.
+(r -&gt; r' -&gt; r)
+-&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; ElapsedSince epoch -&gt; r
+forall r r'.
+(r' -&gt; r -&gt; r)
+-&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; ElapsedSince epoch -&gt; r
+forall (m :: * -&gt; *).
+Monad m =&gt;
+(forall d. Data d =&gt; d -&gt; m d)
+-&gt; ElapsedSince epoch -&gt; m (ElapsedSince epoch)
+forall (m :: * -&gt; *).
+MonadPlus m =&gt;
+(forall d. Data d =&gt; d -&gt; m d)
+-&gt; ElapsedSince epoch -&gt; m (ElapsedSince epoch)
 forall (c :: * -&gt; *).
 (forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
 -&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c (ElapsedSince epoch)
@@ -224,11 +320,84 @@ forall (c :: * -&gt; *).
 forall (t :: * -&gt; *) (c :: * -&gt; *).
 Typeable t =&gt;
 (forall d. Data d =&gt; c (t d)) -&gt; Maybe (c (ElapsedSince epoch))
-gmapMo :: forall (m :: * -&gt; *).
-MonadPlus m =&gt;
+forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d e. (Data d, Data e) =&gt; c (t d e))
+-&gt; Maybe (c (ElapsedSince epoch))
+$cgfoldl :: forall epoch (c :: * -&gt; *).
+Data epoch =&gt;
+(forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+-&gt; (forall g. g -&gt; c g)
+-&gt; ElapsedSince epoch
+-&gt; c (ElapsedSince epoch)
+gfoldl :: forall (c :: * -&gt; *).
+(forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+-&gt; (forall g. g -&gt; c g)
+-&gt; ElapsedSince epoch
+-&gt; c (ElapsedSince epoch)
+$cgunfold :: forall epoch (c :: * -&gt; *).
+Data epoch =&gt;
+(forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+-&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c (ElapsedSince epoch)
+gunfold :: forall (c :: * -&gt; *).
+(forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+-&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c (ElapsedSince epoch)
+$ctoConstr :: forall epoch. Data epoch =&gt; ElapsedSince epoch -&gt; Constr
+toConstr :: ElapsedSince epoch -&gt; Constr
+$cdataTypeOf :: forall epoch. Data epoch =&gt; ElapsedSince epoch -&gt; DataType
+dataTypeOf :: ElapsedSince epoch -&gt; DataType
+$cdataCast1 :: forall epoch (t :: * -&gt; *) (c :: * -&gt; *).
+(Data epoch, Typeable t) =&gt;
+(forall d. Data d =&gt; c (t d)) -&gt; Maybe (c (ElapsedSince epoch))
+dataCast1 :: forall (t :: * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d. Data d =&gt; c (t d)) -&gt; Maybe (c (ElapsedSince epoch))
+$cdataCast2 :: forall epoch (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+(Data epoch, Typeable t) =&gt;
+(forall d e. (Data d, Data e) =&gt; c (t d e))
+-&gt; Maybe (c (ElapsedSince epoch))
+dataCast2 :: forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d e. (Data d, Data e) =&gt; c (t d e))
+-&gt; Maybe (c (ElapsedSince epoch))
+$cgmapT :: forall epoch.
+Data epoch =&gt;
+(forall b. Data b =&gt; b -&gt; b)
+-&gt; ElapsedSince epoch -&gt; ElapsedSince epoch
+gmapT :: (forall b. Data b =&gt; b -&gt; b)
+-&gt; ElapsedSince epoch -&gt; ElapsedSince epoch
+$cgmapQl :: forall epoch r r'.
+Data epoch =&gt;
+(r -&gt; r' -&gt; r)
+-&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; ElapsedSince epoch -&gt; r
+gmapQl :: forall r r'.
+(r -&gt; r' -&gt; r)
+-&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; ElapsedSince epoch -&gt; r
+$cgmapQr :: forall epoch r r'.
+Data epoch =&gt;
+(r' -&gt; r -&gt; r)
+-&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; ElapsedSince epoch -&gt; r
+gmapQr :: forall r r'.
+(r' -&gt; r -&gt; r)
+-&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; ElapsedSince epoch -&gt; r
+$cgmapQ :: forall epoch u.
+Data epoch =&gt;
+(forall d. Data d =&gt; d -&gt; u) -&gt; ElapsedSince epoch -&gt; [u]
+gmapQ :: forall u. (forall d. Data d =&gt; d -&gt; u) -&gt; ElapsedSince epoch -&gt; [u]
+$cgmapQi :: forall epoch u.
+Data epoch =&gt;
+Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; ElapsedSince epoch -&gt; u
+gmapQi :: forall u.
+Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; ElapsedSince epoch -&gt; u
+$cgmapM :: forall epoch (m :: * -&gt; *).
+(Data epoch, Monad m) =&gt;
 (forall d. Data d =&gt; d -&gt; m d)
 -&gt; ElapsedSince epoch -&gt; m (ElapsedSince epoch)
-$cgmapMo :: forall epoch (m :: * -&gt; *).
+gmapM :: forall (m :: * -&gt; *).
+Monad m =&gt;
+(forall d. Data d =&gt; d -&gt; m d)
+-&gt; ElapsedSince epoch -&gt; m (ElapsedSince epoch)
+$cgmapMp :: forall epoch (m :: * -&gt; *).
 (Data epoch, MonadPlus m) =&gt;
 (forall d. Data d =&gt; d -&gt; m d)
 -&gt; ElapsedSince epoch -&gt; m (ElapsedSince epoch)
@@ -236,108 +405,52 @@ gmapMp :: forall (m :: * -&gt; *).
 MonadPlus m =&gt;
 (forall d. Data d =&gt; d -&gt; m d)
 -&gt; ElapsedSince epoch -&gt; m (ElapsedSince epoch)
-$cgmapMp :: forall epoch (m :: * -&gt; *).
+$cgmapMo :: forall epoch (m :: * -&gt; *).
 (Data epoch, MonadPlus m) =&gt;
 (forall d. Data d =&gt; d -&gt; m d)
 -&gt; ElapsedSince epoch -&gt; m (ElapsedSince epoch)
-gmapM :: forall (m :: * -&gt; *).
-Monad m =&gt;
+gmapMo :: forall (m :: * -&gt; *).
+MonadPlus m =&gt;
 (forall d. Data d =&gt; d -&gt; m d)
 -&gt; ElapsedSince epoch -&gt; m (ElapsedSince epoch)
-$cgmapM :: forall epoch (m :: * -&gt; *).
-(Data epoch, Monad m) =&gt;
-(forall d. Data d =&gt; d -&gt; m d)
--&gt; ElapsedSince epoch -&gt; m (ElapsedSince epoch)
-gmapQi :: forall u.
-Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; ElapsedSince epoch -&gt; u
-$cgmapQi :: forall epoch u.
-Data epoch =&gt;
-Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; ElapsedSince epoch -&gt; u
-gmapQ :: forall u. (forall d. Data d =&gt; d -&gt; u) -&gt; ElapsedSince epoch -&gt; [u]
-$cgmapQ :: forall epoch u.
-Data epoch =&gt;
-(forall d. Data d =&gt; d -&gt; u) -&gt; ElapsedSince epoch -&gt; [u]
-gmapQr :: forall r r'.
-(r' -&gt; r -&gt; r)
--&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; ElapsedSince epoch -&gt; r
-$cgmapQr :: forall epoch r r'.
-Data epoch =&gt;
-(r' -&gt; r -&gt; r)
--&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; ElapsedSince epoch -&gt; r
-gmapQl :: forall r r'.
-(r -&gt; r' -&gt; r)
--&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; ElapsedSince epoch -&gt; r
-$cgmapQl :: forall epoch r r'.
-Data epoch =&gt;
-(r -&gt; r' -&gt; r)
--&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; ElapsedSince epoch -&gt; r
-gmapT :: (forall b. Data b =&gt; b -&gt; b)
--&gt; ElapsedSince epoch -&gt; ElapsedSince epoch
-$cgmapT :: forall epoch.
-Data epoch =&gt;
-(forall b. Data b =&gt; b -&gt; b)
--&gt; ElapsedSince epoch -&gt; ElapsedSince epoch
-dataCast2 :: forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
-Typeable t =&gt;
-(forall d e. (Data d, Data e) =&gt; c (t d e))
--&gt; Maybe (c (ElapsedSince epoch))
-$cdataCast2 :: forall epoch (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
-(Data epoch, Typeable t) =&gt;
-(forall d e. (Data d, Data e) =&gt; c (t d e))
--&gt; Maybe (c (ElapsedSince epoch))
-dataCast1 :: forall (t :: * -&gt; *) (c :: * -&gt; *).
-Typeable t =&gt;
-(forall d. Data d =&gt; c (t d)) -&gt; Maybe (c (ElapsedSince epoch))
-$cdataCast1 :: forall epoch (t :: * -&gt; *) (c :: * -&gt; *).
-(Data epoch, Typeable t) =&gt;
-(forall d. Data d =&gt; c (t d)) -&gt; Maybe (c (ElapsedSince epoch))
-dataTypeOf :: ElapsedSince epoch -&gt; DataType
-$cdataTypeOf :: forall epoch. Data epoch =&gt; ElapsedSince epoch -&gt; DataType
-toConstr :: ElapsedSince epoch -&gt; Constr
-$ctoConstr :: forall epoch. Data epoch =&gt; ElapsedSince epoch -&gt; Constr
-gunfold :: forall (c :: * -&gt; *).
-(forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
--&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c (ElapsedSince epoch)
-$cgunfold :: forall epoch (c :: * -&gt; *).
-Data epoch =&gt;
-(forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
--&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c (ElapsedSince epoch)
-gfoldl :: forall (c :: * -&gt; *).
-(forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
--&gt; (forall g. g -&gt; c g)
--&gt; ElapsedSince epoch
--&gt; c (ElapsedSince epoch)
-$cgfoldl :: forall epoch (c :: * -&gt; *).
-Data epoch =&gt;
-(forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
--&gt; (forall g. g -&gt; c g)
--&gt; ElapsedSince epoch
--&gt; c (ElapsedSince epoch)
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Data</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span class="annot"><span class="hs-identifier hs-type">Typeable</span></span><span class="hs-special">,</span><span id="local-6989586621679062923"><span class="annot"><span class="annottext">ElapsedSince epoch -&gt; ()
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Data</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span class="annot"><span class="hs-identifier hs-type">Typeable</span></span><span class="hs-special">,</span><span id="local-6989586621679064942"><span class="annot"><span class="annottext">ElapsedSince epoch -&gt; ()
+(ElapsedSince epoch -&gt; ()) -&gt; NFData (ElapsedSince epoch)
 forall epoch. ElapsedSince epoch -&gt; ()
 forall a. (a -&gt; ()) -&gt; NFData a
-rnf :: ElapsedSince epoch -&gt; ()
 $crnf :: forall epoch. ElapsedSince epoch -&gt; ()
+rnf :: ElapsedSince epoch -&gt; ()
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var">NFData</span></span></span><span class="hs-special">)</span><span>
 </span><span id="line-32"></span><span>
-</span><span id="line-33"></span><span class="hs-comment">-- | A number of seconds and nanoseconds elapsed since an epoch.</span><span>
-</span><span id="line-34"></span><span class="hs-keyword">data</span><span> </span><span id="ElapsedSinceP"><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-var">ElapsedSinceP</span></a></span></span><span> </span><span id="local-6989586621679063226"><span class="annot"><a href="#local-6989586621679063226"><span class="hs-identifier hs-type">epoch</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="ElapsedSinceP"><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-var">ElapsedSinceP</span></a></span></span><span> </span><span class="hs-pragma">{-# UNPACK</span><span> </span><span class="hs-pragma">#-}</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">(</span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSince"><span class="hs-identifier hs-type">ElapsedSince</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679063226"><span class="hs-identifier hs-type">epoch</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-33"></span><span class="annot"><span class="hs-comment">-- | A number of seconds and nanoseconds elapsed since an epoch.</span></span><span>
+</span><span id="line-34"></span><span class="hs-keyword">data</span><span> </span><span id="ElapsedSinceP"><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-var">ElapsedSinceP</span></a></span></span><span> </span><span id="local-6989586621679064687"><span class="annot"><a href="#local-6989586621679064687"><span class="hs-identifier hs-type">epoch</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="ElapsedSinceP"><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-var">ElapsedSinceP</span></a></span></span><span> </span><span class="hs-pragma">{-# UNPACK</span><span> </span><span class="hs-pragma">#-}</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">(</span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSince"><span class="hs-identifier hs-type">ElapsedSince</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679064687"><span class="hs-identifier hs-type">epoch</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-35"></span><span>                                         </span><span class="hs-pragma">{-# UNPACK</span><span> </span><span class="hs-pragma">#-}</span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="Time.Types.html#NanoSeconds"><span class="hs-identifier hs-type">NanoSeconds</span></a></span><span>
-</span><span id="line-36"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679062907"><span id="local-6989586621679062909"><span id="local-6989586621679062915"><span class="annot"><span class="annottext">Int -&gt; ElapsedSinceP epoch -&gt; ShowS
+</span><span id="line-36"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679064950"><span id="local-6989586621679064956"><span id="local-6989586621679064960"><span class="annot"><span class="annottext">Int -&gt; ElapsedSinceP epoch -&gt; ShowS
+[ElapsedSinceP epoch] -&gt; ShowS
+ElapsedSinceP epoch -&gt; String
+(Int -&gt; ElapsedSinceP epoch -&gt; ShowS)
+-&gt; (ElapsedSinceP epoch -&gt; String)
+-&gt; ([ElapsedSinceP epoch] -&gt; ShowS)
+-&gt; Show (ElapsedSinceP epoch)
 forall epoch. Int -&gt; ElapsedSinceP epoch -&gt; ShowS
 forall epoch. [ElapsedSinceP epoch] -&gt; ShowS
 forall epoch. ElapsedSinceP epoch -&gt; String
 forall a.
 (Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
-showList :: [ElapsedSinceP epoch] -&gt; ShowS
-$cshowList :: forall epoch. [ElapsedSinceP epoch] -&gt; ShowS
-show :: ElapsedSinceP epoch -&gt; String
-$cshow :: forall epoch. ElapsedSinceP epoch -&gt; String
-showsPrec :: Int -&gt; ElapsedSinceP epoch -&gt; ShowS
 $cshowsPrec :: forall epoch. Int -&gt; ElapsedSinceP epoch -&gt; ShowS
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span id="local-6989586621679062891"><span id="local-6989586621679062900"><span id="local-6989586621679062903"><span id="local-6989586621679062905"><span class="annot"><span class="annottext">ReadPrec [ElapsedSinceP epoch]
+showsPrec :: Int -&gt; ElapsedSinceP epoch -&gt; ShowS
+$cshow :: forall epoch. ElapsedSinceP epoch -&gt; String
+show :: ElapsedSinceP epoch -&gt; String
+$cshowList :: forall epoch. [ElapsedSinceP epoch] -&gt; ShowS
+showList :: [ElapsedSinceP epoch] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span id="local-6989586621679064963"><span id="local-6989586621679064967"><span id="local-6989586621679064970"><span id="local-6989586621679064979"><span class="annot"><span class="annottext">ReadPrec [ElapsedSinceP epoch]
 ReadPrec (ElapsedSinceP epoch)
+Int -&gt; ReadS (ElapsedSinceP epoch)
 ReadS [ElapsedSinceP epoch]
+(Int -&gt; ReadS (ElapsedSinceP epoch))
+-&gt; ReadS [ElapsedSinceP epoch]
+-&gt; ReadPrec (ElapsedSinceP epoch)
+-&gt; ReadPrec [ElapsedSinceP epoch]
+-&gt; Read (ElapsedSinceP epoch)
 forall epoch. ReadPrec [ElapsedSinceP epoch]
 forall epoch. ReadPrec (ElapsedSinceP epoch)
 forall epoch. Int -&gt; ReadS (ElapsedSinceP epoch)
@@ -345,27 +458,43 @@ forall epoch. ReadS [ElapsedSinceP epoch]
 forall a.
 (Int -&gt; ReadS a)
 -&gt; ReadS [a] -&gt; ReadPrec a -&gt; ReadPrec [a] -&gt; Read a
-readListPrec :: ReadPrec [ElapsedSinceP epoch]
-$creadListPrec :: forall epoch. ReadPrec [ElapsedSinceP epoch]
-readPrec :: ReadPrec (ElapsedSinceP epoch)
-$creadPrec :: forall epoch. ReadPrec (ElapsedSinceP epoch)
-readList :: ReadS [ElapsedSinceP epoch]
-$creadList :: forall epoch. ReadS [ElapsedSinceP epoch]
-readsPrec :: Int -&gt; ReadS (ElapsedSinceP epoch)
 $creadsPrec :: forall epoch. Int -&gt; ReadS (ElapsedSinceP epoch)
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Read</span></span></span></span></span></span><span class="hs-special">,</span><span id="local-6989586621679062883"><span id="local-6989586621679062888"><span class="annot"><span class="annottext">ElapsedSinceP epoch -&gt; ElapsedSinceP epoch -&gt; Bool
+readsPrec :: Int -&gt; ReadS (ElapsedSinceP epoch)
+$creadList :: forall epoch. ReadS [ElapsedSinceP epoch]
+readList :: ReadS [ElapsedSinceP epoch]
+$creadPrec :: forall epoch. ReadPrec (ElapsedSinceP epoch)
+readPrec :: ReadPrec (ElapsedSinceP epoch)
+$creadListPrec :: forall epoch. ReadPrec [ElapsedSinceP epoch]
+readListPrec :: ReadPrec [ElapsedSinceP epoch]
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Read</span></span></span></span></span></span><span class="hs-special">,</span><span id="local-6989586621679064982"><span id="local-6989586621679064987"><span class="annot"><span class="annottext">ElapsedSinceP epoch -&gt; ElapsedSinceP epoch -&gt; Bool
+(ElapsedSinceP epoch -&gt; ElapsedSinceP epoch -&gt; Bool)
+-&gt; (ElapsedSinceP epoch -&gt; ElapsedSinceP epoch -&gt; Bool)
+-&gt; Eq (ElapsedSinceP epoch)
 forall epoch. ElapsedSinceP epoch -&gt; ElapsedSinceP epoch -&gt; Bool
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
-/= :: ElapsedSinceP epoch -&gt; ElapsedSinceP epoch -&gt; Bool
-$c/= :: forall epoch. ElapsedSinceP epoch -&gt; ElapsedSinceP epoch -&gt; Bool
-== :: ElapsedSinceP epoch -&gt; ElapsedSinceP epoch -&gt; Bool
 $c== :: forall epoch. ElapsedSinceP epoch -&gt; ElapsedSinceP epoch -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span id="local-6989586621679062859"><span id="local-6989586621679062861"><span id="local-6989586621679062864"><span id="local-6989586621679062867"><span id="local-6989586621679062870"><span id="local-6989586621679062874"><span id="local-6989586621679062879"><span class="annot"><span class="annottext">ElapsedSinceP epoch -&gt; ElapsedSinceP epoch -&gt; Bool
+== :: ElapsedSinceP epoch -&gt; ElapsedSinceP epoch -&gt; Bool
+$c/= :: forall epoch. ElapsedSinceP epoch -&gt; ElapsedSinceP epoch -&gt; Bool
+/= :: ElapsedSinceP epoch -&gt; ElapsedSinceP epoch -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span id="local-6989586621679064993"><span id="local-6989586621679064998"><span id="local-6989586621679065002"><span id="local-6989586621679065006"><span id="local-6989586621679065009"><span id="local-6989586621679065012"><span id="local-6989586621679065015"><span class="annot"><span class="annottext">Eq (ElapsedSinceP epoch)
+Eq (ElapsedSinceP epoch) =&gt;
+(ElapsedSinceP epoch -&gt; ElapsedSinceP epoch -&gt; Ordering)
+-&gt; (ElapsedSinceP epoch -&gt; ElapsedSinceP epoch -&gt; Bool)
+-&gt; (ElapsedSinceP epoch -&gt; ElapsedSinceP epoch -&gt; Bool)
+-&gt; (ElapsedSinceP epoch -&gt; ElapsedSinceP epoch -&gt; Bool)
+-&gt; (ElapsedSinceP epoch -&gt; ElapsedSinceP epoch -&gt; Bool)
+-&gt; (ElapsedSinceP epoch
+    -&gt; ElapsedSinceP epoch -&gt; ElapsedSinceP epoch)
+-&gt; (ElapsedSinceP epoch
+    -&gt; ElapsedSinceP epoch -&gt; ElapsedSinceP epoch)
+-&gt; Ord (ElapsedSinceP epoch)
+ElapsedSinceP epoch -&gt; ElapsedSinceP epoch -&gt; Bool
 ElapsedSinceP epoch -&gt; ElapsedSinceP epoch -&gt; Ordering
+ElapsedSinceP epoch -&gt; ElapsedSinceP epoch -&gt; ElapsedSinceP epoch
 forall epoch. Eq (ElapsedSinceP epoch)
 forall a.
-Eq a
--&gt; (a -&gt; a -&gt; Ordering)
+Eq a =&gt;
+(a -&gt; a -&gt; Ordering)
 -&gt; (a -&gt; a -&gt; Bool)
 -&gt; (a -&gt; a -&gt; Bool)
 -&gt; (a -&gt; a -&gt; Bool)
@@ -378,28 +507,74 @@ forall epoch.
 ElapsedSinceP epoch -&gt; ElapsedSinceP epoch -&gt; Ordering
 forall epoch.
 ElapsedSinceP epoch -&gt; ElapsedSinceP epoch -&gt; ElapsedSinceP epoch
-min :: ElapsedSinceP epoch -&gt; ElapsedSinceP epoch -&gt; ElapsedSinceP epoch
-$cmin :: forall epoch.
-ElapsedSinceP epoch -&gt; ElapsedSinceP epoch -&gt; ElapsedSinceP epoch
-max :: ElapsedSinceP epoch -&gt; ElapsedSinceP epoch -&gt; ElapsedSinceP epoch
-$cmax :: forall epoch.
-ElapsedSinceP epoch -&gt; ElapsedSinceP epoch -&gt; ElapsedSinceP epoch
-&gt;= :: ElapsedSinceP epoch -&gt; ElapsedSinceP epoch -&gt; Bool
-$c&gt;= :: forall epoch. ElapsedSinceP epoch -&gt; ElapsedSinceP epoch -&gt; Bool
-&gt; :: ElapsedSinceP epoch -&gt; ElapsedSinceP epoch -&gt; Bool
-$c&gt; :: forall epoch. ElapsedSinceP epoch -&gt; ElapsedSinceP epoch -&gt; Bool
-&lt;= :: ElapsedSinceP epoch -&gt; ElapsedSinceP epoch -&gt; Bool
-$c&lt;= :: forall epoch. ElapsedSinceP epoch -&gt; ElapsedSinceP epoch -&gt; Bool
-&lt; :: ElapsedSinceP epoch -&gt; ElapsedSinceP epoch -&gt; Bool
-$c&lt; :: forall epoch. ElapsedSinceP epoch -&gt; ElapsedSinceP epoch -&gt; Bool
-compare :: ElapsedSinceP epoch -&gt; ElapsedSinceP epoch -&gt; Ordering
 $ccompare :: forall epoch.
 ElapsedSinceP epoch -&gt; ElapsedSinceP epoch -&gt; Ordering
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Ord</span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span id="local-6989586621679062819"><span id="local-6989586621679062821"><span id="local-6989586621679062823"><span id="local-6989586621679062825"><span id="local-6989586621679062827"><span id="local-6989586621679062829"><span id="local-6989586621679062831"><span id="local-6989586621679062833"><span id="local-6989586621679062835"><span id="local-6989586621679062841"><span id="local-6989586621679062843"><span id="local-6989586621679062845"><span id="local-6989586621679062849"><span id="local-6989586621679062854"><span class="annot"><span class="annottext">ElapsedSinceP epoch -&gt; DataType
+compare :: ElapsedSinceP epoch -&gt; ElapsedSinceP epoch -&gt; Ordering
+$c&lt; :: forall epoch. ElapsedSinceP epoch -&gt; ElapsedSinceP epoch -&gt; Bool
+&lt; :: ElapsedSinceP epoch -&gt; ElapsedSinceP epoch -&gt; Bool
+$c&lt;= :: forall epoch. ElapsedSinceP epoch -&gt; ElapsedSinceP epoch -&gt; Bool
+&lt;= :: ElapsedSinceP epoch -&gt; ElapsedSinceP epoch -&gt; Bool
+$c&gt; :: forall epoch. ElapsedSinceP epoch -&gt; ElapsedSinceP epoch -&gt; Bool
+&gt; :: ElapsedSinceP epoch -&gt; ElapsedSinceP epoch -&gt; Bool
+$c&gt;= :: forall epoch. ElapsedSinceP epoch -&gt; ElapsedSinceP epoch -&gt; Bool
+&gt;= :: ElapsedSinceP epoch -&gt; ElapsedSinceP epoch -&gt; Bool
+$cmax :: forall epoch.
+ElapsedSinceP epoch -&gt; ElapsedSinceP epoch -&gt; ElapsedSinceP epoch
+max :: ElapsedSinceP epoch -&gt; ElapsedSinceP epoch -&gt; ElapsedSinceP epoch
+$cmin :: forall epoch.
+ElapsedSinceP epoch -&gt; ElapsedSinceP epoch -&gt; ElapsedSinceP epoch
+min :: ElapsedSinceP epoch -&gt; ElapsedSinceP epoch -&gt; ElapsedSinceP epoch
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Ord</span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span id="local-6989586621679065023"><span id="local-6989586621679065028"><span id="local-6989586621679065032"><span id="local-6989586621679065034"><span id="local-6989586621679065036"><span id="local-6989586621679065042"><span id="local-6989586621679065048"><span id="local-6989586621679065051"><span id="local-6989586621679065054"><span id="local-6989586621679065057"><span id="local-6989586621679065060"><span id="local-6989586621679065063"><span id="local-6989586621679065068"><span id="local-6989586621679065073"><span class="annot"><span class="annottext">Typeable (ElapsedSinceP epoch)
+Typeable (ElapsedSinceP epoch) =&gt;
+(forall (c :: * -&gt; *).
+ (forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+ -&gt; (forall g. g -&gt; c g)
+ -&gt; ElapsedSinceP epoch
+ -&gt; c (ElapsedSinceP epoch))
+-&gt; (forall (c :: * -&gt; *).
+    (forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+    -&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c (ElapsedSinceP epoch))
+-&gt; (ElapsedSinceP epoch -&gt; Constr)
+-&gt; (ElapsedSinceP epoch -&gt; DataType)
+-&gt; (forall (t :: * -&gt; *) (c :: * -&gt; *).
+    Typeable t =&gt;
+    (forall d. Data d =&gt; c (t d)) -&gt; Maybe (c (ElapsedSinceP epoch)))
+-&gt; (forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+    Typeable t =&gt;
+    (forall d e. (Data d, Data e) =&gt; c (t d e))
+    -&gt; Maybe (c (ElapsedSinceP epoch)))
+-&gt; ((forall b. Data b =&gt; b -&gt; b)
+    -&gt; ElapsedSinceP epoch -&gt; ElapsedSinceP epoch)
+-&gt; (forall r r'.
+    (r -&gt; r' -&gt; r)
+    -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; ElapsedSinceP epoch -&gt; r)
+-&gt; (forall r r'.
+    (r' -&gt; r -&gt; r)
+    -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; ElapsedSinceP epoch -&gt; r)
+-&gt; (forall u.
+    (forall d. Data d =&gt; d -&gt; u) -&gt; ElapsedSinceP epoch -&gt; [u])
+-&gt; (forall u.
+    Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; ElapsedSinceP epoch -&gt; u)
+-&gt; (forall (m :: * -&gt; *).
+    Monad m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d)
+    -&gt; ElapsedSinceP epoch -&gt; m (ElapsedSinceP epoch))
+-&gt; (forall (m :: * -&gt; *).
+    MonadPlus m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d)
+    -&gt; ElapsedSinceP epoch -&gt; m (ElapsedSinceP epoch))
+-&gt; (forall (m :: * -&gt; *).
+    MonadPlus m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d)
+    -&gt; ElapsedSinceP epoch -&gt; m (ElapsedSinceP epoch))
+-&gt; Data (ElapsedSinceP epoch)
 ElapsedSinceP epoch -&gt; Constr
-forall {epoch}. Data epoch =&gt; Typeable (ElapsedSinceP epoch)
-forall epoch. Data epoch =&gt; ElapsedSinceP epoch -&gt; DataType
+ElapsedSinceP epoch -&gt; DataType
+(forall b. Data b =&gt; b -&gt; b)
+-&gt; ElapsedSinceP epoch -&gt; ElapsedSinceP epoch
+forall epoch. Data epoch =&gt; Typeable (ElapsedSinceP epoch)
 forall epoch. Data epoch =&gt; ElapsedSinceP epoch -&gt; Constr
+forall epoch. Data epoch =&gt; ElapsedSinceP epoch -&gt; DataType
 forall epoch.
 Data epoch =&gt;
 (forall b. Data b =&gt; b -&gt; b)
@@ -444,10 +619,10 @@ forall epoch (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
 (forall d e. (Data d, Data e) =&gt; c (t d e))
 -&gt; Maybe (c (ElapsedSinceP epoch))
 forall a.
-Typeable a
--&gt; (forall (c :: * -&gt; *).
-    (forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
-    -&gt; (forall g. g -&gt; c g) -&gt; a -&gt; c a)
+Typeable a =&gt;
+(forall (c :: * -&gt; *).
+ (forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+ -&gt; (forall g. g -&gt; c g) -&gt; a -&gt; c a)
 -&gt; (forall (c :: * -&gt; *).
     (forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
     -&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c a)
@@ -476,6 +651,24 @@ Typeable a
     MonadPlus m =&gt;
     (forall d. Data d =&gt; d -&gt; m d) -&gt; a -&gt; m a)
 -&gt; Data a
+forall u.
+Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; ElapsedSinceP epoch -&gt; u
+forall u.
+(forall d. Data d =&gt; d -&gt; u) -&gt; ElapsedSinceP epoch -&gt; [u]
+forall r r'.
+(r -&gt; r' -&gt; r)
+-&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; ElapsedSinceP epoch -&gt; r
+forall r r'.
+(r' -&gt; r -&gt; r)
+-&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; ElapsedSinceP epoch -&gt; r
+forall (m :: * -&gt; *).
+Monad m =&gt;
+(forall d. Data d =&gt; d -&gt; m d)
+-&gt; ElapsedSinceP epoch -&gt; m (ElapsedSinceP epoch)
+forall (m :: * -&gt; *).
+MonadPlus m =&gt;
+(forall d. Data d =&gt; d -&gt; m d)
+-&gt; ElapsedSinceP epoch -&gt; m (ElapsedSinceP epoch)
 forall (c :: * -&gt; *).
 (forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
 -&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c (ElapsedSinceP epoch)
@@ -487,11 +680,85 @@ forall (c :: * -&gt; *).
 forall (t :: * -&gt; *) (c :: * -&gt; *).
 Typeable t =&gt;
 (forall d. Data d =&gt; c (t d)) -&gt; Maybe (c (ElapsedSinceP epoch))
-gmapMo :: forall (m :: * -&gt; *).
-MonadPlus m =&gt;
+forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d e. (Data d, Data e) =&gt; c (t d e))
+-&gt; Maybe (c (ElapsedSinceP epoch))
+$cgfoldl :: forall epoch (c :: * -&gt; *).
+Data epoch =&gt;
+(forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+-&gt; (forall g. g -&gt; c g)
+-&gt; ElapsedSinceP epoch
+-&gt; c (ElapsedSinceP epoch)
+gfoldl :: forall (c :: * -&gt; *).
+(forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+-&gt; (forall g. g -&gt; c g)
+-&gt; ElapsedSinceP epoch
+-&gt; c (ElapsedSinceP epoch)
+$cgunfold :: forall epoch (c :: * -&gt; *).
+Data epoch =&gt;
+(forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+-&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c (ElapsedSinceP epoch)
+gunfold :: forall (c :: * -&gt; *).
+(forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+-&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c (ElapsedSinceP epoch)
+$ctoConstr :: forall epoch. Data epoch =&gt; ElapsedSinceP epoch -&gt; Constr
+toConstr :: ElapsedSinceP epoch -&gt; Constr
+$cdataTypeOf :: forall epoch. Data epoch =&gt; ElapsedSinceP epoch -&gt; DataType
+dataTypeOf :: ElapsedSinceP epoch -&gt; DataType
+$cdataCast1 :: forall epoch (t :: * -&gt; *) (c :: * -&gt; *).
+(Data epoch, Typeable t) =&gt;
+(forall d. Data d =&gt; c (t d)) -&gt; Maybe (c (ElapsedSinceP epoch))
+dataCast1 :: forall (t :: * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d. Data d =&gt; c (t d)) -&gt; Maybe (c (ElapsedSinceP epoch))
+$cdataCast2 :: forall epoch (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+(Data epoch, Typeable t) =&gt;
+(forall d e. (Data d, Data e) =&gt; c (t d e))
+-&gt; Maybe (c (ElapsedSinceP epoch))
+dataCast2 :: forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d e. (Data d, Data e) =&gt; c (t d e))
+-&gt; Maybe (c (ElapsedSinceP epoch))
+$cgmapT :: forall epoch.
+Data epoch =&gt;
+(forall b. Data b =&gt; b -&gt; b)
+-&gt; ElapsedSinceP epoch -&gt; ElapsedSinceP epoch
+gmapT :: (forall b. Data b =&gt; b -&gt; b)
+-&gt; ElapsedSinceP epoch -&gt; ElapsedSinceP epoch
+$cgmapQl :: forall epoch r r'.
+Data epoch =&gt;
+(r -&gt; r' -&gt; r)
+-&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; ElapsedSinceP epoch -&gt; r
+gmapQl :: forall r r'.
+(r -&gt; r' -&gt; r)
+-&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; ElapsedSinceP epoch -&gt; r
+$cgmapQr :: forall epoch r r'.
+Data epoch =&gt;
+(r' -&gt; r -&gt; r)
+-&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; ElapsedSinceP epoch -&gt; r
+gmapQr :: forall r r'.
+(r' -&gt; r -&gt; r)
+-&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; ElapsedSinceP epoch -&gt; r
+$cgmapQ :: forall epoch u.
+Data epoch =&gt;
+(forall d. Data d =&gt; d -&gt; u) -&gt; ElapsedSinceP epoch -&gt; [u]
+gmapQ :: forall u.
+(forall d. Data d =&gt; d -&gt; u) -&gt; ElapsedSinceP epoch -&gt; [u]
+$cgmapQi :: forall epoch u.
+Data epoch =&gt;
+Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; ElapsedSinceP epoch -&gt; u
+gmapQi :: forall u.
+Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; ElapsedSinceP epoch -&gt; u
+$cgmapM :: forall epoch (m :: * -&gt; *).
+(Data epoch, Monad m) =&gt;
 (forall d. Data d =&gt; d -&gt; m d)
 -&gt; ElapsedSinceP epoch -&gt; m (ElapsedSinceP epoch)
-$cgmapMo :: forall epoch (m :: * -&gt; *).
+gmapM :: forall (m :: * -&gt; *).
+Monad m =&gt;
+(forall d. Data d =&gt; d -&gt; m d)
+-&gt; ElapsedSinceP epoch -&gt; m (ElapsedSinceP epoch)
+$cgmapMp :: forall epoch (m :: * -&gt; *).
 (Data epoch, MonadPlus m) =&gt;
 (forall d. Data d =&gt; d -&gt; m d)
 -&gt; ElapsedSinceP epoch -&gt; m (ElapsedSinceP epoch)
@@ -499,170 +766,119 @@ gmapMp :: forall (m :: * -&gt; *).
 MonadPlus m =&gt;
 (forall d. Data d =&gt; d -&gt; m d)
 -&gt; ElapsedSinceP epoch -&gt; m (ElapsedSinceP epoch)
-$cgmapMp :: forall epoch (m :: * -&gt; *).
+$cgmapMo :: forall epoch (m :: * -&gt; *).
 (Data epoch, MonadPlus m) =&gt;
 (forall d. Data d =&gt; d -&gt; m d)
 -&gt; ElapsedSinceP epoch -&gt; m (ElapsedSinceP epoch)
-gmapM :: forall (m :: * -&gt; *).
-Monad m =&gt;
+gmapMo :: forall (m :: * -&gt; *).
+MonadPlus m =&gt;
 (forall d. Data d =&gt; d -&gt; m d)
 -&gt; ElapsedSinceP epoch -&gt; m (ElapsedSinceP epoch)
-$cgmapM :: forall epoch (m :: * -&gt; *).
-(Data epoch, Monad m) =&gt;
-(forall d. Data d =&gt; d -&gt; m d)
--&gt; ElapsedSinceP epoch -&gt; m (ElapsedSinceP epoch)
-gmapQi :: forall u.
-Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; ElapsedSinceP epoch -&gt; u
-$cgmapQi :: forall epoch u.
-Data epoch =&gt;
-Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; ElapsedSinceP epoch -&gt; u
-gmapQ :: forall u.
-(forall d. Data d =&gt; d -&gt; u) -&gt; ElapsedSinceP epoch -&gt; [u]
-$cgmapQ :: forall epoch u.
-Data epoch =&gt;
-(forall d. Data d =&gt; d -&gt; u) -&gt; ElapsedSinceP epoch -&gt; [u]
-gmapQr :: forall r r'.
-(r' -&gt; r -&gt; r)
--&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; ElapsedSinceP epoch -&gt; r
-$cgmapQr :: forall epoch r r'.
-Data epoch =&gt;
-(r' -&gt; r -&gt; r)
--&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; ElapsedSinceP epoch -&gt; r
-gmapQl :: forall r r'.
-(r -&gt; r' -&gt; r)
--&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; ElapsedSinceP epoch -&gt; r
-$cgmapQl :: forall epoch r r'.
-Data epoch =&gt;
-(r -&gt; r' -&gt; r)
--&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; ElapsedSinceP epoch -&gt; r
-gmapT :: (forall b. Data b =&gt; b -&gt; b)
--&gt; ElapsedSinceP epoch -&gt; ElapsedSinceP epoch
-$cgmapT :: forall epoch.
-Data epoch =&gt;
-(forall b. Data b =&gt; b -&gt; b)
--&gt; ElapsedSinceP epoch -&gt; ElapsedSinceP epoch
-dataCast2 :: forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
-Typeable t =&gt;
-(forall d e. (Data d, Data e) =&gt; c (t d e))
--&gt; Maybe (c (ElapsedSinceP epoch))
-$cdataCast2 :: forall epoch (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
-(Data epoch, Typeable t) =&gt;
-(forall d e. (Data d, Data e) =&gt; c (t d e))
--&gt; Maybe (c (ElapsedSinceP epoch))
-dataCast1 :: forall (t :: * -&gt; *) (c :: * -&gt; *).
-Typeable t =&gt;
-(forall d. Data d =&gt; c (t d)) -&gt; Maybe (c (ElapsedSinceP epoch))
-$cdataCast1 :: forall epoch (t :: * -&gt; *) (c :: * -&gt; *).
-(Data epoch, Typeable t) =&gt;
-(forall d. Data d =&gt; c (t d)) -&gt; Maybe (c (ElapsedSinceP epoch))
-dataTypeOf :: ElapsedSinceP epoch -&gt; DataType
-$cdataTypeOf :: forall epoch. Data epoch =&gt; ElapsedSinceP epoch -&gt; DataType
-toConstr :: ElapsedSinceP epoch -&gt; Constr
-$ctoConstr :: forall epoch. Data epoch =&gt; ElapsedSinceP epoch -&gt; Constr
-gunfold :: forall (c :: * -&gt; *).
-(forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
--&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c (ElapsedSinceP epoch)
-$cgunfold :: forall epoch (c :: * -&gt; *).
-Data epoch =&gt;
-(forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
--&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c (ElapsedSinceP epoch)
-gfoldl :: forall (c :: * -&gt; *).
-(forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
--&gt; (forall g. g -&gt; c g)
--&gt; ElapsedSinceP epoch
--&gt; c (ElapsedSinceP epoch)
-$cgfoldl :: forall epoch (c :: * -&gt; *).
-Data epoch =&gt;
-(forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
--&gt; (forall g. g -&gt; c g)
--&gt; ElapsedSinceP epoch
--&gt; c (ElapsedSinceP epoch)
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Data</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span class="annot"><span class="hs-identifier hs-type">Typeable</span></span><span class="hs-special">)</span><span>
 </span><span id="line-37"></span><span>
-</span><span id="line-38"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679063223"><span class="annot"><span class="hs-identifier hs-type">NFData</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-type">ElapsedSinceP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679063223"><span class="hs-identifier hs-type">e</span></a></span><span class="hs-special">)</span></span><span> </span><span class="hs-keyword">where</span><span> </span><span id="local-6989586621679062816"><span class="annot"><span class="annottext">rnf :: ElapsedSinceP e -&gt; ()
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var">rnf</span></span></span><span> </span><span id="local-6989586621679062814"><span class="annot"><span class="annottext">ElapsedSinceP e
-</span><a href="#local-6989586621679062814"><span class="hs-identifier hs-var">e</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ElapsedSinceP e
-</span><a href="#local-6989586621679062814"><span class="hs-identifier hs-var">e</span></a></span><span> </span><span class="annot"><span class="annottext">seq :: forall a b. a -&gt; b -&gt; b
-</span><span class="hs-operator hs-type">`seq`</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><span id="line-38"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679064683"><span class="annot"><span class="hs-identifier hs-type">NFData</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-type">ElapsedSinceP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679064683"><span class="hs-identifier hs-type">e</span></a></span><span class="hs-special">)</span></span><span> </span><span class="hs-keyword">where</span><span> </span><span id="local-6989586621679065079"><span class="annot"><span class="annottext">rnf :: ElapsedSinceP e -&gt; ()
+</span><a href="#local-6989586621679065079"><span class="hs-identifier hs-var hs-var hs-var hs-var">rnf</span></a></span></span><span> </span><span id="local-6989586621679065081"><span class="annot"><span class="annottext">ElapsedSinceP e
+</span><a href="#local-6989586621679065081"><span class="hs-identifier hs-var">e</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ElapsedSinceP e
+</span><a href="#local-6989586621679065081"><span class="hs-identifier hs-var">e</span></a></span><span> </span><span class="annot"><span class="annottext">ElapsedSinceP e -&gt; () -&gt; ()
+forall a b. a -&gt; b -&gt; b
+</span><span class="hs-operator hs-var">`seq`</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
 </span><span id="line-39"></span><span>
-</span><span id="line-40"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679063218"><span class="annot"><span class="hs-identifier hs-type">Num</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-type">ElapsedSinceP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679063218"><span class="hs-identifier hs-type">e</span></a></span><span class="hs-special">)</span></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-41"></span><span>    </span><span class="hs-special">(</span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-type">ElapsedSinceP</span></a></span><span> </span><span id="local-6989586621679062802"><span class="annot"><span class="annottext">ElapsedSince e
-</span><a href="#local-6989586621679062802"><span class="hs-identifier hs-var">e1</span></a></span></span><span> </span><span id="local-6989586621679062801"><span class="annot"><span class="annottext">NanoSeconds
-</span><a href="#local-6989586621679062801"><span class="hs-identifier hs-var">ns1</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621679062800"><span class="annot"><span class="annottext">+ :: ElapsedSinceP e -&gt; ElapsedSinceP e -&gt; ElapsedSinceP e
-</span><span class="hs-operator hs-var hs-var hs-var hs-var">+</span></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-type">ElapsedSinceP</span></a></span><span> </span><span id="local-6989586621679062798"><span class="annot"><span class="annottext">ElapsedSince e
-</span><a href="#local-6989586621679062798"><span class="hs-identifier hs-var">e2</span></a></span></span><span> </span><span id="local-6989586621679062797"><span class="annot"><span class="annottext">NanoSeconds
-</span><a href="#local-6989586621679062797"><span class="hs-identifier hs-var">ns2</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall epoch.
+</span><span id="line-40"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679064686"><span class="annot"><span class="hs-identifier hs-type">Num</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-type">ElapsedSinceP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679064686"><span class="hs-identifier hs-type">e</span></a></span><span class="hs-special">)</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-41"></span><span>    </span><span class="hs-special">(</span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-type">ElapsedSinceP</span></a></span><span> </span><span id="local-6989586621679065093"><span class="annot"><span class="annottext">ElapsedSince e
+</span><a href="#local-6989586621679065093"><span class="hs-identifier hs-var">e1</span></a></span></span><span> </span><span id="local-6989586621679065094"><span class="annot"><span class="annottext">NanoSeconds
+</span><a href="#local-6989586621679065094"><span class="hs-identifier hs-var">ns1</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621679065095"><span class="annot"><span class="annottext">+ :: ElapsedSinceP e -&gt; ElapsedSinceP e -&gt; ElapsedSinceP e
+</span><a href="#local-6989586621679065095"><span class="hs-operator hs-var hs-var hs-var hs-var">+</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-type">ElapsedSinceP</span></a></span><span> </span><span id="local-6989586621679065097"><span class="annot"><span class="annottext">ElapsedSince e
+</span><a href="#local-6989586621679065097"><span class="hs-identifier hs-var">e2</span></a></span></span><span> </span><span id="local-6989586621679065098"><span class="annot"><span class="annottext">NanoSeconds
+</span><a href="#local-6989586621679065098"><span class="hs-identifier hs-var">ns2</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ElapsedSince e -&gt; NanoSeconds -&gt; ElapsedSinceP e
+forall epoch.
 ElapsedSince epoch -&gt; NanoSeconds -&gt; ElapsedSinceP epoch
 </span><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-var">ElapsedSinceP</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ElapsedSince e
-</span><a href="#local-6989586621679062802"><span class="hs-identifier hs-var">e1</span></a></span><span class="annot"><span class="annottext">forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><a href="#local-6989586621679065093"><span class="hs-identifier hs-var">e1</span></a></span><span class="annot"><span class="annottext">ElapsedSince e -&gt; ElapsedSince e -&gt; ElapsedSince e
+forall a. Num a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">+</span></span><span class="annot"><span class="annottext">ElapsedSince e
-</span><a href="#local-6989586621679062798"><span class="hs-identifier hs-var">e2</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">NanoSeconds
-</span><a href="#local-6989586621679062801"><span class="hs-identifier hs-var">ns1</span></a></span><span class="annot"><span class="annottext">forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><a href="#local-6989586621679065097"><span class="hs-identifier hs-var">e2</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">NanoSeconds
+</span><a href="#local-6989586621679065094"><span class="hs-identifier hs-var">ns1</span></a></span><span class="annot"><span class="annottext">NanoSeconds -&gt; NanoSeconds -&gt; NanoSeconds
+forall a. Num a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">+</span></span><span class="annot"><span class="annottext">NanoSeconds
-</span><a href="#local-6989586621679062797"><span class="hs-identifier hs-var">ns2</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-42"></span><span>    </span><span class="hs-special">(</span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-type">ElapsedSinceP</span></a></span><span> </span><span id="local-6989586621679062794"><span class="annot"><span class="annottext">ElapsedSince e
-</span><a href="#local-6989586621679062794"><span class="hs-identifier hs-var">e1</span></a></span></span><span> </span><span id="local-6989586621679062793"><span class="annot"><span class="annottext">NanoSeconds
-</span><a href="#local-6989586621679062793"><span class="hs-identifier hs-var">ns1</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621679062792"><span class="annot"><span class="annottext">- :: ElapsedSinceP e -&gt; ElapsedSinceP e -&gt; ElapsedSinceP e
-</span><span class="hs-glyph hs-var hs-var hs-var hs-var">-</span></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-type">ElapsedSinceP</span></a></span><span> </span><span id="local-6989586621679062791"><span class="annot"><span class="annottext">ElapsedSince e
-</span><a href="#local-6989586621679062791"><span class="hs-identifier hs-var">e2</span></a></span></span><span> </span><span id="local-6989586621679062790"><span class="annot"><span class="annottext">NanoSeconds
-</span><a href="#local-6989586621679062790"><span class="hs-identifier hs-var">ns2</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall epoch.
+</span><a href="#local-6989586621679065098"><span class="hs-identifier hs-var">ns2</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-42"></span><span>    </span><span class="hs-special">(</span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-type">ElapsedSinceP</span></a></span><span> </span><span id="local-6989586621679065101"><span class="annot"><span class="annottext">ElapsedSince e
+</span><a href="#local-6989586621679065101"><span class="hs-identifier hs-var">e1</span></a></span></span><span> </span><span id="local-6989586621679065102"><span class="annot"><span class="annottext">NanoSeconds
+</span><a href="#local-6989586621679065102"><span class="hs-identifier hs-var">ns1</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621679065103"><span class="annot"><span class="annottext">- :: ElapsedSinceP e -&gt; ElapsedSinceP e -&gt; ElapsedSinceP e
+</span><span class="hs-glyph hs-var hs-var hs-var hs-var">-</span></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-type">ElapsedSinceP</span></a></span><span> </span><span id="local-6989586621679065104"><span class="annot"><span class="annottext">ElapsedSince e
+</span><a href="#local-6989586621679065104"><span class="hs-identifier hs-var">e2</span></a></span></span><span> </span><span id="local-6989586621679065105"><span class="annot"><span class="annottext">NanoSeconds
+</span><a href="#local-6989586621679065105"><span class="hs-identifier hs-var">ns2</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ElapsedSince e -&gt; NanoSeconds -&gt; ElapsedSinceP e
+forall epoch.
 ElapsedSince epoch -&gt; NanoSeconds -&gt; ElapsedSinceP epoch
 </span><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-var">ElapsedSinceP</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ElapsedSince e
-</span><a href="#local-6989586621679062794"><span class="hs-identifier hs-var">e1</span></a></span><span class="annot"><span class="annottext">forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><a href="#local-6989586621679065101"><span class="hs-identifier hs-var">e1</span></a></span><span class="annot"><span class="annottext">ElapsedSince e -&gt; ElapsedSince e -&gt; ElapsedSince e
+forall a. Num a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-glyph hs-var">-</span></span><span class="annot"><span class="annottext">ElapsedSince e
-</span><a href="#local-6989586621679062791"><span class="hs-identifier hs-var">e2</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">NanoSeconds
-</span><a href="#local-6989586621679062793"><span class="hs-identifier hs-var">ns1</span></a></span><span class="annot"><span class="annottext">forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><a href="#local-6989586621679065104"><span class="hs-identifier hs-var">e2</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">NanoSeconds
+</span><a href="#local-6989586621679065102"><span class="hs-identifier hs-var">ns1</span></a></span><span class="annot"><span class="annottext">NanoSeconds -&gt; NanoSeconds -&gt; NanoSeconds
+forall a. Num a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-glyph hs-var">-</span></span><span class="annot"><span class="annottext">NanoSeconds
-</span><a href="#local-6989586621679062790"><span class="hs-identifier hs-var">ns2</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-43"></span><span>    </span><span class="hs-special">(</span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-type">ElapsedSinceP</span></a></span><span> </span><span id="local-6989586621679062787"><span class="annot"><span class="annottext">ElapsedSince e
-</span><a href="#local-6989586621679062787"><span class="hs-identifier hs-var">e1</span></a></span></span><span> </span><span id="local-6989586621679062786"><span class="annot"><span class="annottext">NanoSeconds
-</span><a href="#local-6989586621679062786"><span class="hs-identifier hs-var">ns1</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621679062785"><span class="annot"><span class="annottext">* :: ElapsedSinceP e -&gt; ElapsedSinceP e -&gt; ElapsedSinceP e
-</span><span class="hs-operator hs-var hs-var hs-var hs-var">*</span></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-type">ElapsedSinceP</span></a></span><span> </span><span id="local-6989586621679062783"><span class="annot"><span class="annottext">ElapsedSince e
-</span><a href="#local-6989586621679062783"><span class="hs-identifier hs-var">e2</span></a></span></span><span> </span><span id="local-6989586621679062782"><span class="annot"><span class="annottext">NanoSeconds
-</span><a href="#local-6989586621679062782"><span class="hs-identifier hs-var">ns2</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall epoch.
+</span><a href="#local-6989586621679065105"><span class="hs-identifier hs-var">ns2</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-43"></span><span>    </span><span class="hs-special">(</span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-type">ElapsedSinceP</span></a></span><span> </span><span id="local-6989586621679065108"><span class="annot"><span class="annottext">ElapsedSince e
+</span><a href="#local-6989586621679065108"><span class="hs-identifier hs-var">e1</span></a></span></span><span> </span><span id="local-6989586621679065109"><span class="annot"><span class="annottext">NanoSeconds
+</span><a href="#local-6989586621679065109"><span class="hs-identifier hs-var">ns1</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621679065110"><span class="annot"><span class="annottext">* :: ElapsedSinceP e -&gt; ElapsedSinceP e -&gt; ElapsedSinceP e
+</span><a href="#local-6989586621679065110"><span class="hs-operator hs-var hs-var hs-var hs-var">*</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-type">ElapsedSinceP</span></a></span><span> </span><span id="local-6989586621679065112"><span class="annot"><span class="annottext">ElapsedSince e
+</span><a href="#local-6989586621679065112"><span class="hs-identifier hs-var">e2</span></a></span></span><span> </span><span id="local-6989586621679065113"><span class="annot"><span class="annottext">NanoSeconds
+</span><a href="#local-6989586621679065113"><span class="hs-identifier hs-var">ns2</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ElapsedSince e -&gt; NanoSeconds -&gt; ElapsedSinceP e
+forall epoch.
 ElapsedSince epoch -&gt; NanoSeconds -&gt; ElapsedSinceP epoch
 </span><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-var">ElapsedSinceP</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ElapsedSince e
-</span><a href="#local-6989586621679062787"><span class="hs-identifier hs-var">e1</span></a></span><span class="annot"><span class="annottext">forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><a href="#local-6989586621679065108"><span class="hs-identifier hs-var">e1</span></a></span><span class="annot"><span class="annottext">ElapsedSince e -&gt; ElapsedSince e -&gt; ElapsedSince e
+forall a. Num a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">*</span></span><span class="annot"><span class="annottext">ElapsedSince e
-</span><a href="#local-6989586621679062783"><span class="hs-identifier hs-var">e2</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">NanoSeconds
-</span><a href="#local-6989586621679062786"><span class="hs-identifier hs-var">ns1</span></a></span><span class="annot"><span class="annottext">forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><a href="#local-6989586621679065112"><span class="hs-identifier hs-var">e2</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">NanoSeconds
+</span><a href="#local-6989586621679065109"><span class="hs-identifier hs-var">ns1</span></a></span><span class="annot"><span class="annottext">NanoSeconds -&gt; NanoSeconds -&gt; NanoSeconds
+forall a. Num a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">*</span></span><span class="annot"><span class="annottext">NanoSeconds
-</span><a href="#local-6989586621679062782"><span class="hs-identifier hs-var">ns2</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-44"></span><span>    </span><span id="local-6989586621679062780"><span class="annot"><span class="annottext">negate :: ElapsedSinceP e -&gt; ElapsedSinceP e
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var">negate</span></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-type">ElapsedSinceP</span></a></span><span> </span><span id="local-6989586621679062779"><span class="annot"><span class="annottext">ElapsedSince e
-</span><a href="#local-6989586621679062779"><span class="hs-identifier hs-var">e</span></a></span></span><span> </span><span id="local-6989586621679062778"><span class="annot"><span class="annottext">NanoSeconds
-</span><a href="#local-6989586621679062778"><span class="hs-identifier hs-var">ns</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall epoch.
+</span><a href="#local-6989586621679065113"><span class="hs-identifier hs-var">ns2</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-44"></span><span>    </span><span id="local-6989586621679065115"><span class="annot"><span class="annottext">negate :: ElapsedSinceP e -&gt; ElapsedSinceP e
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">negate</span></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-type">ElapsedSinceP</span></a></span><span> </span><span id="local-6989586621679065116"><span class="annot"><span class="annottext">ElapsedSince e
+</span><a href="#local-6989586621679065116"><span class="hs-identifier hs-var">e</span></a></span></span><span> </span><span id="local-6989586621679065117"><span class="annot"><span class="annottext">NanoSeconds
+</span><a href="#local-6989586621679065117"><span class="hs-identifier hs-var">ns</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ElapsedSince e -&gt; NanoSeconds -&gt; ElapsedSinceP e
+forall epoch.
 ElapsedSince epoch -&gt; NanoSeconds -&gt; ElapsedSinceP epoch
-</span><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-var">ElapsedSinceP</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. Num a =&gt; a -&gt; a
+</span><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-var">ElapsedSinceP</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ElapsedSince e -&gt; ElapsedSince e
+forall a. Num a =&gt; a -&gt; a
 </span><span class="hs-identifier hs-var">negate</span></span><span> </span><span class="annot"><span class="annottext">ElapsedSince e
-</span><a href="#local-6989586621679062779"><span class="hs-identifier hs-var">e</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">NanoSeconds
-</span><a href="#local-6989586621679062778"><span class="hs-identifier hs-var">ns</span></a></span><span>
-</span><span id="line-45"></span><span>    </span><span id="local-6989586621679062776"><span class="annot"><span class="annottext">abs :: ElapsedSinceP e -&gt; ElapsedSinceP e
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var">abs</span></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-type">ElapsedSinceP</span></a></span><span> </span><span id="local-6989586621679062774"><span class="annot"><span class="annottext">ElapsedSince e
-</span><a href="#local-6989586621679062774"><span class="hs-identifier hs-var">e</span></a></span></span><span> </span><span id="local-6989586621679062773"><span class="annot"><span class="annottext">NanoSeconds
-</span><a href="#local-6989586621679062773"><span class="hs-identifier hs-var">ns</span></a></span></span><span class="hs-special">)</span><span>    </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall epoch.
+</span><a href="#local-6989586621679065116"><span class="hs-identifier hs-var">e</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">NanoSeconds
+</span><a href="#local-6989586621679065117"><span class="hs-identifier hs-var">ns</span></a></span><span>
+</span><span id="line-45"></span><span>    </span><span id="local-6989586621679065119"><span class="annot"><span class="annottext">abs :: ElapsedSinceP e -&gt; ElapsedSinceP e
+</span><a href="#local-6989586621679065119"><span class="hs-identifier hs-var hs-var hs-var hs-var">abs</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-type">ElapsedSinceP</span></a></span><span> </span><span id="local-6989586621679065121"><span class="annot"><span class="annottext">ElapsedSince e
+</span><a href="#local-6989586621679065121"><span class="hs-identifier hs-var">e</span></a></span></span><span> </span><span id="local-6989586621679065122"><span class="annot"><span class="annottext">NanoSeconds
+</span><a href="#local-6989586621679065122"><span class="hs-identifier hs-var">ns</span></a></span></span><span class="hs-special">)</span><span>    </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ElapsedSince e -&gt; NanoSeconds -&gt; ElapsedSinceP e
+forall epoch.
 ElapsedSince epoch -&gt; NanoSeconds -&gt; ElapsedSinceP epoch
-</span><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-var">ElapsedSinceP</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. Num a =&gt; a -&gt; a
+</span><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-var">ElapsedSinceP</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ElapsedSince e -&gt; ElapsedSince e
+forall a. Num a =&gt; a -&gt; a
 </span><span class="hs-identifier hs-var">abs</span></span><span> </span><span class="annot"><span class="annottext">ElapsedSince e
-</span><a href="#local-6989586621679062774"><span class="hs-identifier hs-var">e</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">NanoSeconds
-</span><a href="#local-6989586621679062773"><span class="hs-identifier hs-var">ns</span></a></span><span>
-</span><span id="line-46"></span><span>    </span><span id="local-6989586621679062771"><span class="annot"><span class="annottext">signum :: ElapsedSinceP e -&gt; ElapsedSinceP e
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var">signum</span></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-type">ElapsedSinceP</span></a></span><span> </span><span id="local-6989586621679062769"><span class="annot"><span class="annottext">ElapsedSince e
-</span><a href="#local-6989586621679062769"><span class="hs-identifier hs-var">e</span></a></span></span><span> </span><span id="local-6989586621679062768"><span class="annot"><span class="annottext">NanoSeconds
-</span><a href="#local-6989586621679062768"><span class="hs-identifier hs-var">ns</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall epoch.
+</span><a href="#local-6989586621679065121"><span class="hs-identifier hs-var">e</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">NanoSeconds
+</span><a href="#local-6989586621679065122"><span class="hs-identifier hs-var">ns</span></a></span><span>
+</span><span id="line-46"></span><span>    </span><span id="local-6989586621679065124"><span class="annot"><span class="annottext">signum :: ElapsedSinceP e -&gt; ElapsedSinceP e
+</span><a href="#local-6989586621679065124"><span class="hs-identifier hs-var hs-var hs-var hs-var">signum</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-type">ElapsedSinceP</span></a></span><span> </span><span id="local-6989586621679065126"><span class="annot"><span class="annottext">ElapsedSince e
+</span><a href="#local-6989586621679065126"><span class="hs-identifier hs-var">e</span></a></span></span><span> </span><span id="local-6989586621679065127"><span class="annot"><span class="annottext">NanoSeconds
+</span><a href="#local-6989586621679065127"><span class="hs-identifier hs-var">ns</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ElapsedSince e -&gt; NanoSeconds -&gt; ElapsedSinceP e
+forall epoch.
 ElapsedSince epoch -&gt; NanoSeconds -&gt; ElapsedSinceP epoch
-</span><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-var">ElapsedSinceP</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. Num a =&gt; a -&gt; a
+</span><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-var">ElapsedSinceP</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ElapsedSince e -&gt; ElapsedSince e
+forall a. Num a =&gt; a -&gt; a
 </span><span class="hs-identifier hs-var">signum</span></span><span> </span><span class="annot"><span class="annottext">ElapsedSince e
-</span><a href="#local-6989586621679062769"><span class="hs-identifier hs-var">e</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">NanoSeconds
-</span><a href="#local-6989586621679062768"><span class="hs-identifier hs-var">ns</span></a></span><span>
-</span><span id="line-47"></span><span>    </span><span id="local-6989586621679062763"><span class="annot"><span class="annottext">fromInteger :: Integer -&gt; ElapsedSinceP e
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var">fromInteger</span></span></span><span> </span><span id="local-6989586621679062762"><span class="annot"><span class="annottext">Integer
-</span><a href="#local-6989586621679062762"><span class="hs-identifier hs-var">i</span></a></span></span><span>          </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall epoch.
+</span><a href="#local-6989586621679065126"><span class="hs-identifier hs-var">e</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">NanoSeconds
+</span><a href="#local-6989586621679065127"><span class="hs-identifier hs-var">ns</span></a></span><span>
+</span><span id="line-47"></span><span>    </span><span id="local-6989586621679065132"><span class="annot"><span class="annottext">fromInteger :: Integer -&gt; ElapsedSinceP e
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">fromInteger</span></span></span><span> </span><span id="local-6989586621679065133"><span class="annot"><span class="annottext">Integer
+</span><a href="#local-6989586621679065133"><span class="hs-identifier hs-var">i</span></a></span></span><span>          </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ElapsedSince e -&gt; NanoSeconds -&gt; ElapsedSinceP e
+forall epoch.
 ElapsedSince epoch -&gt; NanoSeconds -&gt; ElapsedSinceP epoch
-</span><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-var">ElapsedSinceP</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall epoch. Seconds -&gt; ElapsedSince epoch
-</span><a href="Data.Hourglass.Epoch.html#ElapsedSince"><span class="hs-identifier hs-var">ElapsedSince</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-var">ElapsedSinceP</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Seconds -&gt; ElapsedSince e
+forall epoch. Seconds -&gt; ElapsedSince epoch
+</span><a href="Data.Hourglass.Epoch.html#ElapsedSince"><span class="hs-identifier hs-var">ElapsedSince</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Integer -&gt; Seconds
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
 </span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">Integer
-</span><a href="#local-6989586621679062762"><span class="hs-identifier hs-var">i</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">NanoSeconds
+</span><a href="#local-6989586621679065133"><span class="hs-identifier hs-var">i</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">NanoSeconds
 </span><span class="hs-number">0</span></span><span>
 </span><span id="line-48"></span><span>
 </span><span id="line-49"></span><span class="hs-comment">-- FIXME instance Real (ElapsedSinceP e)</span><span>
@@ -674,180 +890,205 @@ ElapsedSince epoch -&gt; NanoSeconds -&gt; ElapsedSinceP epoch
 </span><span id="line-55"></span><span class="hs-comment">--</span><span>
 </span><span id="line-56"></span><span class="hs-comment">-- Each methods of this typeclass should not use the actual value,</span><span>
 </span><span id="line-57"></span><span class="hs-comment">-- but only get the information needed from the type itself.</span><span>
-</span><span id="line-58"></span><span class="hs-keyword">class</span><span> </span><span id="Epoch"><span class="annot"><a href="Data.Hourglass.Epoch.html#Epoch"><span class="hs-identifier hs-var">Epoch</span></a></span></span><span> </span><span id="local-6989586621679063215"><span class="annot"><a href="#local-6989586621679063215"><span class="hs-identifier hs-type">epoch</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-58"></span><span class="hs-keyword">class</span><span> </span><span id="Epoch"><span class="annot"><a href="Data.Hourglass.Epoch.html#Epoch"><span class="hs-identifier hs-var">Epoch</span></a></span></span><span> </span><span id="local-6989586621679064693"><span class="annot"><a href="#local-6989586621679064693"><span class="hs-identifier hs-type">epoch</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
 </span><span id="line-59"></span><span>    </span><span class="hs-comment">-- | The name of this epoch</span><span>
-</span><span id="line-60"></span><span>    </span><span id="epochName"><span class="annot"><a href="Data.Hourglass.Epoch.html#epochName"><span class="hs-identifier hs-type">epochName</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621679063215"><span class="hs-identifier hs-type">epoch</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span>
+</span><span id="line-60"></span><span>    </span><span id="epochName"><span class="annot"><a href="Data.Hourglass.Epoch.html#epochName"><span class="hs-identifier hs-type">epochName</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621679064693"><span class="hs-identifier hs-type">epoch</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span>
 </span><span id="line-61"></span><span>
 </span><span id="line-62"></span><span>    </span><span class="hs-comment">-- | number of seconds of difference with 1st January 1970.</span><span>
 </span><span id="line-63"></span><span>    </span><span class="hs-comment">--</span><span>
 </span><span id="line-64"></span><span>    </span><span class="hs-comment">-- a negative number means that this epoch start before</span><span>
 </span><span id="line-65"></span><span>    </span><span class="hs-comment">-- the unix epoch.</span><span>
-</span><span id="line-66"></span><span>    </span><span id="epochDiffToUnix"><span class="annot"><a href="Data.Hourglass.Epoch.html#epochDiffToUnix"><span class="hs-identifier hs-type">epochDiffToUnix</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621679063215"><span class="hs-identifier hs-type">epoch</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Time.Types.html#Seconds"><span class="hs-identifier hs-type">Seconds</span></a></span><span>
+</span><span id="line-66"></span><span>    </span><span id="epochDiffToUnix"><span class="annot"><a href="Data.Hourglass.Epoch.html#epochDiffToUnix"><span class="hs-identifier hs-type">epochDiffToUnix</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621679064693"><span class="hs-identifier hs-type">epoch</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Time.Types.html#Seconds"><span class="hs-identifier hs-type">Seconds</span></a></span><span>
 </span><span id="line-67"></span><span>
-</span><span id="line-68"></span><span class="hs-comment">-- | Unix Epoch, starting 1st January 1970</span><span>
+</span><span id="line-68"></span><span class="annot"><span class="hs-comment">-- | Unix Epoch, starting 1st January 1970</span></span><span>
 </span><span id="line-69"></span><span class="hs-keyword">data</span><span> </span><span id="UnixEpoch"><span class="annot"><a href="Data.Hourglass.Epoch.html#UnixEpoch"><span class="hs-identifier hs-var">UnixEpoch</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="UnixEpoch"><span class="annot"><a href="Data.Hourglass.Epoch.html#UnixEpoch"><span class="hs-identifier hs-var">UnixEpoch</span></a></span></span><span>
-</span><span id="line-70"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679062753"><span id="local-6989586621679062755"><span id="local-6989586621679062757"><span class="annot"><span class="annottext">Int -&gt; UnixEpoch -&gt; ShowS
+</span><span id="line-70"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679065138"><span id="local-6989586621679065140"><span id="local-6989586621679065144"><span class="annot"><span class="annottext">Int -&gt; UnixEpoch -&gt; ShowS
 [UnixEpoch] -&gt; ShowS
 UnixEpoch -&gt; String
+(Int -&gt; UnixEpoch -&gt; ShowS)
+-&gt; (UnixEpoch -&gt; String)
+-&gt; ([UnixEpoch] -&gt; ShowS)
+-&gt; Show UnixEpoch
 forall a.
 (Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
-showList :: [UnixEpoch] -&gt; ShowS
-$cshowList :: [UnixEpoch] -&gt; ShowS
-show :: UnixEpoch -&gt; String
-$cshow :: UnixEpoch -&gt; String
-showsPrec :: Int -&gt; UnixEpoch -&gt; ShowS
 $cshowsPrec :: Int -&gt; UnixEpoch -&gt; ShowS
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span id="local-6989586621679062749"><span id="local-6989586621679062751"><span class="annot"><span class="annottext">UnixEpoch -&gt; UnixEpoch -&gt; Bool
+showsPrec :: Int -&gt; UnixEpoch -&gt; ShowS
+$cshow :: UnixEpoch -&gt; String
+show :: UnixEpoch -&gt; String
+$cshowList :: [UnixEpoch] -&gt; ShowS
+showList :: [UnixEpoch] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span id="local-6989586621679065147"><span id="local-6989586621679065149"><span class="annot"><span class="annottext">UnixEpoch -&gt; UnixEpoch -&gt; Bool
+(UnixEpoch -&gt; UnixEpoch -&gt; Bool)
+-&gt; (UnixEpoch -&gt; UnixEpoch -&gt; Bool) -&gt; Eq UnixEpoch
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
-/= :: UnixEpoch -&gt; UnixEpoch -&gt; Bool
-$c/= :: UnixEpoch -&gt; UnixEpoch -&gt; Bool
-== :: UnixEpoch -&gt; UnixEpoch -&gt; Bool
 $c== :: UnixEpoch -&gt; UnixEpoch -&gt; Bool
+== :: UnixEpoch -&gt; UnixEpoch -&gt; Bool
+$c/= :: UnixEpoch -&gt; UnixEpoch -&gt; Bool
+/= :: UnixEpoch -&gt; UnixEpoch -&gt; Bool
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">)</span><span>
 </span><span id="line-71"></span><span>
 </span><span id="line-72"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Data.Hourglass.Epoch.html#Epoch"><span class="hs-identifier hs-type">Epoch</span></a></span><span> </span><span class="annot"><a href="Data.Hourglass.Epoch.html#UnixEpoch"><span class="hs-identifier hs-type">UnixEpoch</span></a></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-73"></span><span>    </span><span id="local-6989586621679062744"><span class="annot"><span class="annottext">epochName :: UnixEpoch -&gt; String
-</span><a href="#local-6989586621679062744"><span class="hs-identifier hs-var hs-var hs-var hs-var">epochName</span></a></span></span><span> </span><span class="annot"><span class="annottext">UnixEpoch
+</span><span id="line-73"></span><span>    </span><span id="local-6989586621679065156"><span class="annot"><span class="annottext">epochName :: UnixEpoch -&gt; String
+</span><a href="Data.Hourglass.Epoch.html#epochName"><span class="hs-identifier hs-var hs-var hs-var hs-var">epochName</span></a></span></span><span> </span><span class="annot"><span class="annottext">UnixEpoch
 </span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;unix&quot;</span></span><span>
-</span><span id="line-74"></span><span>    </span><span id="local-6989586621679062742"><span class="annot"><span class="annottext">epochDiffToUnix :: UnixEpoch -&gt; Seconds
-</span><a href="#local-6989586621679062742"><span class="hs-identifier hs-var hs-var hs-var hs-var">epochDiffToUnix</span></a></span></span><span> </span><span class="annot"><span class="annottext">UnixEpoch
+</span><span id="line-74"></span><span>    </span><span id="local-6989586621679065158"><span class="annot"><span class="annottext">epochDiffToUnix :: UnixEpoch -&gt; Seconds
+</span><a href="Data.Hourglass.Epoch.html#epochDiffToUnix"><span class="hs-identifier hs-var hs-var hs-var hs-var">epochDiffToUnix</span></a></span></span><span> </span><span class="annot"><span class="annottext">UnixEpoch
 </span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Seconds
 </span><span class="hs-number">0</span></span><span>
 </span><span id="line-75"></span><span>
-</span><span id="line-76"></span><span class="hs-comment">-- | Windows Epoch, starting 1st January 1601</span><span>
+</span><span id="line-76"></span><span class="annot"><span class="hs-comment">-- | Windows Epoch, starting 1st January 1601</span></span><span>
 </span><span id="line-77"></span><span class="hs-keyword">data</span><span> </span><span id="WindowsEpoch"><span class="annot"><a href="Data.Hourglass.Epoch.html#WindowsEpoch"><span class="hs-identifier hs-var">WindowsEpoch</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="WindowsEpoch"><span class="annot"><a href="Data.Hourglass.Epoch.html#WindowsEpoch"><span class="hs-identifier hs-var">WindowsEpoch</span></a></span></span><span>
-</span><span id="line-78"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679062735"><span id="local-6989586621679062737"><span id="local-6989586621679062739"><span class="annot"><span class="annottext">Int -&gt; WindowsEpoch -&gt; ShowS
+</span><span id="line-78"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679065161"><span id="local-6989586621679065163"><span id="local-6989586621679065167"><span class="annot"><span class="annottext">Int -&gt; WindowsEpoch -&gt; ShowS
 [WindowsEpoch] -&gt; ShowS
 WindowsEpoch -&gt; String
+(Int -&gt; WindowsEpoch -&gt; ShowS)
+-&gt; (WindowsEpoch -&gt; String)
+-&gt; ([WindowsEpoch] -&gt; ShowS)
+-&gt; Show WindowsEpoch
 forall a.
 (Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
-showList :: [WindowsEpoch] -&gt; ShowS
-$cshowList :: [WindowsEpoch] -&gt; ShowS
-show :: WindowsEpoch -&gt; String
-$cshow :: WindowsEpoch -&gt; String
-showsPrec :: Int -&gt; WindowsEpoch -&gt; ShowS
 $cshowsPrec :: Int -&gt; WindowsEpoch -&gt; ShowS
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span id="local-6989586621679062731"><span id="local-6989586621679062733"><span class="annot"><span class="annottext">WindowsEpoch -&gt; WindowsEpoch -&gt; Bool
+showsPrec :: Int -&gt; WindowsEpoch -&gt; ShowS
+$cshow :: WindowsEpoch -&gt; String
+show :: WindowsEpoch -&gt; String
+$cshowList :: [WindowsEpoch] -&gt; ShowS
+showList :: [WindowsEpoch] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span id="local-6989586621679065170"><span id="local-6989586621679065172"><span class="annot"><span class="annottext">WindowsEpoch -&gt; WindowsEpoch -&gt; Bool
+(WindowsEpoch -&gt; WindowsEpoch -&gt; Bool)
+-&gt; (WindowsEpoch -&gt; WindowsEpoch -&gt; Bool) -&gt; Eq WindowsEpoch
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
-/= :: WindowsEpoch -&gt; WindowsEpoch -&gt; Bool
-$c/= :: WindowsEpoch -&gt; WindowsEpoch -&gt; Bool
-== :: WindowsEpoch -&gt; WindowsEpoch -&gt; Bool
 $c== :: WindowsEpoch -&gt; WindowsEpoch -&gt; Bool
+== :: WindowsEpoch -&gt; WindowsEpoch -&gt; Bool
+$c/= :: WindowsEpoch -&gt; WindowsEpoch -&gt; Bool
+/= :: WindowsEpoch -&gt; WindowsEpoch -&gt; Bool
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">)</span><span>
 </span><span id="line-79"></span><span>
 </span><span id="line-80"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Data.Hourglass.Epoch.html#Epoch"><span class="hs-identifier hs-type">Epoch</span></a></span><span> </span><span class="annot"><a href="Data.Hourglass.Epoch.html#WindowsEpoch"><span class="hs-identifier hs-type">WindowsEpoch</span></a></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-81"></span><span>    </span><span id="local-6989586621679062727"><span class="annot"><span class="annottext">epochName :: WindowsEpoch -&gt; String
-</span><a href="#local-6989586621679062727"><span class="hs-identifier hs-var hs-var hs-var hs-var">epochName</span></a></span></span><span> </span><span class="annot"><span class="annottext">WindowsEpoch
+</span><span id="line-81"></span><span>    </span><span id="local-6989586621679065178"><span class="annot"><span class="annottext">epochName :: WindowsEpoch -&gt; String
+</span><a href="Data.Hourglass.Epoch.html#epochName"><span class="hs-identifier hs-var hs-var hs-var hs-var">epochName</span></a></span></span><span> </span><span class="annot"><span class="annottext">WindowsEpoch
 </span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;windows&quot;</span></span><span>
-</span><span id="line-82"></span><span>    </span><span id="local-6989586621679062724"><span class="annot"><span class="annottext">epochDiffToUnix :: WindowsEpoch -&gt; Seconds
-</span><a href="#local-6989586621679062724"><span class="hs-identifier hs-var hs-var hs-var hs-var">epochDiffToUnix</span></a></span></span><span> </span><span class="annot"><span class="annottext">WindowsEpoch
+</span><span id="line-82"></span><span>    </span><span id="local-6989586621679065181"><span class="annot"><span class="annottext">epochDiffToUnix :: WindowsEpoch -&gt; Seconds
+</span><a href="Data.Hourglass.Epoch.html#epochDiffToUnix"><span class="hs-identifier hs-var hs-var hs-var hs-var">epochDiffToUnix</span></a></span></span><span> </span><span class="annot"><span class="annottext">WindowsEpoch
 </span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">-</span><span class="annot"><span class="annottext">Seconds
 </span><span class="hs-number">11644473600</span></span><span>
 </span><span id="line-83"></span><span>
-</span><span id="line-84"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679063210"><span class="annot"><a href="Data.Hourglass.Epoch.html#Epoch"><span class="hs-identifier hs-type">Epoch</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679063210"><span class="hs-identifier hs-type">epoch</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Data.Hourglass.Time.html#Timeable"><span class="hs-identifier hs-type">Timeable</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSince"><span class="hs-identifier hs-type">ElapsedSince</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679063210"><span class="hs-identifier hs-type">epoch</span></a></span><span class="hs-special">)</span></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-85"></span><span>    </span><span id="local-6989586621679062716"><span class="annot"><span class="annottext">timeGetElapsedP :: ElapsedSince epoch -&gt; ElapsedP
-</span><a href="Data.Hourglass.Time.html#timeGetElapsedP"><span class="hs-identifier hs-var hs-var hs-var hs-var">timeGetElapsedP</span></a></span></span><span> </span><span id="local-6989586621679062714"><span class="annot"><span class="annottext">ElapsedSince epoch
-</span><a href="#local-6989586621679062714"><span class="hs-identifier hs-var">es</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Elapsed -&gt; NanoSeconds -&gt; ElapsedP
+</span><span id="line-84"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679064700"><span class="annot"><a href="Data.Hourglass.Epoch.html#Epoch"><span class="hs-identifier hs-type">Epoch</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679064700"><span class="hs-identifier hs-type">epoch</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Data.Hourglass.Time.html#Timeable"><span class="hs-identifier hs-type">Timeable</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSince"><span class="hs-identifier hs-type">ElapsedSince</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679064700"><span class="hs-identifier hs-type">epoch</span></a></span><span class="hs-special">)</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-85"></span><span>    </span><span id="local-6989586621679065189"><span class="annot"><span class="annottext">timeGetElapsedP :: ElapsedSince epoch -&gt; ElapsedP
+</span><a href="#local-6989586621679065189"><span class="hs-identifier hs-var hs-var hs-var hs-var">timeGetElapsedP</span></a></span></span><span> </span><span id="local-6989586621679065191"><span class="annot"><span class="annottext">ElapsedSince epoch
+</span><a href="#local-6989586621679065191"><span class="hs-identifier hs-var">es</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Elapsed -&gt; NanoSeconds -&gt; ElapsedP
 </span><a href="Time.Types.html#ElapsedP"><span class="hs-identifier hs-var">ElapsedP</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Seconds -&gt; Elapsed
 </span><a href="Time.Types.html#Elapsed"><span class="hs-identifier hs-var">Elapsed</span></a></span><span> </span><span class="annot"><span class="annottext">Seconds
-</span><a href="#local-6989586621679062711"><span class="hs-identifier hs-var">e</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">NanoSeconds
+</span><a href="#local-6989586621679065194"><span class="hs-identifier hs-var">e</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">NanoSeconds
 </span><span class="hs-number">0</span></span><span>
-</span><span id="line-86"></span><span>      </span><span class="hs-keyword">where</span><span> </span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSince"><span class="hs-identifier hs-type">ElapsedSince</span></a></span><span> </span><span id="local-6989586621679062711"><span class="annot"><span class="annottext">Seconds
-</span><a href="#local-6989586621679062711"><span class="hs-identifier hs-var">e</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall e1 e2.
+</span><span id="line-86"></span><span>      </span><span class="hs-keyword">where</span><span> </span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSince"><span class="hs-identifier hs-type">ElapsedSince</span></a></span><span> </span><span id="local-6989586621679065194"><span class="annot"><span class="annottext">Seconds
+</span><a href="#local-6989586621679065194"><span class="hs-identifier hs-var">e</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ElapsedSince epoch -&gt; ElapsedSince UnixEpoch
+forall e1 e2.
 (Epoch e1, Epoch e2) =&gt;
 ElapsedSince e1 -&gt; ElapsedSince e2
 </span><a href="Data.Hourglass.Epoch.html#convertEpoch"><span class="hs-identifier hs-var">convertEpoch</span></a></span><span> </span><span class="annot"><span class="annottext">ElapsedSince epoch
-</span><a href="#local-6989586621679062714"><span class="hs-identifier hs-var">es</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSince"><span class="hs-identifier hs-type">ElapsedSince</span></a></span><span> </span><span class="annot"><a href="Data.Hourglass.Epoch.html#UnixEpoch"><span class="hs-identifier hs-type">UnixEpoch</span></a></span><span>
-</span><span id="line-87"></span><span>    </span><span id="local-6989586621679062707"><span class="annot"><span class="annottext">timeGetElapsed :: ElapsedSince epoch -&gt; Elapsed
-</span><a href="Data.Hourglass.Time.html#timeGetElapsed"><span class="hs-identifier hs-var hs-var hs-var hs-var">timeGetElapsed</span></a></span></span><span>   </span><span id="local-6989586621679062705"><span class="annot"><span class="annottext">ElapsedSince epoch
-</span><a href="#local-6989586621679062705"><span class="hs-identifier hs-var">es</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Seconds -&gt; Elapsed
+</span><a href="#local-6989586621679065191"><span class="hs-identifier hs-var">es</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSince"><span class="hs-identifier hs-type">ElapsedSince</span></a></span><span> </span><span class="annot"><a href="Data.Hourglass.Epoch.html#UnixEpoch"><span class="hs-identifier hs-type">UnixEpoch</span></a></span><span>
+</span><span id="line-87"></span><span>    </span><span id="local-6989586621679065198"><span class="annot"><span class="annottext">timeGetElapsed :: ElapsedSince epoch -&gt; Elapsed
+</span><a href="#local-6989586621679065198"><span class="hs-identifier hs-var hs-var hs-var hs-var">timeGetElapsed</span></a></span></span><span>   </span><span id="local-6989586621679065200"><span class="annot"><span class="annottext">ElapsedSince epoch
+</span><a href="#local-6989586621679065200"><span class="hs-identifier hs-var">es</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Seconds -&gt; Elapsed
 </span><a href="Time.Types.html#Elapsed"><span class="hs-identifier hs-var">Elapsed</span></a></span><span> </span><span class="annot"><span class="annottext">Seconds
-</span><a href="#local-6989586621679062704"><span class="hs-identifier hs-var">e</span></a></span><span>
-</span><span id="line-88"></span><span>      </span><span class="hs-keyword">where</span><span> </span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSince"><span class="hs-identifier hs-type">ElapsedSince</span></a></span><span> </span><span id="local-6989586621679062704"><span class="annot"><span class="annottext">Seconds
-</span><a href="#local-6989586621679062704"><span class="hs-identifier hs-var">e</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall e1 e2.
+</span><a href="#local-6989586621679065201"><span class="hs-identifier hs-var">e</span></a></span><span>
+</span><span id="line-88"></span><span>      </span><span class="hs-keyword">where</span><span> </span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSince"><span class="hs-identifier hs-type">ElapsedSince</span></a></span><span> </span><span id="local-6989586621679065201"><span class="annot"><span class="annottext">Seconds
+</span><a href="#local-6989586621679065201"><span class="hs-identifier hs-var">e</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ElapsedSince epoch -&gt; ElapsedSince UnixEpoch
+forall e1 e2.
 (Epoch e1, Epoch e2) =&gt;
 ElapsedSince e1 -&gt; ElapsedSince e2
 </span><a href="Data.Hourglass.Epoch.html#convertEpoch"><span class="hs-identifier hs-var">convertEpoch</span></a></span><span> </span><span class="annot"><span class="annottext">ElapsedSince epoch
-</span><a href="#local-6989586621679062705"><span class="hs-identifier hs-var">es</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSince"><span class="hs-identifier hs-type">ElapsedSince</span></a></span><span> </span><span class="annot"><a href="Data.Hourglass.Epoch.html#UnixEpoch"><span class="hs-identifier hs-type">UnixEpoch</span></a></span><span>
-</span><span id="line-89"></span><span>    </span><span id="local-6989586621679062700"><span class="annot"><span class="annottext">timeGetNanoSeconds :: ElapsedSince epoch -&gt; NanoSeconds
-</span><a href="Data.Hourglass.Time.html#timeGetNanoSeconds"><span class="hs-identifier hs-var hs-var hs-var hs-var">timeGetNanoSeconds</span></a></span></span><span> </span><span class="annot"><span class="annottext">ElapsedSince epoch
+</span><a href="#local-6989586621679065200"><span class="hs-identifier hs-var">es</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSince"><span class="hs-identifier hs-type">ElapsedSince</span></a></span><span> </span><span class="annot"><a href="Data.Hourglass.Epoch.html#UnixEpoch"><span class="hs-identifier hs-type">UnixEpoch</span></a></span><span>
+</span><span id="line-89"></span><span>    </span><span id="local-6989586621679065205"><span class="annot"><span class="annottext">timeGetNanoSeconds :: ElapsedSince epoch -&gt; NanoSeconds
+</span><a href="#local-6989586621679065205"><span class="hs-identifier hs-var hs-var hs-var hs-var">timeGetNanoSeconds</span></a></span></span><span> </span><span class="annot"><span class="annottext">ElapsedSince epoch
 </span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">NanoSeconds
 </span><span class="hs-number">0</span></span><span>
 </span><span id="line-90"></span><span>
-</span><span id="line-91"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679062694"><span id="local-6989586621679063206"><span class="annot"><a href="Data.Hourglass.Epoch.html#Epoch"><span class="hs-identifier hs-type">Epoch</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679063206"><span class="hs-identifier hs-type">epoch</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Data.Hourglass.Time.html#Time"><span class="hs-identifier hs-type">Time</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSince"><span class="hs-identifier hs-type">ElapsedSince</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679063206"><span class="hs-identifier hs-type">epoch</span></a></span><span class="hs-special">)</span></span></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-92"></span><span>    </span><span id="local-6989586621679062690"><span class="annot"><span class="annottext">timeFromElapsedP :: ElapsedP -&gt; ElapsedSince epoch
-</span><a href="Data.Hourglass.Time.html#timeFromElapsedP"><span class="hs-identifier hs-var hs-var hs-var hs-var">timeFromElapsedP</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Time.Types.html#ElapsedP"><span class="hs-identifier hs-type">ElapsedP</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Time.Types.html#Elapsed"><span class="hs-identifier hs-type">Elapsed</span></a></span><span> </span><span id="local-6989586621679062688"><span class="annot"><span class="annottext">Seconds
-</span><a href="#local-6989586621679062688"><span class="hs-identifier hs-var">e</span></a></span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">NanoSeconds
+</span><span id="line-91"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679064706"><span id="local-6989586621679065212"><span class="annot"><a href="Data.Hourglass.Epoch.html#Epoch"><span class="hs-identifier hs-type">Epoch</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679064706"><span class="hs-identifier hs-type">epoch</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Data.Hourglass.Time.html#Time"><span class="hs-identifier hs-type">Time</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSince"><span class="hs-identifier hs-type">ElapsedSince</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679064706"><span class="hs-identifier hs-type">epoch</span></a></span><span class="hs-special">)</span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-92"></span><span>    </span><span id="local-6989586621679065218"><span class="annot"><span class="annottext">timeFromElapsedP :: ElapsedP -&gt; ElapsedSince epoch
+</span><a href="#local-6989586621679065218"><span class="hs-identifier hs-var hs-var hs-var hs-var">timeFromElapsedP</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Time.Types.html#ElapsedP"><span class="hs-identifier hs-type">ElapsedP</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Time.Types.html#Elapsed"><span class="hs-identifier hs-type">Elapsed</span></a></span><span> </span><span id="local-6989586621679065220"><span class="annot"><span class="annottext">Seconds
+</span><a href="#local-6989586621679065220"><span class="hs-identifier hs-var">e</span></a></span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">NanoSeconds
 </span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-93"></span><span>        </span><span class="annot"><span class="annottext">forall e1 e2.
+</span><span id="line-93"></span><span>        </span><span class="annot"><span class="annottext">ElapsedSince UnixEpoch -&gt; ElapsedSince epoch
+forall e1 e2.
 (Epoch e1, Epoch e2) =&gt;
 ElapsedSince e1 -&gt; ElapsedSince e2
-</span><a href="Data.Hourglass.Epoch.html#convertEpoch"><span class="hs-identifier hs-var">convertEpoch</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall epoch. Seconds -&gt; ElapsedSince epoch
+</span><a href="Data.Hourglass.Epoch.html#convertEpoch"><span class="hs-identifier hs-var">convertEpoch</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Seconds -&gt; ElapsedSince UnixEpoch
+forall epoch. Seconds -&gt; ElapsedSince epoch
 </span><a href="Data.Hourglass.Epoch.html#ElapsedSince"><span class="hs-identifier hs-var">ElapsedSince</span></a></span><span> </span><span class="annot"><span class="annottext">Seconds
-</span><a href="#local-6989586621679062688"><span class="hs-identifier hs-var">e</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSince"><span class="hs-identifier hs-type">ElapsedSince</span></a></span><span> </span><span class="annot"><a href="Data.Hourglass.Epoch.html#UnixEpoch"><span class="hs-identifier hs-type">UnixEpoch</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679065220"><span class="hs-identifier hs-var">e</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSince"><span class="hs-identifier hs-type">ElapsedSince</span></a></span><span> </span><span class="annot"><a href="Data.Hourglass.Epoch.html#UnixEpoch"><span class="hs-identifier hs-type">UnixEpoch</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-94"></span><span>
-</span><span id="line-95"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679062685"><span id="local-6989586621679063205"><span class="annot"><a href="Data.Hourglass.Epoch.html#Epoch"><span class="hs-identifier hs-type">Epoch</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679063205"><span class="hs-identifier hs-type">epoch</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Data.Hourglass.Time.html#Timeable"><span class="hs-identifier hs-type">Timeable</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-type">ElapsedSinceP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679063205"><span class="hs-identifier hs-type">epoch</span></a></span><span class="hs-special">)</span></span></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-96"></span><span>    </span><span id="local-6989586621679062683"><span class="annot"><span class="annottext">timeGetElapsedP :: ElapsedSinceP epoch -&gt; ElapsedP
-</span><a href="#local-6989586621679062683"><span class="hs-identifier hs-var hs-var hs-var hs-var">timeGetElapsedP</span></a></span></span><span> </span><span id="local-6989586621679062682"><span class="annot"><span class="annottext">ElapsedSinceP epoch
-</span><a href="#local-6989586621679062682"><span class="hs-identifier hs-var">es</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Elapsed -&gt; NanoSeconds -&gt; ElapsedP
+</span><span id="line-95"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679064708"><span id="local-6989586621679065224"><span class="annot"><a href="Data.Hourglass.Epoch.html#Epoch"><span class="hs-identifier hs-type">Epoch</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679064708"><span class="hs-identifier hs-type">epoch</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Data.Hourglass.Time.html#Timeable"><span class="hs-identifier hs-type">Timeable</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-type">ElapsedSinceP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679064708"><span class="hs-identifier hs-type">epoch</span></a></span><span class="hs-special">)</span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-96"></span><span>    </span><span id="local-6989586621679065228"><span class="annot"><span class="annottext">timeGetElapsedP :: ElapsedSinceP epoch -&gt; ElapsedP
+</span><a href="Data.Hourglass.Time.html#timeGetElapsedP"><span class="hs-identifier hs-var hs-var hs-var hs-var">timeGetElapsedP</span></a></span></span><span> </span><span id="local-6989586621679065229"><span class="annot"><span class="annottext">ElapsedSinceP epoch
+</span><a href="#local-6989586621679065229"><span class="hs-identifier hs-var">es</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Elapsed -&gt; NanoSeconds -&gt; ElapsedP
 </span><a href="Time.Types.html#ElapsedP"><span class="hs-identifier hs-var">ElapsedP</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Seconds -&gt; Elapsed
 </span><a href="Time.Types.html#Elapsed"><span class="hs-identifier hs-var">Elapsed</span></a></span><span> </span><span class="annot"><span class="annottext">Seconds
-</span><a href="#local-6989586621679062681"><span class="hs-identifier hs-var">e</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">NanoSeconds
-</span><a href="#local-6989586621679062680"><span class="hs-identifier hs-var">ns</span></a></span><span>
-</span><span id="line-97"></span><span>      </span><span class="hs-keyword">where</span><span> </span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-type">ElapsedSinceP</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSince"><span class="hs-identifier hs-type">ElapsedSince</span></a></span><span> </span><span id="local-6989586621679062681"><span class="annot"><span class="annottext">Seconds
-</span><a href="#local-6989586621679062681"><span class="hs-identifier hs-var">e</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621679062680"><span class="annot"><span class="annottext">NanoSeconds
-</span><a href="#local-6989586621679062680"><span class="hs-identifier hs-var">ns</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall e1 e2.
+</span><a href="#local-6989586621679065230"><span class="hs-identifier hs-var">e</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">NanoSeconds
+</span><a href="#local-6989586621679065231"><span class="hs-identifier hs-var">ns</span></a></span><span>
+</span><span id="line-97"></span><span>      </span><span class="hs-keyword">where</span><span> </span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-type">ElapsedSinceP</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSince"><span class="hs-identifier hs-type">ElapsedSince</span></a></span><span> </span><span id="local-6989586621679065230"><span class="annot"><span class="annottext">Seconds
+</span><a href="#local-6989586621679065230"><span class="hs-identifier hs-var">e</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621679065231"><span class="annot"><span class="annottext">NanoSeconds
+</span><a href="#local-6989586621679065231"><span class="hs-identifier hs-var">ns</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ElapsedSinceP epoch -&gt; ElapsedSinceP UnixEpoch
+forall e1 e2.
 (Epoch e1, Epoch e2) =&gt;
 ElapsedSinceP e1 -&gt; ElapsedSinceP e2
 </span><a href="Data.Hourglass.Epoch.html#convertEpochP"><span class="hs-identifier hs-var">convertEpochP</span></a></span><span> </span><span class="annot"><span class="annottext">ElapsedSinceP epoch
-</span><a href="#local-6989586621679062682"><span class="hs-identifier hs-var">es</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-type">ElapsedSinceP</span></a></span><span> </span><span class="annot"><a href="Data.Hourglass.Epoch.html#UnixEpoch"><span class="hs-identifier hs-type">UnixEpoch</span></a></span><span>
-</span><span id="line-98"></span><span>    </span><span id="local-6989586621679062676"><span class="annot"><span class="annottext">timeGetNanoSeconds :: ElapsedSinceP epoch -&gt; NanoSeconds
-</span><a href="#local-6989586621679062676"><span class="hs-identifier hs-var hs-var hs-var hs-var">timeGetNanoSeconds</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-type">ElapsedSinceP</span></a></span><span> </span><span class="annot"><span class="annottext">ElapsedSince epoch
-</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679062675"><span class="annot"><span class="annottext">NanoSeconds
-</span><a href="#local-6989586621679062675"><span class="hs-identifier hs-var">ns</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">NanoSeconds
-</span><a href="#local-6989586621679062675"><span class="hs-identifier hs-var">ns</span></a></span><span>
-</span><span id="line-99"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679062670"><span id="local-6989586621679063202"><span class="annot"><a href="Data.Hourglass.Epoch.html#Epoch"><span class="hs-identifier hs-type">Epoch</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679063202"><span class="hs-identifier hs-type">epoch</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Data.Hourglass.Time.html#Time"><span class="hs-identifier hs-type">Time</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-type">ElapsedSinceP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679063202"><span class="hs-identifier hs-type">epoch</span></a></span><span class="hs-special">)</span></span></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-100"></span><span>    </span><span id="local-6989586621679062667"><span class="annot"><span class="annottext">timeFromElapsedP :: ElapsedP -&gt; ElapsedSinceP epoch
-</span><a href="#local-6989586621679062667"><span class="hs-identifier hs-var hs-var hs-var hs-var">timeFromElapsedP</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Time.Types.html#ElapsedP"><span class="hs-identifier hs-type">ElapsedP</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Time.Types.html#Elapsed"><span class="hs-identifier hs-type">Elapsed</span></a></span><span> </span><span id="local-6989586621679062666"><span class="annot"><span class="annottext">Seconds
-</span><a href="#local-6989586621679062666"><span class="hs-identifier hs-var">e</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621679062665"><span class="annot"><span class="annottext">NanoSeconds
-</span><a href="#local-6989586621679062665"><span class="hs-identifier hs-var">ns</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall e1 e2.
+</span><a href="#local-6989586621679065229"><span class="hs-identifier hs-var">es</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-type">ElapsedSinceP</span></a></span><span> </span><span class="annot"><a href="Data.Hourglass.Epoch.html#UnixEpoch"><span class="hs-identifier hs-type">UnixEpoch</span></a></span><span>
+</span><span id="line-98"></span><span>    </span><span id="local-6989586621679065235"><span class="annot"><span class="annottext">timeGetNanoSeconds :: ElapsedSinceP epoch -&gt; NanoSeconds
+</span><a href="Data.Hourglass.Time.html#timeGetNanoSeconds"><span class="hs-identifier hs-var hs-var hs-var hs-var">timeGetNanoSeconds</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-type">ElapsedSinceP</span></a></span><span> </span><span class="annot"><span class="annottext">ElapsedSince epoch
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679065236"><span class="annot"><span class="annottext">NanoSeconds
+</span><a href="#local-6989586621679065236"><span class="hs-identifier hs-var">ns</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">NanoSeconds
+</span><a href="#local-6989586621679065236"><span class="hs-identifier hs-var">ns</span></a></span><span>
+</span><span id="line-99"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679064712"><span id="local-6989586621679065242"><span class="annot"><a href="Data.Hourglass.Epoch.html#Epoch"><span class="hs-identifier hs-type">Epoch</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679064712"><span class="hs-identifier hs-type">epoch</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Data.Hourglass.Time.html#Time"><span class="hs-identifier hs-type">Time</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-type">ElapsedSinceP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679064712"><span class="hs-identifier hs-type">epoch</span></a></span><span class="hs-special">)</span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-100"></span><span>    </span><span id="local-6989586621679065247"><span class="annot"><span class="annottext">timeFromElapsedP :: ElapsedP -&gt; ElapsedSinceP epoch
+</span><a href="Data.Hourglass.Time.html#timeFromElapsedP"><span class="hs-identifier hs-var hs-var hs-var hs-var">timeFromElapsedP</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Time.Types.html#ElapsedP"><span class="hs-identifier hs-type">ElapsedP</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Time.Types.html#Elapsed"><span class="hs-identifier hs-type">Elapsed</span></a></span><span> </span><span id="local-6989586621679065248"><span class="annot"><span class="annottext">Seconds
+</span><a href="#local-6989586621679065248"><span class="hs-identifier hs-var">e</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621679065249"><span class="annot"><span class="annottext">NanoSeconds
+</span><a href="#local-6989586621679065249"><span class="hs-identifier hs-var">ns</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ElapsedSinceP UnixEpoch -&gt; ElapsedSinceP epoch
+forall e1 e2.
 (Epoch e1, Epoch e2) =&gt;
 ElapsedSinceP e1 -&gt; ElapsedSinceP e2
-</span><a href="Data.Hourglass.Epoch.html#convertEpochP"><span class="hs-identifier hs-var">convertEpochP</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall epoch.
+</span><a href="Data.Hourglass.Epoch.html#convertEpochP"><span class="hs-identifier hs-var">convertEpochP</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ElapsedSince UnixEpoch -&gt; NanoSeconds -&gt; ElapsedSinceP UnixEpoch
+forall epoch.
 ElapsedSince epoch -&gt; NanoSeconds -&gt; ElapsedSinceP epoch
-</span><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-var">ElapsedSinceP</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall epoch. Seconds -&gt; ElapsedSince epoch
+</span><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-var">ElapsedSinceP</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Seconds -&gt; ElapsedSince UnixEpoch
+forall epoch. Seconds -&gt; ElapsedSince epoch
 </span><a href="Data.Hourglass.Epoch.html#ElapsedSince"><span class="hs-identifier hs-var">ElapsedSince</span></a></span><span> </span><span class="annot"><span class="annottext">Seconds
-</span><a href="#local-6989586621679062666"><span class="hs-identifier hs-var">e</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">NanoSeconds
-</span><a href="#local-6989586621679062665"><span class="hs-identifier hs-var">ns</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-type">ElapsedSinceP</span></a></span><span> </span><span class="annot"><a href="Data.Hourglass.Epoch.html#UnixEpoch"><span class="hs-identifier hs-type">UnixEpoch</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679065248"><span class="hs-identifier hs-var">e</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">NanoSeconds
+</span><a href="#local-6989586621679065249"><span class="hs-identifier hs-var">ns</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-type">ElapsedSinceP</span></a></span><span> </span><span class="annot"><a href="Data.Hourglass.Epoch.html#UnixEpoch"><span class="hs-identifier hs-type">UnixEpoch</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-101"></span><span>
-</span><span id="line-102"></span><span class="hs-comment">-- | Convert Elapsed seconds to another epoch with explicit epochs specified</span><span>
-</span><span id="line-103"></span><span id="local-6989586621679063200"><span id="local-6989586621679063201"><span class="annot"><a href="Data.Hourglass.Epoch.html#convertEpochWith"><span class="hs-identifier hs-type">convertEpochWith</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Hourglass.Epoch.html#Epoch"><span class="hs-identifier hs-type">Epoch</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679063201"><span class="hs-identifier hs-type">e1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Hourglass.Epoch.html#Epoch"><span class="hs-identifier hs-type">Epoch</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679063200"><span class="hs-identifier hs-type">e2</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679063201"><span class="hs-identifier hs-type">e1</span></a></span><span class="hs-special">,</span><span class="annot"><a href="#local-6989586621679063200"><span class="hs-identifier hs-type">e2</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSince"><span class="hs-identifier hs-type">ElapsedSince</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679063201"><span class="hs-identifier hs-type">e1</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSince"><span class="hs-identifier hs-type">ElapsedSince</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679063200"><span class="hs-identifier hs-type">e2</span></a></span></span></span><span>
+</span><span id="line-102"></span><span class="annot"><span class="hs-comment">-- | Convert Elapsed seconds to another epoch with explicit epochs specified</span></span><span>
+</span><span id="line-103"></span><span id="local-6989586621679064713"><span id="local-6989586621679064714"><span class="annot"><a href="Data.Hourglass.Epoch.html#convertEpochWith"><span class="hs-identifier hs-type">convertEpochWith</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Hourglass.Epoch.html#Epoch"><span class="hs-identifier hs-type">Epoch</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679064713"><span class="hs-identifier hs-type">e1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Hourglass.Epoch.html#Epoch"><span class="hs-identifier hs-type">Epoch</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679064714"><span class="hs-identifier hs-type">e2</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679064713"><span class="hs-identifier hs-type">e1</span></a></span><span class="hs-special">,</span><span class="annot"><a href="#local-6989586621679064714"><span class="hs-identifier hs-type">e2</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSince"><span class="hs-identifier hs-type">ElapsedSince</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679064713"><span class="hs-identifier hs-type">e1</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSince"><span class="hs-identifier hs-type">ElapsedSince</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679064714"><span class="hs-identifier hs-type">e2</span></a></span></span></span><span>
 </span><span id="line-104"></span><span id="convertEpochWith"><span class="annot"><span class="annottext">convertEpochWith :: forall e1 e2.
 (Epoch e1, Epoch e2) =&gt;
 (e1, e2) -&gt; ElapsedSince e1 -&gt; ElapsedSince e2
-</span><a href="Data.Hourglass.Epoch.html#convertEpochWith"><span class="hs-identifier hs-var hs-var">convertEpochWith</span></a></span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679062660"><span class="annot"><span class="annottext">e1
-</span><a href="#local-6989586621679062660"><span class="hs-identifier hs-var">e1</span></a></span></span><span class="hs-special">,</span><span id="local-6989586621679062659"><span class="annot"><span class="annottext">e2
-</span><a href="#local-6989586621679062659"><span class="hs-identifier hs-var">e2</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSince"><span class="hs-identifier hs-type">ElapsedSince</span></a></span><span> </span><span id="local-6989586621679062658"><span class="annot"><span class="annottext">Seconds
-</span><a href="#local-6989586621679062658"><span class="hs-identifier hs-var">s1</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall epoch. Seconds -&gt; ElapsedSince epoch
+</span><a href="Data.Hourglass.Epoch.html#convertEpochWith"><span class="hs-identifier hs-var hs-var">convertEpochWith</span></a></span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679065254"><span class="annot"><span class="annottext">e1
+</span><a href="#local-6989586621679065254"><span class="hs-identifier hs-var">e1</span></a></span></span><span class="hs-special">,</span><span id="local-6989586621679065255"><span class="annot"><span class="annottext">e2
+</span><a href="#local-6989586621679065255"><span class="hs-identifier hs-var">e2</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSince"><span class="hs-identifier hs-type">ElapsedSince</span></a></span><span> </span><span id="local-6989586621679065256"><span class="annot"><span class="annottext">Seconds
+</span><a href="#local-6989586621679065256"><span class="hs-identifier hs-var">s1</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Seconds -&gt; ElapsedSince e2
+forall epoch. Seconds -&gt; ElapsedSince epoch
 </span><a href="Data.Hourglass.Epoch.html#ElapsedSince"><span class="hs-identifier hs-var">ElapsedSince</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Seconds
-</span><a href="#local-6989586621679062658"><span class="hs-identifier hs-var">s1</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><a href="#local-6989586621679065256"><span class="hs-identifier hs-var">s1</span></a></span><span> </span><span class="annot"><span class="annottext">Seconds -&gt; Seconds -&gt; Seconds
+forall a. Num a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Seconds
-</span><a href="#local-6989586621679062657"><span class="hs-identifier hs-var">diff</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-105"></span><span>  </span><span class="hs-keyword">where</span><span> </span><span id="local-6989586621679062657"><span class="annot"><span class="annottext">diff :: Seconds
-</span><a href="#local-6989586621679062657"><span class="hs-identifier hs-var hs-var">diff</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Seconds
-</span><a href="#local-6989586621679062655"><span class="hs-identifier hs-var">d1</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><a href="#local-6989586621679065257"><span class="hs-identifier hs-var">diff</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-105"></span><span>  </span><span class="hs-keyword">where</span><span> </span><span id="local-6989586621679065257"><span class="annot"><span class="annottext">diff :: Seconds
+</span><a href="#local-6989586621679065257"><span class="hs-identifier hs-var hs-var">diff</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Seconds
+</span><a href="#local-6989586621679065259"><span class="hs-identifier hs-var">d1</span></a></span><span> </span><span class="annot"><span class="annottext">Seconds -&gt; Seconds -&gt; Seconds
+forall a. Num a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-glyph hs-var">-</span></span><span> </span><span class="annot"><span class="annottext">Seconds
-</span><a href="#local-6989586621679062654"><span class="hs-identifier hs-var">d2</span></a></span><span>
-</span><span id="line-106"></span><span>        </span><span id="local-6989586621679062655"><span class="annot"><span class="annottext">d1 :: Seconds
-</span><a href="#local-6989586621679062655"><span class="hs-identifier hs-var hs-var">d1</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall epoch. Epoch epoch =&gt; epoch -&gt; Seconds
+</span><a href="#local-6989586621679065260"><span class="hs-identifier hs-var">d2</span></a></span><span>
+</span><span id="line-106"></span><span>        </span><span id="local-6989586621679065259"><span class="annot"><span class="annottext">d1 :: Seconds
+</span><a href="#local-6989586621679065259"><span class="hs-identifier hs-var hs-var">d1</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">e1 -&gt; Seconds
+forall epoch. Epoch epoch =&gt; epoch -&gt; Seconds
 </span><a href="Data.Hourglass.Epoch.html#epochDiffToUnix"><span class="hs-identifier hs-var">epochDiffToUnix</span></a></span><span> </span><span class="annot"><span class="annottext">e1
-</span><a href="#local-6989586621679062660"><span class="hs-identifier hs-var">e1</span></a></span><span>
-</span><span id="line-107"></span><span>        </span><span id="local-6989586621679062654"><span class="annot"><span class="annottext">d2 :: Seconds
-</span><a href="#local-6989586621679062654"><span class="hs-identifier hs-var hs-var">d2</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall epoch. Epoch epoch =&gt; epoch -&gt; Seconds
+</span><a href="#local-6989586621679065254"><span class="hs-identifier hs-var">e1</span></a></span><span>
+</span><span id="line-107"></span><span>        </span><span id="local-6989586621679065260"><span class="annot"><span class="annottext">d2 :: Seconds
+</span><a href="#local-6989586621679065260"><span class="hs-identifier hs-var hs-var">d2</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">e2 -&gt; Seconds
+forall epoch. Epoch epoch =&gt; epoch -&gt; Seconds
 </span><a href="Data.Hourglass.Epoch.html#epochDiffToUnix"><span class="hs-identifier hs-var">epochDiffToUnix</span></a></span><span> </span><span class="annot"><span class="annottext">e2
-</span><a href="#local-6989586621679062659"><span class="hs-identifier hs-var">e2</span></a></span><span>
+</span><a href="#local-6989586621679065255"><span class="hs-identifier hs-var">e2</span></a></span><span>
 </span><span id="line-108"></span><span>
 </span><span id="line-109"></span><span class="hs-comment">-- | Convert Elapsed seconds to another epoch.</span><span>
 </span><span id="line-110"></span><span class="hs-comment">--</span><span>
@@ -855,34 +1096,39 @@ ElapsedSince epoch -&gt; NanoSeconds -&gt; ElapsedSinceP epoch
 </span><span id="line-112"></span><span class="hs-comment">-- will yield a compilation errors as the epoch are not chosen.</span><span>
 </span><span id="line-113"></span><span class="hs-comment">--</span><span>
 </span><span id="line-114"></span><span class="hs-comment">-- If you want to force specific epoch conversion, use convertEpochWith</span><span>
-</span><span id="line-115"></span><span id="local-6989586621679063208"><span id="local-6989586621679063209"><span class="annot"><a href="Data.Hourglass.Epoch.html#convertEpoch"><span class="hs-identifier hs-type">convertEpoch</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Hourglass.Epoch.html#Epoch"><span class="hs-identifier hs-type">Epoch</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679063209"><span class="hs-identifier hs-type">e1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Hourglass.Epoch.html#Epoch"><span class="hs-identifier hs-type">Epoch</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679063208"><span class="hs-identifier hs-type">e2</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSince"><span class="hs-identifier hs-type">ElapsedSince</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679063209"><span class="hs-identifier hs-type">e1</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSince"><span class="hs-identifier hs-type">ElapsedSince</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679063208"><span class="hs-identifier hs-type">e2</span></a></span></span></span><span>
+</span><span id="line-115"></span><span id="local-6989586621679064701"><span id="local-6989586621679064702"><span class="annot"><a href="Data.Hourglass.Epoch.html#convertEpoch"><span class="hs-identifier hs-type">convertEpoch</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Hourglass.Epoch.html#Epoch"><span class="hs-identifier hs-type">Epoch</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679064701"><span class="hs-identifier hs-type">e1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Hourglass.Epoch.html#Epoch"><span class="hs-identifier hs-type">Epoch</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679064702"><span class="hs-identifier hs-type">e2</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSince"><span class="hs-identifier hs-type">ElapsedSince</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679064701"><span class="hs-identifier hs-type">e1</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSince"><span class="hs-identifier hs-type">ElapsedSince</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679064702"><span class="hs-identifier hs-type">e2</span></a></span></span></span><span>
 </span><span id="line-116"></span><span id="convertEpoch"><span class="annot"><span class="annottext">convertEpoch :: forall e1 e2.
 (Epoch e1, Epoch e2) =&gt;
 ElapsedSince e1 -&gt; ElapsedSince e2
-</span><a href="Data.Hourglass.Epoch.html#convertEpoch"><span class="hs-identifier hs-var hs-var">convertEpoch</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall e1 e2.
+</span><a href="Data.Hourglass.Epoch.html#convertEpoch"><span class="hs-identifier hs-var hs-var">convertEpoch</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(e1, e2) -&gt; ElapsedSince e1 -&gt; ElapsedSince e2
+forall e1 e2.
 (Epoch e1, Epoch e2) =&gt;
 (e1, e2) -&gt; ElapsedSince e1 -&gt; ElapsedSince e2
-</span><a href="Data.Hourglass.Epoch.html#convertEpochWith"><span class="hs-identifier hs-var">convertEpochWith</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. HasCallStack =&gt; a
-</span><span class="hs-identifier hs-var">undefined</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">forall a. HasCallStack =&gt; a
+</span><a href="Data.Hourglass.Epoch.html#convertEpochWith"><span class="hs-identifier hs-var">convertEpochWith</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">e1
+forall a. HasCallStack =&gt; a
+</span><span class="hs-identifier hs-var">undefined</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">e2
+forall a. HasCallStack =&gt; a
 </span><span class="hs-identifier hs-var">undefined</span></span><span class="hs-special">)</span><span>
 </span><span id="line-117"></span><span>
-</span><span id="line-118"></span><span class="hs-comment">-- | Convert Precise Elapsed seconds to another epoch with explicit epochs specified</span><span>
-</span><span id="line-119"></span><span id="local-6989586621679063191"><span id="local-6989586621679063192"><span class="annot"><a href="Data.Hourglass.Epoch.html#convertEpochPWith"><span class="hs-identifier hs-type">convertEpochPWith</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Hourglass.Epoch.html#Epoch"><span class="hs-identifier hs-type">Epoch</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679063192"><span class="hs-identifier hs-type">e1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Hourglass.Epoch.html#Epoch"><span class="hs-identifier hs-type">Epoch</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679063191"><span class="hs-identifier hs-type">e2</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679063192"><span class="hs-identifier hs-type">e1</span></a></span><span class="hs-special">,</span><span class="annot"><a href="#local-6989586621679063191"><span class="hs-identifier hs-type">e2</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-type">ElapsedSinceP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679063192"><span class="hs-identifier hs-type">e1</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-type">ElapsedSinceP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679063191"><span class="hs-identifier hs-type">e2</span></a></span></span></span><span>
+</span><span id="line-118"></span><span class="annot"><span class="hs-comment">-- | Convert Precise Elapsed seconds to another epoch with explicit epochs specified</span></span><span>
+</span><span id="line-119"></span><span id="local-6989586621679064722"><span id="local-6989586621679064723"><span class="annot"><a href="Data.Hourglass.Epoch.html#convertEpochPWith"><span class="hs-identifier hs-type">convertEpochPWith</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Hourglass.Epoch.html#Epoch"><span class="hs-identifier hs-type">Epoch</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679064722"><span class="hs-identifier hs-type">e1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Hourglass.Epoch.html#Epoch"><span class="hs-identifier hs-type">Epoch</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679064723"><span class="hs-identifier hs-type">e2</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679064722"><span class="hs-identifier hs-type">e1</span></a></span><span class="hs-special">,</span><span class="annot"><a href="#local-6989586621679064723"><span class="hs-identifier hs-type">e2</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-type">ElapsedSinceP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679064722"><span class="hs-identifier hs-type">e1</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-type">ElapsedSinceP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679064723"><span class="hs-identifier hs-type">e2</span></a></span></span></span><span>
 </span><span id="line-120"></span><span id="convertEpochPWith"><span class="annot"><span class="annottext">convertEpochPWith :: forall e1 e2.
 (Epoch e1, Epoch e2) =&gt;
 (e1, e2) -&gt; ElapsedSinceP e1 -&gt; ElapsedSinceP e2
-</span><a href="Data.Hourglass.Epoch.html#convertEpochPWith"><span class="hs-identifier hs-var hs-var">convertEpochPWith</span></a></span></span><span> </span><span id="local-6989586621679062637"><span class="annot"><span class="annottext">(e1, e2)
-</span><a href="#local-6989586621679062637"><span class="hs-identifier hs-var">es</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-type">ElapsedSinceP</span></a></span><span> </span><span id="local-6989586621679062636"><span class="annot"><span class="annottext">ElapsedSince e1
-</span><a href="#local-6989586621679062636"><span class="hs-identifier hs-var">e1</span></a></span></span><span> </span><span id="local-6989586621679062635"><span class="annot"><span class="annottext">NanoSeconds
-</span><a href="#local-6989586621679062635"><span class="hs-identifier hs-var">n1</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall epoch.
+</span><a href="Data.Hourglass.Epoch.html#convertEpochPWith"><span class="hs-identifier hs-var hs-var">convertEpochPWith</span></a></span></span><span> </span><span id="local-6989586621679065277"><span class="annot"><span class="annottext">(e1, e2)
+</span><a href="#local-6989586621679065277"><span class="hs-identifier hs-var">es</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-type">ElapsedSinceP</span></a></span><span> </span><span id="local-6989586621679065278"><span class="annot"><span class="annottext">ElapsedSince e1
+</span><a href="#local-6989586621679065278"><span class="hs-identifier hs-var">e1</span></a></span></span><span> </span><span id="local-6989586621679065279"><span class="annot"><span class="annottext">NanoSeconds
+</span><a href="#local-6989586621679065279"><span class="hs-identifier hs-var">n1</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ElapsedSince e2 -&gt; NanoSeconds -&gt; ElapsedSinceP e2
+forall epoch.
 ElapsedSince epoch -&gt; NanoSeconds -&gt; ElapsedSinceP epoch
-</span><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-var">ElapsedSinceP</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall e1 e2.
+</span><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-var">ElapsedSinceP</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(e1, e2) -&gt; ElapsedSince e1 -&gt; ElapsedSince e2
+forall e1 e2.
 (Epoch e1, Epoch e2) =&gt;
 (e1, e2) -&gt; ElapsedSince e1 -&gt; ElapsedSince e2
 </span><a href="Data.Hourglass.Epoch.html#convertEpochWith"><span class="hs-identifier hs-var">convertEpochWith</span></a></span><span> </span><span class="annot"><span class="annottext">(e1, e2)
-</span><a href="#local-6989586621679062637"><span class="hs-identifier hs-var">es</span></a></span><span> </span><span class="annot"><span class="annottext">ElapsedSince e1
-</span><a href="#local-6989586621679062636"><span class="hs-identifier hs-var">e1</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">NanoSeconds
-</span><a href="#local-6989586621679062635"><span class="hs-identifier hs-var">n1</span></a></span><span>
+</span><a href="#local-6989586621679065277"><span class="hs-identifier hs-var">es</span></a></span><span> </span><span class="annot"><span class="annottext">ElapsedSince e1
+</span><a href="#local-6989586621679065278"><span class="hs-identifier hs-var">e1</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">NanoSeconds
+</span><a href="#local-6989586621679065279"><span class="hs-identifier hs-var">n1</span></a></span><span>
 </span><span id="line-121"></span><span>
 </span><span id="line-122"></span><span class="hs-comment">-- | Convert Elapsed seconds to another epoch.</span><span>
 </span><span id="line-123"></span><span class="hs-comment">--</span><span>
@@ -890,14 +1136,17 @@ ElapsedSince epoch -&gt; NanoSeconds -&gt; ElapsedSinceP epoch
 </span><span id="line-125"></span><span class="hs-comment">-- will yield a compilation errors as the epoch are not chosen.</span><span>
 </span><span id="line-126"></span><span class="hs-comment">--</span><span>
 </span><span id="line-127"></span><span class="hs-comment">-- If you want to force specific epoch conversion, use convertEpochWith</span><span>
-</span><span id="line-128"></span><span id="local-6989586621679063203"><span id="local-6989586621679063204"><span class="annot"><a href="Data.Hourglass.Epoch.html#convertEpochP"><span class="hs-identifier hs-type">convertEpochP</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Hourglass.Epoch.html#Epoch"><span class="hs-identifier hs-type">Epoch</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679063204"><span class="hs-identifier hs-type">e1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Hourglass.Epoch.html#Epoch"><span class="hs-identifier hs-type">Epoch</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679063203"><span class="hs-identifier hs-type">e2</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-type">ElapsedSinceP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679063204"><span class="hs-identifier hs-type">e1</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-type">ElapsedSinceP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679063203"><span class="hs-identifier hs-type">e2</span></a></span></span></span><span>
+</span><span id="line-128"></span><span id="local-6989586621679064709"><span id="local-6989586621679064710"><span class="annot"><a href="Data.Hourglass.Epoch.html#convertEpochP"><span class="hs-identifier hs-type">convertEpochP</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Hourglass.Epoch.html#Epoch"><span class="hs-identifier hs-type">Epoch</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679064709"><span class="hs-identifier hs-type">e1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Hourglass.Epoch.html#Epoch"><span class="hs-identifier hs-type">Epoch</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679064710"><span class="hs-identifier hs-type">e2</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-type">ElapsedSinceP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679064709"><span class="hs-identifier hs-type">e1</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.Hourglass.Epoch.html#ElapsedSinceP"><span class="hs-identifier hs-type">ElapsedSinceP</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679064710"><span class="hs-identifier hs-type">e2</span></a></span></span></span><span>
 </span><span id="line-129"></span><span id="convertEpochP"><span class="annot"><span class="annottext">convertEpochP :: forall e1 e2.
 (Epoch e1, Epoch e2) =&gt;
 ElapsedSinceP e1 -&gt; ElapsedSinceP e2
-</span><a href="Data.Hourglass.Epoch.html#convertEpochP"><span class="hs-identifier hs-var hs-var">convertEpochP</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall e1 e2.
+</span><a href="Data.Hourglass.Epoch.html#convertEpochP"><span class="hs-identifier hs-var hs-var">convertEpochP</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(e1, e2) -&gt; ElapsedSinceP e1 -&gt; ElapsedSinceP e2
+forall e1 e2.
 (Epoch e1, Epoch e2) =&gt;
 (e1, e2) -&gt; ElapsedSinceP e1 -&gt; ElapsedSinceP e2
-</span><a href="Data.Hourglass.Epoch.html#convertEpochPWith"><span class="hs-identifier hs-var">convertEpochPWith</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. HasCallStack =&gt; a
-</span><span class="hs-identifier hs-var">undefined</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">forall a. HasCallStack =&gt; a
+</span><a href="Data.Hourglass.Epoch.html#convertEpochPWith"><span class="hs-identifier hs-var">convertEpochPWith</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">e1
+forall a. HasCallStack =&gt; a
+</span><span class="hs-identifier hs-var">undefined</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">e2
+forall a. HasCallStack =&gt; a
 </span><span class="hs-identifier hs-var">undefined</span></span><span class="hs-special">)</span><span>
 </span><span id="line-130"></span></pre></body></html>

@@ -7,7 +7,7 @@
 </span><span class="hs-pragma">{-# LANGUAGE Safe #-}</span><span class="hs-cpp">
 #endif
 </span><span>
-</span><span id="line-10"></span><span class="hs-comment">{- |
+</span><span id="line-10"></span><span class="annot"><span class="hs-comment">{- |
 Module      :  Control.Concurrent.QSem.Lifted
 Copyright   :  Liyang HU, Bas van Dijk
 License     :  BSD-style
@@ -17,7 +17,7 @@ Stability   :  experimental
 
 This is a wrapped version of &quot;Control.Concurrent.QSem&quot; with types
 generalised from 'IO' to all monads in 'MonadBase'.
--}</span><span>
+-}</span></span><span>
 </span><span id="line-21"></span><span>
 </span><span id="line-22"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Control.Concurrent.QSem.Lifted</span><span>
 </span><span id="line-23"></span><span>    </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-identifier">QSem</span></span><span>
@@ -43,32 +43,41 @@ generalised from 'IO' to all monads in 'MonadBase'.
 #include &quot;inlinable.h&quot;
 </span><span>
 </span><span id="line-45"></span><span class="hs-comment">--------------------------------------------------------------------------------</span><span>
-</span><span id="line-46"></span><span class="hs-comment">-- * QSems</span><span>
+</span><span id="line-46"></span><span class="annot"><span class="hs-comment">-- * QSems</span></span><span>
 </span><span id="line-47"></span><span class="hs-comment">--------------------------------------------------------------------------------</span><span>
 </span><span id="line-48"></span><span>
-</span><span id="line-49"></span><span class="hs-comment">-- | Generalized version of 'QSem.newQSem'.</span><span>
-</span><span id="line-50"></span><span id="local-6989586621679037134"><span class="annot"><a href="Control.Concurrent.QSem.Lifted.html#newQSem"><span class="hs-identifier hs-type">newQSem</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadBase</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679037134"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679037134"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">QSem</span></span></span><span>
+</span><span id="line-49"></span><span class="annot"><span class="hs-comment">-- | Generalized version of 'QSem.newQSem'.</span></span><span>
+</span><span id="line-50"></span><span id="local-6989586621679038604"><span class="annot"><a href="Control.Concurrent.QSem.Lifted.html#newQSem"><span class="hs-identifier hs-type">newQSem</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadBase</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679038604"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679038604"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">QSem</span></span></span><span>
 </span><span id="line-51"></span><span id="newQSem"><span class="annot"><span class="annottext">newQSem :: forall (m :: * -&gt; *). MonadBase IO m =&gt; Int -&gt; m QSem
-</span><a href="Control.Concurrent.QSem.Lifted.html#newQSem"><span class="hs-identifier hs-var hs-var">newQSem</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall (b :: * -&gt; *) (m :: * -&gt; *) &#945;. MonadBase b m =&gt; b &#945; -&gt; m &#945;
-</span><span class="hs-identifier hs-var">liftBase</span></span><span> </span><span class="annot"><span class="annottext">forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><a href="Control.Concurrent.QSem.Lifted.html#newQSem"><span class="hs-identifier hs-var hs-var">newQSem</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">IO QSem -&gt; m QSem
+forall &#945;. IO &#945; -&gt; m &#945;
+forall (b :: * -&gt; *) (m :: * -&gt; *) &#945;. MonadBase b m =&gt; b &#945; -&gt; m &#945;
+</span><span class="hs-identifier hs-var">liftBase</span></span><span> </span><span class="annot"><span class="annottext">(IO QSem -&gt; m QSem) -&gt; (Int -&gt; IO QSem) -&gt; Int -&gt; m QSem
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
 </span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; IO QSem
 </span><span class="hs-identifier hs-var">QSem.newQSem</span></span><span>
 </span><span id="line-52"></span><span class="hs-pragma">{-# INLINABLE</span><span> </span><span class="annot"><a href="Control.Concurrent.QSem.Lifted.html#newQSem"><span class="hs-pragma hs-type">newQSem</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
 </span><span id="line-53"></span><span>
-</span><span id="line-54"></span><span class="hs-comment">-- | Generalized version of 'QSem.waitQSem'.</span><span>
-</span><span id="line-55"></span><span id="local-6989586621679037124"><span class="annot"><a href="Control.Concurrent.QSem.Lifted.html#waitQSem"><span class="hs-identifier hs-type">waitQSem</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadBase</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679037124"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">QSem</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679037124"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span></span><span>
+</span><span id="line-54"></span><span class="annot"><span class="hs-comment">-- | Generalized version of 'QSem.waitQSem'.</span></span><span>
+</span><span id="line-55"></span><span id="local-6989586621679038614"><span class="annot"><a href="Control.Concurrent.QSem.Lifted.html#waitQSem"><span class="hs-identifier hs-type">waitQSem</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadBase</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679038614"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">QSem</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679038614"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span></span><span>
 </span><span id="line-56"></span><span id="waitQSem"><span class="annot"><span class="annottext">waitQSem :: forall (m :: * -&gt; *). MonadBase IO m =&gt; QSem -&gt; m ()
-</span><a href="Control.Concurrent.QSem.Lifted.html#waitQSem"><span class="hs-identifier hs-var hs-var">waitQSem</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall (b :: * -&gt; *) (m :: * -&gt; *) &#945;. MonadBase b m =&gt; b &#945; -&gt; m &#945;
-</span><span class="hs-identifier hs-var">liftBase</span></span><span> </span><span class="annot"><span class="annottext">forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><a href="Control.Concurrent.QSem.Lifted.html#waitQSem"><span class="hs-identifier hs-var hs-var">waitQSem</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">IO () -&gt; m ()
+forall &#945;. IO &#945; -&gt; m &#945;
+forall (b :: * -&gt; *) (m :: * -&gt; *) &#945;. MonadBase b m =&gt; b &#945; -&gt; m &#945;
+</span><span class="hs-identifier hs-var">liftBase</span></span><span> </span><span class="annot"><span class="annottext">(IO () -&gt; m ()) -&gt; (QSem -&gt; IO ()) -&gt; QSem -&gt; m ()
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
 </span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">QSem -&gt; IO ()
 </span><span class="hs-identifier hs-var">QSem.waitQSem</span></span><span>
 </span><span id="line-57"></span><span class="hs-pragma">{-# INLINABLE</span><span> </span><span class="annot"><a href="Control.Concurrent.QSem.Lifted.html#waitQSem"><span class="hs-pragma hs-type">waitQSem</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
 </span><span id="line-58"></span><span>
-</span><span id="line-59"></span><span class="hs-comment">-- | Generalized version of 'QSem.signalQSem'.</span><span>
-</span><span id="line-60"></span><span id="local-6989586621679037110"><span class="annot"><a href="Control.Concurrent.QSem.Lifted.html#signalQSem"><span class="hs-identifier hs-type">signalQSem</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadBase</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679037110"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">QSem</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679037110"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span></span><span>
+</span><span id="line-59"></span><span class="annot"><span class="hs-comment">-- | Generalized version of 'QSem.signalQSem'.</span></span><span>
+</span><span id="line-60"></span><span id="local-6989586621679038629"><span class="annot"><a href="Control.Concurrent.QSem.Lifted.html#signalQSem"><span class="hs-identifier hs-type">signalQSem</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadBase</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679038629"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">QSem</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679038629"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span></span><span>
 </span><span id="line-61"></span><span id="signalQSem"><span class="annot"><span class="annottext">signalQSem :: forall (m :: * -&gt; *). MonadBase IO m =&gt; QSem -&gt; m ()
-</span><a href="Control.Concurrent.QSem.Lifted.html#signalQSem"><span class="hs-identifier hs-var hs-var">signalQSem</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall (b :: * -&gt; *) (m :: * -&gt; *) &#945;. MonadBase b m =&gt; b &#945; -&gt; m &#945;
-</span><span class="hs-identifier hs-var">liftBase</span></span><span> </span><span class="annot"><span class="annottext">forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><a href="Control.Concurrent.QSem.Lifted.html#signalQSem"><span class="hs-identifier hs-var hs-var">signalQSem</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">IO () -&gt; m ()
+forall &#945;. IO &#945; -&gt; m &#945;
+forall (b :: * -&gt; *) (m :: * -&gt; *) &#945;. MonadBase b m =&gt; b &#945; -&gt; m &#945;
+</span><span class="hs-identifier hs-var">liftBase</span></span><span> </span><span class="annot"><span class="annottext">(IO () -&gt; m ()) -&gt; (QSem -&gt; IO ()) -&gt; QSem -&gt; m ()
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
 </span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">QSem -&gt; IO ()
 </span><span class="hs-identifier hs-var">QSem.signalQSem</span></span><span>
 </span><span id="line-62"></span><span class="hs-pragma">{-# INLINABLE</span><span> </span><span class="annot"><a href="Control.Concurrent.QSem.Lifted.html#signalQSem"><span class="hs-pragma hs-type">signalQSem</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>

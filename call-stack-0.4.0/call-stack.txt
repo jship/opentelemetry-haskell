@@ -20,7 +20,7 @@ type HasCallStack = ?callStack :: CallStack
 type CallStack = [(String, SrcLoc)]
 
 -- | A single location in the source code.
-data SrcLoc
+data () => SrcLoc
 SrcLoc :: [Char] -> [Char] -> [Char] -> Int -> Int -> Int -> Int -> SrcLoc
 [srcLocPackage] :: SrcLoc -> [Char]
 [srcLocModule] :: SrcLoc -> [Char]

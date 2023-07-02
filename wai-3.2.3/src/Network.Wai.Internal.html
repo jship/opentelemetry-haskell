@@ -19,10 +19,10 @@
 </span><span id="line-19"></span><span class="hs-comment">-- details of the underlying implementation.</span><span>
 </span><span id="line-20"></span><span class="hs-pragma">{-# DEPRECATED</span><span> </span><span class="hs-pragma">requestBody</span><span> </span><span class="hs-pragma">&quot;requestBody's name is misleading because it only gets a partial chunk of the body. Use getRequestBodyChunk instead.&quot;</span><span> </span><span class="hs-pragma">#-}</span><span>
 </span><span id="line-21"></span><span class="hs-keyword">data</span><span> </span><span id="Request"><span class="annot"><a href="Network.Wai.Internal.html#Request"><span class="hs-identifier hs-var">Request</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Request"><span class="annot"><a href="Network.Wai.Internal.html#Request"><span class="hs-identifier hs-var">Request</span></a></span></span><span> </span><span class="hs-special">{</span><span>
-</span><span id="line-22"></span><span>  </span><span class="hs-comment">-- | Request method such as GET.</span><span>
+</span><span id="line-22"></span><span>  </span><span class="annot"><span class="hs-comment">-- | Request method such as GET.</span></span><span>
 </span><span id="line-23"></span><span>     </span><span id="requestMethod"><span class="annot"><span class="annottext">Request -&gt; Method
 </span><a href="Network.Wai.Internal.html#requestMethod"><span class="hs-identifier hs-var hs-var">requestMethod</span></a></span></span><span>        </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">H.Method</span></span><span>
-</span><span id="line-24"></span><span>  </span><span class="hs-comment">-- | HTTP version such as 1.1.</span><span>
+</span><span id="line-24"></span><span>  </span><span class="annot"><span class="hs-comment">-- | HTTP version such as 1.1.</span></span><span>
 </span><span id="line-25"></span><span>  </span><span class="hs-special">,</span><span>  </span><span id="httpVersion"><span class="annot"><span class="annottext">Request -&gt; HttpVersion
 </span><a href="Network.Wai.Internal.html#httpVersion"><span class="hs-identifier hs-var hs-var">httpVersion</span></a></span></span><span>          </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">H.HttpVersion</span></span><span>
 </span><span id="line-26"></span><span>  </span><span class="hs-comment">-- | Extra path information sent by the client. The meaning varies slightly</span><span>
@@ -48,7 +48,7 @@
 </span><span id="line-45"></span><span>  </span><span class="hs-comment">-- Do not modify this raw value - modify queryString instead.</span><span>
 </span><span id="line-46"></span><span>  </span><span class="hs-special">,</span><span>  </span><span id="rawQueryString"><span class="annot"><span class="annottext">Request -&gt; Method
 </span><a href="Network.Wai.Internal.html#rawQueryString"><span class="hs-identifier hs-var hs-var">rawQueryString</span></a></span></span><span>       </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">B.ByteString</span></span><span>
-</span><span id="line-47"></span><span>  </span><span class="hs-comment">-- | A list of headers (a pair of key and value) in an HTTP request.</span><span>
+</span><span id="line-47"></span><span>  </span><span class="annot"><span class="hs-comment">-- | A list of headers (a pair of key and value) in an HTTP request.</span></span><span>
 </span><span id="line-48"></span><span>  </span><span class="hs-special">,</span><span>  </span><span id="requestHeaders"><span class="annot"><span class="annottext">Request -&gt; RequestHeaders
 </span><a href="Network.Wai.Internal.html#requestHeaders"><span class="hs-identifier hs-var hs-var">requestHeaders</span></a></span></span><span>       </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">H.RequestHeaders</span></span><span>
 </span><span id="line-49"></span><span>  </span><span class="hs-comment">-- | Was this request made over an SSL connection?</span><span>
@@ -61,21 +61,21 @@
 </span><span id="line-56"></span><span>  </span><span class="hs-comment">-- perspective, there is a secure connection.</span><span>
 </span><span id="line-57"></span><span>  </span><span class="hs-special">,</span><span>  </span><span id="isSecure"><span class="annot"><span class="annottext">Request -&gt; Bool
 </span><a href="Network.Wai.Internal.html#isSecure"><span class="hs-identifier hs-var hs-var">isSecure</span></a></span></span><span>             </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
-</span><span id="line-58"></span><span>  </span><span class="hs-comment">-- | The client\'s host information.</span><span>
+</span><span id="line-58"></span><span>  </span><span class="annot"><span class="hs-comment">-- | The client\'s host information.</span></span><span>
 </span><span id="line-59"></span><span>  </span><span class="hs-special">,</span><span>  </span><span id="remoteHost"><span class="annot"><span class="annottext">Request -&gt; SockAddr
 </span><a href="Network.Wai.Internal.html#remoteHost"><span class="hs-identifier hs-var hs-var">remoteHost</span></a></span></span><span>           </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">SockAddr</span></span><span>
 </span><span id="line-60"></span><span>  </span><span class="hs-comment">-- | Path info in individual pieces - the URL without a hostname/port and</span><span>
 </span><span id="line-61"></span><span>  </span><span class="hs-comment">-- without a query string, split on forward slashes.</span><span>
 </span><span id="line-62"></span><span>  </span><span class="hs-special">,</span><span>  </span><span id="pathInfo"><span class="annot"><span class="annottext">Request -&gt; [Text]
 </span><a href="Network.Wai.Internal.html#pathInfo"><span class="hs-identifier hs-var hs-var">pathInfo</span></a></span></span><span>             </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">]</span><span>
-</span><span id="line-63"></span><span>  </span><span class="hs-comment">-- | Parsed query string information.</span><span>
+</span><span id="line-63"></span><span>  </span><span class="annot"><span class="hs-comment">-- | Parsed query string information.</span></span><span>
 </span><span id="line-64"></span><span>  </span><span class="hs-special">,</span><span>  </span><span id="queryString"><span class="annot"><span class="annottext">Request -&gt; Query
 </span><a href="Network.Wai.Internal.html#queryString"><span class="hs-identifier hs-var hs-var">queryString</span></a></span></span><span>          </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">H.Query</span></span><span>
 </span><span id="line-65"></span><span>  </span><span class="hs-comment">-- | Get the next chunk of the body. Returns 'B.empty' when the</span><span>
 </span><span id="line-66"></span><span>  </span><span class="hs-comment">-- body is fully consumed. Since 3.2.2, this is deprecated in favor of 'getRequestBodyChunk'.</span><span>
 </span><span id="line-67"></span><span>  </span><span class="hs-special">,</span><span>  </span><span id="requestBody"><span class="annot"><span class="annottext">Request -&gt; IO Method
 </span><a href="Network.Wai.Internal.html#requestBody"><span class="hs-identifier hs-var hs-var">requestBody</span></a></span></span><span>          </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">B.ByteString</span></span><span>
-</span><span id="line-68"></span><span>  </span><span class="hs-comment">-- | A location for arbitrary data to be shared by applications and middleware.</span><span>
+</span><span id="line-68"></span><span>  </span><span class="annot"><span class="hs-comment">-- | A location for arbitrary data to be shared by applications and middleware.</span></span><span>
 </span><span id="line-69"></span><span>  </span><span class="hs-special">,</span><span>  </span><span id="vault"><span class="annot"><span class="annottext">Request -&gt; Vault
 </span><a href="Network.Wai.Internal.html#vault"><span class="hs-identifier hs-var hs-var">vault</span></a></span></span><span>                 </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Vault</span></span><span>
 </span><span id="line-70"></span><span>  </span><span class="hs-comment">-- | The size of the request body. In the case of a chunked request body,</span><span>
@@ -116,9 +116,9 @@
 </span><a href="Network.Wai.Internal.html#getRequestBodyChunk"><span class="hs-identifier hs-var hs-var">getRequestBodyChunk</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Request -&gt; IO Method
 </span><a href="Network.Wai.Internal.html#requestBody"><span class="hs-identifier hs-var">requestBody</span></a></span><span>
 </span><span id="line-100"></span><span>
-</span><span id="line-101"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679047164"><span id="local-6989586621679047167"><span class="annot"><span class="hs-identifier hs-type">Show</span></span><span> </span><span class="annot"><a href="Network.Wai.Internal.html#Request"><span class="hs-identifier hs-type">Request</span></a></span></span></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-102"></span><span>    </span><span id="local-6989586621679047162"><span class="annot"><span class="annottext">show :: Request -&gt; String
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var">show</span></span></span><span> </span><span class="annot"><a href="Network.Wai.Internal.html#Request"><span class="hs-identifier hs-type">Request</span></a></span><span class="hs-special">{</span><span id="local-6989586621679047145"><span id="local-6989586621679047146"><span id="local-6989586621679047147"><span id="local-6989586621679047148"><span id="local-6989586621679047149"><span id="local-6989586621679047150"><span id="local-6989586621679047151"><span id="local-6989586621679047152"><span id="local-6989586621679047153"><span id="local-6989586621679047154"><span id="local-6989586621679047155"><span id="local-6989586621679047156"><span id="local-6989586621679047157"><span id="local-6989586621679047158"><span id="local-6989586621679047159"><span id="local-6989586621679047160"><span class="annot"><span class="annottext">Bool
+</span><span id="line-101"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679058887"><span id="local-6989586621679058892"><span class="annot"><span class="hs-identifier hs-type">Show</span></span><span> </span><span class="annot"><a href="Network.Wai.Internal.html#Request"><span class="hs-identifier hs-type">Request</span></a></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-102"></span><span>    </span><span id="local-6989586621679058895"><span class="annot"><span class="annottext">show :: Request -&gt; String
+</span><a href="#local-6989586621679058895"><span class="hs-identifier hs-var hs-var hs-var hs-var">show</span></a></span></span><span> </span><span class="annot"><a href="Network.Wai.Internal.html#Request"><span class="hs-identifier hs-type">Request</span></a></span><span class="hs-special">{</span><span id="local-6989586621679058897"><span id="local-6989586621679058898"><span id="local-6989586621679058899"><span id="local-6989586621679058900"><span id="local-6989586621679058901"><span id="local-6989586621679058902"><span id="local-6989586621679058903"><span id="local-6989586621679058904"><span id="local-6989586621679058905"><span id="local-6989586621679058906"><span id="local-6989586621679058907"><span id="local-6989586621679058908"><span id="local-6989586621679058909"><span id="local-6989586621679058910"><span id="local-6989586621679058911"><span id="local-6989586621679058912"><span class="annot"><span class="annottext">Bool
 Query
 RequestHeaders
 [Text]
@@ -129,92 +129,106 @@ HttpVersion
 SockAddr
 Vault
 RequestBodyLength
-requestHeaderUserAgent :: Maybe Method
-requestHeaderReferer :: Maybe Method
-requestHeaderRange :: Maybe Method
-requestHeaderHost :: Maybe Method
-requestBodyLength :: RequestBodyLength
-vault :: Vault
-requestBody :: IO Method
-queryString :: Query
-pathInfo :: [Text]
-remoteHost :: SockAddr
-isSecure :: Bool
-requestHeaders :: RequestHeaders
-rawQueryString :: Method
-rawPathInfo :: Method
-httpVersion :: HttpVersion
-requestMethod :: Method
-requestHeaderUserAgent :: Request -&gt; Maybe Method
-requestHeaderReferer :: Request -&gt; Maybe Method
-requestHeaderRange :: Request -&gt; Maybe Method
-requestHeaderHost :: Request -&gt; Maybe Method
-requestBodyLength :: Request -&gt; RequestBodyLength
-vault :: Request -&gt; Vault
-requestBody :: Request -&gt; IO Method
-queryString :: Request -&gt; Query
-pathInfo :: Request -&gt; [Text]
-remoteHost :: Request -&gt; SockAddr
-isSecure :: Request -&gt; Bool
-requestHeaders :: Request -&gt; RequestHeaders
-rawQueryString :: Request -&gt; Method
-rawPathInfo :: Request -&gt; Method
-httpVersion :: Request -&gt; HttpVersion
 requestMethod :: Request -&gt; Method
-</span><a href="#local-6989586621679047145"><span class="hs-glyph hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">..</span></a></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String
-</span><span class="hs-string">&quot;Request {&quot;</span></span><span> </span><span class="annot"><span class="annottext">forall a. [a] -&gt; [a] -&gt; [a]
-</span><span class="hs-operator hs-var">++</span></span><span> </span><span class="annot"><span class="annottext">forall a. [a] -&gt; [[a]] -&gt; [a]
+httpVersion :: Request -&gt; HttpVersion
+rawPathInfo :: Request -&gt; Method
+rawQueryString :: Request -&gt; Method
+requestHeaders :: Request -&gt; RequestHeaders
+isSecure :: Request -&gt; Bool
+remoteHost :: Request -&gt; SockAddr
+pathInfo :: Request -&gt; [Text]
+queryString :: Request -&gt; Query
+requestBody :: Request -&gt; IO Method
+vault :: Request -&gt; Vault
+requestBodyLength :: Request -&gt; RequestBodyLength
+requestHeaderHost :: Request -&gt; Maybe Method
+requestHeaderRange :: Request -&gt; Maybe Method
+requestHeaderReferer :: Request -&gt; Maybe Method
+requestHeaderUserAgent :: Request -&gt; Maybe Method
+requestMethod :: Method
+httpVersion :: HttpVersion
+rawPathInfo :: Method
+rawQueryString :: Method
+requestHeaders :: RequestHeaders
+isSecure :: Bool
+remoteHost :: SockAddr
+pathInfo :: [Text]
+queryString :: Query
+requestBody :: IO Method
+vault :: Vault
+requestBodyLength :: RequestBodyLength
+requestHeaderHost :: Maybe Method
+requestHeaderRange :: Maybe Method
+requestHeaderReferer :: Maybe Method
+requestHeaderUserAgent :: Maybe Method
+</span><a href="Network.Wai.Internal.html#requestMethod"><span class="hs-glyph hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">..</span></a></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;Request {&quot;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
+forall a. [a] -&gt; [a] -&gt; [a]
+</span><span class="hs-operator hs-var">++</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; [String] -&gt; String
+forall a. [a] -&gt; [[a]] -&gt; [a]
 </span><span class="hs-identifier hs-var">intercalate</span></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;, &quot;</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621679047144"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. [a] -&gt; [a] -&gt; [a]
+</span><a href="#local-6989586621679058913"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
+forall a. [a] -&gt; [a] -&gt; [a]
 </span><span class="hs-operator hs-var">++</span></span><span> </span><span class="annot"><span class="annottext">String
-</span><span class="hs-string">&quot; = &quot;</span></span><span> </span><span class="annot"><span class="annottext">forall a. [a] -&gt; [a] -&gt; [a]
+</span><span class="hs-string">&quot; = &quot;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
+forall a. [a] -&gt; [a] -&gt; [a]
 </span><span class="hs-operator hs-var">++</span></span><span> </span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621679047143"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="hs-glyph">|</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679047144"><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621679047144"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">,</span><span id="local-6989586621679047143"><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621679047143"><span class="hs-identifier hs-var">b</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[(String, String)]
-</span><a href="#local-6989586621679047142"><span class="hs-identifier hs-var">fields</span></a></span><span class="hs-special">]</span><span> </span><span class="annot"><span class="annottext">forall a. [a] -&gt; [a] -&gt; [a]
+</span><a href="#local-6989586621679058914"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="hs-glyph">|</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679058913"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679058913"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">,</span><span id="local-6989586621679058914"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679058914"><span class="hs-identifier hs-var">b</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[(String, String)]
+</span><a href="#local-6989586621679058915"><span class="hs-identifier hs-var">fields</span></a></span><span class="hs-special">]</span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
+forall a. [a] -&gt; [a] -&gt; [a]
 </span><span class="hs-operator hs-var">++</span></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;}&quot;</span></span><span>
 </span><span id="line-103"></span><span>        </span><span class="hs-keyword">where</span><span>
-</span><span id="line-104"></span><span>            </span><span id="local-6989586621679047142"><span class="annot"><span class="annottext">fields :: [(String, String)]
-</span><a href="#local-6989586621679047142"><span class="hs-identifier hs-var hs-var">fields</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-104"></span><span>            </span><span id="local-6989586621679058915"><span class="annot"><span class="annottext">fields :: [(String, String)]
+</span><a href="#local-6989586621679058915"><span class="hs-identifier hs-var hs-var">fields</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-105"></span><span>                </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><span class="annottext">String
-</span><span class="hs-string">&quot;requestMethod&quot;</span></span><span class="hs-special">,</span><span class="annot"><span class="annottext">forall a. Show a =&gt; a -&gt; String
+</span><span class="hs-string">&quot;requestMethod&quot;</span></span><span class="hs-special">,</span><span class="annot"><span class="annottext">Method -&gt; String
+forall a. Show a =&gt; a -&gt; String
 </span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">Method
-</span><a href="#local-6989586621679047160"><span class="hs-identifier hs-var">requestMethod</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679058897"><span class="hs-identifier hs-var">requestMethod</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-106"></span><span>                </span><span class="hs-special">,</span><span class="hs-special">(</span><span class="annot"><span class="annottext">String
-</span><span class="hs-string">&quot;httpVersion&quot;</span></span><span class="hs-special">,</span><span class="annot"><span class="annottext">forall a. Show a =&gt; a -&gt; String
+</span><span class="hs-string">&quot;httpVersion&quot;</span></span><span class="hs-special">,</span><span class="annot"><span class="annottext">HttpVersion -&gt; String
+forall a. Show a =&gt; a -&gt; String
 </span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">HttpVersion
-</span><a href="#local-6989586621679047159"><span class="hs-identifier hs-var">httpVersion</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679058898"><span class="hs-identifier hs-var">httpVersion</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-107"></span><span>                </span><span class="hs-special">,</span><span class="hs-special">(</span><span class="annot"><span class="annottext">String
-</span><span class="hs-string">&quot;rawPathInfo&quot;</span></span><span class="hs-special">,</span><span class="annot"><span class="annottext">forall a. Show a =&gt; a -&gt; String
+</span><span class="hs-string">&quot;rawPathInfo&quot;</span></span><span class="hs-special">,</span><span class="annot"><span class="annottext">Method -&gt; String
+forall a. Show a =&gt; a -&gt; String
 </span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">Method
-</span><a href="#local-6989586621679047158"><span class="hs-identifier hs-var">rawPathInfo</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679058899"><span class="hs-identifier hs-var">rawPathInfo</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-108"></span><span>                </span><span class="hs-special">,</span><span class="hs-special">(</span><span class="annot"><span class="annottext">String
-</span><span class="hs-string">&quot;rawQueryString&quot;</span></span><span class="hs-special">,</span><span class="annot"><span class="annottext">forall a. Show a =&gt; a -&gt; String
+</span><span class="hs-string">&quot;rawQueryString&quot;</span></span><span class="hs-special">,</span><span class="annot"><span class="annottext">Method -&gt; String
+forall a. Show a =&gt; a -&gt; String
 </span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">Method
-</span><a href="#local-6989586621679047157"><span class="hs-identifier hs-var">rawQueryString</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679058900"><span class="hs-identifier hs-var">rawQueryString</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-109"></span><span>                </span><span class="hs-special">,</span><span class="hs-special">(</span><span class="annot"><span class="annottext">String
-</span><span class="hs-string">&quot;requestHeaders&quot;</span></span><span class="hs-special">,</span><span class="annot"><span class="annottext">forall a. Show a =&gt; a -&gt; String
+</span><span class="hs-string">&quot;requestHeaders&quot;</span></span><span class="hs-special">,</span><span class="annot"><span class="annottext">RequestHeaders -&gt; String
+forall a. Show a =&gt; a -&gt; String
 </span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">RequestHeaders
-</span><a href="#local-6989586621679047156"><span class="hs-identifier hs-var">requestHeaders</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679058901"><span class="hs-identifier hs-var">requestHeaders</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-110"></span><span>                </span><span class="hs-special">,</span><span class="hs-special">(</span><span class="annot"><span class="annottext">String
-</span><span class="hs-string">&quot;isSecure&quot;</span></span><span class="hs-special">,</span><span class="annot"><span class="annottext">forall a. Show a =&gt; a -&gt; String
+</span><span class="hs-string">&quot;isSecure&quot;</span></span><span class="hs-special">,</span><span class="annot"><span class="annottext">Bool -&gt; String
+forall a. Show a =&gt; a -&gt; String
 </span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">Bool
-</span><a href="#local-6989586621679047155"><span class="hs-identifier hs-var">isSecure</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679058902"><span class="hs-identifier hs-var">isSecure</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-111"></span><span>                </span><span class="hs-special">,</span><span class="hs-special">(</span><span class="annot"><span class="annottext">String
-</span><span class="hs-string">&quot;remoteHost&quot;</span></span><span class="hs-special">,</span><span class="annot"><span class="annottext">forall a. Show a =&gt; a -&gt; String
+</span><span class="hs-string">&quot;remoteHost&quot;</span></span><span class="hs-special">,</span><span class="annot"><span class="annottext">SockAddr -&gt; String
+forall a. Show a =&gt; a -&gt; String
 </span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">SockAddr
-</span><a href="#local-6989586621679047154"><span class="hs-identifier hs-var">remoteHost</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679058903"><span class="hs-identifier hs-var">remoteHost</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-112"></span><span>                </span><span class="hs-special">,</span><span class="hs-special">(</span><span class="annot"><span class="annottext">String
-</span><span class="hs-string">&quot;pathInfo&quot;</span></span><span class="hs-special">,</span><span class="annot"><span class="annottext">forall a. Show a =&gt; a -&gt; String
+</span><span class="hs-string">&quot;pathInfo&quot;</span></span><span class="hs-special">,</span><span class="annot"><span class="annottext">[Text] -&gt; String
+forall a. Show a =&gt; a -&gt; String
 </span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">[Text]
-</span><a href="#local-6989586621679047153"><span class="hs-identifier hs-var">pathInfo</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679058904"><span class="hs-identifier hs-var">pathInfo</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-113"></span><span>                </span><span class="hs-special">,</span><span class="hs-special">(</span><span class="annot"><span class="annottext">String
-</span><span class="hs-string">&quot;queryString&quot;</span></span><span class="hs-special">,</span><span class="annot"><span class="annottext">forall a. Show a =&gt; a -&gt; String
+</span><span class="hs-string">&quot;queryString&quot;</span></span><span class="hs-special">,</span><span class="annot"><span class="annottext">Query -&gt; String
+forall a. Show a =&gt; a -&gt; String
 </span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">Query
-</span><a href="#local-6989586621679047152"><span class="hs-identifier hs-var">queryString</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679058905"><span class="hs-identifier hs-var">queryString</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-114"></span><span>                </span><span class="hs-special">,</span><span class="hs-special">(</span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;requestBody&quot;</span></span><span class="hs-special">,</span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;&lt;IO ByteString&gt;&quot;</span></span><span class="hs-special">)</span><span>
@@ -222,17 +236,20 @@ requestMethod :: Request -&gt; Method
 </span><span class="hs-string">&quot;vault&quot;</span></span><span class="hs-special">,</span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;&lt;Vault&gt;&quot;</span></span><span class="hs-special">)</span><span>
 </span><span id="line-116"></span><span>                </span><span class="hs-special">,</span><span class="hs-special">(</span><span class="annot"><span class="annottext">String
-</span><span class="hs-string">&quot;requestBodyLength&quot;</span></span><span class="hs-special">,</span><span class="annot"><span class="annottext">forall a. Show a =&gt; a -&gt; String
+</span><span class="hs-string">&quot;requestBodyLength&quot;</span></span><span class="hs-special">,</span><span class="annot"><span class="annottext">RequestBodyLength -&gt; String
+forall a. Show a =&gt; a -&gt; String
 </span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">RequestBodyLength
-</span><a href="#local-6989586621679047149"><span class="hs-identifier hs-var">requestBodyLength</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679058908"><span class="hs-identifier hs-var">requestBodyLength</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-117"></span><span>                </span><span class="hs-special">,</span><span class="hs-special">(</span><span class="annot"><span class="annottext">String
-</span><span class="hs-string">&quot;requestHeaderHost&quot;</span></span><span class="hs-special">,</span><span class="annot"><span class="annottext">forall a. Show a =&gt; a -&gt; String
+</span><span class="hs-string">&quot;requestHeaderHost&quot;</span></span><span class="hs-special">,</span><span class="annot"><span class="annottext">Maybe Method -&gt; String
+forall a. Show a =&gt; a -&gt; String
 </span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">Maybe Method
-</span><a href="#local-6989586621679047148"><span class="hs-identifier hs-var">requestHeaderHost</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679058909"><span class="hs-identifier hs-var">requestHeaderHost</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-118"></span><span>                </span><span class="hs-special">,</span><span class="hs-special">(</span><span class="annot"><span class="annottext">String
-</span><span class="hs-string">&quot;requestHeaderRange&quot;</span></span><span class="hs-special">,</span><span class="annot"><span class="annottext">forall a. Show a =&gt; a -&gt; String
+</span><span class="hs-string">&quot;requestHeaderRange&quot;</span></span><span class="hs-special">,</span><span class="annot"><span class="annottext">Maybe Method -&gt; String
+forall a. Show a =&gt; a -&gt; String
 </span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">Maybe Method
-</span><a href="#local-6989586621679047147"><span class="hs-identifier hs-var">requestHeaderRange</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679058910"><span class="hs-identifier hs-var">requestHeaderRange</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-119"></span><span>                </span><span class="hs-special">]</span><span>
 </span><span id="line-120"></span><span>
 </span><span id="line-121"></span><span>
@@ -255,17 +272,21 @@ requestMethod :: Request -&gt; Method
 </span><span id="line-138"></span><span class="hs-comment">-- not be known.</span><span>
 </span><span id="line-139"></span><span class="hs-comment">--</span><span>
 </span><span id="line-140"></span><span class="hs-comment">-- Since 1.4.0</span><span>
-</span><span id="line-141"></span><span class="hs-keyword">data</span><span> </span><span id="RequestBodyLength"><span class="annot"><a href="Network.Wai.Internal.html#RequestBodyLength"><span class="hs-identifier hs-var">RequestBodyLength</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="ChunkedBody"><span class="annot"><a href="Network.Wai.Internal.html#ChunkedBody"><span class="hs-identifier hs-var">ChunkedBody</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="KnownLength"><span class="annot"><a href="Network.Wai.Internal.html#KnownLength"><span class="hs-identifier hs-var">KnownLength</span></a></span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word64</span></span><span> </span><span class="hs-keyword">deriving</span><span> </span><span id="local-6989586621679047095"><span id="local-6989586621679047097"><span id="local-6989586621679047103"><span class="annot"><span class="annottext">Int -&gt; RequestBodyLength -&gt; ShowS
+</span><span id="line-141"></span><span class="hs-keyword">data</span><span> </span><span id="RequestBodyLength"><span class="annot"><a href="Network.Wai.Internal.html#RequestBodyLength"><span class="hs-identifier hs-var">RequestBodyLength</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="ChunkedBody"><span class="annot"><a href="Network.Wai.Internal.html#ChunkedBody"><span class="hs-identifier hs-var">ChunkedBody</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="KnownLength"><span class="annot"><a href="Network.Wai.Internal.html#KnownLength"><span class="hs-identifier hs-var">KnownLength</span></a></span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word64</span></span><span> </span><span class="hs-keyword">deriving</span><span> </span><span id="local-6989586621679058955"><span id="local-6989586621679058961"><span id="local-6989586621679058964"><span class="annot"><span class="annottext">Int -&gt; RequestBodyLength -&gt; ShowS
 [RequestBodyLength] -&gt; ShowS
 RequestBodyLength -&gt; String
+(Int -&gt; RequestBodyLength -&gt; ShowS)
+-&gt; (RequestBodyLength -&gt; String)
+-&gt; ([RequestBodyLength] -&gt; ShowS)
+-&gt; Show RequestBodyLength
 forall a.
 (Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
-showList :: [RequestBodyLength] -&gt; ShowS
-$cshowList :: [RequestBodyLength] -&gt; ShowS
-show :: RequestBodyLength -&gt; String
-$cshow :: RequestBodyLength -&gt; String
-showsPrec :: Int -&gt; RequestBodyLength -&gt; ShowS
 $cshowsPrec :: Int -&gt; RequestBodyLength -&gt; ShowS
+showsPrec :: Int -&gt; RequestBodyLength -&gt; ShowS
+$cshow :: RequestBodyLength -&gt; String
+show :: RequestBodyLength -&gt; String
+$cshowList :: [RequestBodyLength] -&gt; ShowS
+showList :: [RequestBodyLength] -&gt; ShowS
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span>
 </span><span id="line-142"></span><span>
 </span><span id="line-143"></span><span class="hs-comment">-- | Information on which part to be sent.</span><span>
@@ -278,17 +299,19 @@ $cshowsPrec :: Int -&gt; RequestBodyLength -&gt; ShowS
 </span><a href="Network.Wai.Internal.html#filePartByteCount"><span class="hs-identifier hs-var hs-var">filePartByteCount</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Integer</span></span><span>
 </span><span id="line-149"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="filePartFileSize"><span class="annot"><span class="annottext">FilePart -&gt; Integer
 </span><a href="Network.Wai.Internal.html#filePartFileSize"><span class="hs-identifier hs-var hs-var">filePartFileSize</span></a></span></span><span>  </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Integer</span></span><span>
-</span><span id="line-150"></span><span>    </span><span class="hs-special">}</span><span> </span><span class="hs-keyword">deriving</span><span> </span><span id="local-6989586621679047080"><span id="local-6989586621679047082"><span id="local-6989586621679047089"><span class="annot"><span class="annottext">Int -&gt; FilePart -&gt; ShowS
+</span><span id="line-150"></span><span>    </span><span class="hs-special">}</span><span> </span><span class="hs-keyword">deriving</span><span> </span><span id="local-6989586621679058971"><span id="local-6989586621679058978"><span id="local-6989586621679058982"><span class="annot"><span class="annottext">Int -&gt; FilePart -&gt; ShowS
 [FilePart] -&gt; ShowS
 FilePart -&gt; String
+(Int -&gt; FilePart -&gt; ShowS)
+-&gt; (FilePart -&gt; String) -&gt; ([FilePart] -&gt; ShowS) -&gt; Show FilePart
 forall a.
 (Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
-showList :: [FilePart] -&gt; ShowS
-$cshowList :: [FilePart] -&gt; ShowS
-show :: FilePart -&gt; String
-$cshow :: FilePart -&gt; String
-showsPrec :: Int -&gt; FilePart -&gt; ShowS
 $cshowsPrec :: Int -&gt; FilePart -&gt; ShowS
+showsPrec :: Int -&gt; FilePart -&gt; ShowS
+$cshow :: FilePart -&gt; String
+show :: FilePart -&gt; String
+$cshowList :: [FilePart] -&gt; ShowS
+showList :: [FilePart] -&gt; ShowS
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span>
 </span><span id="line-151"></span><span>
 </span><span id="line-152"></span><span class="hs-comment">-- | A special datatype to indicate that the WAI handler has received the</span><span>

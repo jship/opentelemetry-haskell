@@ -433,10 +433,10 @@ data Last a
 class Functor f => Phantom f
 
 -- | Constant functor.
-data Constant a (b :: k)
+data () => Constant a (b :: k)
 
 -- | Identity functor and monad. (a non-strict monad)
-data Identity a
+data () => Identity a
 type Prod = Product
 
 -- | Boolean monoid under conjunction (<a>&amp;&amp;</a>).
@@ -450,7 +450,7 @@ type Prod = Product
 --   &gt;&gt;&gt; getAll (mconcat (map (\x -&gt; All (even x)) [2,4,6,7,8]))
 --   False
 --   </pre>
-data All
+data () => All
 
 -- | Boolean monoid under disjunction (<a>||</a>).
 --   
@@ -463,7 +463,7 @@ data All
 --   &gt;&gt;&gt; getAny (mconcat (map (\x -&gt; Any (even x)) [2,4,6,7,8]))
 --   True
 --   </pre>
-data Any
+data () => Any
 
 -- | Monoid under addition.
 --   
@@ -471,7 +471,7 @@ data Any
 --   &gt;&gt;&gt; getSum (Sum 1 &lt;&gt; Sum 2 &lt;&gt; mempty)
 --   3
 --   </pre>
-data Sum a
+data () => Sum a
 
 -- | Monoid under multiplication.
 --   
@@ -479,7 +479,7 @@ data Sum a
 --   &gt;&gt;&gt; getProduct (Product 3 &lt;&gt; Product 4 &lt;&gt; mempty)
 --   12
 --   </pre>
-data Product a
+data () => Product a
 instance GHC.Base.Monoid (Lens.Family.Last a)
 instance GHC.Base.Semigroup (Lens.Family.Last a)
 instance GHC.Base.Monoid (Lens.Family.First a)
@@ -874,7 +874,7 @@ class (Traversable f, Applicative f) => Identical f
 
 -- | The same functor, but with an <a>Applicative</a> instance that
 --   performs actions in the reverse order.
-data Backwards (f :: k -> Type) (a :: k)
+data () => Backwards (f :: k -> Type) (a :: k)
 
 -- | The <a>FiniteBits</a> class denotes types with a finite, fixed number
 --   of bits.
@@ -1045,12 +1045,12 @@ type LensLike' f s a = (a -> f a) -> (s -> f s)
 type FoldLike r s t a b = LensLike (Constant r) s t a b
 
 -- | Constant functor.
-data Constant a (b :: k)
+data () => Constant a (b :: k)
 type ASetter s t a b = LensLike Identity s t a b
 type ASetter' s a = LensLike' Identity s a
 
 -- | Identity functor and monad. (a non-strict monad)
-data Identity a
+data () => Identity a
 
 -- | A state transformer monad parameterized by:
 --   
@@ -1062,7 +1062,7 @@ data Identity a
 --   The <a>return</a> function leaves the state unchanged, while
 --   <tt>&gt;&gt;=</tt> uses the final state of the first computation as
 --   the initial state of the second.
-data StateT s (m :: Type -> Type) a
+data () => StateT s (m :: Type -> Type) a
 
 -- | A writer monad parameterized by the type <tt>w</tt> of output to
 --   accumulate.
@@ -1205,12 +1205,12 @@ type LensLike' f s a = (a -> f a) -> (s -> f s)
 type FoldLike r s t a b = LensLike (Constant r) s t a b
 
 -- | Constant functor.
-data Constant a (b :: k)
+data () => Constant a (b :: k)
 type ASetter s t a b = LensLike Identity s t a b
 type ASetter' s a = LensLike' Identity s a
 
 -- | Identity functor and monad. (a non-strict monad)
-data Identity a
+data () => Identity a
 
 -- | A state transformer monad parameterized by:
 --   
@@ -1222,7 +1222,7 @@ data Identity a
 --   The <a>return</a> function leaves the state unchanged, while
 --   <tt>&gt;&gt;=</tt> uses the final state of the first computation as
 --   the initial state of the second.
-data StateT s (m :: Type -> Type) a
+data () => StateT s (m :: Type -> Type) a
 
 -- | A writer monad parameterized by the type <tt>w</tt> of output to
 --   accumulate.

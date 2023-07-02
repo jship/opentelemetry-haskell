@@ -415,8 +415,6 @@ instance Data.Conduit.Lazy.MonadActive GHC.Types.IO
 instance Data.Conduit.Lazy.MonadActive (GHC.ST.ST s)
 instance Data.Conduit.Lazy.MonadActive (Control.Monad.ST.Lazy.Imp.ST s)
 instance Data.Conduit.Lazy.MonadActive m => Data.Conduit.Lazy.MonadActive (Control.Monad.Trans.Identity.IdentityT m)
-instance (Control.Monad.Trans.Error.Error e, Data.Conduit.Lazy.MonadActive m) => Data.Conduit.Lazy.MonadActive (Control.Monad.Trans.Error.ErrorT e m)
-instance Data.Conduit.Lazy.MonadActive m => Data.Conduit.Lazy.MonadActive (Control.Monad.Trans.List.ListT m)
 instance Data.Conduit.Lazy.MonadActive m => Data.Conduit.Lazy.MonadActive (Control.Monad.Trans.Maybe.MaybeT m)
 instance Data.Conduit.Lazy.MonadActive m => Data.Conduit.Lazy.MonadActive (Control.Monad.Trans.Reader.ReaderT r m)
 instance Data.Conduit.Lazy.MonadActive m => Data.Conduit.Lazy.MonadActive (Control.Monad.Trans.State.Lazy.StateT s m)
@@ -445,7 +443,7 @@ sourceSocket :: MonadIO m => Socket -> ConduitT i ByteString m ()
 sinkSocket :: MonadIO m => Socket -> ConduitT ByteString o m ()
 
 -- | The data passed to an <tt>Application</tt>.
-data AppData
+data () => AppData
 appSource :: (HasReadWrite ad, MonadIO m) => ad -> ConduitT i ByteString m ()
 appSink :: (HasReadWrite ad, MonadIO m) => ad -> ConduitT ByteString o m ()
 appSockAddr :: AppData -> SockAddr
@@ -453,7 +451,7 @@ appLocalAddr :: AppData -> Maybe SockAddr
 
 -- | Settings for a TCP server. It takes a port to listen on, and an
 --   optional hostname to bind to.
-data ServerSettings
+data () => ServerSettings
 serverSettings :: Int -> HostPreference -> ServerSettings
 
 -- | Run an <tt>Application</tt> with the given settings. This function
@@ -485,7 +483,7 @@ forkTCPServer :: MonadUnliftIO m => ServerSettings -> (AppData -> m ()) -> m Thr
 runGeneralTCPServer :: MonadUnliftIO m => ServerSettings -> (AppData -> m ()) -> m a
 
 -- | Settings for a TCP client, specifying how to connect to the server.
-data ClientSettings
+data () => ClientSettings
 clientSettings :: Int -> ByteString -> ClientSettings
 
 -- | Run an <tt>Application</tt> by connecting to the specified server.
@@ -530,12 +528,12 @@ setNeedLocalAddr :: Bool -> ServerSettings -> ServerSettings
 --   
 --   Any other value is treated as a hostname. As an example, to bind to
 --   the IPv4 local host only, use "127.0.0.1".
-data HostPreference
+data () => HostPreference
 
 module Data.Conduit.Network.UDP
 
 -- | Representation of a single UDP message
-data Message
+data () => Message
 Message :: {-# UNPACK #-} !ByteString -> !SockAddr -> Message
 [msgData] :: Message -> {-# UNPACK #-} !ByteString
 [msgSender] :: Message -> !SockAddr
@@ -604,7 +602,7 @@ sinkAllToSocket :: MonadIO m => Socket -> ConduitT Message o m ()
 --   
 --   Any other value is treated as a hostname. As an example, to bind to
 --   the IPv4 local host only, use "127.0.0.1".
-data HostPreference
+data () => HostPreference
 
 module Data.Conduit.Network.Unix
 
@@ -623,12 +621,12 @@ sourceSocket :: MonadIO m => Socket -> ConduitT i ByteString m ()
 sinkSocket :: MonadIO m => Socket -> ConduitT ByteString o m ()
 
 -- | The data passed to a Unix domain sockets <tt>Application</tt>.
-data AppDataUnix
+data () => AppDataUnix
 appSource :: (HasReadWrite ad, MonadIO m) => ad -> ConduitT i ByteString m ()
 appSink :: (HasReadWrite ad, MonadIO m) => ad -> ConduitT ByteString o m ()
 
 -- | Settings for a Unix domain sockets server.
-data ServerSettingsUnix
+data () => ServerSettingsUnix
 serverSettings :: FilePath -> ServerSettingsUnix
 
 -- | Run an <tt>Application</tt> with the given settings. This function
@@ -637,7 +635,7 @@ serverSettings :: FilePath -> ServerSettingsUnix
 runUnixServer :: ServerSettingsUnix -> (AppDataUnix -> IO ()) -> IO a
 
 -- | Settings for a Unix domain sockets client.
-data ClientSettingsUnix
+data () => ClientSettingsUnix
 clientSettings :: FilePath -> ClientSettingsUnix
 
 -- | Run an <tt>Application</tt> by connecting to the specified server.
@@ -940,7 +938,7 @@ multiple :: Monad m => ConduitT ByteString a m () -> ConduitT ByteString a m ()
 --   
 --   The total amount of memory used depends on the window bits and the
 --   <a>MemoryLevel</a>. See the <a>MemoryLevel</a> for the details.
-data WindowBits
+data () => WindowBits
 WindowBits :: Int -> WindowBits
 
 -- | The default <a>WindowBits</a> is 15 which is also the maximum size.

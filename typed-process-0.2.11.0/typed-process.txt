@@ -697,7 +697,7 @@ data ByteStringOutputException
 ByteStringOutputException :: SomeException -> ProcessConfig () () () -> ByteStringOutputException
 
 -- | Defines the exit codes that a program can return.
-data ExitCode
+data () => ExitCode
 
 -- | indicates successful termination;
 ExitSuccess :: ExitCode
@@ -706,7 +706,7 @@ ExitSuccess :: ExitCode
 --   of the code is operating-system dependent. In particular, some values
 --   may be prohibited (e.g. 0 on a POSIX-compliant system).
 ExitFailure :: Int -> ExitCode
-data StdStream
+data () => StdStream
 
 -- | Inherit Handle from parent
 Inherit :: StdStream

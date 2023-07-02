@@ -39,102 +39,134 @@
 </span><span id="line-39"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Prelude</span></span><span>
 </span><span id="line-40"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.HashMap.Strict</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">HashMap</span></span><span>
 </span><span id="line-41"></span><span>
-</span><span id="line-42"></span><span class="hs-keyword">data</span><span> </span><span id="Resource"><span class="annot"><a href="OTel.SDK.Resource.Core.Internal.html#Resource"><span class="hs-identifier hs-var">Resource</span></a></span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679092807"><span class="annot"><a href="#local-6989586621679092807"><span class="hs-identifier hs-type">attrs</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">AttrsFor</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Type</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Resource"><span class="annot"><a href="OTel.SDK.Resource.Core.Internal.html#Resource"><span class="hs-identifier hs-var">Resource</span></a></span></span><span>
+</span><span id="line-42"></span><span class="hs-keyword">data</span><span> </span><span id="Resource"><span class="annot"><a href="OTel.SDK.Resource.Core.Internal.html#Resource"><span class="hs-identifier hs-var">Resource</span></a></span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679094722"><span class="annot"><a href="#local-6989586621679094722"><span class="hs-identifier hs-type">attrs</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">AttrsFor</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Type</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Resource"><span class="annot"><a href="OTel.SDK.Resource.Core.Internal.html#Resource"><span class="hs-identifier hs-var">Resource</span></a></span></span><span>
 </span><span id="line-43"></span><span>  </span><span class="hs-special">{</span><span> </span><span id="resourceAttrs"><span class="annot"><span class="annottext">forall (attrs :: AttrsFor -&gt; *).
 Resource attrs -&gt; attrs 'AttrsForResource
-</span><a href="OTel.SDK.Resource.Core.Internal.html#resourceAttrs"><span class="hs-identifier hs-var hs-var">resourceAttrs</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621679092807"><span class="hs-identifier hs-type">attrs</span></a></span><span> </span><span class="hs-special">'</span><span class="annot"><span class="hs-identifier hs-type">AttrsForResource</span></span><span>
+</span><a href="OTel.SDK.Resource.Core.Internal.html#resourceAttrs"><span class="hs-identifier hs-var hs-var">resourceAttrs</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621679094722"><span class="hs-identifier hs-type">attrs</span></a></span><span> </span><span class="hs-special">'</span><span class="annot"><span class="hs-identifier hs-type">AttrsForResource</span></span><span>
 </span><span id="line-44"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="resourceSchemaURL"><span class="annot"><span class="annottext">forall (attrs :: AttrsFor -&gt; *). Resource attrs -&gt; Maybe SchemaURL
 </span><a href="OTel.SDK.Resource.Core.Internal.html#resourceSchemaURL"><span class="hs-identifier hs-var hs-var">resourceSchemaURL</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">SchemaURL</span></span><span>
 </span><span id="line-45"></span><span>  </span><span class="hs-special">}</span><span>
 </span><span id="line-46"></span><span>
-</span><span id="line-47"></span><span id="local-6989586621679092681"><span id="local-6989586621679092688"><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">stock</span></span><span> </span><span class="hs-keyword">instance</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Eq</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="OTel.SDK.Resource.Core.Internal.html#Resource"><span class="hs-identifier hs-type">Resource</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Attrs</span></span><span class="hs-special">)</span></span></span><span>
-</span><span id="line-48"></span><span id="local-6989586621679092666"><span id="local-6989586621679092668"><span id="local-6989586621679092677"><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">stock</span></span><span> </span><span class="hs-keyword">instance</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Show</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="OTel.SDK.Resource.Core.Internal.html#Resource"><span class="hs-identifier hs-type">Resource</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Attrs</span></span><span class="hs-special">)</span></span></span></span><span>
+</span><span id="line-47"></span><span id="local-6989586621679094827"><span id="local-6989586621679094834"><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">stock</span></span><span> </span><span class="hs-keyword">instance</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Eq</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="OTel.SDK.Resource.Core.Internal.html#Resource"><span class="hs-identifier hs-type">Resource</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Attrs</span></span><span class="hs-special">)</span></span></span><span>
+</span><span id="line-48"></span><span id="local-6989586621679094840"><span id="local-6989586621679094849"><span id="local-6989586621679094853"><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">stock</span></span><span> </span><span class="hs-keyword">instance</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Show</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="OTel.SDK.Resource.Core.Internal.html#Resource"><span class="hs-identifier hs-type">Resource</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Attrs</span></span><span class="hs-special">)</span></span></span></span><span>
 </span><span id="line-49"></span><span>
-</span><span id="line-50"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679092657"><span id="local-6989586621679092659"><span id="local-6989586621679092661"><span class="annot"><span class="hs-identifier hs-type">ToJSON</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="OTel.SDK.Resource.Core.Internal.html#Resource"><span class="hs-identifier hs-type">Resource</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Attrs</span></span><span class="hs-special">)</span></span></span></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-51"></span><span>  </span><span id="local-6989586621679092643"><span class="annot"><span class="annottext">toJSON :: Resource Attrs -&gt; Value
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var">toJSON</span></span></span><span> </span><span id="local-6989586621679092641"><span class="annot"><span class="annottext">Resource Attrs
-</span><a href="#local-6989586621679092641"><span class="hs-identifier hs-var">resource</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-50"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679094859"><span id="local-6989586621679094863"><span id="local-6989586621679094866"><span id="local-6989586621679094869"><span class="annot"><span class="hs-identifier hs-type">ToJSON</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="OTel.SDK.Resource.Core.Internal.html#Resource"><span class="hs-identifier hs-type">Resource</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Attrs</span></span><span class="hs-special">)</span></span></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-51"></span><span>  </span><span id="local-6989586621679094886"><span class="annot"><span class="annottext">toJSON :: Resource Attrs -&gt; Value
+</span><a href="#local-6989586621679094886"><span class="hs-identifier hs-var hs-var hs-var hs-var">toJSON</span></a></span></span><span> </span><span id="local-6989586621679094888"><span class="annot"><span class="annottext">Resource Attrs
+</span><a href="#local-6989586621679094888"><span class="hs-identifier hs-var">resource</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-52"></span><span>    </span><span class="annot"><span class="annottext">[Pair] -&gt; Value
 </span><span class="hs-identifier hs-var">object</span></span><span>
 </span><span id="line-53"></span><span>      </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">Key
-</span><span class="hs-string">&quot;attributes&quot;</span></span><span> </span><span class="annot"><span class="annottext">forall kv v. (KeyValue kv, ToJSON v) =&gt; Key -&gt; v -&gt; kv
+</span><span class="hs-string">&quot;attributes&quot;</span></span><span> </span><span class="annot"><span class="annottext">Key -&gt; Attrs 'AttrsForResource -&gt; Pair
+forall v. ToJSON v =&gt; Key -&gt; v -&gt; Pair
+forall e kv v. (KeyValue e kv, ToJSON v) =&gt; Key -&gt; v -&gt; kv
 </span><span class="hs-operator hs-var">.=</span></span><span> </span><span class="annot"><span class="annottext">Attrs 'AttrsForResource
-</span><a href="#local-6989586621679092640"><span class="hs-identifier hs-var">resourceAttrs</span></a></span><span>
+</span><a href="#local-6989586621679094889"><span class="hs-identifier hs-var">resourceAttrs</span></a></span><span>
 </span><span id="line-54"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Key
-</span><span class="hs-string">&quot;schemaURL&quot;</span></span><span> </span><span class="annot"><span class="annottext">forall kv v. (KeyValue kv, ToJSON v) =&gt; Key -&gt; v -&gt; kv
+</span><span class="hs-string">&quot;schemaURL&quot;</span></span><span> </span><span class="annot"><span class="annottext">Key -&gt; Maybe SchemaURL -&gt; Pair
+forall v. ToJSON v =&gt; Key -&gt; v -&gt; Pair
+forall e kv v. (KeyValue e kv, ToJSON v) =&gt; Key -&gt; v -&gt; kv
 </span><span class="hs-operator hs-var">.=</span></span><span> </span><span class="annot"><span class="annottext">Maybe SchemaURL
-</span><a href="#local-6989586621679092639"><span class="hs-identifier hs-var">resourceSchemaURL</span></a></span><span>
+</span><a href="#local-6989586621679094890"><span class="hs-identifier hs-var">resourceSchemaURL</span></a></span><span>
 </span><span id="line-55"></span><span>      </span><span class="hs-special">]</span><span>
 </span><span id="line-56"></span><span>    </span><span class="hs-keyword">where</span><span>
-</span><span id="line-57"></span><span>    </span><span class="annot"><a href="OTel.SDK.Resource.Core.Internal.html#Resource"><span class="hs-identifier hs-type">Resource</span></a></span><span> </span><span class="hs-special">{</span><span> </span><span id="local-6989586621679092640"><span class="annot"><span class="annottext">Attrs 'AttrsForResource
-resourceAttrs :: Attrs 'AttrsForResource
+</span><span id="line-57"></span><span>    </span><span class="annot"><a href="OTel.SDK.Resource.Core.Internal.html#Resource"><span class="hs-identifier hs-type">Resource</span></a></span><span> </span><span class="hs-special">{</span><span> </span><span id="local-6989586621679094889"><span class="annot"><span class="annottext">Attrs 'AttrsForResource
 resourceAttrs :: forall (attrs :: AttrsFor -&gt; *).
 Resource attrs -&gt; attrs 'AttrsForResource
-</span><a href="#local-6989586621679092640"><span class="hs-identifier hs-var hs-var">resourceAttrs</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679092639"><span class="annot"><span class="annottext">Maybe SchemaURL
-resourceSchemaURL :: Maybe SchemaURL
+resourceAttrs :: Attrs 'AttrsForResource
+</span><a href="OTel.SDK.Resource.Core.Internal.html#resourceAttrs"><span class="hs-identifier hs-var hs-var">resourceAttrs</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679094890"><span class="annot"><span class="annottext">Maybe SchemaURL
 resourceSchemaURL :: forall (attrs :: AttrsFor -&gt; *). Resource attrs -&gt; Maybe SchemaURL
-</span><a href="#local-6989586621679092639"><span class="hs-identifier hs-var hs-var">resourceSchemaURL</span></a></span></span><span> </span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Resource Attrs
-</span><a href="#local-6989586621679092641"><span class="hs-identifier hs-var">resource</span></a></span><span>
+resourceSchemaURL :: Maybe SchemaURL
+</span><a href="OTel.SDK.Resource.Core.Internal.html#resourceSchemaURL"><span class="hs-identifier hs-var hs-var">resourceSchemaURL</span></a></span></span><span> </span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Resource Attrs
+</span><a href="#local-6989586621679094888"><span class="hs-identifier hs-var">resource</span></a></span><span>
 </span><span id="line-58"></span><span>
 </span><span id="line-59"></span><span class="annot"><a href="OTel.SDK.Resource.Core.Internal.html#defaultResourceBuilder"><span class="hs-identifier hs-type">defaultResourceBuilder</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="OTel.SDK.Resource.Core.Internal.html#ResourceBuilder"><span class="hs-identifier hs-type">ResourceBuilder</span></a></span><span>
 </span><span id="line-60"></span><span id="defaultResourceBuilder"><span class="annot"><span class="annottext">defaultResourceBuilder :: Text -&gt; ResourceBuilder
-</span><a href="OTel.SDK.Resource.Core.Internal.html#defaultResourceBuilder"><span class="hs-identifier hs-var hs-var">defaultResourceBuilder</span></a></span></span><span> </span><span id="local-6989586621679092638"><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621679092638"><span class="hs-identifier hs-var">serviceName</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="OTel.SDK.Resource.Core.Internal.html#defaultResourceBuilder"><span class="hs-identifier hs-var hs-var">defaultResourceBuilder</span></a></span></span><span> </span><span id="local-6989586621679094891"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679094891"><span class="hs-identifier hs-var">serviceName</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-61"></span><span>  </span><span class="annot"><span class="annottext">SchemaURL -&gt; ResourceBuilder -&gt; ResourceBuilder
 </span><a href="OTel.SDK.Resource.Core.Internal.html#forSpecificSchema"><span class="hs-identifier hs-var">forSpecificSchema</span></a></span><span> </span><span class="annot"><span class="annottext">SchemaURL
-</span><a href="OTel.SDK.Resource.Core.Attributes.html#RESOURCE_SCHEMA_URL"><span class="hs-identifier hs-var">RESOURCE_SCHEMA_URL</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><a href="OTel.SDK.Resource.Core.Attributes.html#RESOURCE_SCHEMA_URL"><span class="hs-identifier hs-var">RESOURCE_SCHEMA_URL</span></a></span><span> </span><span class="annot"><span class="annottext">(ResourceBuilder -&gt; ResourceBuilder)
+-&gt; ResourceBuilder -&gt; ResourceBuilder
+forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span>
 </span><span id="line-62"></span><span>    </span><span class="annot"><span class="annottext">Key Text
-</span><a href="OTel.SDK.Resource.Core.Attributes.html#SERVICE_NAME"><span class="hs-identifier hs-var">SERVICE_NAME</span></a></span><span> </span><span class="annot"><span class="annottext">forall kv from to.
+</span><a href="OTel.SDK.Resource.Core.Attributes.html#SERVICE_NAME"><span class="hs-identifier hs-var">SERVICE_NAME</span></a></span><span> </span><span class="annot"><span class="annottext">Key Text -&gt; Text -&gt; ResourceBuilder
+forall kv from to.
 (KV kv, KVConstraints kv from to) =&gt;
 Key to -&gt; from -&gt; kv
+forall from to.
+KVConstraints ResourceBuilder from to =&gt;
+Key to -&gt; from -&gt; ResourceBuilder
 </span><span class="hs-operator hs-var">.@</span></span><span> </span><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621679092638"><span class="hs-identifier hs-var">serviceName</span></a></span><span>
+</span><a href="#local-6989586621679094891"><span class="hs-identifier hs-var">serviceName</span></a></span><span>
 </span><span id="line-63"></span><span>
 </span><span id="line-64"></span><span class="annot"><a href="OTel.SDK.Resource.Core.Internal.html#forSpecificSchema"><span class="hs-identifier hs-type">forSpecificSchema</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">SchemaURL</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="OTel.SDK.Resource.Core.Internal.html#ResourceBuilder"><span class="hs-identifier hs-type">ResourceBuilder</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="OTel.SDK.Resource.Core.Internal.html#ResourceBuilder"><span class="hs-identifier hs-type">ResourceBuilder</span></a></span><span>
 </span><span id="line-65"></span><span id="forSpecificSchema"><span class="annot"><span class="annottext">forSpecificSchema :: SchemaURL -&gt; ResourceBuilder -&gt; ResourceBuilder
-</span><a href="OTel.SDK.Resource.Core.Internal.html#forSpecificSchema"><span class="hs-identifier hs-var hs-var">forSpecificSchema</span></a></span></span><span> </span><span id="local-6989586621679092636"><span class="annot"><span class="annottext">SchemaURL
-</span><a href="#local-6989586621679092636"><span class="hs-identifier hs-var">schemaURL</span></a></span></span><span> </span><span id="local-6989586621679092635"><span class="annot"><span class="annottext">ResourceBuilder
-</span><a href="#local-6989586621679092635"><span class="hs-identifier hs-var">resourceBuilder</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="OTel.SDK.Resource.Core.Internal.html#forSpecificSchema"><span class="hs-identifier hs-var hs-var">forSpecificSchema</span></a></span></span><span> </span><span id="local-6989586621679094893"><span class="annot"><span class="annottext">SchemaURL
+</span><a href="#local-6989586621679094893"><span class="hs-identifier hs-var">schemaURL</span></a></span></span><span> </span><span id="local-6989586621679094894"><span class="annot"><span class="annottext">ResourceBuilder
+</span><a href="#local-6989586621679094894"><span class="hs-identifier hs-var">resourceBuilder</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-66"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">ResourceBuilder
 -&gt; Either
      (HashMap SchemaURL (AttrsBuilder 'AttrsForResource))
      (Resource AttrsBuilder)
 </span><a href="OTel.SDK.Resource.Core.Internal.html#unResourceBuilder"><span class="hs-identifier hs-var">unResourceBuilder</span></a></span><span> </span><span class="annot"><span class="annottext">ResourceBuilder
-</span><a href="#local-6989586621679092635"><span class="hs-identifier hs-var">resourceBuilder</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><a href="#local-6989586621679094894"><span class="hs-identifier hs-var">resourceBuilder</span></a></span><span> </span><span class="hs-keyword">of</span><span>
 </span><span id="line-67"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Left</span></span><span> </span><span class="hs-special">{</span><span class="hs-special">}</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">ResourceBuilder
-</span><a href="#local-6989586621679092635"><span class="hs-identifier hs-var">resourceBuilder</span></a></span><span>
-</span><span id="line-68"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Right</span></span><span> </span><span id="local-6989586621679092633"><span class="annot"><span class="annottext">Resource AttrsBuilder
-</span><a href="#local-6989586621679092633"><span class="hs-identifier hs-var">resource</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><a href="#local-6989586621679094894"><span class="hs-identifier hs-var">resourceBuilder</span></a></span><span>
+</span><span id="line-68"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Right</span></span><span> </span><span id="local-6989586621679094896"><span class="annot"><span class="annottext">Resource AttrsBuilder
+</span><a href="#local-6989586621679094896"><span class="hs-identifier hs-var">resource</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
 </span><span id="line-69"></span><span>      </span><span class="annot"><span class="annottext">Either
   (HashMap SchemaURL (AttrsBuilder 'AttrsForResource))
   (Resource AttrsBuilder)
 -&gt; ResourceBuilder
-</span><a href="OTel.SDK.Resource.Core.Internal.html#ResourceBuilder"><span class="hs-identifier hs-var">ResourceBuilder</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall a b. b -&gt; Either a b
+</span><a href="OTel.SDK.Resource.Core.Internal.html#ResourceBuilder"><span class="hs-identifier hs-var">ResourceBuilder</span></a></span><span> </span><span class="annot"><span class="annottext">(Either
+   (HashMap SchemaURL (AttrsBuilder 'AttrsForResource))
+   (Resource AttrsBuilder)
+ -&gt; ResourceBuilder)
+-&gt; Either
+     (HashMap SchemaURL (AttrsBuilder 'AttrsForResource))
+     (Resource AttrsBuilder)
+-&gt; ResourceBuilder
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Resource AttrsBuilder
+-&gt; Either
+     (HashMap SchemaURL (AttrsBuilder 'AttrsForResource))
+     (Resource AttrsBuilder)
+forall a b. b -&gt; Either a b
 </span><span class="hs-identifier hs-var">Right</span></span><span> </span><span class="annot"><span class="annottext">Resource AttrsBuilder
-</span><a href="#local-6989586621679092633"><span class="hs-identifier hs-var">resource</span></a></span><span> </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">resourceSchemaURL :: Maybe SchemaURL
-</span><a href="OTel.SDK.Resource.Core.Internal.html#resourceSchemaURL"><span class="hs-identifier hs-var">resourceSchemaURL</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; Maybe a
-</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">SchemaURL
-</span><a href="#local-6989586621679092636"><span class="hs-identifier hs-var">schemaURL</span></a></span><span> </span><span class="hs-special">}</span><span>
+</span><a href="#local-6989586621679094896"><span class="hs-identifier hs-var">resource</span></a></span><span> </span><span class="hs-special">{</span><span> </span><span class="annot"><a href="OTel.SDK.Resource.Core.Internal.html#resourceSchemaURL"><span class="hs-identifier hs-var">resourceSchemaURL</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="annot"><a href="#local-6989586621679094893"><span class="hs-identifier hs-type">schemaURL</span></a></span><span> </span><span class="hs-special">}</span><span>
 </span><span id="line-70"></span><span>
 </span><span id="line-71"></span><span class="annot"><a href="OTel.SDK.Resource.Core.Internal.html#resourceBuilderFromAttrs"><span class="hs-identifier hs-type">resourceBuilderFromAttrs</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">AttrsBuilder</span></span><span> </span><span class="hs-special">'</span><span class="annot"><span class="hs-identifier hs-type">AttrsForResource</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="OTel.SDK.Resource.Core.Internal.html#ResourceBuilder"><span class="hs-identifier hs-type">ResourceBuilder</span></a></span><span>
 </span><span id="line-72"></span><span id="resourceBuilderFromAttrs"><span class="annot"><span class="annottext">resourceBuilderFromAttrs :: AttrsBuilder 'AttrsForResource -&gt; ResourceBuilder
-</span><a href="OTel.SDK.Resource.Core.Internal.html#resourceBuilderFromAttrs"><span class="hs-identifier hs-var hs-var">resourceBuilderFromAttrs</span></a></span></span><span> </span><span id="local-6989586621679092631"><span class="annot"><span class="annottext">AttrsBuilder 'AttrsForResource
-</span><a href="#local-6989586621679092631"><span class="hs-identifier hs-var">resourceAttrs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="OTel.SDK.Resource.Core.Internal.html#resourceBuilderFromAttrs"><span class="hs-identifier hs-var hs-var">resourceBuilderFromAttrs</span></a></span></span><span> </span><span id="local-6989586621679094898"><span class="annot"><span class="annottext">AttrsBuilder 'AttrsForResource
+</span><a href="#local-6989586621679094898"><span class="hs-identifier hs-var">resourceAttrs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-73"></span><span>  </span><span class="annot"><span class="annottext">Either
   (HashMap SchemaURL (AttrsBuilder 'AttrsForResource))
   (Resource AttrsBuilder)
 -&gt; ResourceBuilder
-</span><a href="OTel.SDK.Resource.Core.Internal.html#ResourceBuilder"><span class="hs-identifier hs-var">ResourceBuilder</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall a b. b -&gt; Either a b
+</span><a href="OTel.SDK.Resource.Core.Internal.html#ResourceBuilder"><span class="hs-identifier hs-var">ResourceBuilder</span></a></span><span> </span><span class="annot"><span class="annottext">(Either
+   (HashMap SchemaURL (AttrsBuilder 'AttrsForResource))
+   (Resource AttrsBuilder)
+ -&gt; ResourceBuilder)
+-&gt; Either
+     (HashMap SchemaURL (AttrsBuilder 'AttrsForResource))
+     (Resource AttrsBuilder)
+-&gt; ResourceBuilder
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Resource AttrsBuilder
+-&gt; Either
+     (HashMap SchemaURL (AttrsBuilder 'AttrsForResource))
+     (Resource AttrsBuilder)
+forall a b. b -&gt; Either a b
 </span><span class="hs-identifier hs-var">Right</span></span><span> </span><span class="annot"><a href="OTel.SDK.Resource.Core.Internal.html#Resource"><span class="hs-identifier hs-type">Resource</span></a></span><span>
 </span><span id="line-74"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">AttrsBuilder 'AttrsForResource
 resourceAttrs :: AttrsBuilder 'AttrsForResource
 resourceAttrs :: AttrsBuilder 'AttrsForResource
-</span><a href="#local-6989586621679092631"><span class="hs-identifier hs-var hs-var">resourceAttrs</span></a></span><span>
+</span><a href="OTel.SDK.Resource.Core.Internal.html#resourceAttrs"><span class="hs-identifier hs-var hs-var">resourceAttrs</span></a></span><span>
 </span><span id="line-75"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">resourceSchemaURL :: Maybe SchemaURL
-</span><a href="OTel.SDK.Resource.Core.Internal.html#resourceSchemaURL"><span class="hs-identifier hs-var">resourceSchemaURL</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. Maybe a
+</span><a href="OTel.SDK.Resource.Core.Internal.html#resourceSchemaURL"><span class="hs-identifier hs-var">resourceSchemaURL</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe SchemaURL
+forall a. Maybe a
 </span><span class="hs-identifier hs-var">Nothing</span></span><span>
 </span><span id="line-76"></span><span>    </span><span class="hs-special">}</span><span>
 </span><span id="line-77"></span><span>
@@ -151,291 +183,418 @@ resourceAttrs :: AttrsBuilder 'AttrsForResource
 </span><span id="line-84"></span><span>
 </span><span id="line-85"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><span class="hs-identifier hs-type">KV</span></span><span> </span><span class="annot"><a href="OTel.SDK.Resource.Core.Internal.html#ResourceBuilder"><span class="hs-identifier hs-type">ResourceBuilder</span></a></span><span> </span><span class="hs-keyword">where</span><span>
 </span><span id="line-86"></span><span>  </span><span class="hs-keyword">type</span><span> </span><span id="KVConstraints"><span class="annot"><span class="hs-identifier hs-var">KVConstraints</span></span></span><span> </span><span class="annot"><a href="OTel.SDK.Resource.Core.Internal.html#ResourceBuilder"><span class="hs-identifier hs-type">ResourceBuilder</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ToAttrVal</span></span><span>
-</span><span id="line-87"></span><span>  </span><span id="local-6989586621679092623"><span class="annot"><span class="annottext">Key to
-</span><a href="#local-6989586621679092623"><span class="hs-identifier hs-var">k</span></a></span></span><span> </span><span id="local-6989586621679092622"><span class="annot"><span class="annottext">.@ :: forall from to.
+</span><span id="line-87"></span><span>  </span><span id="local-6989586621679094906"><span class="annot"><span class="annottext">Key to
+</span><a href="#local-6989586621679094906"><span class="hs-identifier hs-var">k</span></a></span></span><span> </span><span id="local-6989586621679094907"><span class="annot"><span class="annottext">.@ :: forall from to.
 KVConstraints ResourceBuilder from to =&gt;
 Key to -&gt; from -&gt; ResourceBuilder
-</span><a href="#local-6989586621679092622"><span class="hs-operator hs-var hs-var hs-var hs-var">.@</span></a></span></span><span> </span><span id="local-6989586621679092621"><span class="annot"><span class="annottext">from
-</span><a href="#local-6989586621679092621"><span class="hs-identifier hs-var">v</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">AttrsBuilder 'AttrsForResource -&gt; ResourceBuilder
-</span><a href="OTel.SDK.Resource.Core.Internal.html#resourceBuilderFromAttrs"><span class="hs-identifier hs-var">resourceBuilderFromAttrs</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var hs-var hs-var hs-var">.@</span></span></span><span> </span><span id="local-6989586621679094908"><span class="annot"><span class="annottext">from
+</span><a href="#local-6989586621679094908"><span class="hs-identifier hs-var">v</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">AttrsBuilder 'AttrsForResource -&gt; ResourceBuilder
+</span><a href="OTel.SDK.Resource.Core.Internal.html#resourceBuilderFromAttrs"><span class="hs-identifier hs-var">resourceBuilderFromAttrs</span></a></span><span> </span><span class="annot"><span class="annottext">(AttrsBuilder 'AttrsForResource -&gt; ResourceBuilder)
+-&gt; AttrsBuilder 'AttrsForResource -&gt; ResourceBuilder
+forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Key to
-</span><a href="#local-6989586621679092623"><span class="hs-identifier hs-var">k</span></a></span><span> </span><span class="annot"><span class="annottext">forall kv from to.
+</span><a href="#local-6989586621679094906"><span class="hs-identifier hs-var">k</span></a></span><span> </span><span class="annot"><span class="annottext">Key to -&gt; from -&gt; AttrsBuilder 'AttrsForResource
+forall kv from to.
 (KV kv, KVConstraints kv from to) =&gt;
 Key to -&gt; from -&gt; kv
+forall from to.
+KVConstraints (AttrsBuilder 'AttrsForResource) from to =&gt;
+Key to -&gt; from -&gt; AttrsBuilder 'AttrsForResource
 </span><span class="hs-operator hs-var">.@</span></span><span> </span><span class="annot"><span class="annottext">from
-</span><a href="#local-6989586621679092621"><span class="hs-identifier hs-var">v</span></a></span><span>
+</span><a href="#local-6989586621679094908"><span class="hs-identifier hs-var">v</span></a></span><span>
 </span><span id="line-88"></span><span>
-</span><span id="line-89"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679092616"><span id="local-6989586621679092618"><span class="annot"><span class="hs-identifier hs-type">Semigroup</span></span><span> </span><span class="annot"><a href="OTel.SDK.Resource.Core.Internal.html#ResourceBuilder"><span class="hs-identifier hs-type">ResourceBuilder</span></a></span></span></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-90"></span><span>  </span><span id="local-6989586621679092608"><span class="annot"><span class="annottext">ResourceBuilder
-</span><a href="#local-6989586621679092608"><span class="hs-identifier hs-var">rb1</span></a></span></span><span> </span><span id="local-6989586621679092607"><span class="annot"><span class="annottext">&lt;&gt; :: ResourceBuilder -&gt; ResourceBuilder -&gt; ResourceBuilder
-</span><span class="hs-operator hs-var hs-var hs-var hs-var">&lt;&gt;</span></span></span><span> </span><span id="local-6989586621679092606"><span class="annot"><span class="annottext">ResourceBuilder
-</span><a href="#local-6989586621679092606"><span class="hs-identifier hs-var">rb2</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-89"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679094911"><span id="local-6989586621679094915"><span class="annot"><span class="hs-identifier hs-type">Semigroup</span></span><span> </span><span class="annot"><a href="OTel.SDK.Resource.Core.Internal.html#ResourceBuilder"><span class="hs-identifier hs-type">ResourceBuilder</span></a></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-90"></span><span>  </span><span id="local-6989586621679094926"><span class="annot"><span class="annottext">ResourceBuilder
+</span><a href="#local-6989586621679094926"><span class="hs-identifier hs-var">rb1</span></a></span></span><span> </span><span id="local-6989586621679094927"><span class="annot"><span class="annottext">&lt;&gt; :: ResourceBuilder -&gt; ResourceBuilder -&gt; ResourceBuilder
+</span><span class="hs-operator hs-var hs-var hs-var hs-var">&lt;&gt;</span></span></span><span> </span><span id="local-6989586621679094928"><span class="annot"><span class="annottext">ResourceBuilder
+</span><a href="#local-6989586621679094928"><span class="hs-identifier hs-var">rb2</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-91"></span><span>    </span><span class="hs-keyword">case</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ResourceBuilder
 -&gt; Either
      (HashMap SchemaURL (AttrsBuilder 'AttrsForResource))
      (Resource AttrsBuilder)
 </span><a href="OTel.SDK.Resource.Core.Internal.html#unResourceBuilder"><span class="hs-identifier hs-var">unResourceBuilder</span></a></span><span> </span><span class="annot"><span class="annottext">ResourceBuilder
-</span><a href="#local-6989586621679092608"><span class="hs-identifier hs-var">rb1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">ResourceBuilder
+</span><a href="#local-6989586621679094926"><span class="hs-identifier hs-var">rb1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">ResourceBuilder
 -&gt; Either
      (HashMap SchemaURL (AttrsBuilder 'AttrsForResource))
      (Resource AttrsBuilder)
 </span><a href="OTel.SDK.Resource.Core.Internal.html#unResourceBuilder"><span class="hs-identifier hs-var">unResourceBuilder</span></a></span><span> </span><span class="annot"><span class="annottext">ResourceBuilder
-</span><a href="#local-6989586621679092606"><span class="hs-identifier hs-var">rb2</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">of</span><span>
-</span><span id="line-92"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Left</span></span><span> </span><span id="local-6989586621679092605"><span class="annot"><span class="annottext">HashMap SchemaURL (AttrsBuilder 'AttrsForResource)
-</span><a href="#local-6989586621679092605"><span class="hs-identifier hs-var">e1</span></a></span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Left</span></span><span> </span><span id="local-6989586621679092604"><span class="annot"><span class="annottext">HashMap SchemaURL (AttrsBuilder 'AttrsForResource)
-</span><a href="#local-6989586621679092604"><span class="hs-identifier hs-var">e2</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Either
+</span><a href="#local-6989586621679094928"><span class="hs-identifier hs-var">rb2</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-92"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Left</span></span><span> </span><span id="local-6989586621679094929"><span class="annot"><span class="annottext">HashMap SchemaURL (AttrsBuilder 'AttrsForResource)
+</span><a href="#local-6989586621679094929"><span class="hs-identifier hs-var">e1</span></a></span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Left</span></span><span> </span><span id="local-6989586621679094930"><span class="annot"><span class="annottext">HashMap SchemaURL (AttrsBuilder 'AttrsForResource)
+</span><a href="#local-6989586621679094930"><span class="hs-identifier hs-var">e2</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Either
   (HashMap SchemaURL (AttrsBuilder 'AttrsForResource))
   (Resource AttrsBuilder)
 -&gt; ResourceBuilder
-</span><a href="OTel.SDK.Resource.Core.Internal.html#ResourceBuilder"><span class="hs-identifier hs-var">ResourceBuilder</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall a b. a -&gt; Either a b
-</span><span class="hs-identifier hs-var">Left</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><a href="OTel.SDK.Resource.Core.Internal.html#ResourceBuilder"><span class="hs-identifier hs-var">ResourceBuilder</span></a></span><span> </span><span class="annot"><span class="annottext">(Either
+   (HashMap SchemaURL (AttrsBuilder 'AttrsForResource))
+   (Resource AttrsBuilder)
+ -&gt; ResourceBuilder)
+-&gt; Either
+     (HashMap SchemaURL (AttrsBuilder 'AttrsForResource))
+     (Resource AttrsBuilder)
+-&gt; ResourceBuilder
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">HashMap SchemaURL (AttrsBuilder 'AttrsForResource)
+-&gt; Either
+     (HashMap SchemaURL (AttrsBuilder 'AttrsForResource))
+     (Resource AttrsBuilder)
+forall a b. a -&gt; Either a b
+</span><span class="hs-identifier hs-var">Left</span></span><span> </span><span class="annot"><span class="annottext">(HashMap SchemaURL (AttrsBuilder 'AttrsForResource)
+ -&gt; Either
+      (HashMap SchemaURL (AttrsBuilder 'AttrsForResource))
+      (Resource AttrsBuilder))
+-&gt; HashMap SchemaURL (AttrsBuilder 'AttrsForResource)
+-&gt; Either
+     (HashMap SchemaURL (AttrsBuilder 'AttrsForResource))
+     (Resource AttrsBuilder)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">HashMap SchemaURL (AttrsBuilder 'AttrsForResource)
 -&gt; HashMap SchemaURL (AttrsBuilder 'AttrsForResource)
 -&gt; HashMap SchemaURL (AttrsBuilder 'AttrsForResource)
-</span><a href="#local-6989586621679092603"><span class="hs-identifier hs-var">unionAppendAttrs</span></a></span><span> </span><span class="annot"><span class="annottext">HashMap SchemaURL (AttrsBuilder 'AttrsForResource)
-</span><a href="#local-6989586621679092605"><span class="hs-identifier hs-var">e1</span></a></span><span> </span><span class="annot"><span class="annottext">HashMap SchemaURL (AttrsBuilder 'AttrsForResource)
-</span><a href="#local-6989586621679092604"><span class="hs-identifier hs-var">e2</span></a></span><span>
-</span><span id="line-93"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Left</span></span><span> </span><span id="local-6989586621679092602"><span class="annot"><span class="annottext">HashMap SchemaURL (AttrsBuilder 'AttrsForResource)
-</span><a href="#local-6989586621679092602"><span class="hs-identifier hs-var">e1</span></a></span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Right</span></span><span> </span><span class="hs-special">{</span><span class="hs-special">}</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Either
+</span><a href="#local-6989586621679094931"><span class="hs-identifier hs-var">unionAppendAttrs</span></a></span><span> </span><span class="annot"><span class="annottext">HashMap SchemaURL (AttrsBuilder 'AttrsForResource)
+</span><a href="#local-6989586621679094929"><span class="hs-identifier hs-var">e1</span></a></span><span> </span><span class="annot"><span class="annottext">HashMap SchemaURL (AttrsBuilder 'AttrsForResource)
+</span><a href="#local-6989586621679094930"><span class="hs-identifier hs-var">e2</span></a></span><span>
+</span><span id="line-93"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Left</span></span><span> </span><span id="local-6989586621679094932"><span class="annot"><span class="annottext">HashMap SchemaURL (AttrsBuilder 'AttrsForResource)
+</span><a href="#local-6989586621679094932"><span class="hs-identifier hs-var">e1</span></a></span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Right</span></span><span> </span><span class="hs-special">{</span><span class="hs-special">}</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Either
   (HashMap SchemaURL (AttrsBuilder 'AttrsForResource))
   (Resource AttrsBuilder)
 -&gt; ResourceBuilder
-</span><a href="OTel.SDK.Resource.Core.Internal.html#ResourceBuilder"><span class="hs-identifier hs-var">ResourceBuilder</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall a b. a -&gt; Either a b
+</span><a href="OTel.SDK.Resource.Core.Internal.html#ResourceBuilder"><span class="hs-identifier hs-var">ResourceBuilder</span></a></span><span> </span><span class="annot"><span class="annottext">(Either
+   (HashMap SchemaURL (AttrsBuilder 'AttrsForResource))
+   (Resource AttrsBuilder)
+ -&gt; ResourceBuilder)
+-&gt; Either
+     (HashMap SchemaURL (AttrsBuilder 'AttrsForResource))
+     (Resource AttrsBuilder)
+-&gt; ResourceBuilder
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">HashMap SchemaURL (AttrsBuilder 'AttrsForResource)
+-&gt; Either
+     (HashMap SchemaURL (AttrsBuilder 'AttrsForResource))
+     (Resource AttrsBuilder)
+forall a b. a -&gt; Either a b
 </span><span class="hs-identifier hs-var">Left</span></span><span> </span><span class="annot"><span class="annottext">HashMap SchemaURL (AttrsBuilder 'AttrsForResource)
-</span><a href="#local-6989586621679092602"><span class="hs-identifier hs-var">e1</span></a></span><span>
-</span><span id="line-94"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Right</span></span><span> </span><span class="hs-special">{</span><span class="hs-special">}</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Left</span></span><span> </span><span id="local-6989586621679092601"><span class="annot"><span class="annottext">HashMap SchemaURL (AttrsBuilder 'AttrsForResource)
-</span><a href="#local-6989586621679092601"><span class="hs-identifier hs-var">e2</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Either
+</span><a href="#local-6989586621679094932"><span class="hs-identifier hs-var">e1</span></a></span><span>
+</span><span id="line-94"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Right</span></span><span> </span><span class="hs-special">{</span><span class="hs-special">}</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Left</span></span><span> </span><span id="local-6989586621679094933"><span class="annot"><span class="annottext">HashMap SchemaURL (AttrsBuilder 'AttrsForResource)
+</span><a href="#local-6989586621679094933"><span class="hs-identifier hs-var">e2</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Either
   (HashMap SchemaURL (AttrsBuilder 'AttrsForResource))
   (Resource AttrsBuilder)
 -&gt; ResourceBuilder
-</span><a href="OTel.SDK.Resource.Core.Internal.html#ResourceBuilder"><span class="hs-identifier hs-var">ResourceBuilder</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall a b. a -&gt; Either a b
+</span><a href="OTel.SDK.Resource.Core.Internal.html#ResourceBuilder"><span class="hs-identifier hs-var">ResourceBuilder</span></a></span><span> </span><span class="annot"><span class="annottext">(Either
+   (HashMap SchemaURL (AttrsBuilder 'AttrsForResource))
+   (Resource AttrsBuilder)
+ -&gt; ResourceBuilder)
+-&gt; Either
+     (HashMap SchemaURL (AttrsBuilder 'AttrsForResource))
+     (Resource AttrsBuilder)
+-&gt; ResourceBuilder
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">HashMap SchemaURL (AttrsBuilder 'AttrsForResource)
+-&gt; Either
+     (HashMap SchemaURL (AttrsBuilder 'AttrsForResource))
+     (Resource AttrsBuilder)
+forall a b. a -&gt; Either a b
 </span><span class="hs-identifier hs-var">Left</span></span><span> </span><span class="annot"><span class="annottext">HashMap SchemaURL (AttrsBuilder 'AttrsForResource)
-</span><a href="#local-6989586621679092601"><span class="hs-identifier hs-var">e2</span></a></span><span>
-</span><span id="line-95"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Right</span></span><span> </span><span id="local-6989586621679092600"><span class="annot"><span class="annottext">Resource AttrsBuilder
-</span><a href="#local-6989586621679092600"><span class="hs-identifier hs-var">r1</span></a></span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Right</span></span><span> </span><span id="local-6989586621679092599"><span class="annot"><span class="annottext">Resource AttrsBuilder
-</span><a href="#local-6989586621679092599"><span class="hs-identifier hs-var">r2</span></a></span></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679094933"><span class="hs-identifier hs-var">e2</span></a></span><span>
+</span><span id="line-95"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Right</span></span><span> </span><span id="local-6989586621679094934"><span class="annot"><span class="annottext">Resource AttrsBuilder
+</span><a href="#local-6989586621679094934"><span class="hs-identifier hs-var">r1</span></a></span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Right</span></span><span> </span><span id="local-6989586621679094935"><span class="annot"><span class="annottext">Resource AttrsBuilder
+</span><a href="#local-6989586621679094935"><span class="hs-identifier hs-var">r2</span></a></span></span><span class="hs-special">)</span><span>
 </span><span id="line-96"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Maybe SchemaURL
 </span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Maybe SchemaURL
-</span><a href="#local-6989586621679092598"><span class="hs-identifier hs-var">schema1</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Maybe SchemaURL -&gt; ResourceBuilder
-</span><a href="#local-6989586621679092597"><span class="hs-identifier hs-var">res</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe SchemaURL
-</span><a href="#local-6989586621679092596"><span class="hs-identifier hs-var">schema2</span></a></span><span>
+</span><a href="#local-6989586621679094936"><span class="hs-identifier hs-var">schema1</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Maybe SchemaURL -&gt; ResourceBuilder
+</span><a href="#local-6989586621679094937"><span class="hs-identifier hs-var">res</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe SchemaURL
+</span><a href="#local-6989586621679094938"><span class="hs-identifier hs-var">schema2</span></a></span><span>
 </span><span id="line-97"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Maybe SchemaURL
 </span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Maybe SchemaURL
-</span><a href="#local-6989586621679092596"><span class="hs-identifier hs-var">schema2</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Maybe SchemaURL -&gt; ResourceBuilder
-</span><a href="#local-6989586621679092597"><span class="hs-identifier hs-var">res</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe SchemaURL
-</span><a href="#local-6989586621679092598"><span class="hs-identifier hs-var">schema1</span></a></span><span>
-</span><span id="line-98"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679092595"><span class="annot"><span class="annottext">SchemaURL
-</span><a href="#local-6989586621679092595"><span class="hs-identifier hs-var">s1</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Maybe SchemaURL
-</span><a href="#local-6989586621679092598"><span class="hs-identifier hs-var">schema1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679092594"><span class="annot"><span class="annottext">SchemaURL
-</span><a href="#local-6989586621679092594"><span class="hs-identifier hs-var">s2</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Maybe SchemaURL
-</span><a href="#local-6989586621679092596"><span class="hs-identifier hs-var">schema2</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">SchemaURL
-</span><a href="#local-6989586621679092595"><span class="hs-identifier hs-var">s1</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><a href="#local-6989586621679094938"><span class="hs-identifier hs-var">schema2</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Maybe SchemaURL -&gt; ResourceBuilder
+</span><a href="#local-6989586621679094937"><span class="hs-identifier hs-var">res</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe SchemaURL
+</span><a href="#local-6989586621679094936"><span class="hs-identifier hs-var">schema1</span></a></span><span>
+</span><span id="line-98"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679094939"><span class="annot"><span class="annottext">SchemaURL
+</span><a href="#local-6989586621679094939"><span class="hs-identifier hs-var">s1</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Maybe SchemaURL
+</span><a href="#local-6989586621679094936"><span class="hs-identifier hs-var">schema1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679094940"><span class="annot"><span class="annottext">SchemaURL
+</span><a href="#local-6989586621679094940"><span class="hs-identifier hs-var">s2</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Maybe SchemaURL
+</span><a href="#local-6989586621679094938"><span class="hs-identifier hs-var">schema2</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">SchemaURL
+</span><a href="#local-6989586621679094939"><span class="hs-identifier hs-var">s1</span></a></span><span> </span><span class="annot"><span class="annottext">SchemaURL -&gt; SchemaURL -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
 </span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">SchemaURL
-</span><a href="#local-6989586621679092594"><span class="hs-identifier hs-var">s2</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Maybe SchemaURL -&gt; ResourceBuilder
-</span><a href="#local-6989586621679092597"><span class="hs-identifier hs-var">res</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe SchemaURL
-</span><a href="#local-6989586621679092598"><span class="hs-identifier hs-var">schema1</span></a></span><span>
-</span><span id="line-99"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679092593"><span class="annot"><span class="annottext">SchemaURL
-</span><a href="#local-6989586621679092593"><span class="hs-identifier hs-var">s1</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Maybe SchemaURL
-</span><a href="#local-6989586621679092598"><span class="hs-identifier hs-var">schema1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679092592"><span class="annot"><span class="annottext">SchemaURL
-</span><a href="#local-6989586621679092592"><span class="hs-identifier hs-var">s2</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Maybe SchemaURL
-</span><a href="#local-6989586621679092596"><span class="hs-identifier hs-var">schema2</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><a href="#local-6989586621679094940"><span class="hs-identifier hs-var">s2</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Maybe SchemaURL -&gt; ResourceBuilder
+</span><a href="#local-6989586621679094937"><span class="hs-identifier hs-var">res</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe SchemaURL
+</span><a href="#local-6989586621679094936"><span class="hs-identifier hs-var">schema1</span></a></span><span>
+</span><span id="line-99"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679094941"><span class="annot"><span class="annottext">SchemaURL
+</span><a href="#local-6989586621679094941"><span class="hs-identifier hs-var">s1</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Maybe SchemaURL
+</span><a href="#local-6989586621679094936"><span class="hs-identifier hs-var">schema1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679094942"><span class="annot"><span class="annottext">SchemaURL
+</span><a href="#local-6989586621679094942"><span class="hs-identifier hs-var">s2</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Maybe SchemaURL
+</span><a href="#local-6989586621679094938"><span class="hs-identifier hs-var">schema2</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
 </span><span id="line-100"></span><span>            </span><span class="annot"><span class="annottext">Either
   (HashMap SchemaURL (AttrsBuilder 'AttrsForResource))
   (Resource AttrsBuilder)
 -&gt; ResourceBuilder
 </span><a href="OTel.SDK.Resource.Core.Internal.html#ResourceBuilder"><span class="hs-identifier hs-var">ResourceBuilder</span></a></span><span>
-</span><span id="line-101"></span><span>              </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall a b. a -&gt; Either a b
+</span><span id="line-101"></span><span>              </span><span class="annot"><span class="annottext">(Either
+   (HashMap SchemaURL (AttrsBuilder 'AttrsForResource))
+   (Resource AttrsBuilder)
+ -&gt; ResourceBuilder)
+-&gt; Either
+     (HashMap SchemaURL (AttrsBuilder 'AttrsForResource))
+     (Resource AttrsBuilder)
+-&gt; ResourceBuilder
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">HashMap SchemaURL (AttrsBuilder 'AttrsForResource)
+-&gt; Either
+     (HashMap SchemaURL (AttrsBuilder 'AttrsForResource))
+     (Resource AttrsBuilder)
+forall a b. a -&gt; Either a b
 </span><span class="hs-identifier hs-var">Left</span></span><span>
-</span><span id="line-102"></span><span>              </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span id="line-102"></span><span>              </span><span class="annot"><span class="annottext">(HashMap SchemaURL (AttrsBuilder 'AttrsForResource)
+ -&gt; Either
+      (HashMap SchemaURL (AttrsBuilder 'AttrsForResource))
+      (Resource AttrsBuilder))
+-&gt; HashMap SchemaURL (AttrsBuilder 'AttrsForResource)
+-&gt; Either
+     (HashMap SchemaURL (AttrsBuilder 'AttrsForResource))
+     (Resource AttrsBuilder)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">HashMap SchemaURL (AttrsBuilder 'AttrsForResource)
 -&gt; HashMap SchemaURL (AttrsBuilder 'AttrsForResource)
 -&gt; HashMap SchemaURL (AttrsBuilder 'AttrsForResource)
-</span><a href="#local-6989586621679092603"><span class="hs-identifier hs-var">unionAppendAttrs</span></a></span><span>
-</span><span id="line-103"></span><span>                  </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall k v. Hashable k =&gt; k -&gt; v -&gt; HashMap k v
+</span><a href="#local-6989586621679094931"><span class="hs-identifier hs-var">unionAppendAttrs</span></a></span><span>
+</span><span id="line-103"></span><span>                  </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SchemaURL
+-&gt; AttrsBuilder 'AttrsForResource
+-&gt; HashMap SchemaURL (AttrsBuilder 'AttrsForResource)
+forall k v. Hashable k =&gt; k -&gt; v -&gt; HashMap k v
 </span><span class="hs-identifier hs-var">HashMap.singleton</span></span><span> </span><span class="annot"><span class="annottext">SchemaURL
-</span><a href="#local-6989586621679092593"><span class="hs-identifier hs-var">s1</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall (attrs :: AttrsFor -&gt; *).
+</span><a href="#local-6989586621679094941"><span class="hs-identifier hs-var">s1</span></a></span><span> </span><span class="annot"><span class="annottext">(AttrsBuilder 'AttrsForResource
+ -&gt; HashMap SchemaURL (AttrsBuilder 'AttrsForResource))
+-&gt; AttrsBuilder 'AttrsForResource
+-&gt; HashMap SchemaURL (AttrsBuilder 'AttrsForResource)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Resource AttrsBuilder -&gt; AttrsBuilder 'AttrsForResource
+forall (attrs :: AttrsFor -&gt; *).
 Resource attrs -&gt; attrs 'AttrsForResource
 </span><a href="OTel.SDK.Resource.Core.Internal.html#resourceAttrs"><span class="hs-identifier hs-var">resourceAttrs</span></a></span><span> </span><span class="annot"><span class="annottext">Resource AttrsBuilder
-</span><a href="#local-6989586621679092600"><span class="hs-identifier hs-var">r1</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-104"></span><span>                  </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall k v. Hashable k =&gt; k -&gt; v -&gt; HashMap k v
+</span><a href="#local-6989586621679094934"><span class="hs-identifier hs-var">r1</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-104"></span><span>                  </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SchemaURL
+-&gt; AttrsBuilder 'AttrsForResource
+-&gt; HashMap SchemaURL (AttrsBuilder 'AttrsForResource)
+forall k v. Hashable k =&gt; k -&gt; v -&gt; HashMap k v
 </span><span class="hs-identifier hs-var">HashMap.singleton</span></span><span> </span><span class="annot"><span class="annottext">SchemaURL
-</span><a href="#local-6989586621679092592"><span class="hs-identifier hs-var">s2</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall (attrs :: AttrsFor -&gt; *).
+</span><a href="#local-6989586621679094942"><span class="hs-identifier hs-var">s2</span></a></span><span> </span><span class="annot"><span class="annottext">(AttrsBuilder 'AttrsForResource
+ -&gt; HashMap SchemaURL (AttrsBuilder 'AttrsForResource))
+-&gt; AttrsBuilder 'AttrsForResource
+-&gt; HashMap SchemaURL (AttrsBuilder 'AttrsForResource)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Resource AttrsBuilder -&gt; AttrsBuilder 'AttrsForResource
+forall (attrs :: AttrsFor -&gt; *).
 Resource attrs -&gt; attrs 'AttrsForResource
 </span><a href="OTel.SDK.Resource.Core.Internal.html#resourceAttrs"><span class="hs-identifier hs-var">resourceAttrs</span></a></span><span> </span><span class="annot"><span class="annottext">Resource AttrsBuilder
-</span><a href="#local-6989586621679092599"><span class="hs-identifier hs-var">r2</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679094935"><span class="hs-identifier hs-var">r2</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-105"></span><span>        </span><span class="hs-keyword">where</span><span>
-</span><span id="line-106"></span><span>        </span><span id="local-6989586621679092597"><span class="annot"><span class="annottext">res :: Maybe SchemaURL -&gt; ResourceBuilder
-</span><a href="#local-6989586621679092597"><span class="hs-identifier hs-var hs-var">res</span></a></span></span><span> </span><span id="local-6989586621679092590"><span class="annot"><span class="annottext">Maybe SchemaURL
-</span><a href="#local-6989586621679092590"><span class="hs-identifier hs-var">schemaURL</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-106"></span><span>        </span><span id="local-6989586621679094937"><span class="annot"><span class="annottext">res :: Maybe SchemaURL -&gt; ResourceBuilder
+</span><a href="#local-6989586621679094937"><span class="hs-identifier hs-var hs-var">res</span></a></span></span><span> </span><span id="local-6989586621679094944"><span class="annot"><span class="annottext">Maybe SchemaURL
+</span><a href="#local-6989586621679094944"><span class="hs-identifier hs-var">schemaURL</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-107"></span><span>          </span><span class="annot"><span class="annottext">Either
   (HashMap SchemaURL (AttrsBuilder 'AttrsForResource))
   (Resource AttrsBuilder)
 -&gt; ResourceBuilder
-</span><a href="OTel.SDK.Resource.Core.Internal.html#ResourceBuilder"><span class="hs-identifier hs-var">ResourceBuilder</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall a b. b -&gt; Either a b
+</span><a href="OTel.SDK.Resource.Core.Internal.html#ResourceBuilder"><span class="hs-identifier hs-var">ResourceBuilder</span></a></span><span> </span><span class="annot"><span class="annottext">(Either
+   (HashMap SchemaURL (AttrsBuilder 'AttrsForResource))
+   (Resource AttrsBuilder)
+ -&gt; ResourceBuilder)
+-&gt; Either
+     (HashMap SchemaURL (AttrsBuilder 'AttrsForResource))
+     (Resource AttrsBuilder)
+-&gt; ResourceBuilder
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Resource AttrsBuilder
+-&gt; Either
+     (HashMap SchemaURL (AttrsBuilder 'AttrsForResource))
+     (Resource AttrsBuilder)
+forall a b. b -&gt; Either a b
 </span><span class="hs-identifier hs-var">Right</span></span><span> </span><span class="annot"><a href="OTel.SDK.Resource.Core.Internal.html#Resource"><span class="hs-identifier hs-type">Resource</span></a></span><span>
 </span><span id="line-108"></span><span>            </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">resourceAttrs :: AttrsBuilder 'AttrsForResource
 </span><a href="OTel.SDK.Resource.Core.Internal.html#resourceAttrs"><span class="hs-identifier hs-var">resourceAttrs</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">AttrsBuilder 'AttrsForResource
-</span><a href="#local-6989586621679092589"><span class="hs-identifier hs-var">attrs1</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><a href="#local-6989586621679094945"><span class="hs-identifier hs-var">attrs1</span></a></span><span> </span><span class="annot"><span class="annottext">AttrsBuilder 'AttrsForResource
+-&gt; AttrsBuilder 'AttrsForResource -&gt; AttrsBuilder 'AttrsForResource
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">AttrsBuilder 'AttrsForResource
-</span><a href="#local-6989586621679092588"><span class="hs-identifier hs-var">attrs2</span></a></span><span>
+</span><a href="#local-6989586621679094946"><span class="hs-identifier hs-var">attrs2</span></a></span><span>
 </span><span id="line-109"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">resourceSchemaURL :: Maybe SchemaURL
 </span><a href="OTel.SDK.Resource.Core.Internal.html#resourceSchemaURL"><span class="hs-identifier hs-var">resourceSchemaURL</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe SchemaURL
-</span><a href="#local-6989586621679092590"><span class="hs-identifier hs-var">schemaURL</span></a></span><span>
+</span><a href="#local-6989586621679094944"><span class="hs-identifier hs-var">schemaURL</span></a></span><span>
 </span><span id="line-110"></span><span>            </span><span class="hs-special">}</span><span>
 </span><span id="line-111"></span><span>        </span><span class="annot"><a href="OTel.SDK.Resource.Core.Internal.html#Resource"><span class="hs-identifier hs-type">Resource</span></a></span><span> </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">resourceAttrs :: forall (attrs :: AttrsFor -&gt; *).
 Resource attrs -&gt; attrs 'AttrsForResource
-</span><a href="OTel.SDK.Resource.Core.Internal.html#resourceAttrs"><span class="hs-identifier hs-var">resourceAttrs</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="local-6989586621679092589"><span class="annot"><span class="annottext">AttrsBuilder 'AttrsForResource
-</span><a href="#local-6989586621679092589"><span class="hs-identifier hs-var">attrs1</span></a></span></span><span> </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">resourceSchemaURL :: forall (attrs :: AttrsFor -&gt; *). Resource attrs -&gt; Maybe SchemaURL
-</span><a href="OTel.SDK.Resource.Core.Internal.html#resourceSchemaURL"><span class="hs-identifier hs-var">resourceSchemaURL</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="local-6989586621679092598"><span class="annot"><span class="annottext">Maybe SchemaURL
-</span><a href="#local-6989586621679092598"><span class="hs-identifier hs-var">schema1</span></a></span></span><span> </span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Resource AttrsBuilder
-</span><a href="#local-6989586621679092600"><span class="hs-identifier hs-var">r1</span></a></span><span>
+</span><a href="OTel.SDK.Resource.Core.Internal.html#resourceAttrs"><span class="hs-identifier hs-var">resourceAttrs</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="local-6989586621679094945"><span class="annot"><span class="annottext">AttrsBuilder 'AttrsForResource
+</span><a href="#local-6989586621679094945"><span class="hs-identifier hs-var">attrs1</span></a></span></span><span> </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">resourceSchemaURL :: forall (attrs :: AttrsFor -&gt; *). Resource attrs -&gt; Maybe SchemaURL
+</span><a href="OTel.SDK.Resource.Core.Internal.html#resourceSchemaURL"><span class="hs-identifier hs-var">resourceSchemaURL</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="local-6989586621679094936"><span class="annot"><span class="annottext">Maybe SchemaURL
+</span><a href="#local-6989586621679094936"><span class="hs-identifier hs-var">schema1</span></a></span></span><span> </span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Resource AttrsBuilder
+</span><a href="#local-6989586621679094934"><span class="hs-identifier hs-var">r1</span></a></span><span>
 </span><span id="line-112"></span><span>        </span><span class="annot"><a href="OTel.SDK.Resource.Core.Internal.html#Resource"><span class="hs-identifier hs-type">Resource</span></a></span><span> </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">resourceAttrs :: forall (attrs :: AttrsFor -&gt; *).
 Resource attrs -&gt; attrs 'AttrsForResource
-</span><a href="OTel.SDK.Resource.Core.Internal.html#resourceAttrs"><span class="hs-identifier hs-var">resourceAttrs</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="local-6989586621679092588"><span class="annot"><span class="annottext">AttrsBuilder 'AttrsForResource
-</span><a href="#local-6989586621679092588"><span class="hs-identifier hs-var">attrs2</span></a></span></span><span> </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">resourceSchemaURL :: forall (attrs :: AttrsFor -&gt; *). Resource attrs -&gt; Maybe SchemaURL
-</span><a href="OTel.SDK.Resource.Core.Internal.html#resourceSchemaURL"><span class="hs-identifier hs-var">resourceSchemaURL</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="local-6989586621679092596"><span class="annot"><span class="annottext">Maybe SchemaURL
-</span><a href="#local-6989586621679092596"><span class="hs-identifier hs-var">schema2</span></a></span></span><span> </span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Resource AttrsBuilder
-</span><a href="#local-6989586621679092599"><span class="hs-identifier hs-var">r2</span></a></span><span>
+</span><a href="OTel.SDK.Resource.Core.Internal.html#resourceAttrs"><span class="hs-identifier hs-var">resourceAttrs</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="local-6989586621679094946"><span class="annot"><span class="annottext">AttrsBuilder 'AttrsForResource
+</span><a href="#local-6989586621679094946"><span class="hs-identifier hs-var">attrs2</span></a></span></span><span> </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">resourceSchemaURL :: forall (attrs :: AttrsFor -&gt; *). Resource attrs -&gt; Maybe SchemaURL
+</span><a href="OTel.SDK.Resource.Core.Internal.html#resourceSchemaURL"><span class="hs-identifier hs-var">resourceSchemaURL</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="local-6989586621679094938"><span class="annot"><span class="annottext">Maybe SchemaURL
+</span><a href="#local-6989586621679094938"><span class="hs-identifier hs-var">schema2</span></a></span></span><span> </span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Resource AttrsBuilder
+</span><a href="#local-6989586621679094935"><span class="hs-identifier hs-var">r2</span></a></span><span>
 </span><span id="line-113"></span><span>    </span><span class="hs-keyword">where</span><span>
-</span><span id="line-114"></span><span>    </span><span id="local-6989586621679092603"><span class="annot"><span class="annottext">unionAppendAttrs :: HashMap SchemaURL (AttrsBuilder 'AttrsForResource)
+</span><span id="line-114"></span><span>    </span><span id="local-6989586621679094931"><span class="annot"><span class="annottext">unionAppendAttrs :: HashMap SchemaURL (AttrsBuilder 'AttrsForResource)
 -&gt; HashMap SchemaURL (AttrsBuilder 'AttrsForResource)
 -&gt; HashMap SchemaURL (AttrsBuilder 'AttrsForResource)
-</span><a href="#local-6989586621679092603"><span class="hs-identifier hs-var hs-var">unionAppendAttrs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall k v.
+</span><a href="#local-6989586621679094931"><span class="hs-identifier hs-var hs-var">unionAppendAttrs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(AttrsBuilder 'AttrsForResource
+ -&gt; AttrsBuilder 'AttrsForResource
+ -&gt; AttrsBuilder 'AttrsForResource)
+-&gt; HashMap SchemaURL (AttrsBuilder 'AttrsForResource)
+-&gt; HashMap SchemaURL (AttrsBuilder 'AttrsForResource)
+-&gt; HashMap SchemaURL (AttrsBuilder 'AttrsForResource)
+forall k v.
 (Eq k, Hashable k) =&gt;
 (v -&gt; v -&gt; v) -&gt; HashMap k v -&gt; HashMap k v -&gt; HashMap k v
-</span><span class="hs-identifier hs-var">HashMap.unionWith</span></span><span> </span><span class="annot"><span class="annottext">forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-identifier hs-var">HashMap.unionWith</span></span><span> </span><span class="annot"><span class="annottext">AttrsBuilder 'AttrsForResource
+-&gt; AttrsBuilder 'AttrsForResource -&gt; AttrsBuilder 'AttrsForResource
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">(&lt;&gt;)</span></span><span>
 </span><span id="line-115"></span><span>
-</span><span id="line-116"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679092577"><span id="local-6989586621679092579"><span class="annot"><span class="hs-identifier hs-type">Monoid</span></span><span> </span><span class="annot"><a href="OTel.SDK.Resource.Core.Internal.html#ResourceBuilder"><span class="hs-identifier hs-type">ResourceBuilder</span></a></span></span></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-117"></span><span>  </span><span id="local-6989586621679092573"><span class="annot"><span class="annottext">mempty :: ResourceBuilder
+</span><span id="line-116"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679094956"><span id="local-6989586621679094960"><span class="annot"><span class="hs-identifier hs-type">Monoid</span></span><span> </span><span class="annot"><a href="OTel.SDK.Resource.Core.Internal.html#ResourceBuilder"><span class="hs-identifier hs-type">ResourceBuilder</span></a></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-117"></span><span>  </span><span id="local-6989586621679094965"><span class="annot"><span class="annottext">mempty :: ResourceBuilder
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var">mempty</span></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">AttrsBuilder 'AttrsForResource -&gt; ResourceBuilder
-</span><a href="OTel.SDK.Resource.Core.Internal.html#resourceBuilderFromAttrs"><span class="hs-identifier hs-var">resourceBuilderFromAttrs</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Monoid a =&gt; a
+</span><a href="OTel.SDK.Resource.Core.Internal.html#resourceBuilderFromAttrs"><span class="hs-identifier hs-var">resourceBuilderFromAttrs</span></a></span><span> </span><span class="annot"><span class="annottext">AttrsBuilder 'AttrsForResource
+forall a. Monoid a =&gt; a
 </span><span class="hs-identifier hs-var">mempty</span></span><span>
 </span><span id="line-118"></span><span>
 </span><span id="line-119"></span><span class="annot"><a href="OTel.SDK.Resource.Core.Internal.html#buildResource"><span class="hs-identifier hs-type">buildResource</span></a></span><span>
-</span><span id="line-120"></span><span>  </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679092762"><span class="annot"><a href="#local-6989586621679092762"><span class="hs-identifier hs-type">m</span></a></span></span><span>
-</span><span id="line-121"></span><span>   </span><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadThrow</span></span><span> </span><span class="annot"><a href="#local-6989586621679092762"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-120"></span><span>  </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679094776"><span class="annot"><a href="#local-6989586621679094776"><span class="hs-identifier hs-type">m</span></a></span></span><span>
+</span><span id="line-121"></span><span>   </span><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadThrow</span></span><span> </span><span class="annot"><a href="#local-6989586621679094776"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-122"></span><span>  </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="OTel.SDK.Resource.Core.Internal.html#ResourceBuilder"><span class="hs-identifier hs-type">ResourceBuilder</span></a></span><span>
-</span><span id="line-123"></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679092762"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="OTel.SDK.Resource.Core.Internal.html#Resource"><span class="hs-identifier hs-type">Resource</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Attrs</span></span><span class="hs-special">)</span><span>
+</span><span id="line-123"></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679094776"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="OTel.SDK.Resource.Core.Internal.html#Resource"><span class="hs-identifier hs-type">Resource</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Attrs</span></span><span class="hs-special">)</span><span>
 </span><span id="line-124"></span><span id="buildResource"><span class="annot"><span class="annottext">buildResource :: forall (m :: * -&gt; *).
 MonadThrow m =&gt;
 ResourceBuilder -&gt; m (Resource Attrs)
-</span><a href="OTel.SDK.Resource.Core.Internal.html#buildResource"><span class="hs-identifier hs-var hs-var">buildResource</span></a></span></span><span> </span><span id="local-6989586621679092564"><span class="annot"><span class="annottext">ResourceBuilder
-</span><a href="#local-6989586621679092564"><span class="hs-identifier hs-var">resourceBuilder</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="OTel.SDK.Resource.Core.Internal.html#buildResource"><span class="hs-identifier hs-var hs-var">buildResource</span></a></span></span><span> </span><span id="local-6989586621679094977"><span class="annot"><span class="annottext">ResourceBuilder
+</span><a href="#local-6989586621679094977"><span class="hs-identifier hs-var">resourceBuilder</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-125"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">ResourceBuilder -&gt; Either ResourceMergeError (Resource Attrs)
 </span><a href="OTel.SDK.Resource.Core.Internal.html#buildResourcePure"><span class="hs-identifier hs-var">buildResourcePure</span></a></span><span> </span><span class="annot"><span class="annottext">ResourceBuilder
-</span><a href="#local-6989586621679092564"><span class="hs-identifier hs-var">resourceBuilder</span></a></span><span> </span><span class="hs-keyword">of</span><span>
-</span><span id="line-126"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Left</span></span><span> </span><span id="local-6989586621679092563"><span class="annot"><span class="annottext">ResourceMergeError
-</span><a href="#local-6989586621679092563"><span class="hs-identifier hs-var">err</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) e a. (MonadThrow m, Exception e) =&gt; e -&gt; m a
+</span><a href="#local-6989586621679094977"><span class="hs-identifier hs-var">resourceBuilder</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-126"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Left</span></span><span> </span><span id="local-6989586621679094978"><span class="annot"><span class="annottext">ResourceMergeError
+</span><a href="#local-6989586621679094978"><span class="hs-identifier hs-var">err</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">ResourceMergeError -&gt; m (Resource Attrs)
+forall (m :: * -&gt; *) e a.
+(HasCallStack, MonadThrow m, Exception e) =&gt;
+e -&gt; m a
 </span><span class="hs-identifier hs-var">throwM</span></span><span> </span><span class="annot"><span class="annottext">ResourceMergeError
-</span><a href="#local-6989586621679092563"><span class="hs-identifier hs-var">err</span></a></span><span>
-</span><span id="line-127"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Right</span></span><span> </span><span id="local-6989586621679092562"><span class="annot"><span class="annottext">Resource Attrs
-</span><a href="#local-6989586621679092562"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><a href="#local-6989586621679094978"><span class="hs-identifier hs-var">err</span></a></span><span>
+</span><span id="line-127"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Right</span></span><span> </span><span id="local-6989586621679094979"><span class="annot"><span class="annottext">Resource Attrs
+</span><a href="#local-6989586621679094979"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Resource Attrs -&gt; m (Resource Attrs)
+forall a. a -&gt; m a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
 </span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">Resource Attrs
-</span><a href="#local-6989586621679092562"><span class="hs-identifier hs-var">x</span></a></span><span>
+</span><a href="#local-6989586621679094979"><span class="hs-identifier hs-var">x</span></a></span><span>
 </span><span id="line-128"></span><span>
 </span><span id="line-129"></span><span class="annot"><a href="OTel.SDK.Resource.Core.Internal.html#buildResourcePure"><span class="hs-identifier hs-type">buildResourcePure</span></a></span><span>
 </span><span id="line-130"></span><span>  </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="OTel.SDK.Resource.Core.Internal.html#ResourceBuilder"><span class="hs-identifier hs-type">ResourceBuilder</span></a></span><span>
 </span><span id="line-131"></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Either</span></span><span> </span><span class="annot"><a href="OTel.SDK.Resource.Core.Internal.html#ResourceMergeError"><span class="hs-identifier hs-type">ResourceMergeError</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="OTel.SDK.Resource.Core.Internal.html#Resource"><span class="hs-identifier hs-type">Resource</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Attrs</span></span><span class="hs-special">)</span><span>
 </span><span id="line-132"></span><span id="buildResourcePure"><span class="annot"><span class="annottext">buildResourcePure :: ResourceBuilder -&gt; Either ResourceMergeError (Resource Attrs)
-</span><a href="OTel.SDK.Resource.Core.Internal.html#buildResourcePure"><span class="hs-identifier hs-var hs-var">buildResourcePure</span></a></span></span><span> </span><span id="local-6989586621679092561"><span class="annot"><span class="annottext">ResourceBuilder
-</span><a href="#local-6989586621679092561"><span class="hs-identifier hs-var">resourceBuilder</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="OTel.SDK.Resource.Core.Internal.html#buildResourcePure"><span class="hs-identifier hs-var hs-var">buildResourcePure</span></a></span></span><span> </span><span id="local-6989586621679094980"><span class="annot"><span class="annottext">ResourceBuilder
+</span><a href="#local-6989586621679094980"><span class="hs-identifier hs-var">resourceBuilder</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-133"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">ResourceBuilder
 -&gt; Either
      (HashMap SchemaURL (AttrsBuilder 'AttrsForResource))
      (Resource AttrsBuilder)
 </span><a href="OTel.SDK.Resource.Core.Internal.html#unResourceBuilder"><span class="hs-identifier hs-var">unResourceBuilder</span></a></span><span> </span><span class="annot"><span class="annottext">ResourceBuilder
-</span><a href="#local-6989586621679092561"><span class="hs-identifier hs-var">resourceBuilder</span></a></span><span> </span><span class="hs-keyword">of</span><span>
-</span><span id="line-134"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Left</span></span><span> </span><span id="local-6989586621679092560"><span class="annot"><span class="annottext">HashMap SchemaURL (AttrsBuilder 'AttrsForResource)
-</span><a href="#local-6989586621679092560"><span class="hs-identifier hs-var">hashMap</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall a b. a -&gt; Either a b
-</span><span class="hs-identifier hs-var">Left</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><a href="#local-6989586621679094980"><span class="hs-identifier hs-var">resourceBuilder</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-134"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Left</span></span><span> </span><span id="local-6989586621679094981"><span class="annot"><span class="annottext">HashMap SchemaURL (AttrsBuilder 'AttrsForResource)
+</span><a href="#local-6989586621679094981"><span class="hs-identifier hs-var">hashMap</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">ResourceMergeError -&gt; Either ResourceMergeError (Resource Attrs)
+forall a b. a -&gt; Either a b
+</span><span class="hs-identifier hs-var">Left</span></span><span> </span><span class="annot"><span class="annottext">(ResourceMergeError -&gt; Either ResourceMergeError (Resource Attrs))
+-&gt; ResourceMergeError -&gt; Either ResourceMergeError (Resource Attrs)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><a href="OTel.SDK.Resource.Core.Internal.html#ResourceMergeError"><span class="hs-identifier hs-type">ResourceMergeError</span></a></span><span>
 </span><span id="line-135"></span><span>      </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">resourceMergeErrorSchemas :: HashMap SchemaURL (Attrs 'AttrsForResource)
-</span><a href="OTel.SDK.Resource.Core.Internal.html#resourceMergeErrorSchemas"><span class="hs-identifier hs-var">resourceMergeErrorSchemas</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
-</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">forall {af :: AttrsFor}. AttrsBuilder af -&gt; Attrs af
-</span><a href="#local-6989586621679092557"><span class="hs-identifier hs-var">build</span></a></span><span> </span><span class="annot"><span class="annottext">HashMap SchemaURL (AttrsBuilder 'AttrsForResource)
-</span><a href="#local-6989586621679092560"><span class="hs-identifier hs-var">hashMap</span></a></span><span>
+</span><a href="OTel.SDK.Resource.Core.Internal.html#resourceMergeErrorSchemas"><span class="hs-identifier hs-var">resourceMergeErrorSchemas</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(AttrsBuilder 'AttrsForResource -&gt; Attrs 'AttrsForResource)
+-&gt; HashMap SchemaURL (AttrsBuilder 'AttrsForResource)
+-&gt; HashMap SchemaURL (Attrs 'AttrsForResource)
+forall a b. (a -&gt; b) -&gt; HashMap SchemaURL a -&gt; HashMap SchemaURL b
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">AttrsBuilder 'AttrsForResource -&gt; Attrs 'AttrsForResource
+forall {af :: AttrsFor}. AttrsBuilder af -&gt; Attrs af
+</span><a href="#local-6989586621679094984"><span class="hs-identifier hs-var">build</span></a></span><span> </span><span class="annot"><span class="annottext">HashMap SchemaURL (AttrsBuilder 'AttrsForResource)
+</span><a href="#local-6989586621679094981"><span class="hs-identifier hs-var">hashMap</span></a></span><span>
 </span><span id="line-136"></span><span>      </span><span class="hs-special">}</span><span>
-</span><span id="line-137"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Right</span></span><span> </span><span id="local-6989586621679092556"><span class="annot"><span class="annottext">Resource AttrsBuilder
-</span><a href="#local-6989586621679092556"><span class="hs-identifier hs-var">resource</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall a b. b -&gt; Either a b
-</span><span class="hs-identifier hs-var">Right</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span id="line-137"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Right</span></span><span> </span><span id="local-6989586621679094985"><span class="annot"><span class="annottext">Resource AttrsBuilder
+</span><a href="#local-6989586621679094985"><span class="hs-identifier hs-var">resource</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Resource Attrs -&gt; Either ResourceMergeError (Resource Attrs)
+forall a b. b -&gt; Either a b
+</span><span class="hs-identifier hs-var">Right</span></span><span> </span><span class="annot"><span class="annottext">(Resource Attrs -&gt; Either ResourceMergeError (Resource Attrs))
+-&gt; Resource Attrs -&gt; Either ResourceMergeError (Resource Attrs)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Resource AttrsBuilder -&gt; Resource Attrs
-</span><a href="#local-6989586621679092555"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="annot"><span class="annottext">Resource AttrsBuilder
-</span><a href="#local-6989586621679092556"><span class="hs-identifier hs-var">resource</span></a></span><span>
+</span><a href="#local-6989586621679094986"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="annot"><span class="annottext">Resource AttrsBuilder
+</span><a href="#local-6989586621679094985"><span class="hs-identifier hs-var">resource</span></a></span><span>
 </span><span id="line-138"></span><span>  </span><span class="hs-keyword">where</span><span>
-</span><span id="line-139"></span><span>  </span><span id="local-6989586621679092555"><span class="annot"><span class="annottext">go :: Resource AttrsBuilder -&gt; Resource Attrs
-</span><a href="#local-6989586621679092555"><span class="hs-identifier hs-var hs-var">go</span></a></span></span><span> </span><span id="local-6989586621679092554"><span class="annot"><span class="annottext">Resource AttrsBuilder
-</span><a href="#local-6989586621679092554"><span class="hs-identifier hs-var">resource</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Resource AttrsBuilder
-</span><a href="#local-6989586621679092554"><span class="hs-identifier hs-var">resource</span></a></span><span> </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">resourceAttrs :: Attrs 'AttrsForResource
-</span><a href="OTel.SDK.Resource.Core.Internal.html#resourceAttrs"><span class="hs-identifier hs-var">resourceAttrs</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall {af :: AttrsFor}. AttrsBuilder af -&gt; Attrs af
-</span><a href="#local-6989586621679092557"><span class="hs-identifier hs-var">build</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall (attrs :: AttrsFor -&gt; *).
-Resource attrs -&gt; attrs 'AttrsForResource
-</span><a href="OTel.SDK.Resource.Core.Internal.html#resourceAttrs"><span class="hs-identifier hs-var">resourceAttrs</span></a></span><span> </span><span class="annot"><span class="annottext">Resource AttrsBuilder
-</span><a href="#local-6989586621679092554"><span class="hs-identifier hs-var">resource</span></a></span><span> </span><span class="hs-special">}</span><span>
+</span><span id="line-139"></span><span>  </span><span id="local-6989586621679094986"><span class="annot"><span class="annottext">go :: Resource AttrsBuilder -&gt; Resource Attrs
+</span><a href="#local-6989586621679094986"><span class="hs-identifier hs-var hs-var">go</span></a></span></span><span> </span><span id="local-6989586621679094987"><span class="annot"><span class="annottext">Resource AttrsBuilder
+</span><a href="#local-6989586621679094987"><span class="hs-identifier hs-var">resource</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Resource AttrsBuilder
+</span><a href="#local-6989586621679094987"><span class="hs-identifier hs-var">resource</span></a></span><span> </span><span class="hs-special">{</span><span> </span><span class="annot"><a href="OTel.SDK.Resource.Core.Internal.html#resourceAttrs"><span class="hs-identifier hs-var">resourceAttrs</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><a href="#local-6989586621679094984"><span class="hs-identifier hs-type">build</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span> </span><span class="annot"><a href="OTel.SDK.Resource.Core.Internal.html#resourceAttrs"><span class="hs-identifier hs-var">resourceAttrs</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679094987"><span class="hs-identifier hs-type">resource</span></a></span><span> </span><span class="hs-special">}</span><span>
 </span><span id="line-140"></span><span>
-</span><span id="line-141"></span><span>  </span><span id="local-6989586621679092557"><span class="annot"><span class="annottext">build :: AttrsBuilder af -&gt; Attrs af
-</span><a href="#local-6989586621679092557"><span class="hs-identifier hs-var hs-var">build</span></a></span></span><span> </span><span id="local-6989586621679092553"><span class="annot"><span class="annottext">AttrsBuilder af
-</span><a href="#local-6989586621679092553"><span class="hs-identifier hs-var">attrs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-142"></span><span>    </span><span class="annot"><span class="annottext">forall (af :: AttrsFor).
+</span><span id="line-141"></span><span>  </span><span id="local-6989586621679094984"><span class="annot"><span class="annottext">build :: AttrsBuilder af -&gt; Attrs af
+</span><a href="#local-6989586621679094984"><span class="hs-identifier hs-var hs-var">build</span></a></span></span><span> </span><span id="local-6989586621679094988"><span class="annot"><span class="annottext">AttrsBuilder af
+</span><a href="#local-6989586621679094988"><span class="hs-identifier hs-var">attrs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-142"></span><span>    </span><span class="annot"><span class="annottext">AttrsBuilder af -&gt; AttrsLimits af -&gt; Attrs af
+forall (af :: AttrsFor).
 AttrsBuilder af -&gt; AttrsLimits af -&gt; Attrs af
 </span><span class="hs-identifier hs-var">runAttrsBuilder</span></span><span> </span><span class="annot"><span class="annottext">AttrsBuilder af
-</span><a href="#local-6989586621679092553"><span class="hs-identifier hs-var">attrs</span></a></span><span> </span><span class="annot"><span class="annottext">forall (af :: AttrsFor). AttrsLimits af
+</span><a href="#local-6989586621679094988"><span class="hs-identifier hs-var">attrs</span></a></span><span> </span><span class="annot"><span class="annottext">AttrsLimits Any
+forall (af :: AttrsFor). AttrsLimits af
 </span><span class="hs-identifier hs-var">defaultAttrsLimits</span></span><span>
-</span><span id="line-143"></span><span>      </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">attrsLimitsCount :: Maybe Int
-</span><span class="hs-identifier hs-var">attrsLimitsCount</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. Maybe a
-</span><span class="hs-identifier hs-var">Nothing</span></span><span>
-</span><span id="line-144"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">attrsLimitsValueLength :: Maybe Int
-</span><span class="hs-identifier hs-var">attrsLimitsValueLength</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. Maybe a
-</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-143"></span><span>      </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="hs-identifier hs-var">attrsLimitsCount</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Nothing</span></span><span>
+</span><span id="line-144"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-var">attrsLimitsValueLength</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Nothing</span></span><span>
 </span><span id="line-145"></span><span>      </span><span class="hs-special">}</span><span>
 </span><span id="line-146"></span><span>
 </span><span id="line-147"></span><span class="hs-keyword">newtype</span><span> </span><span id="ResourceMergeError"><span class="annot"><a href="OTel.SDK.Resource.Core.Internal.html#ResourceMergeError"><span class="hs-identifier hs-var">ResourceMergeError</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="ResourceMergeError"><span class="annot"><a href="OTel.SDK.Resource.Core.Internal.html#ResourceMergeError"><span class="hs-identifier hs-var">ResourceMergeError</span></a></span></span><span>
 </span><span id="line-148"></span><span>  </span><span class="hs-special">{</span><span> </span><span id="resourceMergeErrorSchemas"><span class="annot"><span class="annottext">ResourceMergeError -&gt; HashMap SchemaURL (Attrs 'AttrsForResource)
 </span><a href="OTel.SDK.Resource.Core.Internal.html#resourceMergeErrorSchemas"><span class="hs-identifier hs-var hs-var">resourceMergeErrorSchemas</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">HashMap</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">SchemaURL</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Attrs</span></span><span> </span><span class="hs-special">'</span><span class="annot"><span class="hs-identifier hs-type">AttrsForResource</span></span><span class="hs-special">)</span><span>
-</span><span id="line-149"></span><span>  </span><span class="hs-special">}</span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">stock</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679092545"><span id="local-6989586621679092551"><span class="annot"><span class="annottext">ResourceMergeError -&gt; ResourceMergeError -&gt; Bool
+</span><span id="line-149"></span><span>  </span><span class="hs-special">}</span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">stock</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679094990"><span id="local-6989586621679094996"><span class="annot"><span class="annottext">ResourceMergeError -&gt; ResourceMergeError -&gt; Bool
+(ResourceMergeError -&gt; ResourceMergeError -&gt; Bool)
+-&gt; (ResourceMergeError -&gt; ResourceMergeError -&gt; Bool)
+-&gt; Eq ResourceMergeError
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
-/= :: ResourceMergeError -&gt; ResourceMergeError -&gt; Bool
-$c/= :: ResourceMergeError -&gt; ResourceMergeError -&gt; Bool
-== :: ResourceMergeError -&gt; ResourceMergeError -&gt; Bool
 $c== :: ResourceMergeError -&gt; ResourceMergeError -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679092534"><span id="local-6989586621679092536"><span id="local-6989586621679092543"><span class="annot"><span class="annottext">Int -&gt; ResourceMergeError -&gt; ShowS
+== :: ResourceMergeError -&gt; ResourceMergeError -&gt; Bool
+$c/= :: ResourceMergeError -&gt; ResourceMergeError -&gt; Bool
+/= :: ResourceMergeError -&gt; ResourceMergeError -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679095000"><span id="local-6989586621679095007"><span id="local-6989586621679095011"><span class="annot"><span class="annottext">Int -&gt; ResourceMergeError -&gt; ShowS
 [ResourceMergeError] -&gt; ShowS
 ResourceMergeError -&gt; String
+(Int -&gt; ResourceMergeError -&gt; ShowS)
+-&gt; (ResourceMergeError -&gt; String)
+-&gt; ([ResourceMergeError] -&gt; ShowS)
+-&gt; Show ResourceMergeError
 forall a.
 (Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
-showList :: [ResourceMergeError] -&gt; ShowS
-$cshowList :: [ResourceMergeError] -&gt; ShowS
-show :: ResourceMergeError -&gt; String
-$cshow :: ResourceMergeError -&gt; String
-showsPrec :: Int -&gt; ResourceMergeError -&gt; ShowS
 $cshowsPrec :: Int -&gt; ResourceMergeError -&gt; ShowS
+showsPrec :: Int -&gt; ResourceMergeError -&gt; ShowS
+$cshow :: ResourceMergeError -&gt; String
+show :: ResourceMergeError -&gt; String
+$cshowList :: [ResourceMergeError] -&gt; ShowS
+showList :: [ResourceMergeError] -&gt; ShowS
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
-</span><span id="line-150"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">anyclass</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679092524"><span id="local-6989586621679092526"><span id="local-6989586621679092528"><span class="annot"><span class="annottext">Show ResourceMergeError
+</span><span id="line-150"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">anyclass</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679095018"><span id="local-6989586621679095021"><span id="local-6989586621679095024"><span class="annot"><span class="annottext">Show ResourceMergeError
 Typeable ResourceMergeError
+(Typeable ResourceMergeError, Show ResourceMergeError) =&gt;
+(ResourceMergeError -&gt; SomeException)
+-&gt; (SomeException -&gt; Maybe ResourceMergeError)
+-&gt; (ResourceMergeError -&gt; String)
+-&gt; Exception ResourceMergeError
 SomeException -&gt; Maybe ResourceMergeError
 ResourceMergeError -&gt; String
 ResourceMergeError -&gt; SomeException
 forall e.
-Typeable e
--&gt; Show e
--&gt; (e -&gt; SomeException)
--&gt; (SomeException -&gt; Maybe e)
--&gt; (e -&gt; String)
--&gt; Exception e
-displayException :: ResourceMergeError -&gt; String
-$cdisplayException :: ResourceMergeError -&gt; String
-fromException :: SomeException -&gt; Maybe ResourceMergeError
-$cfromException :: SomeException -&gt; Maybe ResourceMergeError
-toException :: ResourceMergeError -&gt; SomeException
+(Typeable e, Show e) =&gt;
+(e -&gt; SomeException)
+-&gt; (SomeException -&gt; Maybe e) -&gt; (e -&gt; String) -&gt; Exception e
 $ctoException :: ResourceMergeError -&gt; SomeException
+toException :: ResourceMergeError -&gt; SomeException
+$cfromException :: SomeException -&gt; Maybe ResourceMergeError
+fromException :: SomeException -&gt; Maybe ResourceMergeError
+$cdisplayException :: ResourceMergeError -&gt; String
+displayException :: ResourceMergeError -&gt; String
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Exception</span></span></span></span></span><span class="hs-special">)</span><span>
 </span><span id="line-151"></span><span>
 </span><span id="line-152"></span><span class="hs-comment">-- $disclaimer</span><span>

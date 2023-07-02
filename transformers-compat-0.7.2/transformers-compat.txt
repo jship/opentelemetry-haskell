@@ -21,32 +21,6 @@
 -- | Backports orphan instances which are not provided by other modules in
 --   <tt>transformers-compat</tt>.
 module Control.Monad.Trans.Instances
-instance (Data.Data.Data a, Data.Data.Data b) => Data.Data.Data (Data.Functor.Constant.Constant a b)
-instance forall k a (b :: k). GHC.Generics.Generic (Data.Functor.Constant.Constant a b)
-instance GHC.Generics.Generic1 (Data.Functor.Constant.Constant a)
-instance forall k (r :: k) (m :: k -> *) a. GHC.Generics.Generic (Control.Monad.Trans.Cont.ContT r m a)
-instance forall k (f :: k -> *) (a :: k). GHC.Generics.Generic (Control.Monad.Trans.Identity.IdentityT f a)
-instance forall k (f :: k -> *). GHC.Generics.Generic1 (Control.Monad.Trans.Identity.IdentityT f)
-instance GHC.Generics.Generic (Control.Monad.Trans.Maybe.MaybeT m a)
-instance GHC.Base.Functor m => GHC.Generics.Generic1 (Control.Monad.Trans.Maybe.MaybeT m)
-instance GHC.Generics.Generic (Control.Monad.Trans.RWS.Lazy.RWST r w s m a)
-instance GHC.Generics.Generic (Control.Monad.Trans.RWS.Strict.RWST r w s m a)
-instance GHC.Generics.Generic (Control.Monad.Trans.Reader.ReaderT r m a)
-instance GHC.Generics.Generic1 (Control.Monad.Trans.Reader.ReaderT r m)
-instance GHC.Generics.Generic (Control.Monad.Trans.State.Lazy.StateT s m a)
-instance GHC.Generics.Generic (Control.Monad.Trans.State.Strict.StateT s m a)
-instance GHC.Generics.Generic (Control.Monad.Trans.Writer.Lazy.WriterT w m a)
-instance GHC.Generics.Generic (Control.Monad.Trans.Writer.Strict.WriterT w m a)
-instance forall k (f :: k -> *) (a :: k). GHC.Generics.Generic (Control.Applicative.Backwards.Backwards f a)
-instance forall k (f :: k -> *). GHC.Generics.Generic1 (Control.Applicative.Backwards.Backwards f)
-instance GHC.Generics.Generic (Control.Applicative.Lift.Lift f a)
-instance GHC.Generics.Generic1 (Control.Applicative.Lift.Lift f)
-instance forall k (f :: k -> *) (a :: k). GHC.Generics.Generic (Data.Functor.Reverse.Reverse f a)
-instance forall k (f :: k -> *). GHC.Generics.Generic1 (Data.Functor.Reverse.Reverse f)
-instance GHC.Generics.Generic (Control.Monad.Trans.Except.ExceptT e m a)
-instance GHC.Base.Functor m => GHC.Generics.Generic1 (Control.Monad.Trans.Except.ExceptT e m)
-instance GHC.Generics.Generic (Control.Monad.Trans.Accum.AccumT w m a)
-instance GHC.Generics.Generic (Control.Monad.Trans.Select.SelectT w m a)
 
 
 -- | Internal functionality for <a>Data.Functor.Classes.Generic</a>.

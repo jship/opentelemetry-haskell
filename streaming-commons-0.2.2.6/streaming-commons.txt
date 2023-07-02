@@ -276,7 +276,7 @@ readChunk :: ReadHandle -> IO ByteString
 
 -- | Streaming functions for interacting with the filesystem.
 module Data.Streaming.Filesystem
-data DirStream
+data () => DirStream
 
 -- | <tt>openDirStream dir</tt> calls <tt>opendir</tt> to obtain a
 --   directory stream for <tt>dir</tt>.
@@ -1024,7 +1024,7 @@ fullFlushDeflate :: Deflate -> Popper
 --   
 --   The total amount of memory used depends on the window bits and the
 --   <a>MemoryLevel</a>. See the <a>MemoryLevel</a> for the details.
-data WindowBits
+data () => WindowBits
 WindowBits :: Int -> WindowBits
 
 -- | The default <a>WindowBits</a> is 15 which is also the maximum size.

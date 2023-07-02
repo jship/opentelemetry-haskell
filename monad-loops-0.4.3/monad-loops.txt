@@ -64,6 +64,10 @@ whileM_ :: Monad m => m Bool -> m a -> m ()
 --   predicate, and return that result (discarding all others).
 iterateWhile :: Monad m => (a -> Bool) -> m a -> m a
 
+-- | Execute an action repeatedly until its result satisfies a predicate,
+--   and return that result (discarding all others).
+iterateUntil :: Monad m => (a -> Bool) -> m a -> m a
+
 -- | Execute an action forever, feeding the result of each execution as the
 --   input to the next.
 iterateM_ :: Monad m => (a -> m a) -> a -> m b
@@ -93,10 +97,6 @@ infixr 0 `untilM_`
 --   until p holds.
 iterateUntilM :: Monad m => (a -> Bool) -> (a -> m a) -> a -> m a
 infixr 0 `iterateUntilM`
-
--- | Execute an action repeatedly until its result satisfies a predicate,
---   and return that result (discarding all others).
-iterateUntil :: Monad m => (a -> Bool) -> m a -> m a
 
 -- | As long as the supplied <a>Maybe</a> expression returns "Just _", the
 --   loop body will be called and passed the value contained in the

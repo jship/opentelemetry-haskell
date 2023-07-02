@@ -377,7 +377,7 @@ asGenST :: (GenST s -> ST s a) -> GenST s -> ST s a
 
 -- | The class of types for which a uniformly distributed value can be
 --   drawn from all possible values of the type.
-class Uniform a
+class () => Uniform a
 
 -- | Generates a value uniformly distributed over all possible values of
 --   that type.
@@ -404,7 +404,7 @@ uniformM :: (Uniform a, StatefulGen g m) => g -> m a
 
 -- | The class of types for which a uniformly distributed value can be
 --   drawn from a range.
-class UniformRange a
+class () => UniformRange a
 
 -- | Generates a value uniformly distributed over the provided range, which
 --   is interpreted as inclusive in the lower and upper bound.

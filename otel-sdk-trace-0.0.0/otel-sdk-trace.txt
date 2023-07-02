@@ -245,12 +245,12 @@ PRNG :: GenIO -> PRNG
 [unPRNG] :: PRNG -> GenIO
 genUniform :: forall a. Variate a => IdGeneratorM a
 newPRNGRef :: Seed -> IO (MVar PRNG)
-newtype OnException a
+newtype () => OnException a
 OnException :: (SomeException -> [SeriesElem] -> LoggingT IO a) -> OnException a
 [runOnException] :: OnException a -> SomeException -> [SeriesElem] -> LoggingT IO a
 askException :: OnException SomeException
 askExceptionMetadata :: OnException [SeriesElem]
-newtype OnTimeout a
+newtype () => OnTimeout a
 OnTimeout :: (Int -> [SeriesElem] -> LoggingT IO a) -> OnTimeout a
 [runOnTimeout] :: OnTimeout a -> Int -> [SeriesElem] -> LoggingT IO a
 askTimeoutMicros :: OnTimeout Int

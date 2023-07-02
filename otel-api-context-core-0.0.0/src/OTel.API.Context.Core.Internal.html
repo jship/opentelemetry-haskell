@@ -59,253 +59,329 @@
 </span><a href="OTel.API.Context.Core.Internal.html#Context"><span class="hs-identifier hs-var">Context</span></a></span><span> </span><span class="annot"><span class="annottext">Vault
 </span><span class="hs-identifier hs-var">Vault.empty</span></span><span>
 </span><span id="line-57"></span><span>
-</span><span id="line-58"></span><span id="local-6989586621679050285"><span class="annot"><a href="OTel.API.Context.Core.Internal.html#lookupContext"><span class="hs-identifier hs-type">lookupContext</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#ContextKey"><span class="hs-identifier hs-type">ContextKey</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679050285"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#Context"><span class="hs-identifier hs-type">Context</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="#local-6989586621679050285"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-58"></span><span id="local-6989586621679052289"><span class="annot"><a href="OTel.API.Context.Core.Internal.html#lookupContext"><span class="hs-identifier hs-type">lookupContext</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#ContextKey"><span class="hs-identifier hs-type">ContextKey</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679052289"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#Context"><span class="hs-identifier hs-type">Context</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="#local-6989586621679052289"><span class="hs-identifier hs-type">a</span></a></span></span><span>
 </span><span id="line-59"></span><span id="lookupContext"><span class="annot"><span class="annottext">lookupContext :: forall a. ContextKey a -&gt; Context -&gt; Maybe a
-</span><a href="OTel.API.Context.Core.Internal.html#lookupContext"><span class="hs-identifier hs-var hs-var">lookupContext</span></a></span></span><span> </span><span id="local-6989586621679050163"><span class="annot"><span class="annottext">ContextKey a
-</span><a href="#local-6989586621679050163"><span class="hs-identifier hs-var">contextKey</span></a></span></span><span> </span><span id="local-6989586621679050162"><span class="annot"><span class="annottext">Context
-</span><a href="#local-6989586621679050162"><span class="hs-identifier hs-var">context</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. Key a -&gt; Vault -&gt; Maybe a
+</span><a href="OTel.API.Context.Core.Internal.html#lookupContext"><span class="hs-identifier hs-var hs-var">lookupContext</span></a></span></span><span> </span><span id="local-6989586621679052412"><span class="annot"><span class="annottext">ContextKey a
+</span><a href="#local-6989586621679052412"><span class="hs-identifier hs-var">contextKey</span></a></span></span><span> </span><span id="local-6989586621679052413"><span class="annot"><span class="annottext">Context
+</span><a href="#local-6989586621679052413"><span class="hs-identifier hs-var">context</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Key a -&gt; Vault -&gt; Maybe a
+forall a. Key a -&gt; Vault -&gt; Maybe a
 </span><span class="hs-identifier hs-var">Vault.lookup</span></span><span> </span><span class="annot"><span class="annottext">Key a
-</span><a href="#local-6989586621679050160"><span class="hs-identifier hs-var">vaultKey</span></a></span><span> </span><span class="annot"><span class="annottext">Vault
-</span><a href="#local-6989586621679050159"><span class="hs-identifier hs-var">vault</span></a></span><span>
+</span><a href="#local-6989586621679052415"><span class="hs-identifier hs-var">vaultKey</span></a></span><span> </span><span class="annot"><span class="annottext">Vault
+</span><a href="#local-6989586621679052416"><span class="hs-identifier hs-var">vault</span></a></span><span>
 </span><span id="line-60"></span><span>  </span><span class="hs-keyword">where</span><span>
 </span><span id="line-61"></span><span>  </span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#ContextKey"><span class="hs-identifier hs-type">ContextKey</span></a></span><span> </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">contextKeyVaultKey :: forall a. ContextKey a -&gt; Key a
-</span><a href="OTel.API.Context.Core.Internal.html#contextKeyVaultKey"><span class="hs-identifier hs-var">contextKeyVaultKey</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="local-6989586621679050160"><span class="annot"><span class="annottext">Key a
-</span><a href="#local-6989586621679050160"><span class="hs-identifier hs-var">vaultKey</span></a></span></span><span> </span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ContextKey a
-</span><a href="#local-6989586621679050163"><span class="hs-identifier hs-var">contextKey</span></a></span><span>
+</span><a href="OTel.API.Context.Core.Internal.html#contextKeyVaultKey"><span class="hs-identifier hs-var">contextKeyVaultKey</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="local-6989586621679052415"><span class="annot"><span class="annottext">Key a
+</span><a href="#local-6989586621679052415"><span class="hs-identifier hs-var">vaultKey</span></a></span></span><span> </span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ContextKey a
+</span><a href="#local-6989586621679052412"><span class="hs-identifier hs-var">contextKey</span></a></span><span>
 </span><span id="line-62"></span><span>  </span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#Context"><span class="hs-identifier hs-type">Context</span></a></span><span> </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">unContext :: Context -&gt; Vault
-</span><a href="OTel.API.Context.Core.Internal.html#unContext"><span class="hs-identifier hs-var">unContext</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="local-6989586621679050159"><span class="annot"><span class="annottext">Vault
-</span><a href="#local-6989586621679050159"><span class="hs-identifier hs-var">vault</span></a></span></span><span> </span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Context
-</span><a href="#local-6989586621679050162"><span class="hs-identifier hs-var">context</span></a></span><span>
+</span><a href="OTel.API.Context.Core.Internal.html#unContext"><span class="hs-identifier hs-var">unContext</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="local-6989586621679052416"><span class="annot"><span class="annottext">Vault
+</span><a href="#local-6989586621679052416"><span class="hs-identifier hs-var">vault</span></a></span></span><span> </span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Context
+</span><a href="#local-6989586621679052413"><span class="hs-identifier hs-var">context</span></a></span><span>
 </span><span id="line-63"></span><span>
-</span><span id="line-64"></span><span id="local-6989586621679050279"><span class="annot"><a href="OTel.API.Context.Core.Internal.html#insertContext"><span class="hs-identifier hs-type">insertContext</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#ContextKey"><span class="hs-identifier hs-type">ContextKey</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679050279"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679050279"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#Context"><span class="hs-identifier hs-type">Context</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#Context"><span class="hs-identifier hs-type">Context</span></a></span></span><span>
+</span><span id="line-64"></span><span id="local-6989586621679052295"><span class="annot"><a href="OTel.API.Context.Core.Internal.html#insertContext"><span class="hs-identifier hs-type">insertContext</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#ContextKey"><span class="hs-identifier hs-type">ContextKey</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679052295"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679052295"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#Context"><span class="hs-identifier hs-type">Context</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#Context"><span class="hs-identifier hs-type">Context</span></a></span></span><span>
 </span><span id="line-65"></span><span id="insertContext"><span class="annot"><span class="annottext">insertContext :: forall a. ContextKey a -&gt; a -&gt; Context -&gt; Context
-</span><a href="OTel.API.Context.Core.Internal.html#insertContext"><span class="hs-identifier hs-var hs-var">insertContext</span></a></span></span><span> </span><span id="local-6989586621679050156"><span class="annot"><span class="annottext">ContextKey a
-</span><a href="#local-6989586621679050156"><span class="hs-identifier hs-var">contextKey</span></a></span></span><span> </span><span id="local-6989586621679050155"><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621679050155"><span class="hs-identifier hs-var">value</span></a></span></span><span> </span><span id="local-6989586621679050154"><span class="annot"><span class="annottext">Context
-</span><a href="#local-6989586621679050154"><span class="hs-identifier hs-var">context</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="OTel.API.Context.Core.Internal.html#insertContext"><span class="hs-identifier hs-var hs-var">insertContext</span></a></span></span><span> </span><span id="local-6989586621679052419"><span class="annot"><span class="annottext">ContextKey a
+</span><a href="#local-6989586621679052419"><span class="hs-identifier hs-var">contextKey</span></a></span></span><span> </span><span id="local-6989586621679052420"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679052420"><span class="hs-identifier hs-var">value</span></a></span></span><span> </span><span id="local-6989586621679052421"><span class="annot"><span class="annottext">Context
+</span><a href="#local-6989586621679052421"><span class="hs-identifier hs-var">context</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-66"></span><span>  </span><span class="annot"><span class="annottext">Vault -&gt; Context
-</span><a href="OTel.API.Context.Core.Internal.html#Context"><span class="hs-identifier hs-var">Context</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall a. Key a -&gt; a -&gt; Vault -&gt; Vault
+</span><a href="OTel.API.Context.Core.Internal.html#Context"><span class="hs-identifier hs-var">Context</span></a></span><span> </span><span class="annot"><span class="annottext">(Vault -&gt; Context) -&gt; Vault -&gt; Context
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Key a -&gt; a -&gt; Vault -&gt; Vault
+forall a. Key a -&gt; a -&gt; Vault -&gt; Vault
 </span><span class="hs-identifier hs-var">Vault.insert</span></span><span> </span><span class="annot"><span class="annottext">Key a
-</span><a href="#local-6989586621679050152"><span class="hs-identifier hs-var">vaultKey</span></a></span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621679050155"><span class="hs-identifier hs-var">value</span></a></span><span> </span><span class="annot"><span class="annottext">Vault
-</span><a href="#local-6989586621679050151"><span class="hs-identifier hs-var">vault</span></a></span><span>
+</span><a href="#local-6989586621679052423"><span class="hs-identifier hs-var">vaultKey</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679052420"><span class="hs-identifier hs-var">value</span></a></span><span> </span><span class="annot"><span class="annottext">Vault
+</span><a href="#local-6989586621679052424"><span class="hs-identifier hs-var">vault</span></a></span><span>
 </span><span id="line-67"></span><span>  </span><span class="hs-keyword">where</span><span>
 </span><span id="line-68"></span><span>  </span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#ContextKey"><span class="hs-identifier hs-type">ContextKey</span></a></span><span> </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">contextKeyVaultKey :: forall a. ContextKey a -&gt; Key a
-</span><a href="OTel.API.Context.Core.Internal.html#contextKeyVaultKey"><span class="hs-identifier hs-var">contextKeyVaultKey</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="local-6989586621679050152"><span class="annot"><span class="annottext">Key a
-</span><a href="#local-6989586621679050152"><span class="hs-identifier hs-var">vaultKey</span></a></span></span><span> </span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ContextKey a
-</span><a href="#local-6989586621679050156"><span class="hs-identifier hs-var">contextKey</span></a></span><span>
+</span><a href="OTel.API.Context.Core.Internal.html#contextKeyVaultKey"><span class="hs-identifier hs-var">contextKeyVaultKey</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="local-6989586621679052423"><span class="annot"><span class="annottext">Key a
+</span><a href="#local-6989586621679052423"><span class="hs-identifier hs-var">vaultKey</span></a></span></span><span> </span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ContextKey a
+</span><a href="#local-6989586621679052419"><span class="hs-identifier hs-var">contextKey</span></a></span><span>
 </span><span id="line-69"></span><span>  </span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#Context"><span class="hs-identifier hs-type">Context</span></a></span><span> </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">unContext :: Context -&gt; Vault
-</span><a href="OTel.API.Context.Core.Internal.html#unContext"><span class="hs-identifier hs-var">unContext</span></a></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="local-6989586621679050151"><span class="annot"><span class="annottext">Vault
-</span><a href="#local-6989586621679050151"><span class="hs-identifier hs-var">vault</span></a></span></span><span> </span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Context
-</span><a href="#local-6989586621679050154"><span class="hs-identifier hs-var">context</span></a></span><span>
+</span><a href="OTel.API.Context.Core.Internal.html#unContext"><span class="hs-identifier hs-var">unContext</span></a></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="local-6989586621679052424"><span class="annot"><span class="annottext">Vault
+</span><a href="#local-6989586621679052424"><span class="hs-identifier hs-var">vault</span></a></span></span><span> </span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Context
+</span><a href="#local-6989586621679052421"><span class="hs-identifier hs-var">context</span></a></span><span>
 </span><span id="line-70"></span><span>
-</span><span id="line-71"></span><span class="hs-keyword">data</span><span> </span><span id="ContextKey"><span class="annot"><a href="OTel.API.Context.Core.Internal.html#ContextKey"><span class="hs-identifier hs-var">ContextKey</span></a></span></span><span> </span><span id="local-6989586621679050280"><span class="annot"><a href="#local-6989586621679050280"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="ContextKey"><span class="annot"><a href="OTel.API.Context.Core.Internal.html#ContextKey"><span class="hs-identifier hs-var">ContextKey</span></a></span></span><span>
+</span><span id="line-71"></span><span class="hs-keyword">data</span><span> </span><span id="ContextKey"><span class="annot"><a href="OTel.API.Context.Core.Internal.html#ContextKey"><span class="hs-identifier hs-var">ContextKey</span></a></span></span><span> </span><span id="local-6989586621679052294"><span class="annot"><a href="#local-6989586621679052294"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="ContextKey"><span class="annot"><a href="OTel.API.Context.Core.Internal.html#ContextKey"><span class="hs-identifier hs-var">ContextKey</span></a></span></span><span>
 </span><span id="line-72"></span><span>  </span><span class="hs-special">{</span><span> </span><span id="contextKeyDebugName"><span class="annot"><span class="annottext">forall a. ContextKey a -&gt; Text
 </span><a href="OTel.API.Context.Core.Internal.html#contextKeyDebugName"><span class="hs-identifier hs-var hs-var">contextKeyDebugName</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
 </span><span id="line-73"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="contextKeyVaultKey"><span class="annot"><span class="annottext">forall a. ContextKey a -&gt; Key a
-</span><a href="OTel.API.Context.Core.Internal.html#contextKeyVaultKey"><span class="hs-identifier hs-var hs-var">contextKeyVaultKey</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Vault.Key</span></span><span> </span><span class="annot"><a href="#local-6989586621679050280"><span class="hs-identifier hs-type">a</span></a></span><span>
+</span><a href="OTel.API.Context.Core.Internal.html#contextKeyVaultKey"><span class="hs-identifier hs-var hs-var">contextKeyVaultKey</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Vault.Key</span></span><span> </span><span class="annot"><a href="#local-6989586621679052294"><span class="hs-identifier hs-type">a</span></a></span><span>
 </span><span id="line-74"></span><span>  </span><span class="hs-special">}</span><span>
 </span><span id="line-75"></span><span>
-</span><span id="line-76"></span><span id="local-6989586621679050149"><span class="annot"><a href="OTel.API.Context.Core.Internal.html#contextKeyName"><span class="hs-identifier hs-type">contextKeyName</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#ContextKey"><span class="hs-identifier hs-type">ContextKey</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679050149"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span></span><span>
+</span><span id="line-76"></span><span id="local-6989586621679052426"><span class="annot"><a href="OTel.API.Context.Core.Internal.html#contextKeyName"><span class="hs-identifier hs-type">contextKeyName</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#ContextKey"><span class="hs-identifier hs-type">ContextKey</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679052426"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span></span><span>
 </span><span id="line-77"></span><span id="contextKeyName"><span class="annot"><span class="annottext">contextKeyName :: forall a. ContextKey a -&gt; Text
-</span><a href="OTel.API.Context.Core.Internal.html#contextKeyName"><span class="hs-identifier hs-var hs-var">contextKeyName</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. ContextKey a -&gt; Text
+</span><a href="OTel.API.Context.Core.Internal.html#contextKeyName"><span class="hs-identifier hs-var hs-var">contextKeyName</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ContextKey a -&gt; Text
+forall a. ContextKey a -&gt; Text
 </span><a href="OTel.API.Context.Core.Internal.html#contextKeyDebugName"><span class="hs-identifier hs-var">contextKeyDebugName</span></a></span><span>
 </span><span id="line-78"></span><span>
-</span><span id="line-79"></span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#unsafeNewContextKey"><span class="hs-identifier hs-type">unsafeNewContextKey</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679050270"><span class="annot"><a href="#local-6989586621679050270"><span class="hs-identifier hs-type">m</span></a></span></span><span> </span><span id="local-6989586621679050268"><span class="annot"><a href="#local-6989586621679050268"><span class="hs-identifier hs-type">a</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679050270"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679050270"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#ContextKey"><span class="hs-identifier hs-type">ContextKey</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679050268"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-79"></span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#unsafeNewContextKey"><span class="hs-identifier hs-type">unsafeNewContextKey</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679052305"><span class="annot"><a href="#local-6989586621679052305"><span class="hs-identifier hs-type">m</span></a></span></span><span> </span><span id="local-6989586621679052307"><span class="annot"><a href="#local-6989586621679052307"><span class="hs-identifier hs-type">a</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679052305"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679052305"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#ContextKey"><span class="hs-identifier hs-type">ContextKey</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679052307"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-80"></span><span id="unsafeNewContextKey"><span class="annot"><span class="annottext">unsafeNewContextKey :: forall (m :: * -&gt; *) a. MonadIO m =&gt; Text -&gt; m (ContextKey a)
-</span><a href="OTel.API.Context.Core.Internal.html#unsafeNewContextKey"><span class="hs-identifier hs-var hs-var">unsafeNewContextKey</span></a></span></span><span> </span><span id="local-6989586621679050140"><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621679050140"><span class="hs-identifier hs-var">contextKeyDebugName</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-81"></span><span>  </span><span id="local-6989586621679050139"><span class="annot"><span class="annottext">Key a
-</span><a href="#local-6989586621679050139"><span class="hs-identifier hs-var">contextKeyVaultKey</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a. MonadIO m =&gt; IO a -&gt; m a
-</span><span class="hs-identifier hs-var">liftIO</span></span><span> </span><span class="annot"><span class="annottext">forall a. IO (Key a)
+</span><a href="OTel.API.Context.Core.Internal.html#unsafeNewContextKey"><span class="hs-identifier hs-var hs-var">unsafeNewContextKey</span></a></span></span><span> </span><span id="local-6989586621679052435"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679052435"><span class="hs-identifier hs-var">contextKeyDebugName</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-81"></span><span>  </span><span id="local-6989586621679052436"><span class="annot"><span class="annottext">Key a
+</span><a href="#local-6989586621679052436"><span class="hs-identifier hs-var">contextKeyVaultKey</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">IO (Key a) -&gt; m (Key a)
+forall a. IO a -&gt; m a
+forall (m :: * -&gt; *) a. MonadIO m =&gt; IO a -&gt; m a
+</span><span class="hs-identifier hs-var">liftIO</span></span><span> </span><span class="annot"><span class="annottext">IO (Key a)
+forall a. IO (Key a)
 </span><span class="hs-identifier hs-var">Vault.newKey</span></span><span>
-</span><span id="line-82"></span><span>  </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span id="line-82"></span><span>  </span><span class="annot"><span class="annottext">ContextKey a -&gt; m (ContextKey a)
+forall a. a -&gt; m a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
 </span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#ContextKey"><span class="hs-identifier hs-type">ContextKey</span></a></span><span>
 </span><span id="line-83"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">Text
 contextKeyDebugName :: Text
 contextKeyDebugName :: Text
-</span><a href="#local-6989586621679050140"><span class="hs-identifier hs-var hs-var">contextKeyDebugName</span></a></span><span>
+</span><a href="OTel.API.Context.Core.Internal.html#contextKeyDebugName"><span class="hs-identifier hs-var hs-var">contextKeyDebugName</span></a></span><span>
 </span><span id="line-84"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Key a
 contextKeyVaultKey :: Key a
 contextKeyVaultKey :: Key a
-</span><a href="#local-6989586621679050139"><span class="hs-identifier hs-var hs-var">contextKeyVaultKey</span></a></span><span>
+</span><a href="OTel.API.Context.Core.Internal.html#contextKeyVaultKey"><span class="hs-identifier hs-var hs-var">contextKeyVaultKey</span></a></span><span>
 </span><span id="line-85"></span><span>    </span><span class="hs-special">}</span><span>
 </span><span id="line-86"></span><span>
 </span><span id="line-87"></span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#attachContextValueUsing"><span class="hs-identifier hs-type">attachContextValueUsing</span></a></span><span>
-</span><span id="line-88"></span><span>  </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679050259"><span class="annot"><a href="#local-6989586621679050259"><span class="hs-identifier hs-type">m</span></a></span></span><span> </span><span id="local-6989586621679050257"><span class="annot"><a href="#local-6989586621679050257"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span id="local-6989586621679050255"><span class="annot"><a href="#local-6989586621679050255"><span class="hs-identifier hs-type">b</span></a></span></span><span>
-</span><span id="line-89"></span><span>   </span><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679050259"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadMask</span></span><span> </span><span class="annot"><a href="#local-6989586621679050259"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-90"></span><span>  </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#ContextBackend"><span class="hs-identifier hs-type">ContextBackend</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679050257"><span class="hs-identifier hs-type">a</span></a></span><span>
-</span><span id="line-91"></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679050257"><span class="hs-identifier hs-type">a</span></a></span><span>
-</span><span id="line-92"></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679050259"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679050255"><span class="hs-identifier hs-type">b</span></a></span><span>
-</span><span id="line-93"></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679050259"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679050255"><span class="hs-identifier hs-type">b</span></a></span><span>
+</span><span id="line-88"></span><span>  </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679052316"><span class="annot"><a href="#local-6989586621679052316"><span class="hs-identifier hs-type">m</span></a></span></span><span> </span><span id="local-6989586621679052318"><span class="annot"><a href="#local-6989586621679052318"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span id="local-6989586621679052320"><span class="annot"><a href="#local-6989586621679052320"><span class="hs-identifier hs-type">b</span></a></span></span><span>
+</span><span id="line-89"></span><span>   </span><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679052316"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadMask</span></span><span> </span><span class="annot"><a href="#local-6989586621679052316"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-90"></span><span>  </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#ContextBackend"><span class="hs-identifier hs-type">ContextBackend</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679052318"><span class="hs-identifier hs-type">a</span></a></span><span>
+</span><span id="line-91"></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679052318"><span class="hs-identifier hs-type">a</span></a></span><span>
+</span><span id="line-92"></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679052316"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679052320"><span class="hs-identifier hs-type">b</span></a></span><span>
+</span><span id="line-93"></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679052316"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679052320"><span class="hs-identifier hs-type">b</span></a></span><span>
 </span><span id="line-94"></span><span id="attachContextValueUsing"><span class="annot"><span class="annottext">attachContextValueUsing :: forall (m :: * -&gt; *) a b.
 (MonadIO m, MonadMask m) =&gt;
 ContextBackend a -&gt; a -&gt; m b -&gt; m b
-</span><a href="OTel.API.Context.Core.Internal.html#attachContextValueUsing"><span class="hs-identifier hs-var hs-var">attachContextValueUsing</span></a></span></span><span> </span><span id="local-6989586621679050133"><span class="annot"><span class="annottext">ContextBackend a
-</span><a href="#local-6989586621679050133"><span class="hs-identifier hs-var">contextBackend</span></a></span></span><span> </span><span id="local-6989586621679050132"><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621679050132"><span class="hs-identifier hs-var">value</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-95"></span><span>  </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) ctx a.
+</span><a href="OTel.API.Context.Core.Internal.html#attachContextValueUsing"><span class="hs-identifier hs-var hs-var">attachContextValueUsing</span></a></span></span><span> </span><span id="local-6989586621679052442"><span class="annot"><span class="annottext">ContextBackend a
+</span><a href="#local-6989586621679052442"><span class="hs-identifier hs-var">contextBackend</span></a></span></span><span> </span><span id="local-6989586621679052443"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679052443"><span class="hs-identifier hs-var">value</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-95"></span><span>  </span><span class="annot"><span class="annottext">Store Context -&gt; (Context -&gt; Context) -&gt; m b -&gt; m b
+forall (m :: * -&gt; *) ctx a.
 (MonadIO m, MonadMask m) =&gt;
 Store ctx -&gt; (ctx -&gt; ctx) -&gt; m a -&gt; m a
-</span><span class="hs-identifier hs-var">Context.adjust</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. ContextBackend a -&gt; Store Context
+</span><span class="hs-identifier hs-var">Context.adjust</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ContextBackend a -&gt; Store Context
+forall a. ContextBackend a -&gt; Store Context
 </span><a href="OTel.API.Context.Core.Internal.html#contextBackendStore"><span class="hs-identifier hs-var">contextBackendStore</span></a></span><span> </span><span class="annot"><span class="annottext">ContextBackend a
-</span><a href="#local-6989586621679050133"><span class="hs-identifier hs-var">contextBackend</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-96"></span><span>    </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall a. ContextKey a -&gt; a -&gt; Context -&gt; Context
-</span><a href="OTel.API.Context.Core.Internal.html#insertContext"><span class="hs-identifier hs-var">insertContext</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. ContextBackend a -&gt; ContextKey a
+</span><a href="#local-6989586621679052442"><span class="hs-identifier hs-var">contextBackend</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-96"></span><span>    </span><span class="annot"><span class="annottext">((Context -&gt; Context) -&gt; m b -&gt; m b)
+-&gt; (Context -&gt; Context) -&gt; m b -&gt; m b
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">ContextKey a -&gt; a -&gt; Context -&gt; Context
+forall a. ContextKey a -&gt; a -&gt; Context -&gt; Context
+</span><a href="OTel.API.Context.Core.Internal.html#insertContext"><span class="hs-identifier hs-var">insertContext</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ContextBackend a -&gt; ContextKey a
+forall a. ContextBackend a -&gt; ContextKey a
 </span><a href="OTel.API.Context.Core.Internal.html#contextBackendValueKey"><span class="hs-identifier hs-var">contextBackendValueKey</span></a></span><span> </span><span class="annot"><span class="annottext">ContextBackend a
-</span><a href="#local-6989586621679050133"><span class="hs-identifier hs-var">contextBackend</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621679050132"><span class="hs-identifier hs-var">value</span></a></span><span>
+</span><a href="#local-6989586621679052442"><span class="hs-identifier hs-var">contextBackend</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679052443"><span class="hs-identifier hs-var">value</span></a></span><span>
 </span><span id="line-97"></span><span>
 </span><span id="line-98"></span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#getAttachedContextValueUsing"><span class="hs-identifier hs-type">getAttachedContextValueUsing</span></a></span><span>
-</span><span id="line-99"></span><span>  </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679050246"><span class="annot"><a href="#local-6989586621679050246"><span class="hs-identifier hs-type">m</span></a></span></span><span> </span><span id="local-6989586621679050244"><span class="annot"><a href="#local-6989586621679050244"><span class="hs-identifier hs-type">a</span></a></span></span><span>
-</span><span id="line-100"></span><span>   </span><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679050246"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadThrow</span></span><span> </span><span class="annot"><a href="#local-6989586621679050246"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-101"></span><span>  </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#ContextBackend"><span class="hs-identifier hs-type">ContextBackend</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679050244"><span class="hs-identifier hs-type">a</span></a></span><span>
-</span><span id="line-102"></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679050246"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="#local-6989586621679050244"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-99"></span><span>  </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679052329"><span class="annot"><a href="#local-6989586621679052329"><span class="hs-identifier hs-type">m</span></a></span></span><span> </span><span id="local-6989586621679052331"><span class="annot"><a href="#local-6989586621679052331"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-100"></span><span>   </span><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679052329"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadThrow</span></span><span> </span><span class="annot"><a href="#local-6989586621679052329"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-101"></span><span>  </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#ContextBackend"><span class="hs-identifier hs-type">ContextBackend</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679052331"><span class="hs-identifier hs-type">a</span></a></span><span>
+</span><span id="line-102"></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679052329"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="#local-6989586621679052331"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-103"></span><span id="getAttachedContextValueUsing"><span class="annot"><span class="annottext">getAttachedContextValueUsing :: forall (m :: * -&gt; *) a.
 (MonadIO m, MonadThrow m) =&gt;
 ContextBackend a -&gt; m (Maybe a)
-</span><a href="OTel.API.Context.Core.Internal.html#getAttachedContextValueUsing"><span class="hs-identifier hs-var hs-var">getAttachedContextValueUsing</span></a></span></span><span> </span><span id="local-6989586621679050120"><span class="annot"><span class="annottext">ContextBackend a
-</span><a href="#local-6989586621679050120"><span class="hs-identifier hs-var">contextBackend</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-104"></span><span>  </span><span id="local-6989586621679050119"><span class="annot"><span class="annottext">Context
-</span><a href="#local-6989586621679050119"><span class="hs-identifier hs-var">context</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) ctx.
+</span><a href="OTel.API.Context.Core.Internal.html#getAttachedContextValueUsing"><span class="hs-identifier hs-var hs-var">getAttachedContextValueUsing</span></a></span></span><span> </span><span id="local-6989586621679052455"><span class="annot"><span class="annottext">ContextBackend a
+</span><a href="#local-6989586621679052455"><span class="hs-identifier hs-var">contextBackend</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-104"></span><span>  </span><span id="local-6989586621679052456"><span class="annot"><span class="annottext">Context
+</span><a href="#local-6989586621679052456"><span class="hs-identifier hs-var">context</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Store Context -&gt; m Context
+forall (m :: * -&gt; *) ctx.
 (MonadIO m, MonadThrow m) =&gt;
 Store ctx -&gt; m ctx
-</span><span class="hs-identifier hs-var">Context.mine</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall a. ContextBackend a -&gt; Store Context
+</span><span class="hs-identifier hs-var">Context.mine</span></span><span> </span><span class="annot"><span class="annottext">(Store Context -&gt; m Context) -&gt; Store Context -&gt; m Context
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">ContextBackend a -&gt; Store Context
+forall a. ContextBackend a -&gt; Store Context
 </span><a href="OTel.API.Context.Core.Internal.html#contextBackendStore"><span class="hs-identifier hs-var">contextBackendStore</span></a></span><span> </span><span class="annot"><span class="annottext">ContextBackend a
-</span><a href="#local-6989586621679050120"><span class="hs-identifier hs-var">contextBackend</span></a></span><span>
-</span><span id="line-105"></span><span>  </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
-</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall a. ContextKey a -&gt; Context -&gt; Maybe a
-</span><a href="OTel.API.Context.Core.Internal.html#lookupContext"><span class="hs-identifier hs-var">lookupContext</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. ContextBackend a -&gt; ContextKey a
+</span><a href="#local-6989586621679052455"><span class="hs-identifier hs-var">contextBackend</span></a></span><span>
+</span><span id="line-105"></span><span>  </span><span class="annot"><span class="annottext">Maybe a -&gt; m (Maybe a)
+forall a. a -&gt; m a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">(Maybe a -&gt; m (Maybe a)) -&gt; Maybe a -&gt; m (Maybe a)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">ContextKey a -&gt; Context -&gt; Maybe a
+forall a. ContextKey a -&gt; Context -&gt; Maybe a
+</span><a href="OTel.API.Context.Core.Internal.html#lookupContext"><span class="hs-identifier hs-var">lookupContext</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ContextBackend a -&gt; ContextKey a
+forall a. ContextBackend a -&gt; ContextKey a
 </span><a href="OTel.API.Context.Core.Internal.html#contextBackendValueKey"><span class="hs-identifier hs-var">contextBackendValueKey</span></a></span><span> </span><span class="annot"><span class="annottext">ContextBackend a
-</span><a href="#local-6989586621679050120"><span class="hs-identifier hs-var">contextBackend</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Context
-</span><a href="#local-6989586621679050119"><span class="hs-identifier hs-var">context</span></a></span><span>
+</span><a href="#local-6989586621679052455"><span class="hs-identifier hs-var">contextBackend</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Context
+</span><a href="#local-6989586621679052456"><span class="hs-identifier hs-var">context</span></a></span><span>
 </span><span id="line-106"></span><span>
 </span><span id="line-107"></span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#getAttachedContextUsing"><span class="hs-identifier hs-type">getAttachedContextUsing</span></a></span><span>
-</span><span id="line-108"></span><span>  </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679050239"><span class="annot"><a href="#local-6989586621679050239"><span class="hs-identifier hs-type">m</span></a></span></span><span> </span><span id="local-6989586621679050238"><span class="annot"><a href="#local-6989586621679050238"><span class="hs-identifier hs-type">a</span></a></span></span><span>
-</span><span id="line-109"></span><span>   </span><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679050239"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadThrow</span></span><span> </span><span class="annot"><a href="#local-6989586621679050239"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-110"></span><span>  </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#ContextBackend"><span class="hs-identifier hs-type">ContextBackend</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679050238"><span class="hs-identifier hs-type">a</span></a></span><span>
-</span><span id="line-111"></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679050239"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#Context"><span class="hs-identifier hs-type">Context</span></a></span><span>
+</span><span id="line-108"></span><span>  </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679052336"><span class="annot"><a href="#local-6989586621679052336"><span class="hs-identifier hs-type">m</span></a></span></span><span> </span><span id="local-6989586621679052337"><span class="annot"><a href="#local-6989586621679052337"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-109"></span><span>   </span><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679052336"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadThrow</span></span><span> </span><span class="annot"><a href="#local-6989586621679052336"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-110"></span><span>  </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#ContextBackend"><span class="hs-identifier hs-type">ContextBackend</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679052337"><span class="hs-identifier hs-type">a</span></a></span><span>
+</span><span id="line-111"></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679052336"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#Context"><span class="hs-identifier hs-type">Context</span></a></span><span>
 </span><span id="line-112"></span><span id="getAttachedContextUsing"><span class="annot"><span class="annottext">getAttachedContextUsing :: forall (m :: * -&gt; *) a.
 (MonadIO m, MonadThrow m) =&gt;
 ContextBackend a -&gt; m Context
-</span><a href="OTel.API.Context.Core.Internal.html#getAttachedContextUsing"><span class="hs-identifier hs-var hs-var">getAttachedContextUsing</span></a></span></span><span> </span><span id="local-6989586621679050103"><span class="annot"><span class="annottext">ContextBackend a
-</span><a href="#local-6989586621679050103"><span class="hs-identifier hs-var">contextBackend</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-113"></span><span>  </span><span id="local-6989586621679050102"><span class="annot"><span class="annottext">HashMap Unique SomeContextBackend
-</span><a href="#local-6989586621679050102"><span class="hs-identifier hs-var">someContextBackends</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-114"></span><span>    </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a. MonadIO m =&gt; IO a -&gt; m a
-</span><span class="hs-identifier hs-var">liftIO</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall a. IORef a -&gt; IO a
-</span><span class="hs-identifier hs-var">IORef.readIORef</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><a href="OTel.API.Context.Core.Internal.html#getAttachedContextUsing"><span class="hs-identifier hs-var hs-var">getAttachedContextUsing</span></a></span></span><span> </span><span id="local-6989586621679052472"><span class="annot"><span class="annottext">ContextBackend a
+</span><a href="#local-6989586621679052472"><span class="hs-identifier hs-var">contextBackend</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-113"></span><span>  </span><span id="local-6989586621679052473"><span class="annot"><span class="annottext">HashMap Unique SomeContextBackend
+</span><a href="#local-6989586621679052473"><span class="hs-identifier hs-var">someContextBackends</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-114"></span><span>    </span><span class="annot"><span class="annottext">IO (HashMap Unique SomeContextBackend)
+-&gt; m (HashMap Unique SomeContextBackend)
+forall a. IO a -&gt; m a
+forall (m :: * -&gt; *) a. MonadIO m =&gt; IO a -&gt; m a
+</span><span class="hs-identifier hs-var">liftIO</span></span><span> </span><span class="annot"><span class="annottext">(IO (HashMap Unique SomeContextBackend)
+ -&gt; m (HashMap Unique SomeContextBackend))
+-&gt; IO (HashMap Unique SomeContextBackend)
+-&gt; m (HashMap Unique SomeContextBackend)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">IORef (HashMap Unique SomeContextBackend)
+-&gt; IO (HashMap Unique SomeContextBackend)
+forall a. IORef a -&gt; IO a
+</span><span class="hs-identifier hs-var">IORef.readIORef</span></span><span> </span><span class="annot"><span class="annottext">(IORef (HashMap Unique SomeContextBackend)
+ -&gt; IO (HashMap Unique SomeContextBackend))
+-&gt; IORef (HashMap Unique SomeContextBackend)
+-&gt; IO (HashMap Unique SomeContextBackend)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">ContextBackendRegistry -&gt; IORef (HashMap Unique SomeContextBackend)
-</span><a href="OTel.API.Context.Core.Internal.html#unContextBackendRegistry"><span class="hs-identifier hs-var">unContextBackendRegistry</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall a. ContextBackend a -&gt; ContextBackendRegistry
+</span><a href="OTel.API.Context.Core.Internal.html#unContextBackendRegistry"><span class="hs-identifier hs-var">unContextBackendRegistry</span></a></span><span> </span><span class="annot"><span class="annottext">(ContextBackendRegistry
+ -&gt; IORef (HashMap Unique SomeContextBackend))
+-&gt; ContextBackendRegistry
+-&gt; IORef (HashMap Unique SomeContextBackend)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">ContextBackend a -&gt; ContextBackendRegistry
+forall a. ContextBackend a -&gt; ContextBackendRegistry
 </span><a href="OTel.API.Context.Core.Internal.html#contextBackendRegistry"><span class="hs-identifier hs-var">contextBackendRegistry</span></a></span><span> </span><span class="annot"><span class="annottext">ContextBackend a
-</span><a href="#local-6989586621679050103"><span class="hs-identifier hs-var">contextBackend</span></a></span><span>
-</span><span id="line-115"></span><span>  </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><a href="#local-6989586621679052472"><span class="hs-identifier hs-var">contextBackend</span></a></span><span>
+</span><span id="line-115"></span><span>  </span><span class="annot"><span class="annottext">([Vault] -&gt; Context) -&gt; m [Vault] -&gt; m Context
+forall a b. (a -&gt; b) -&gt; m a -&gt; m b
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
 </span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Vault -&gt; Context
-</span><a href="OTel.API.Context.Core.Internal.html#Context"><span class="hs-identifier hs-var">Context</span></a></span><span> </span><span class="annot"><span class="annottext">forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
-</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">forall a. Monoid a =&gt; [a] -&gt; a
+</span><a href="OTel.API.Context.Core.Internal.html#Context"><span class="hs-identifier hs-var">Context</span></a></span><span> </span><span class="annot"><span class="annottext">(Vault -&gt; Context) -&gt; ([Vault] -&gt; Vault) -&gt; [Vault] -&gt; Context
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">[Vault] -&gt; Vault
+forall a. Monoid a =&gt; [a] -&gt; a
 </span><span class="hs-identifier hs-var">mconcat</span></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-116"></span><span>    </span><span class="annot"><span class="annottext">forall (t :: * -&gt; *) (f :: * -&gt; *) a b.
+</span><span id="line-116"></span><span>    </span><span class="annot"><span class="annottext">[SomeContextBackend]
+-&gt; (SomeContextBackend -&gt; m Vault) -&gt; m [Vault]
+forall (t :: * -&gt; *) (f :: * -&gt; *) a b.
 (Traversable t, Applicative f) =&gt;
 t a -&gt; (a -&gt; f b) -&gt; f (t b)
-</span><span class="hs-identifier hs-var">Traversable.for</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall k v. HashMap k v -&gt; [v]
+</span><span class="hs-identifier hs-var">Traversable.for</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">HashMap Unique SomeContextBackend -&gt; [SomeContextBackend]
+forall k v. HashMap k v -&gt; [v]
 </span><span class="hs-identifier hs-var">HashMap.elems</span></span><span> </span><span class="annot"><span class="annottext">HashMap Unique SomeContextBackend
-</span><a href="#local-6989586621679050102"><span class="hs-identifier hs-var">someContextBackends</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span>
-</span><span id="line-117"></span><span>      </span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#SomeContextBackend"><span class="hs-identifier hs-type">SomeContextBackend</span></a></span><span> </span><span id="local-6989586621679050090"><span class="annot"><span class="annottext">ContextBackend a
-</span><a href="#local-6989586621679050090"><span class="hs-identifier hs-var">registeredContextBackend</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-118"></span><span>        </span><span id="local-6989586621679050089"><span class="annot"><span class="annottext">Context
-</span><a href="#local-6989586621679050089"><span class="hs-identifier hs-var">context</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) ctx.
+</span><a href="#local-6989586621679052473"><span class="hs-identifier hs-var">someContextBackends</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span>
+</span><span id="line-117"></span><span>      </span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#SomeContextBackend"><span class="hs-identifier hs-type">SomeContextBackend</span></a></span><span> </span><span id="local-6989586621679052485"><span class="annot"><span class="annottext">ContextBackend a
+</span><a href="#local-6989586621679052485"><span class="hs-identifier hs-var">registeredContextBackend</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-118"></span><span>        </span><span id="local-6989586621679052486"><span class="annot"><span class="annottext">Context
+</span><a href="#local-6989586621679052486"><span class="hs-identifier hs-var">context</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Store Context -&gt; m Context
+forall (m :: * -&gt; *) ctx.
 (MonadIO m, MonadThrow m) =&gt;
 Store ctx -&gt; m ctx
-</span><span class="hs-identifier hs-var">Context.mine</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall a. ContextBackend a -&gt; Store Context
+</span><span class="hs-identifier hs-var">Context.mine</span></span><span> </span><span class="annot"><span class="annottext">(Store Context -&gt; m Context) -&gt; Store Context -&gt; m Context
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">ContextBackend a -&gt; Store Context
+forall a. ContextBackend a -&gt; Store Context
 </span><a href="OTel.API.Context.Core.Internal.html#contextBackendStore"><span class="hs-identifier hs-var">contextBackendStore</span></a></span><span> </span><span class="annot"><span class="annottext">ContextBackend a
-</span><a href="#local-6989586621679050090"><span class="hs-identifier hs-var">registeredContextBackend</span></a></span><span>
-</span><span id="line-119"></span><span>        </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
-</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><a href="#local-6989586621679052485"><span class="hs-identifier hs-var">registeredContextBackend</span></a></span><span>
+</span><span id="line-119"></span><span>        </span><span class="annot"><span class="annottext">Vault -&gt; m Vault
+forall a. a -&gt; m a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">(Vault -&gt; m Vault) -&gt; Vault -&gt; m Vault
+forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Context -&gt; Vault
 </span><a href="OTel.API.Context.Core.Internal.html#unContext"><span class="hs-identifier hs-var">unContext</span></a></span><span> </span><span class="annot"><span class="annottext">Context
-</span><a href="#local-6989586621679050089"><span class="hs-identifier hs-var">context</span></a></span><span>
+</span><a href="#local-6989586621679052486"><span class="hs-identifier hs-var">context</span></a></span><span>
 </span><span id="line-120"></span><span>
-</span><span id="line-121"></span><span class="hs-keyword">data</span><span> </span><span id="ContextBackend"><span class="annot"><a href="OTel.API.Context.Core.Internal.html#ContextBackend"><span class="hs-identifier hs-var">ContextBackend</span></a></span></span><span> </span><span id="local-6989586621679050247"><span class="annot"><a href="#local-6989586621679050247"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="ContextBackend"><span class="annot"><a href="OTel.API.Context.Core.Internal.html#ContextBackend"><span class="hs-identifier hs-var">ContextBackend</span></a></span></span><span>
+</span><span id="line-121"></span><span class="hs-keyword">data</span><span> </span><span id="ContextBackend"><span class="annot"><a href="OTel.API.Context.Core.Internal.html#ContextBackend"><span class="hs-identifier hs-var">ContextBackend</span></a></span></span><span> </span><span id="local-6989586621679052328"><span class="annot"><a href="#local-6989586621679052328"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="ContextBackend"><span class="annot"><a href="OTel.API.Context.Core.Internal.html#ContextBackend"><span class="hs-identifier hs-var">ContextBackend</span></a></span></span><span>
 </span><span id="line-122"></span><span>  </span><span class="hs-special">{</span><span> </span><span id="contextBackendStore"><span class="annot"><span class="annottext">forall a. ContextBackend a -&gt; Store Context
 </span><a href="OTel.API.Context.Core.Internal.html#contextBackendStore"><span class="hs-identifier hs-var hs-var">contextBackendStore</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Store</span></span><span> </span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#Context"><span class="hs-identifier hs-type">Context</span></a></span><span>
 </span><span id="line-123"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="contextBackendValueKey"><span class="annot"><span class="annottext">forall a. ContextBackend a -&gt; ContextKey a
-</span><a href="OTel.API.Context.Core.Internal.html#contextBackendValueKey"><span class="hs-identifier hs-var hs-var">contextBackendValueKey</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#ContextKey"><span class="hs-identifier hs-type">ContextKey</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679050247"><span class="hs-identifier hs-type">a</span></a></span><span>
+</span><a href="OTel.API.Context.Core.Internal.html#contextBackendValueKey"><span class="hs-identifier hs-var hs-var">contextBackendValueKey</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#ContextKey"><span class="hs-identifier hs-type">ContextKey</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679052328"><span class="hs-identifier hs-type">a</span></a></span><span>
 </span><span id="line-124"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="contextBackendRegistry"><span class="annot"><span class="annottext">forall a. ContextBackend a -&gt; ContextBackendRegistry
 </span><a href="OTel.API.Context.Core.Internal.html#contextBackendRegistry"><span class="hs-identifier hs-var hs-var">contextBackendRegistry</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#ContextBackendRegistry"><span class="hs-identifier hs-type">ContextBackendRegistry</span></a></span><span>
 </span><span id="line-125"></span><span>  </span><span class="hs-special">}</span><span>
 </span><span id="line-126"></span><span>
-</span><span id="line-127"></span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#unsafeNewContextBackend"><span class="hs-identifier hs-type">unsafeNewContextBackend</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679050210"><span class="annot"><a href="#local-6989586621679050210"><span class="hs-identifier hs-type">m</span></a></span></span><span> </span><span id="local-6989586621679050209"><span class="annot"><a href="#local-6989586621679050209"><span class="hs-identifier hs-type">a</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679050210"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Typeable</span></span><span> </span><span class="annot"><a href="#local-6989586621679050209"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679050210"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#ContextBackend"><span class="hs-identifier hs-type">ContextBackend</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679050209"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-127"></span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#unsafeNewContextBackend"><span class="hs-identifier hs-type">unsafeNewContextBackend</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679052365"><span class="annot"><a href="#local-6989586621679052365"><span class="hs-identifier hs-type">m</span></a></span></span><span> </span><span id="local-6989586621679052366"><span class="annot"><a href="#local-6989586621679052366"><span class="hs-identifier hs-type">a</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679052365"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Typeable</span></span><span> </span><span class="annot"><a href="#local-6989586621679052366"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679052365"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#ContextBackend"><span class="hs-identifier hs-type">ContextBackend</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679052366"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-128"></span><span id="unsafeNewContextBackend"><span class="annot"><span class="annottext">unsafeNewContextBackend :: forall (m :: * -&gt; *) a.
 (MonadIO m, Typeable a) =&gt;
 m (ContextBackend a)
 </span><a href="OTel.API.Context.Core.Internal.html#unsafeNewContextBackend"><span class="hs-identifier hs-var hs-var">unsafeNewContextBackend</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-129"></span><span>  </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a. MonadIO m =&gt; IO a -&gt; m a
+</span><span id="line-129"></span><span>  </span><span class="annot"><span class="annottext">IO (ContextBackend a) -&gt; m (ContextBackend a)
+forall a. IO a -&gt; m a
+forall (m :: * -&gt; *) a. MonadIO m =&gt; IO a -&gt; m a
 </span><span class="hs-identifier hs-var">liftIO</span></span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-130"></span><span>    </span><span id="local-6989586621679050069"><span class="annot"><span class="annottext">ContextBackend a
-</span><a href="#local-6989586621679050069"><span class="hs-identifier hs-var">contextBackend</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-131"></span><span>      </span><span id="local-6989586621679050068"><span class="annot"><span class="annottext">ContextKey a
-</span><a href="#local-6989586621679050068"><span class="hs-identifier hs-var">contextBackendValueKey</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-132"></span><span>        </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a. MonadIO m =&gt; Text -&gt; m (ContextKey a)
-</span><a href="OTel.API.Context.Core.Internal.html#unsafeNewContextKey"><span class="hs-identifier hs-var">unsafeNewContextKey</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span id="line-130"></span><span>    </span><span id="local-6989586621679052506"><span class="annot"><span class="annottext">ContextBackend a
+</span><a href="#local-6989586621679052506"><span class="hs-identifier hs-var">contextBackend</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-131"></span><span>      </span><span id="local-6989586621679052507"><span class="annot"><span class="annottext">ContextKey a
+</span><a href="#local-6989586621679052507"><span class="hs-identifier hs-var">contextBackendValueKey</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-132"></span><span>        </span><span class="annot"><span class="annottext">Text -&gt; IO (ContextKey a)
+forall (m :: * -&gt; *) a. MonadIO m =&gt; Text -&gt; m (ContextKey a)
+</span><a href="OTel.API.Context.Core.Internal.html#unsafeNewContextKey"><span class="hs-identifier hs-var">unsafeNewContextKey</span></a></span><span> </span><span class="annot"><span class="annottext">(Text -&gt; IO (ContextKey a)) -&gt; Text -&gt; IO (ContextKey a)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; Text
-</span><span class="hs-identifier hs-var">Text.pack</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall a. Show a =&gt; a -&gt; String
-</span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall {k} (proxy :: k -&gt; *) (a :: k).
+</span><span class="hs-identifier hs-var">Text.pack</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; Text) -&gt; String -&gt; Text
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">TypeRep -&gt; String
+forall a. Show a =&gt; a -&gt; String
+</span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">(TypeRep -&gt; String) -&gt; TypeRep -&gt; String
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Proxy a -&gt; TypeRep
+forall {k} (proxy :: k -&gt; *) (a :: k).
 Typeable a =&gt;
 proxy a -&gt; TypeRep
-</span><span class="hs-identifier hs-var">Typeable.typeRep</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall {k} (t :: k). Proxy t
-</span><span class="hs-identifier hs-var">Proxy</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621679050209"><span class="hs-identifier hs-type">a</span></a></span><span>
-</span><span id="line-133"></span><span>      </span><span id="local-6989586621679050063"><span class="annot"><span class="annottext">Store Context
-</span><a href="#local-6989586621679050063"><span class="hs-identifier hs-var">contextBackendStore</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-134"></span><span>        </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) ctx.
+</span><span class="hs-identifier hs-var">Typeable.typeRep</span></span><span> </span><span class="annot"><span class="annottext">(Proxy a -&gt; TypeRep) -&gt; Proxy a -&gt; TypeRep
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall t. Proxy t
+forall {k} (t :: k). Proxy t
+</span><span class="hs-identifier hs-var">Proxy</span></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621679052366"><span class="hs-identifier hs-type">a</span></a></span><span>
+</span><span id="line-133"></span><span>      </span><span id="local-6989586621679052512"><span class="annot"><span class="annottext">Store Context
+</span><a href="#local-6989586621679052512"><span class="hs-identifier hs-var">contextBackendStore</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-134"></span><span>        </span><span class="annot"><span class="annottext">PropagationStrategy -&gt; Maybe Context -&gt; IO (Store Context)
+forall (m :: * -&gt; *) ctx.
 MonadIO m =&gt;
 PropagationStrategy -&gt; Maybe ctx -&gt; m (Store ctx)
 </span><span class="hs-identifier hs-var">Context.newStore</span></span><span> </span><span class="annot"><span class="annottext">PropagationStrategy
-</span><span class="hs-identifier hs-var">Context.noPropagation</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Context.noPropagation</span></span><span> </span><span class="annot"><span class="annottext">(Maybe Context -&gt; IO (Store Context))
+-&gt; Maybe Context -&gt; IO (Store Context)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Context -&gt; Maybe Context
+forall a. a -&gt; Maybe a
 </span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">Context
 </span><a href="OTel.API.Context.Core.Internal.html#emptyContext"><span class="hs-identifier hs-var">emptyContext</span></a></span><span>
-</span><span id="line-135"></span><span>      </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span id="line-135"></span><span>      </span><span class="annot"><span class="annottext">ContextBackend a -&gt; IO (ContextBackend a)
+forall a. a -&gt; IO a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
 </span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#ContextBackend"><span class="hs-identifier hs-type">ContextBackend</span></a></span><span>
 </span><span id="line-136"></span><span>        </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">Store Context
 contextBackendStore :: Store Context
 contextBackendStore :: Store Context
-</span><a href="#local-6989586621679050063"><span class="hs-identifier hs-var hs-var">contextBackendStore</span></a></span><span>
+</span><a href="OTel.API.Context.Core.Internal.html#contextBackendStore"><span class="hs-identifier hs-var hs-var">contextBackendStore</span></a></span><span>
 </span><span id="line-137"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">ContextKey a
 contextBackendValueKey :: ContextKey a
 contextBackendValueKey :: ContextKey a
-</span><a href="#local-6989586621679050068"><span class="hs-identifier hs-var hs-var">contextBackendValueKey</span></a></span><span>
+</span><a href="OTel.API.Context.Core.Internal.html#contextBackendValueKey"><span class="hs-identifier hs-var hs-var">contextBackendValueKey</span></a></span><span>
 </span><span id="line-138"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">contextBackendRegistry :: ContextBackendRegistry
 </span><a href="OTel.API.Context.Core.Internal.html#contextBackendRegistry"><span class="hs-identifier hs-var">contextBackendRegistry</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ContextBackendRegistry
 </span><a href="OTel.API.Context.Core.Internal.html#defaultContextBackendRegistry"><span class="hs-identifier hs-var">defaultContextBackendRegistry</span></a></span><span>
 </span><span id="line-139"></span><span>        </span><span class="hs-special">}</span><span>
-</span><span id="line-140"></span><span>    </span><span id="local-6989586621679050060"><span class="annot"><span class="annottext">Unique
-</span><a href="#local-6989586621679050060"><span class="hs-identifier hs-var">contextBackendRegistryKey</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">IO Unique
+</span><span id="line-140"></span><span>    </span><span id="local-6989586621679052515"><span class="annot"><span class="annottext">Unique
+</span><a href="#local-6989586621679052515"><span class="hs-identifier hs-var">contextBackendRegistryKey</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">IO Unique
 </span><span class="hs-identifier hs-var">Unique.newUnique</span></span><span>
-</span><span id="line-141"></span><span>    </span><span class="annot"><span class="annottext">forall a.
+</span><span id="line-141"></span><span>    </span><span class="annot"><span class="annottext">Unique -&gt; ContextBackend a -&gt; ContextBackendRegistry -&gt; IO ()
+forall a.
 Unique -&gt; ContextBackend a -&gt; ContextBackendRegistry -&gt; IO ()
 </span><a href="OTel.API.Context.Core.Internal.html#registerContextBackend"><span class="hs-identifier hs-var">registerContextBackend</span></a></span><span> </span><span class="annot"><span class="annottext">Unique
-</span><a href="#local-6989586621679050060"><span class="hs-identifier hs-var">contextBackendRegistryKey</span></a></span><span> </span><span class="annot"><span class="annottext">ContextBackend a
-</span><a href="#local-6989586621679050069"><span class="hs-identifier hs-var">contextBackend</span></a></span><span>
-</span><span id="line-142"></span><span>      </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall a. ContextBackend a -&gt; ContextBackendRegistry
+</span><a href="#local-6989586621679052515"><span class="hs-identifier hs-var">contextBackendRegistryKey</span></a></span><span> </span><span class="annot"><span class="annottext">ContextBackend a
+</span><a href="#local-6989586621679052506"><span class="hs-identifier hs-var">contextBackend</span></a></span><span>
+</span><span id="line-142"></span><span>      </span><span class="annot"><span class="annottext">(ContextBackendRegistry -&gt; IO ())
+-&gt; ContextBackendRegistry -&gt; IO ()
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">ContextBackend a -&gt; ContextBackendRegistry
+forall a. ContextBackend a -&gt; ContextBackendRegistry
 </span><a href="OTel.API.Context.Core.Internal.html#contextBackendRegistry"><span class="hs-identifier hs-var">contextBackendRegistry</span></a></span><span> </span><span class="annot"><span class="annottext">ContextBackend a
-</span><a href="#local-6989586621679050069"><span class="hs-identifier hs-var">contextBackend</span></a></span><span>
-</span><span id="line-143"></span><span>    </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><a href="#local-6989586621679052506"><span class="hs-identifier hs-var">contextBackend</span></a></span><span>
+</span><span id="line-143"></span><span>    </span><span class="annot"><span class="annottext">ContextBackend a -&gt; IO (ContextBackend a)
+forall a. a -&gt; IO a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
 </span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">ContextBackend a
-</span><a href="#local-6989586621679050069"><span class="hs-identifier hs-var">contextBackend</span></a></span><span>
+</span><a href="#local-6989586621679052506"><span class="hs-identifier hs-var">contextBackend</span></a></span><span>
 </span><span id="line-144"></span><span>
 </span><span id="line-145"></span><span class="hs-keyword">data</span><span> </span><span id="SomeContextBackend"><span class="annot"><a href="OTel.API.Context.Core.Internal.html#SomeContextBackend"><span class="hs-identifier hs-var">SomeContextBackend</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-146"></span><span>  </span><span id="local-6989586621679050058"><span id="SomeContextBackend"><span class="annot"><a href="OTel.API.Context.Core.Internal.html#SomeContextBackend"><span class="hs-identifier hs-var">SomeContextBackend</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#ContextBackend"><span class="hs-identifier hs-type">ContextBackend</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679050058"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#SomeContextBackend"><span class="hs-identifier hs-type">SomeContextBackend</span></a></span></span><span>
+</span><span id="line-146"></span><span>  </span><span id="local-6989586621679052517"><span id="SomeContextBackend"><span class="annot"><a href="OTel.API.Context.Core.Internal.html#SomeContextBackend"><span class="hs-identifier hs-var">SomeContextBackend</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#ContextBackend"><span class="hs-identifier hs-type">ContextBackend</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679052517"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#SomeContextBackend"><span class="hs-identifier hs-type">SomeContextBackend</span></a></span></span><span>
 </span><span id="line-147"></span><span>
 </span><span id="line-148"></span><span class="hs-keyword">newtype</span><span> </span><span id="ContextBackendRegistry"><span class="annot"><a href="OTel.API.Context.Core.Internal.html#ContextBackendRegistry"><span class="hs-identifier hs-var">ContextBackendRegistry</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="ContextBackendRegistry"><span class="annot"><a href="OTel.API.Context.Core.Internal.html#ContextBackendRegistry"><span class="hs-identifier hs-var">ContextBackendRegistry</span></a></span></span><span>
 </span><span id="line-149"></span><span>  </span><span class="hs-special">{</span><span> </span><span id="unContextBackendRegistry"><span class="annot"><span class="annottext">ContextBackendRegistry -&gt; IORef (HashMap Unique SomeContextBackend)
@@ -315,45 +391,67 @@ Unique -&gt; ContextBackend a -&gt; ContextBackendRegistry -&gt; IO ()
 </span><span id="line-152"></span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#emptyContextBackendRegistry"><span class="hs-identifier hs-type">emptyContextBackendRegistry</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#ContextBackendRegistry"><span class="hs-identifier hs-type">ContextBackendRegistry</span></a></span><span>
 </span><span id="line-153"></span><span id="emptyContextBackendRegistry"><span class="annot"><span class="annottext">emptyContextBackendRegistry :: IO ContextBackendRegistry
 </span><a href="OTel.API.Context.Core.Internal.html#emptyContextBackendRegistry"><span class="hs-identifier hs-var hs-var">emptyContextBackendRegistry</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-154"></span><span>  </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span id="line-154"></span><span>  </span><span class="annot"><span class="annottext">(IORef (HashMap Unique SomeContextBackend)
+ -&gt; ContextBackendRegistry)
+-&gt; IO (IORef (HashMap Unique SomeContextBackend))
+-&gt; IO ContextBackendRegistry
+forall a b. (a -&gt; b) -&gt; IO a -&gt; IO b
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
 </span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">IORef (HashMap Unique SomeContextBackend) -&gt; ContextBackendRegistry
-</span><a href="OTel.API.Context.Core.Internal.html#ContextBackendRegistry"><span class="hs-identifier hs-var">ContextBackendRegistry</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; IO (IORef a)
-</span><span class="hs-identifier hs-var">IORef.newIORef</span></span><span> </span><span class="annot"><span class="annottext">forall k v. HashMap k v
+</span><a href="OTel.API.Context.Core.Internal.html#ContextBackendRegistry"><span class="hs-identifier hs-var">ContextBackendRegistry</span></a></span><span> </span><span class="annot"><span class="annottext">(IO (IORef (HashMap Unique SomeContextBackend))
+ -&gt; IO ContextBackendRegistry)
+-&gt; IO (IORef (HashMap Unique SomeContextBackend))
+-&gt; IO ContextBackendRegistry
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">HashMap Unique SomeContextBackend
+-&gt; IO (IORef (HashMap Unique SomeContextBackend))
+forall a. a -&gt; IO (IORef a)
+</span><span class="hs-identifier hs-var">IORef.newIORef</span></span><span> </span><span class="annot"><span class="annottext">HashMap Unique SomeContextBackend
+forall k v. HashMap k v
 </span><span class="hs-identifier hs-var">HashMap.empty</span></span><span>
 </span><span id="line-155"></span><span>
-</span><span id="line-156"></span><span id="local-6989586621679050194"><span class="annot"><a href="OTel.API.Context.Core.Internal.html#registerContextBackend"><span class="hs-identifier hs-type">registerContextBackend</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Unique</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#ContextBackend"><span class="hs-identifier hs-type">ContextBackend</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679050194"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#ContextBackendRegistry"><span class="hs-identifier hs-type">ContextBackendRegistry</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span></span><span>
+</span><span id="line-156"></span><span id="local-6989586621679052381"><span class="annot"><a href="OTel.API.Context.Core.Internal.html#registerContextBackend"><span class="hs-identifier hs-type">registerContextBackend</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Unique</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#ContextBackend"><span class="hs-identifier hs-type">ContextBackend</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679052381"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#ContextBackendRegistry"><span class="hs-identifier hs-type">ContextBackendRegistry</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span></span><span>
 </span><span id="line-157"></span><span id="registerContextBackend"><span class="annot"><span class="annottext">registerContextBackend :: forall a.
 Unique -&gt; ContextBackend a -&gt; ContextBackendRegistry -&gt; IO ()
-</span><a href="OTel.API.Context.Core.Internal.html#registerContextBackend"><span class="hs-identifier hs-var hs-var">registerContextBackend</span></a></span></span><span> </span><span id="local-6989586621679050050"><span class="annot"><span class="annottext">Unique
-</span><a href="#local-6989586621679050050"><span class="hs-identifier hs-var">registryKey</span></a></span></span><span> </span><span id="local-6989586621679050049"><span class="annot"><span class="annottext">ContextBackend a
-</span><a href="#local-6989586621679050049"><span class="hs-identifier hs-var">contextBackend</span></a></span></span><span> </span><span id="local-6989586621679050048"><span class="annot"><span class="annottext">ContextBackendRegistry
-</span><a href="#local-6989586621679050048"><span class="hs-identifier hs-var">registry</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-158"></span><span>  </span><span class="annot"><span class="annottext">forall a b. IORef a -&gt; (a -&gt; (a, b)) -&gt; IO b
+</span><a href="OTel.API.Context.Core.Internal.html#registerContextBackend"><span class="hs-identifier hs-var hs-var">registerContextBackend</span></a></span></span><span> </span><span id="local-6989586621679052525"><span class="annot"><span class="annottext">Unique
+</span><a href="#local-6989586621679052525"><span class="hs-identifier hs-var">registryKey</span></a></span></span><span> </span><span id="local-6989586621679052526"><span class="annot"><span class="annottext">ContextBackend a
+</span><a href="#local-6989586621679052526"><span class="hs-identifier hs-var">contextBackend</span></a></span></span><span> </span><span id="local-6989586621679052527"><span class="annot"><span class="annottext">ContextBackendRegistry
+</span><a href="#local-6989586621679052527"><span class="hs-identifier hs-var">registry</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-158"></span><span>  </span><span class="annot"><span class="annottext">IORef (HashMap Unique SomeContextBackend)
+-&gt; (HashMap Unique SomeContextBackend
+    -&gt; (HashMap Unique SomeContextBackend, ()))
+-&gt; IO ()
+forall a b. IORef a -&gt; (a -&gt; (a, b)) -&gt; IO b
 </span><span class="hs-identifier hs-var">IORef.atomicModifyIORef'</span></span><span> </span><span class="annot"><span class="annottext">IORef (HashMap Unique SomeContextBackend)
-</span><a href="#local-6989586621679050046"><span class="hs-identifier hs-var">ref</span></a></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679050045"><span class="annot"><span class="annottext">HashMap Unique SomeContextBackend
-</span><a href="#local-6989586621679050045"><span class="hs-identifier hs-var">contextBackends</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
-</span><span id="line-159"></span><span>    </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="annottext">forall k v.
+</span><a href="#local-6989586621679052529"><span class="hs-identifier hs-var">ref</span></a></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679052530"><span class="annot"><span class="annottext">HashMap Unique SomeContextBackend
+</span><a href="#local-6989586621679052530"><span class="hs-identifier hs-var">contextBackends</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-159"></span><span>    </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="annottext">Unique
+-&gt; SomeContextBackend
+-&gt; HashMap Unique SomeContextBackend
+-&gt; HashMap Unique SomeContextBackend
+forall k v.
 (Eq k, Hashable k) =&gt;
 k -&gt; v -&gt; HashMap k v -&gt; HashMap k v
 </span><span class="hs-identifier hs-var">HashMap.insert</span></span><span> </span><span class="annot"><span class="annottext">Unique
-</span><a href="#local-6989586621679050050"><span class="hs-identifier hs-var">registryKey</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. ContextBackend a -&gt; SomeContextBackend
+</span><a href="#local-6989586621679052525"><span class="hs-identifier hs-var">registryKey</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ContextBackend a -&gt; SomeContextBackend
+forall a. ContextBackend a -&gt; SomeContextBackend
 </span><a href="OTel.API.Context.Core.Internal.html#SomeContextBackend"><span class="hs-identifier hs-var">SomeContextBackend</span></a></span><span> </span><span class="annot"><span class="annottext">ContextBackend a
-</span><a href="#local-6989586621679050049"><span class="hs-identifier hs-var">contextBackend</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">HashMap Unique SomeContextBackend
-</span><a href="#local-6989586621679050045"><span class="hs-identifier hs-var">contextBackends</span></a></span><span>
+</span><a href="#local-6989586621679052526"><span class="hs-identifier hs-var">contextBackend</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">HashMap Unique SomeContextBackend
+</span><a href="#local-6989586621679052530"><span class="hs-identifier hs-var">contextBackends</span></a></span><span>
 </span><span id="line-160"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
 </span><span id="line-161"></span><span>    </span><span class="hs-special">)</span><span>
 </span><span id="line-162"></span><span>  </span><span class="hs-keyword">where</span><span>
 </span><span id="line-163"></span><span>  </span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#ContextBackendRegistry"><span class="hs-identifier hs-type">ContextBackendRegistry</span></a></span><span>
 </span><span id="line-164"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">unContextBackendRegistry :: ContextBackendRegistry -&gt; IORef (HashMap Unique SomeContextBackend)
-</span><a href="OTel.API.Context.Core.Internal.html#unContextBackendRegistry"><span class="hs-identifier hs-var">unContextBackendRegistry</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="local-6989586621679050046"><span class="annot"><span class="annottext">IORef (HashMap Unique SomeContextBackend)
-</span><a href="#local-6989586621679050046"><span class="hs-identifier hs-var">ref</span></a></span></span><span>
+</span><a href="OTel.API.Context.Core.Internal.html#unContextBackendRegistry"><span class="hs-identifier hs-var">unContextBackendRegistry</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="local-6989586621679052529"><span class="annot"><span class="annottext">IORef (HashMap Unique SomeContextBackend)
+</span><a href="#local-6989586621679052529"><span class="hs-identifier hs-var">ref</span></a></span></span><span>
 </span><span id="line-165"></span><span>    </span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ContextBackendRegistry
-</span><a href="#local-6989586621679050048"><span class="hs-identifier hs-var">registry</span></a></span><span>
+</span><a href="#local-6989586621679052527"><span class="hs-identifier hs-var">registry</span></a></span><span>
 </span><span id="line-166"></span><span>
 </span><span id="line-167"></span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#defaultContextBackendRegistry"><span class="hs-identifier hs-type">defaultContextBackendRegistry</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#ContextBackendRegistry"><span class="hs-identifier hs-type">ContextBackendRegistry</span></a></span><span>
 </span><span id="line-168"></span><span id="defaultContextBackendRegistry"><span class="annot"><span class="annottext">defaultContextBackendRegistry :: ContextBackendRegistry
-</span><a href="OTel.API.Context.Core.Internal.html#defaultContextBackendRegistry"><span class="hs-identifier hs-var hs-var">defaultContextBackendRegistry</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. IO a -&gt; a
+</span><a href="OTel.API.Context.Core.Internal.html#defaultContextBackendRegistry"><span class="hs-identifier hs-var hs-var">defaultContextBackendRegistry</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">IO ContextBackendRegistry -&gt; ContextBackendRegistry
+forall a. IO a -&gt; a
 </span><span class="hs-identifier hs-var">unsafePerformIO</span></span><span> </span><span class="annot"><span class="annottext">IO ContextBackendRegistry
 </span><a href="OTel.API.Context.Core.Internal.html#emptyContextBackendRegistry"><span class="hs-identifier hs-var">emptyContextBackendRegistry</span></a></span><span>
 </span><span id="line-169"></span><span class="hs-pragma">{-# NOINLINE</span><span> </span><span class="annot"><a href="OTel.API.Context.Core.Internal.html#defaultContextBackendRegistry"><span class="hs-pragma hs-type">defaultContextBackendRegistry</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>

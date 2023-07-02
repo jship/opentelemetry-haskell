@@ -329,7 +329,7 @@ create :: Int -> (Ptr Word8 -> IO ()) -> IO ByteString
 
 -- | Given a maximum size <tt>l</tt> and an action <tt>f</tt> that fills
 --   the <a>ByteString</a> starting at the given <a>Ptr</a> and returns the
---   actual utilized length, <tt><a>createUptoN</a>` l f</tt> returns the
+--   actual utilized length, <tt><a>createUptoN'</a> l f</tt> returns the
 --   filled <a>ByteString</a>.
 createUptoN :: Int -> (Ptr Word8 -> IO Int) -> IO ByteString
 
@@ -539,7 +539,7 @@ instance GHC.Base.Monoid Data.ByteString.Lazy.Internal.ByteString
 instance Control.DeepSeq.NFData Data.ByteString.Lazy.Internal.ByteString
 instance GHC.Show.Show Data.ByteString.Lazy.Internal.ByteString
 instance GHC.Read.Read Data.ByteString.Lazy.Internal.ByteString
-instance GHC.Exts.IsList Data.ByteString.Lazy.Internal.ByteString
+instance GHC.IsList.IsList Data.ByteString.Lazy.Internal.ByteString
 instance Data.String.IsString Data.ByteString.Lazy.Internal.ByteString
 instance Data.Data.Data Data.ByteString.Lazy.Internal.ByteString
 
@@ -1073,7 +1073,7 @@ instance GHC.Base.Monoid Data.ByteString.Short.Internal.ShortByteString
 instance Control.DeepSeq.NFData Data.ByteString.Short.Internal.ShortByteString
 instance GHC.Show.Show Data.ByteString.Short.Internal.ShortByteString
 instance GHC.Read.Read Data.ByteString.Short.Internal.ShortByteString
-instance GHC.Exts.IsList Data.ByteString.Short.Internal.ShortByteString
+instance GHC.IsList.IsList Data.ByteString.Short.Internal.ShortByteString
 instance Data.String.IsString Data.ByteString.Short.Internal.ShortByteString
 instance Data.Data.Data Data.ByteString.Short.Internal.ShortByteString
 

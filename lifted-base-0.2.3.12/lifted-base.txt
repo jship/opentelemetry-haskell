@@ -28,7 +28,7 @@ module Control.Concurrent.Chan.Lifted
 
 -- | <a>Chan</a> is an abstract type representing an unbounded FIFO
 --   channel.
-data Chan a
+data () => Chan a
 
 -- | Generalized version of <a>newChan</a>.
 newChan :: MonadBase IO m => m (Chan a)
@@ -57,7 +57,7 @@ module Control.Concurrent.MVar.Lifted
 -- | An <a>MVar</a> (pronounced "em-var") is a synchronising variable, used
 --   for communication between concurrent threads. It can be thought of as
 --   a box, which may be empty or full.
-data MVar a
+data () => MVar a
 
 -- | Generalized version of <a>newEmptyMVar</a>.
 newEmptyMVar :: MonadBase IO m => m (MVar a)
@@ -129,7 +129,7 @@ module Control.Concurrent.QSem.Lifted
 --   </pre>
 --   
 --   is safe; it never loses a unit of the resource.
-data QSem
+data () => QSem
 
 -- | Generalized version of <a>newQSem</a>.
 newQSem :: MonadBase IO m => Int -> m QSem
@@ -156,7 +156,7 @@ module Control.Concurrent.QSemN.Lifted
 --   </pre>
 --   
 --   is safe; it never loses any of the resource.
-data QSemN
+data () => QSemN
 
 -- | Generalized version of <a>newQSemN</a>.
 newQSemN :: MonadBase IO m => Int -> m QSemN
@@ -173,191 +173,9 @@ signalQSemN :: MonadBase IO m => QSemN -> Int -> m ()
 --   <a>MonadBaseControl</a>.
 module Control.Exception.Lifted
 
--- | If the first argument evaluates to <a>True</a>, then the result is the
---   second argument. Otherwise an <a>AssertionFailed</a> exception is
---   raised, containing a <a>String</a> with the source file and line
---   number of the call to <a>assert</a>.
---   
---   Assertions can normally be turned on or off with a compiler flag (for
---   GHC, assertions are normally on unless optimisation is turned on with
---   <tt>-O</tt> or the <tt>-fignore-asserts</tt> option is given). When
---   assertions are turned off, the first argument to <a>assert</a> is
---   ignored, and the second argument is returned as the result.
-assert :: Bool -> a -> a
-
--- | An expression that didn't typecheck during compile time was called.
---   This is only possible with -fdefer-type-errors. The <tt>String</tt>
---   gives details about the failed type check.
-newtype TypeError
-TypeError :: String -> TypeError
-
--- | A record update was performed on a constructor without the appropriate
---   field. This can only happen with a datatype with multiple
---   constructors, where some fields are in one constructor but not
---   another. The <tt>String</tt> gives information about the source
---   location of the record update.
-newtype RecUpdError
-RecUpdError :: String -> RecUpdError
-
--- | A record selector was applied to a constructor without the appropriate
---   field. This can only happen with a datatype with multiple
---   constructors, where some fields are in one constructor but not
---   another. The <tt>String</tt> gives information about the source
---   location of the record selector.
-newtype RecSelError
-RecSelError :: String -> RecSelError
-
--- | An uninitialised record field was used. The <tt>String</tt> gives
---   information about the source location where the record was
---   constructed.
-newtype RecConError
-RecConError :: String -> RecConError
-
--- | A pattern match failed. The <tt>String</tt> gives information about
---   the source location of the pattern.
-newtype PatternMatchFail
-PatternMatchFail :: String -> PatternMatchFail
-
--- | Thrown when the runtime system detects that the computation is
---   guaranteed not to terminate. Note that there is no guarantee that the
---   runtime system will notice whether any given computation is guaranteed
---   to terminate or not.
-data NonTermination
-NonTermination :: NonTermination
-
--- | A class method without a definition (neither a default definition, nor
---   a definition in the appropriate instance) was called. The
---   <tt>String</tt> gives information about which method it was.
-newtype NoMethodError
-NoMethodError :: String -> NoMethodError
-
--- | Thrown when the program attempts to call <tt>atomically</tt>, from the
---   <tt>stm</tt> package, inside another call to <tt>atomically</tt>.
-data NestedAtomically
-NestedAtomically :: NestedAtomically
-
--- | This function maps one exception into another as proposed in the paper
---   "A semantics for imprecise exceptions".
-mapException :: (Exception e1, Exception e2) => (e1 -> e2) -> a -> a
-
--- | Superclass for asynchronous exceptions.
-data SomeAsyncException
-SomeAsyncException :: e -> SomeAsyncException
-
--- | There are no runnable threads, so the program is deadlocked. The
---   <tt>Deadlock</tt> exception is raised in the main thread only.
-data Deadlock
-Deadlock :: Deadlock
-
--- | Compaction found an object that cannot be compacted. Functions cannot
---   be compacted, nor can mutable objects or pinned objects. See
---   <a>compact</a>.
-newtype CompactionFailed
-CompactionFailed :: String -> CompactionFailed
-
--- | The thread is waiting to retry an STM transaction, but there are no
---   other references to any <tt>TVar</tt>s involved, so it can't ever
---   continue.
-data BlockedIndefinitelyOnSTM
-BlockedIndefinitelyOnSTM :: BlockedIndefinitelyOnSTM
-
--- | The thread is blocked on an <tt>MVar</tt>, but there are no other
---   references to the <tt>MVar</tt> so it can't ever continue.
-data BlockedIndefinitelyOnMVar
-BlockedIndefinitelyOnMVar :: BlockedIndefinitelyOnMVar
-
--- | Asynchronous exceptions.
-data AsyncException
-
--- | The current thread's stack exceeded its limit. Since an exception has
---   been raised, the thread's stack will certainly be below its limit
---   again, but the programmer should take remedial action immediately.
-StackOverflow :: AsyncException
-
--- | The program's heap is reaching its limit, and the program should take
---   action to reduce the amount of live data it has. Notes:
---   
---   <ul>
---   <li>It is undefined which thread receives this exception. GHC
---   currently throws this to the same thread that receives
---   <a>UserInterrupt</a>, but this may change in the future.</li>
---   <li>The GHC RTS currently can only recover from heap overflow if it
---   detects that an explicit memory limit (set via RTS flags). has been
---   exceeded. Currently, failure to allocate memory from the operating
---   system results in immediate termination of the program.</li>
---   </ul>
-HeapOverflow :: AsyncException
-
--- | This exception is raised by another thread calling <a>killThread</a>,
---   or by the system if it needs to terminate the thread for some reason.
-ThreadKilled :: AsyncException
-
--- | This exception is raised by default in the main thread of the program
---   when the user requests to terminate the program via the usual
---   mechanism(s) (e.g. Control-C in the console).
-UserInterrupt :: AsyncException
-
 -- | <a>assert</a> was applied to <a>False</a>.
-newtype AssertionFailed
+newtype () => AssertionFailed
 AssertionFailed :: String -> AssertionFailed
-
--- | Exceptions generated by array operations
-data ArrayException
-
--- | An attempt was made to index an array outside its declared bounds.
-IndexOutOfBounds :: String -> ArrayException
-
--- | An attempt was made to evaluate an element of an array that had not
---   been initialized.
-UndefinedElement :: String -> ArrayException
-
--- | This thread has exceeded its allocation limit. See
---   <a>setAllocationCounter</a> and <a>enableAllocationLimit</a>.
-data AllocationLimitExceeded
-AllocationLimitExceeded :: AllocationLimitExceeded
-
-asyncExceptionToException :: Exception e => e -> SomeException
-
-asyncExceptionFromException :: Exception e => SomeException -> Maybe e
-
--- | Describes the behaviour of a thread when an asynchronous exception is
---   received.
-data MaskingState
-
--- | asynchronous exceptions are unmasked (the normal state)
-Unmasked :: MaskingState
-
--- | the state during <a>mask</a>: asynchronous exceptions are masked, but
---   blocking operations may still be interrupted
-MaskedInterruptible :: MaskingState
-
--- | the state during <a>uninterruptibleMask</a>: asynchronous exceptions
---   are masked, and blocking operations may not be interrupted
-MaskedUninterruptible :: MaskingState
-
--- | Allow asynchronous exceptions to be raised even inside <a>mask</a>,
---   making the operation interruptible (see the discussion of
---   "Interruptible operations" in <a>Exception</a>).
---   
---   When called outside <a>mask</a>, or inside <a>uninterruptibleMask</a>,
---   this function has no effect.
-interruptible :: IO a -> IO a
-
--- | Exceptions that occur in the <tt>IO</tt> monad. An
---   <tt>IOException</tt> records a more specific error type, a descriptive
---   string and maybe the handle that was used when the error was flagged.
-data IOException
-
--- | This is thrown when the user calls <a>error</a>. The first
---   <tt>String</tt> is the argument given to <a>error</a>, second
---   <tt>String</tt> is the location.
-data ErrorCall
-ErrorCallWithLocation :: String -> String -> ErrorCall
-pattern ErrorCall :: String -> ErrorCall
-
--- | Throw an exception. Exceptions may be thrown from purely functional
---   code, but may only be caught within the <a>IO</a> monad.
-throw :: forall (r :: RuntimeRep) (a :: TYPE r) e. Exception e => e -> a
 
 -- | Any type that you wish to throw or catch as an exception must be an
 --   instance of the <tt>Exception</tt> class. The simplest case is a new
@@ -456,8 +274,30 @@ fromException :: Exception e => SomeException -> Maybe e
 --   Default implementation: <tt><a>show</a></tt>.
 displayException :: Exception e => e -> String
 
+-- | Exceptions that occur in the <tt>IO</tt> monad. An
+--   <tt>IOException</tt> records a more specific error type, a descriptive
+--   string and maybe the handle that was used when the error was flagged.
+data () => IOException
+
+-- | The thread is blocked on an <tt>MVar</tt>, but there are no other
+--   references to the <tt>MVar</tt> so it can't ever continue.
+data () => BlockedIndefinitelyOnMVar
+BlockedIndefinitelyOnMVar :: BlockedIndefinitelyOnMVar
+
+-- | An expression that didn't typecheck during compile time was called.
+--   This is only possible with -fdefer-type-errors. The <tt>String</tt>
+--   gives details about the failed type check.
+newtype () => TypeError
+TypeError :: String -> TypeError
+
+-- | The <tt>SomeException</tt> type is the root of the exception type
+--   hierarchy. When an exception of type <tt>e</tt> is thrown, behind the
+--   scenes it is encapsulated in a <tt>SomeException</tt>.
+data () => SomeException
+SomeException :: e -> SomeException
+
 -- | Arithmetic exceptions.
-data ArithException
+data () => ArithException
 Overflow :: ArithException
 Underflow :: ArithException
 LossOfPrecision :: ArithException
@@ -466,11 +306,174 @@ Denormal :: ArithException
 
 RatioZeroDenominator :: ArithException
 
--- | The <tt>SomeException</tt> type is the root of the exception type
---   hierarchy. When an exception of type <tt>e</tt> is thrown, behind the
---   scenes it is encapsulated in a <tt>SomeException</tt>.
-data SomeException
-SomeException :: e -> SomeException
+-- | This is thrown when the user calls <a>error</a>. The first
+--   <tt>String</tt> is the argument given to <a>error</a>, second
+--   <tt>String</tt> is the location.
+data () => ErrorCall
+ErrorCallWithLocation :: String -> String -> ErrorCall
+pattern ErrorCall :: String -> ErrorCall
+
+-- | Describes the behaviour of a thread when an asynchronous exception is
+--   received.
+data () => MaskingState
+
+-- | asynchronous exceptions are unmasked (the normal state)
+Unmasked :: MaskingState
+
+-- | the state during <a>mask</a>: asynchronous exceptions are masked, but
+--   blocking operations may still be interrupted
+MaskedInterruptible :: MaskingState
+
+-- | the state during <a>uninterruptibleMask</a>: asynchronous exceptions
+--   are masked, and blocking operations may not be interrupted
+MaskedUninterruptible :: MaskingState
+
+-- | Exceptions generated by array operations
+data () => ArrayException
+
+-- | An attempt was made to index an array outside its declared bounds.
+IndexOutOfBounds :: String -> ArrayException
+
+-- | An attempt was made to evaluate an element of an array that had not
+--   been initialized.
+UndefinedElement :: String -> ArrayException
+
+-- | Asynchronous exceptions.
+data () => AsyncException
+
+-- | The current thread's stack exceeded its limit. Since an exception has
+--   been raised, the thread's stack will certainly be below its limit
+--   again, but the programmer should take remedial action immediately.
+StackOverflow :: AsyncException
+
+-- | The program's heap is reaching its limit, and the program should take
+--   action to reduce the amount of live data it has. Notes:
+--   
+--   <ul>
+--   <li>It is undefined which thread receives this exception. GHC
+--   currently throws this to the same thread that receives
+--   <a>UserInterrupt</a>, but this may change in the future.</li>
+--   <li>The GHC RTS currently can only recover from heap overflow if it
+--   detects that an explicit memory limit (set via RTS flags). has been
+--   exceeded. Currently, failure to allocate memory from the operating
+--   system results in immediate termination of the program.</li>
+--   </ul>
+HeapOverflow :: AsyncException
+
+-- | This exception is raised by another thread calling <a>killThread</a>,
+--   or by the system if it needs to terminate the thread for some reason.
+ThreadKilled :: AsyncException
+
+-- | This exception is raised by default in the main thread of the program
+--   when the user requests to terminate the program via the usual
+--   mechanism(s) (e.g. Control-C in the console).
+UserInterrupt :: AsyncException
+
+-- | Superclass for asynchronous exceptions.
+data () => SomeAsyncException
+SomeAsyncException :: e -> SomeAsyncException
+
+-- | Compaction found an object that cannot be compacted. Functions cannot
+--   be compacted, nor can mutable objects or pinned objects. See
+--   <a>compact</a>.
+newtype () => CompactionFailed
+CompactionFailed :: String -> CompactionFailed
+
+-- | This thread has exceeded its allocation limit. See
+--   <a>setAllocationCounter</a> and <a>enableAllocationLimit</a>.
+data () => AllocationLimitExceeded
+AllocationLimitExceeded :: AllocationLimitExceeded
+
+-- | There are no runnable threads, so the program is deadlocked. The
+--   <tt>Deadlock</tt> exception is raised in the main thread only.
+data () => Deadlock
+Deadlock :: Deadlock
+
+-- | The thread is waiting to retry an STM transaction, but there are no
+--   other references to any <tt>TVar</tt>s involved, so it can't ever
+--   continue.
+data () => BlockedIndefinitelyOnSTM
+BlockedIndefinitelyOnSTM :: BlockedIndefinitelyOnSTM
+
+-- | Thrown when the program attempts to call <tt>atomically</tt>, from the
+--   <tt>stm</tt> package, inside another call to <tt>atomically</tt>.
+data () => NestedAtomically
+NestedAtomically :: NestedAtomically
+
+-- | Thrown when the runtime system detects that the computation is
+--   guaranteed not to terminate. Note that there is no guarantee that the
+--   runtime system will notice whether any given computation is guaranteed
+--   to terminate or not.
+data () => NonTermination
+NonTermination :: NonTermination
+
+-- | A class method without a definition (neither a default definition, nor
+--   a definition in the appropriate instance) was called. The
+--   <tt>String</tt> gives information about which method it was.
+newtype () => NoMethodError
+NoMethodError :: String -> NoMethodError
+
+-- | A record update was performed on a constructor without the appropriate
+--   field. This can only happen with a datatype with multiple
+--   constructors, where some fields are in one constructor but not
+--   another. The <tt>String</tt> gives information about the source
+--   location of the record update.
+newtype () => RecUpdError
+RecUpdError :: String -> RecUpdError
+
+-- | An uninitialised record field was used. The <tt>String</tt> gives
+--   information about the source location where the record was
+--   constructed.
+newtype () => RecConError
+RecConError :: String -> RecConError
+
+-- | A record selector was applied to a constructor without the appropriate
+--   field. This can only happen with a datatype with multiple
+--   constructors, where some fields are in one constructor but not
+--   another. The <tt>String</tt> gives information about the source
+--   location of the record selector.
+newtype () => RecSelError
+RecSelError :: String -> RecSelError
+
+-- | A pattern match failed. The <tt>String</tt> gives information about
+--   the source location of the pattern.
+newtype () => PatternMatchFail
+PatternMatchFail :: String -> PatternMatchFail
+
+-- | Throw an exception. Exceptions may be thrown from purely functional
+--   code, but may only be caught within the <a>IO</a> monad.
+--   
+--   WARNING: You may want to use <tt>throwIO</tt> instead so that your
+--   pure code stays exception-free.
+throw :: forall (r :: RuntimeRep) (a :: TYPE r) e. Exception e => e -> a
+
+-- | If the first argument evaluates to <a>True</a>, then the result is the
+--   second argument. Otherwise an <a>AssertionFailed</a> exception is
+--   raised, containing a <a>String</a> with the source file and line
+--   number of the call to <a>assert</a>.
+--   
+--   Assertions can normally be turned on or off with a compiler flag (for
+--   GHC, assertions are normally on unless optimisation is turned on with
+--   <tt>-O</tt> or the <tt>-fignore-asserts</tt> option is given). When
+--   assertions are turned off, the first argument to <a>assert</a> is
+--   ignored, and the second argument is returned as the result.
+assert :: Bool -> a -> a
+
+-- | Allow asynchronous exceptions to be raised even inside <a>mask</a>,
+--   making the operation interruptible (see the discussion of
+--   "Interruptible operations" in <a>Exception</a>).
+--   
+--   When called outside <a>mask</a>, or inside <a>uninterruptibleMask</a>,
+--   this function has no effect.
+interruptible :: IO a -> IO a
+
+asyncExceptionToException :: Exception e => e -> SomeException
+
+asyncExceptionFromException :: Exception e => SomeException -> Maybe e
+
+-- | This function maps one exception into another as proposed in the paper
+--   "A semantics for imprecise exceptions".
+mapException :: (Exception e1, Exception e2) => (e1 -> e2) -> a -> a
 
 -- | Generalized version of <a>throwIO</a>.
 throwIO :: (MonadBase IO m, Exception e) => e -> m a
@@ -641,7 +644,7 @@ module Control.Concurrent.Lifted
 --   have a pointer to the thread itself. This means the thread itself
 --   can't be garbage collected until you drop the <a>ThreadId</a>. This
 --   misfeature will hopefully be corrected at a later date.
-data ThreadId
+data () => ThreadId
 
 -- | Generalized version of <a>myThreadId</a>.
 myThreadId :: MonadBase IO m => m ThreadId
@@ -739,8 +742,39 @@ mkWeakThreadId :: MonadBase IO m => ThreadId -> m (Weak ThreadId)
 --   from <a>IO</a> to all monads in <a>MonadBase</a>.
 module Data.IORef.Lifted
 
--- | A mutable variable in the <a>IO</a> monad
-data IORef a
+-- | A mutable variable in the <a>IO</a> monad.
+--   
+--   <pre>
+--   &gt;&gt;&gt; import Data.IORef
+--   
+--   &gt;&gt;&gt; r &lt;- newIORef 0
+--   
+--   &gt;&gt;&gt; readIORef r
+--   0
+--   
+--   &gt;&gt;&gt; writeIORef r 1
+--   
+--   &gt;&gt;&gt; readIORef r
+--   1
+--   
+--   &gt;&gt;&gt; atomicWriteIORef r 2
+--   
+--   &gt;&gt;&gt; readIORef r
+--   2
+--   
+--   &gt;&gt;&gt; modifyIORef' r (+ 1)
+--   
+--   &gt;&gt;&gt; readIORef r
+--   3
+--   
+--   &gt;&gt;&gt; atomicModifyIORef' r (\a -&gt; (a + 1, ()))
+--   
+--   &gt;&gt;&gt; readIORef r
+--   4
+--   </pre>
+--   
+--   See also <a>STRef</a> and <a>MVar</a>.
+data () => IORef a
 
 -- | Generalized version of <a>newIORef</a>.
 newIORef :: MonadBase IO m => a -> m (IORef a)

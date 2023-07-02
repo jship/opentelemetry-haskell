@@ -662,7 +662,7 @@ module Blaze.ByteString.Builder
 -- | <a>Builder</a>s denote sequences of bytes. They are <a>Monoid</a>s
 --   where <a>mempty</a> is the zero-length sequence and <a>mappend</a> is
 --   concatenation, which runs in <i>O(1)</i>.
-data Builder
+data () => Builder
 
 -- | Flush the current buffer. This introduces a chunk boundary.
 flush :: Builder

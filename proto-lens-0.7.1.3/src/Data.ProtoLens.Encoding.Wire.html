@@ -1,0 +1,628 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-comment">-- | Module defining the individual base wire types (e.g. VarInt, Fixed64).</span><span>
+</span><span id="line-2"></span><span class="hs-comment">--</span><span>
+</span><span id="line-3"></span><span class="hs-comment">-- They are used to represent the @unknownFields@ within the proto message.</span><span>
+</span><span id="line-4"></span><span class="hs-comment">--</span><span>
+</span><span id="line-5"></span><span class="hs-comment">-- Upstream docs:</span><span>
+</span><span id="line-6"></span><span class="hs-comment">-- &lt;https://developers.google.com/protocol-buffers/docs/encoding#structure&gt;</span><span>
+</span><span id="line-7"></span><span class="hs-pragma">{-# LANGUAGE BangPatterns #-}</span><span>
+</span><span id="line-8"></span><span class="hs-pragma">{-# LANGUAGE CPP #-}</span><span>
+</span><span id="line-9"></span><span class="hs-pragma">{-# LANGUAGE GeneralizedNewtypeDeriving #-}</span><span>
+</span><span id="line-10"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Data.ProtoLens.Encoding.Wire</span><span>
+</span><span id="line-11"></span><span>    </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#Tag"><span class="hs-identifier">Tag</span></a></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-12"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#TaggedValue"><span class="hs-identifier">TaggedValue</span></a></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-13"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#WireValue"><span class="hs-identifier">WireValue</span></a></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-14"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#FieldSet"><span class="hs-identifier">FieldSet</span></a></span><span>
+</span><span id="line-15"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#splitTypeAndTag"><span class="hs-identifier">splitTypeAndTag</span></a></span><span>
+</span><span id="line-16"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#joinTypeAndTag"><span class="hs-identifier">joinTypeAndTag</span></a></span><span>
+</span><span id="line-17"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#parseFieldSet"><span class="hs-identifier">parseFieldSet</span></a></span><span>
+</span><span id="line-18"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#buildFieldSet"><span class="hs-identifier">buildFieldSet</span></a></span><span>
+</span><span id="line-19"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#buildMessageSet"><span class="hs-identifier">buildMessageSet</span></a></span><span>
+</span><span id="line-20"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#parseTaggedValueFromWire"><span class="hs-identifier">parseTaggedValueFromWire</span></a></span><span>
+</span><span id="line-21"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#parseMessageSetTaggedValueFromWire"><span class="hs-identifier">parseMessageSetTaggedValueFromWire</span></a></span><span>
+</span><span id="line-22"></span><span>    </span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-23"></span><span>
+</span><span id="line-24"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.DeepSeq</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">NFData</span></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-25"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Bits</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-operator">(.&amp;.)</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-operator">(.|.)</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">shiftL</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">shiftR</span></span><span class="hs-special">)</span><span>
+</span><span id="line-26"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ByteString</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">B</span></span><span class="hs-cpp">
+#if !MIN_VERSION_base(4,11,0)
+</span><span class="hs-keyword">import</span><span> </span><span class="hs-identifier">Data.Semigroup</span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="hs-operator">&lt;&gt;</span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-cpp">
+#endif
+</span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Word</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Word8</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Word32</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Word64</span></span><span class="hs-special">)</span><span>
+</span><span id="line-31"></span><span>
+</span><span id="line-32"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Data.ProtoLens.Encoding.Bytes.html"><span class="hs-identifier">Data.ProtoLens.Encoding.Bytes</span></a></span><span>
+</span><span id="line-33"></span><span>
+</span><span id="line-34"></span><span class="hs-comment">-- | A tag that identifies a particular field of the message when converting</span><span>
+</span><span id="line-35"></span><span class="hs-comment">-- to/from the wire format.</span><span>
+</span><span id="line-36"></span><span class="hs-keyword">newtype</span><span> </span><span id="Tag"><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#Tag"><span class="hs-identifier hs-var">Tag</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Tag"><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#Tag"><span class="hs-identifier hs-var">Tag</span></a></span></span><span> </span><span class="hs-special">{</span><span> </span><span id="unTag"><span class="annot"><span class="annottext">Tag -&gt; Int
+</span><a href="Data.ProtoLens.Encoding.Wire.html#unTag"><span class="hs-identifier hs-var hs-var">unTag</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-special">}</span><span>
+</span><span id="line-37"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679075785"><span id="local-6989586621679075791"><span id="local-6989586621679075795"><span class="annot"><span class="annottext">Int -&gt; Tag -&gt; ShowS
+[Tag] -&gt; ShowS
+Tag -&gt; String
+(Int -&gt; Tag -&gt; ShowS)
+-&gt; (Tag -&gt; String) -&gt; ([Tag] -&gt; ShowS) -&gt; Show Tag
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; Tag -&gt; ShowS
+showsPrec :: Int -&gt; Tag -&gt; ShowS
+$cshow :: Tag -&gt; String
+show :: Tag -&gt; String
+$cshowList :: [Tag] -&gt; ShowS
+showList :: [Tag] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679075799"><span id="local-6989586621679075804"><span class="annot"><span class="annottext">Tag -&gt; Tag -&gt; Bool
+(Tag -&gt; Tag -&gt; Bool) -&gt; (Tag -&gt; Tag -&gt; Bool) -&gt; Eq Tag
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: Tag -&gt; Tag -&gt; Bool
+== :: Tag -&gt; Tag -&gt; Bool
+$c/= :: Tag -&gt; Tag -&gt; Bool
+/= :: Tag -&gt; Tag -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679075811"><span id="local-6989586621679075815"><span id="local-6989586621679075819"><span id="local-6989586621679075823"><span id="local-6989586621679075827"><span id="local-6989586621679075831"><span id="local-6989586621679075835"><span class="annot"><span class="annottext">Eq Tag
+Eq Tag =&gt;
+(Tag -&gt; Tag -&gt; Ordering)
+-&gt; (Tag -&gt; Tag -&gt; Bool)
+-&gt; (Tag -&gt; Tag -&gt; Bool)
+-&gt; (Tag -&gt; Tag -&gt; Bool)
+-&gt; (Tag -&gt; Tag -&gt; Bool)
+-&gt; (Tag -&gt; Tag -&gt; Tag)
+-&gt; (Tag -&gt; Tag -&gt; Tag)
+-&gt; Ord Tag
+Tag -&gt; Tag -&gt; Bool
+Tag -&gt; Tag -&gt; Ordering
+Tag -&gt; Tag -&gt; Tag
+forall a.
+Eq a =&gt;
+(a -&gt; a -&gt; Ordering)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; Ord a
+$ccompare :: Tag -&gt; Tag -&gt; Ordering
+compare :: Tag -&gt; Tag -&gt; Ordering
+$c&lt; :: Tag -&gt; Tag -&gt; Bool
+&lt; :: Tag -&gt; Tag -&gt; Bool
+$c&lt;= :: Tag -&gt; Tag -&gt; Bool
+&lt;= :: Tag -&gt; Tag -&gt; Bool
+$c&gt; :: Tag -&gt; Tag -&gt; Bool
+&gt; :: Tag -&gt; Tag -&gt; Bool
+$c&gt;= :: Tag -&gt; Tag -&gt; Bool
+&gt;= :: Tag -&gt; Tag -&gt; Bool
+$cmax :: Tag -&gt; Tag -&gt; Tag
+max :: Tag -&gt; Tag -&gt; Tag
+$cmin :: Tag -&gt; Tag -&gt; Tag
+min :: Tag -&gt; Tag -&gt; Tag
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Ord</span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679075841"><span id="local-6989586621679075845"><span id="local-6989586621679075849"><span id="local-6989586621679075853"><span id="local-6989586621679075857"><span id="local-6989586621679075861"><span id="local-6989586621679075865"><span class="annot"><span class="annottext">Integer -&gt; Tag
+Tag -&gt; Tag
+Tag -&gt; Tag -&gt; Tag
+(Tag -&gt; Tag -&gt; Tag)
+-&gt; (Tag -&gt; Tag -&gt; Tag)
+-&gt; (Tag -&gt; Tag -&gt; Tag)
+-&gt; (Tag -&gt; Tag)
+-&gt; (Tag -&gt; Tag)
+-&gt; (Tag -&gt; Tag)
+-&gt; (Integer -&gt; Tag)
+-&gt; Num Tag
+forall a.
+(a -&gt; a -&gt; a)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; (a -&gt; a)
+-&gt; (a -&gt; a)
+-&gt; (a -&gt; a)
+-&gt; (Integer -&gt; a)
+-&gt; Num a
+$c+ :: Tag -&gt; Tag -&gt; Tag
++ :: Tag -&gt; Tag -&gt; Tag
+$c- :: Tag -&gt; Tag -&gt; Tag
+- :: Tag -&gt; Tag -&gt; Tag
+$c* :: Tag -&gt; Tag -&gt; Tag
+* :: Tag -&gt; Tag -&gt; Tag
+$cnegate :: Tag -&gt; Tag
+negate :: Tag -&gt; Tag
+$cabs :: Tag -&gt; Tag
+abs :: Tag -&gt; Tag
+$csignum :: Tag -&gt; Tag
+signum :: Tag -&gt; Tag
+$cfromInteger :: Integer -&gt; Tag
+fromInteger :: Integer -&gt; Tag
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Num</span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679075870"><span class="annot"><span class="annottext">Tag -&gt; ()
+(Tag -&gt; ()) -&gt; NFData Tag
+forall a. (a -&gt; ()) -&gt; NFData a
+$crnf :: Tag -&gt; ()
+rnf :: Tag -&gt; ()
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">NFData</span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-38"></span><span>
+</span><span id="line-39"></span><span class="annot"><span class="hs-comment">-- | The encoding of some unknown field on the wire.</span></span><span>
+</span><span id="line-40"></span><span class="hs-keyword">data</span><span> </span><span id="WireValue"><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#WireValue"><span class="hs-identifier hs-var">WireValue</span></a></span></span><span>
+</span><span id="line-41"></span><span>    </span><span class="hs-glyph">=</span><span> </span><span id="VarInt"><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#VarInt"><span class="hs-identifier hs-var">VarInt</span></a></span></span><span> </span><span class="hs-glyph">!</span><span class="annot"><span class="hs-identifier hs-type">Word64</span></span><span>
+</span><span id="line-42"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span id="Fixed64"><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#Fixed64"><span class="hs-identifier hs-var">Fixed64</span></a></span></span><span> </span><span class="hs-glyph">!</span><span class="annot"><span class="hs-identifier hs-type">Word64</span></span><span>
+</span><span id="line-43"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span id="Lengthy"><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#Lengthy"><span class="hs-identifier hs-var">Lengthy</span></a></span></span><span> </span><span class="hs-glyph">!</span><span class="annot"><span class="hs-identifier hs-type">B.ByteString</span></span><span>
+</span><span id="line-44"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span id="StartGroup"><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#StartGroup"><span class="hs-identifier hs-var">StartGroup</span></a></span></span><span>
+</span><span id="line-45"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span id="EndGroup"><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#EndGroup"><span class="hs-identifier hs-var">EndGroup</span></a></span></span><span>
+</span><span id="line-46"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span id="Fixed32"><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#Fixed32"><span class="hs-identifier hs-var">Fixed32</span></a></span></span><span> </span><span class="hs-glyph">!</span><span class="annot"><span class="hs-identifier hs-type">Word32</span></span><span>
+</span><span id="line-47"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679075883"><span id="local-6989586621679075892"><span class="annot"><span class="annottext">WireValue -&gt; WireValue -&gt; Bool
+(WireValue -&gt; WireValue -&gt; Bool)
+-&gt; (WireValue -&gt; WireValue -&gt; Bool) -&gt; Eq WireValue
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: WireValue -&gt; WireValue -&gt; Bool
+== :: WireValue -&gt; WireValue -&gt; Bool
+$c/= :: WireValue -&gt; WireValue -&gt; Bool
+/= :: WireValue -&gt; WireValue -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679075898"><span id="local-6989586621679075907"><span id="local-6989586621679075911"><span id="local-6989586621679075914"><span id="local-6989586621679075917"><span id="local-6989586621679075920"><span id="local-6989586621679075923"><span class="annot"><span class="annottext">Eq WireValue
+Eq WireValue =&gt;
+(WireValue -&gt; WireValue -&gt; Ordering)
+-&gt; (WireValue -&gt; WireValue -&gt; Bool)
+-&gt; (WireValue -&gt; WireValue -&gt; Bool)
+-&gt; (WireValue -&gt; WireValue -&gt; Bool)
+-&gt; (WireValue -&gt; WireValue -&gt; Bool)
+-&gt; (WireValue -&gt; WireValue -&gt; WireValue)
+-&gt; (WireValue -&gt; WireValue -&gt; WireValue)
+-&gt; Ord WireValue
+WireValue -&gt; WireValue -&gt; Bool
+WireValue -&gt; WireValue -&gt; Ordering
+WireValue -&gt; WireValue -&gt; WireValue
+forall a.
+Eq a =&gt;
+(a -&gt; a -&gt; Ordering)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; Ord a
+$ccompare :: WireValue -&gt; WireValue -&gt; Ordering
+compare :: WireValue -&gt; WireValue -&gt; Ordering
+$c&lt; :: WireValue -&gt; WireValue -&gt; Bool
+&lt; :: WireValue -&gt; WireValue -&gt; Bool
+$c&lt;= :: WireValue -&gt; WireValue -&gt; Bool
+&lt;= :: WireValue -&gt; WireValue -&gt; Bool
+$c&gt; :: WireValue -&gt; WireValue -&gt; Bool
+&gt; :: WireValue -&gt; WireValue -&gt; Bool
+$c&gt;= :: WireValue -&gt; WireValue -&gt; Bool
+&gt;= :: WireValue -&gt; WireValue -&gt; Bool
+$cmax :: WireValue -&gt; WireValue -&gt; WireValue
+max :: WireValue -&gt; WireValue -&gt; WireValue
+$cmin :: WireValue -&gt; WireValue -&gt; WireValue
+min :: WireValue -&gt; WireValue -&gt; WireValue
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Ord</span></span></span></span></span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-48"></span><span>
+</span><span id="line-49"></span><span class="annot"><span class="hs-comment">-- | A pair of an encoded field and a value.</span></span><span>
+</span><span id="line-50"></span><span class="hs-keyword">data</span><span> </span><span id="TaggedValue"><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#TaggedValue"><span class="hs-identifier hs-var">TaggedValue</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="TaggedValue"><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#TaggedValue"><span class="hs-identifier hs-var">TaggedValue</span></a></span></span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#Tag"><span class="hs-identifier hs-type">Tag</span></a></span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#WireValue"><span class="hs-identifier hs-type">WireValue</span></a></span><span>
+</span><span id="line-51"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679075927"><span id="local-6989586621679075931"><span class="annot"><span class="annottext">TaggedValue -&gt; TaggedValue -&gt; Bool
+(TaggedValue -&gt; TaggedValue -&gt; Bool)
+-&gt; (TaggedValue -&gt; TaggedValue -&gt; Bool) -&gt; Eq TaggedValue
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: TaggedValue -&gt; TaggedValue -&gt; Bool
+== :: TaggedValue -&gt; TaggedValue -&gt; Bool
+$c/= :: TaggedValue -&gt; TaggedValue -&gt; Bool
+/= :: TaggedValue -&gt; TaggedValue -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679075937"><span id="local-6989586621679075941"><span id="local-6989586621679075945"><span id="local-6989586621679075949"><span id="local-6989586621679075952"><span id="local-6989586621679075955"><span id="local-6989586621679075958"><span class="annot"><span class="annottext">Eq TaggedValue
+Eq TaggedValue =&gt;
+(TaggedValue -&gt; TaggedValue -&gt; Ordering)
+-&gt; (TaggedValue -&gt; TaggedValue -&gt; Bool)
+-&gt; (TaggedValue -&gt; TaggedValue -&gt; Bool)
+-&gt; (TaggedValue -&gt; TaggedValue -&gt; Bool)
+-&gt; (TaggedValue -&gt; TaggedValue -&gt; Bool)
+-&gt; (TaggedValue -&gt; TaggedValue -&gt; TaggedValue)
+-&gt; (TaggedValue -&gt; TaggedValue -&gt; TaggedValue)
+-&gt; Ord TaggedValue
+TaggedValue -&gt; TaggedValue -&gt; Bool
+TaggedValue -&gt; TaggedValue -&gt; Ordering
+TaggedValue -&gt; TaggedValue -&gt; TaggedValue
+forall a.
+Eq a =&gt;
+(a -&gt; a -&gt; Ordering)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; Ord a
+$ccompare :: TaggedValue -&gt; TaggedValue -&gt; Ordering
+compare :: TaggedValue -&gt; TaggedValue -&gt; Ordering
+$c&lt; :: TaggedValue -&gt; TaggedValue -&gt; Bool
+&lt; :: TaggedValue -&gt; TaggedValue -&gt; Bool
+$c&lt;= :: TaggedValue -&gt; TaggedValue -&gt; Bool
+&lt;= :: TaggedValue -&gt; TaggedValue -&gt; Bool
+$c&gt; :: TaggedValue -&gt; TaggedValue -&gt; Bool
+&gt; :: TaggedValue -&gt; TaggedValue -&gt; Bool
+$c&gt;= :: TaggedValue -&gt; TaggedValue -&gt; Bool
+&gt;= :: TaggedValue -&gt; TaggedValue -&gt; Bool
+$cmax :: TaggedValue -&gt; TaggedValue -&gt; TaggedValue
+max :: TaggedValue -&gt; TaggedValue -&gt; TaggedValue
+$cmin :: TaggedValue -&gt; TaggedValue -&gt; TaggedValue
+min :: TaggedValue -&gt; TaggedValue -&gt; TaggedValue
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Ord</span></span></span></span></span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-52"></span><span>
+</span><span id="line-53"></span><span class="hs-keyword">type</span><span> </span><span id="FieldSet"><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#FieldSet"><span class="hs-identifier hs-var">FieldSet</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#TaggedValue"><span class="hs-identifier hs-type">TaggedValue</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-54"></span><span>
+</span><span id="line-55"></span><span class="hs-comment">-- TaggedValue, WireValue and Tag are strict, so their NFData instances are</span><span>
+</span><span id="line-56"></span><span class="hs-comment">-- trivial:</span><span>
+</span><span id="line-57"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><span class="hs-identifier hs-type">NFData</span></span><span> </span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#TaggedValue"><span class="hs-identifier hs-type">TaggedValue</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-58"></span><span>    </span><span id="local-6989586621679075962"><span class="annot"><span class="annottext">rnf :: TaggedValue -&gt; ()
+</span><a href="#local-6989586621679075962"><span class="hs-identifier hs-var hs-var hs-var hs-var">rnf</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">TaggedValue -&gt; () -&gt; ()
+forall a b. a -&gt; b -&gt; b
+</span><span class="hs-operator hs-var">`seq`</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-59"></span><span>
+</span><span id="line-60"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><span class="hs-identifier hs-type">NFData</span></span><span> </span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#WireValue"><span class="hs-identifier hs-type">WireValue</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-61"></span><span>    </span><span id="local-6989586621679075966"><span class="annot"><span class="annottext">rnf :: WireValue -&gt; ()
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">rnf</span></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">WireValue -&gt; () -&gt; ()
+forall a b. a -&gt; b -&gt; b
+</span><span class="hs-operator hs-var">`seq`</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-62"></span><span>
+</span><span id="line-63"></span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#buildTaggedValue"><span class="hs-identifier hs-type">buildTaggedValue</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#TaggedValue"><span class="hs-identifier hs-type">TaggedValue</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Builder</span></span><span>
+</span><span id="line-64"></span><span id="buildTaggedValue"><span class="annot"><span class="annottext">buildTaggedValue :: TaggedValue -&gt; Builder
+</span><a href="Data.ProtoLens.Encoding.Wire.html#buildTaggedValue"><span class="hs-identifier hs-var hs-var">buildTaggedValue</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#TaggedValue"><span class="hs-identifier hs-type">TaggedValue</span></a></span><span> </span><span id="local-6989586621679075968"><span class="annot"><span class="annottext">Tag
+</span><a href="#local-6989586621679075968"><span class="hs-identifier hs-var">tag</span></a></span></span><span> </span><span id="local-6989586621679075969"><span class="annot"><span class="annottext">WireValue
+</span><a href="#local-6989586621679075969"><span class="hs-identifier hs-var">wv</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-65"></span><span>    </span><span class="annot"><span class="annottext">Word64 -&gt; Builder
+</span><a href="Data.ProtoLens.Encoding.Bytes.html#putVarInt"><span class="hs-identifier hs-var">putVarInt</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Tag -&gt; Word8 -&gt; Word64
+</span><a href="Data.ProtoLens.Encoding.Wire.html#joinTypeAndTag"><span class="hs-identifier hs-var">joinTypeAndTag</span></a></span><span> </span><span class="annot"><span class="annottext">Tag
+</span><a href="#local-6989586621679075968"><span class="hs-identifier hs-var">tag</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">WireValue -&gt; Word8
+</span><a href="Data.ProtoLens.Encoding.Wire.html#wireValueToInt"><span class="hs-identifier hs-var">wireValueToInt</span></a></span><span> </span><span class="annot"><span class="annottext">WireValue
+</span><a href="#local-6989586621679075969"><span class="hs-identifier hs-var">wv</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-66"></span><span>    </span><span class="annot"><span class="annottext">Builder -&gt; Builder -&gt; Builder
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">WireValue -&gt; Builder
+</span><a href="Data.ProtoLens.Encoding.Wire.html#buildWireValue"><span class="hs-identifier hs-var">buildWireValue</span></a></span><span> </span><span class="annot"><span class="annottext">WireValue
+</span><a href="#local-6989586621679075969"><span class="hs-identifier hs-var">wv</span></a></span><span>
+</span><span id="line-67"></span><span>
+</span><span id="line-68"></span><span class="hs-comment">-- builds in legacy MessageSet format.</span><span>
+</span><span id="line-69"></span><span class="hs-comment">-- See https://github.com/protocolbuffers/protobuf/blob/dec4939439d9ca2adf2bb14edccf876c2587faf2/src/google/protobuf/descriptor.proto#L444</span><span>
+</span><span id="line-70"></span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#buildTaggedValueAsMessageSet"><span class="hs-identifier hs-type">buildTaggedValueAsMessageSet</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#TaggedValue"><span class="hs-identifier hs-type">TaggedValue</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Builder</span></span><span>
+</span><span id="line-71"></span><span id="buildTaggedValueAsMessageSet"><span class="annot"><span class="annottext">buildTaggedValueAsMessageSet :: TaggedValue -&gt; Builder
+</span><a href="Data.ProtoLens.Encoding.Wire.html#buildTaggedValueAsMessageSet"><span class="hs-identifier hs-var hs-var">buildTaggedValueAsMessageSet</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#TaggedValue"><span class="hs-identifier hs-type">TaggedValue</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#Tag"><span class="hs-identifier hs-type">Tag</span></a></span><span> </span><span id="local-6989586621679075974"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679075974"><span class="hs-identifier hs-var">t</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621679075975"><span class="annot"><span class="annottext">WireValue
+</span><a href="#local-6989586621679075975"><span class="hs-identifier hs-var">wv</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-72"></span><span>    </span><span class="annot"><span class="annottext">TaggedValue -&gt; Builder
+</span><a href="Data.ProtoLens.Encoding.Wire.html#buildTaggedValue"><span class="hs-identifier hs-var">buildTaggedValue</span></a></span><span> </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="annottext">Tag -&gt; WireValue -&gt; TaggedValue
+</span><a href="Data.ProtoLens.Encoding.Wire.html#TaggedValue"><span class="hs-identifier hs-var">TaggedValue</span></a></span><span> </span><span class="annot"><span class="annottext">Tag
+</span><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="annottext">WireValue
+</span><a href="Data.ProtoLens.Encoding.Wire.html#StartGroup"><span class="hs-identifier hs-var">StartGroup</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-73"></span><span>    </span><span class="annot"><span class="annottext">Builder -&gt; Builder -&gt; Builder
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">TaggedValue -&gt; Builder
+</span><a href="Data.ProtoLens.Encoding.Wire.html#buildTaggedValue"><span class="hs-identifier hs-var">buildTaggedValue</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Tag -&gt; WireValue -&gt; TaggedValue
+</span><a href="Data.ProtoLens.Encoding.Wire.html#TaggedValue"><span class="hs-identifier hs-var">TaggedValue</span></a></span><span> </span><span class="annot"><span class="annottext">Tag
+</span><span class="hs-number">2</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word64 -&gt; WireValue
+</span><a href="Data.ProtoLens.Encoding.Wire.html#VarInt"><span class="hs-identifier hs-var">VarInt</span></a></span><span> </span><span class="annot"><span class="annottext">(Word64 -&gt; WireValue) -&gt; Word64 -&gt; WireValue
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Word64
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679075974"><span class="hs-identifier hs-var">t</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-74"></span><span>    </span><span class="annot"><span class="annottext">Builder -&gt; Builder -&gt; Builder
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">TaggedValue -&gt; Builder
+</span><a href="Data.ProtoLens.Encoding.Wire.html#buildTaggedValue"><span class="hs-identifier hs-var">buildTaggedValue</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Tag -&gt; WireValue -&gt; TaggedValue
+</span><a href="Data.ProtoLens.Encoding.Wire.html#TaggedValue"><span class="hs-identifier hs-var">TaggedValue</span></a></span><span> </span><span class="annot"><span class="annottext">Tag
+</span><span class="hs-number">3</span></span><span> </span><span class="annot"><span class="annottext">WireValue
+</span><a href="#local-6989586621679075975"><span class="hs-identifier hs-var">wv</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-75"></span><span>    </span><span class="annot"><span class="annottext">Builder -&gt; Builder -&gt; Builder
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">TaggedValue -&gt; Builder
+</span><a href="Data.ProtoLens.Encoding.Wire.html#buildTaggedValue"><span class="hs-identifier hs-var">buildTaggedValue</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Tag -&gt; WireValue -&gt; TaggedValue
+</span><a href="Data.ProtoLens.Encoding.Wire.html#TaggedValue"><span class="hs-identifier hs-var">TaggedValue</span></a></span><span> </span><span class="annot"><span class="annottext">Tag
+</span><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="annottext">WireValue
+</span><a href="Data.ProtoLens.Encoding.Wire.html#EndGroup"><span class="hs-identifier hs-var">EndGroup</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-76"></span><span>
+</span><span id="line-77"></span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#buildWireValue"><span class="hs-identifier hs-type">buildWireValue</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#WireValue"><span class="hs-identifier hs-type">WireValue</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Builder</span></span><span>
+</span><span id="line-78"></span><span id="buildWireValue"><span class="annot"><span class="annottext">buildWireValue :: WireValue -&gt; Builder
+</span><a href="Data.ProtoLens.Encoding.Wire.html#buildWireValue"><span class="hs-identifier hs-var hs-var">buildWireValue</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#VarInt"><span class="hs-identifier hs-type">VarInt</span></a></span><span> </span><span id="local-6989586621679075976"><span class="annot"><span class="annottext">Word64
+</span><a href="#local-6989586621679075976"><span class="hs-identifier hs-var">w</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Word64 -&gt; Builder
+</span><a href="Data.ProtoLens.Encoding.Bytes.html#putVarInt"><span class="hs-identifier hs-var">putVarInt</span></a></span><span> </span><span class="annot"><span class="annottext">Word64
+</span><a href="#local-6989586621679075976"><span class="hs-identifier hs-var">w</span></a></span><span>
+</span><span id="line-79"></span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#buildWireValue"><span class="hs-identifier hs-var">buildWireValue</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#Fixed64"><span class="hs-identifier hs-type">Fixed64</span></a></span><span> </span><span id="local-6989586621679075977"><span class="annot"><span class="annottext">Word64
+</span><a href="#local-6989586621679075977"><span class="hs-identifier hs-var">w</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Word64 -&gt; Builder
+</span><a href="Data.ProtoLens.Encoding.Bytes.html#putFixed64"><span class="hs-identifier hs-var">putFixed64</span></a></span><span> </span><span class="annot"><span class="annottext">Word64
+</span><a href="#local-6989586621679075977"><span class="hs-identifier hs-var">w</span></a></span><span>
+</span><span id="line-80"></span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#buildWireValue"><span class="hs-identifier hs-var">buildWireValue</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#Fixed32"><span class="hs-identifier hs-type">Fixed32</span></a></span><span> </span><span id="local-6989586621679075979"><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679075979"><span class="hs-identifier hs-var">w</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Builder
+</span><a href="Data.ProtoLens.Encoding.Bytes.html#putFixed32"><span class="hs-identifier hs-var">putFixed32</span></a></span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679075979"><span class="hs-identifier hs-var">w</span></a></span><span>
+</span><span id="line-81"></span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#buildWireValue"><span class="hs-identifier hs-var">buildWireValue</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#Lengthy"><span class="hs-identifier hs-type">Lengthy</span></a></span><span> </span><span id="local-6989586621679075981"><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679075981"><span class="hs-identifier hs-var">b</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-82"></span><span>    </span><span class="annot"><span class="annottext">Word64 -&gt; Builder
+</span><a href="Data.ProtoLens.Encoding.Bytes.html#putVarInt"><span class="hs-identifier hs-var">putVarInt</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int -&gt; Word64
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">(Int -&gt; Word64) -&gt; Int -&gt; Word64
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; Int
+</span><span class="hs-identifier hs-var">B.length</span></span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679075981"><span class="hs-identifier hs-var">b</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-83"></span><span>    </span><span class="annot"><span class="annottext">Builder -&gt; Builder -&gt; Builder
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; Builder
+</span><a href="Data.ProtoLens.Encoding.Bytes.html#putBytes"><span class="hs-identifier hs-var">putBytes</span></a></span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679075981"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><span id="line-84"></span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#buildWireValue"><span class="hs-identifier hs-var">buildWireValue</span></a></span><span> </span><span class="annot"><span class="annottext">WireValue
+</span><a href="Data.ProtoLens.Encoding.Wire.html#StartGroup"><span class="hs-identifier hs-var">StartGroup</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Builder
+forall a. Monoid a =&gt; a
+</span><span class="hs-identifier hs-var">mempty</span></span><span>
+</span><span id="line-85"></span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#buildWireValue"><span class="hs-identifier hs-var">buildWireValue</span></a></span><span> </span><span class="annot"><span class="annottext">WireValue
+</span><a href="Data.ProtoLens.Encoding.Wire.html#EndGroup"><span class="hs-identifier hs-var">EndGroup</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Builder
+forall a. Monoid a =&gt; a
+</span><span class="hs-identifier hs-var">mempty</span></span><span>
+</span><span id="line-86"></span><span>
+</span><span id="line-87"></span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#wireValueToInt"><span class="hs-identifier hs-type">wireValueToInt</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#WireValue"><span class="hs-identifier hs-type">WireValue</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word8</span></span><span>
+</span><span id="line-88"></span><span id="wireValueToInt"><span class="annot"><span class="annottext">wireValueToInt :: WireValue -&gt; Word8
+</span><a href="Data.ProtoLens.Encoding.Wire.html#wireValueToInt"><span class="hs-identifier hs-var hs-var">wireValueToInt</span></a></span></span><span> </span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#VarInt"><span class="hs-identifier hs-type">VarInt</span></a></span><span class="hs-special">{</span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Word8
+</span><span class="hs-number">0</span></span><span>
+</span><span id="line-89"></span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#wireValueToInt"><span class="hs-identifier hs-var">wireValueToInt</span></a></span><span> </span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#Fixed64"><span class="hs-identifier hs-type">Fixed64</span></a></span><span class="hs-special">{</span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Word8
+</span><span class="hs-number">1</span></span><span>
+</span><span id="line-90"></span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#wireValueToInt"><span class="hs-identifier hs-var">wireValueToInt</span></a></span><span> </span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#Lengthy"><span class="hs-identifier hs-type">Lengthy</span></a></span><span class="hs-special">{</span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Word8
+</span><span class="hs-number">2</span></span><span>
+</span><span id="line-91"></span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#wireValueToInt"><span class="hs-identifier hs-var">wireValueToInt</span></a></span><span> </span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#StartGroup"><span class="hs-identifier hs-type">StartGroup</span></a></span><span class="hs-special">{</span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Word8
+</span><span class="hs-number">3</span></span><span>
+</span><span id="line-92"></span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#wireValueToInt"><span class="hs-identifier hs-var">wireValueToInt</span></a></span><span> </span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#EndGroup"><span class="hs-identifier hs-type">EndGroup</span></a></span><span class="hs-special">{</span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Word8
+</span><span class="hs-number">4</span></span><span>
+</span><span id="line-93"></span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#wireValueToInt"><span class="hs-identifier hs-var">wireValueToInt</span></a></span><span> </span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#Fixed32"><span class="hs-identifier hs-type">Fixed32</span></a></span><span class="hs-special">{</span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Word8
+</span><span class="hs-number">5</span></span><span>
+</span><span id="line-94"></span><span>
+</span><span id="line-95"></span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#parseTaggedValue"><span class="hs-identifier hs-type">parseTaggedValue</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.ProtoLens.Encoding.Parser.Internal.html#Parser"><span class="hs-identifier hs-type">Parser</span></a></span><span> </span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#TaggedValue"><span class="hs-identifier hs-type">TaggedValue</span></a></span><span>
+</span><span id="line-96"></span><span id="parseTaggedValue"><span class="annot"><span class="annottext">parseTaggedValue :: Parser TaggedValue
+</span><a href="Data.ProtoLens.Encoding.Wire.html#parseTaggedValue"><span class="hs-identifier hs-var hs-var">parseTaggedValue</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Parser Word64
+</span><a href="Data.ProtoLens.Encoding.Bytes.html#getVarInt"><span class="hs-identifier hs-var">getVarInt</span></a></span><span> </span><span class="annot"><span class="annottext">Parser Word64
+-&gt; (Word64 -&gt; Parser TaggedValue) -&gt; Parser TaggedValue
+forall a b. Parser a -&gt; (a -&gt; Parser b) -&gt; Parser b
+forall (m :: * -&gt; *) a b. Monad m =&gt; m a -&gt; (a -&gt; m b) -&gt; m b
+</span><span class="hs-operator hs-var">&gt;&gt;=</span></span><span> </span><span class="annot"><span class="annottext">Word64 -&gt; Parser TaggedValue
+</span><a href="Data.ProtoLens.Encoding.Wire.html#parseTaggedValueFromWire"><span class="hs-identifier hs-var">parseTaggedValueFromWire</span></a></span><span>
+</span><span id="line-97"></span><span>
+</span><span id="line-98"></span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#parseTaggedValueFromWire"><span class="hs-identifier hs-type">parseTaggedValueFromWire</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word64</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.ProtoLens.Encoding.Parser.Internal.html#Parser"><span class="hs-identifier hs-type">Parser</span></a></span><span> </span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#TaggedValue"><span class="hs-identifier hs-type">TaggedValue</span></a></span><span>
+</span><span id="line-99"></span><span id="parseTaggedValueFromWire"><span class="annot"><span class="annottext">parseTaggedValueFromWire :: Word64 -&gt; Parser TaggedValue
+</span><a href="Data.ProtoLens.Encoding.Wire.html#parseTaggedValueFromWire"><span class="hs-identifier hs-var hs-var">parseTaggedValueFromWire</span></a></span></span><span> </span><span id="local-6989586621679075986"><span class="annot"><span class="annottext">Word64
+</span><a href="#local-6989586621679075986"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-100"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679075987"><span class="annot"><span class="annottext">Tag
+</span><a href="#local-6989586621679075987"><span class="hs-identifier hs-var">tag</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679075988"><span class="annot"><span class="annottext">Word8
+</span><a href="#local-6989586621679075988"><span class="hs-identifier hs-var">w</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Word64 -&gt; (Tag, Word8)
+</span><a href="Data.ProtoLens.Encoding.Wire.html#splitTypeAndTag"><span class="hs-identifier hs-var">splitTypeAndTag</span></a></span><span> </span><span class="annot"><span class="annottext">Word64
+</span><a href="#local-6989586621679075986"><span class="hs-identifier hs-var">t</span></a></span><span>
+</span><span id="line-101"></span><span>    </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">Tag -&gt; WireValue -&gt; TaggedValue
+</span><a href="Data.ProtoLens.Encoding.Wire.html#TaggedValue"><span class="hs-identifier hs-var">TaggedValue</span></a></span><span> </span><span class="annot"><span class="annottext">Tag
+</span><a href="#local-6989586621679075987"><span class="hs-identifier hs-var">tag</span></a></span><span> </span><span class="annot"><span class="annottext">(WireValue -&gt; TaggedValue)
+-&gt; Parser WireValue -&gt; Parser TaggedValue
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Word8
+</span><a href="#local-6989586621679075988"><span class="hs-identifier hs-var">w</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-102"></span><span>        </span><span class="annot"><span class="annottext">Word8
+</span><span class="hs-number">0</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Word64 -&gt; WireValue
+</span><a href="Data.ProtoLens.Encoding.Wire.html#VarInt"><span class="hs-identifier hs-var">VarInt</span></a></span><span> </span><span class="annot"><span class="annottext">(Word64 -&gt; WireValue) -&gt; Parser Word64 -&gt; Parser WireValue
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">Parser Word64
+</span><a href="Data.ProtoLens.Encoding.Bytes.html#getVarInt"><span class="hs-identifier hs-var">getVarInt</span></a></span><span>
+</span><span id="line-103"></span><span>        </span><span class="annot"><span class="annottext">Word8
+</span><span class="hs-number">1</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Word64 -&gt; WireValue
+</span><a href="Data.ProtoLens.Encoding.Wire.html#Fixed64"><span class="hs-identifier hs-var">Fixed64</span></a></span><span> </span><span class="annot"><span class="annottext">(Word64 -&gt; WireValue) -&gt; Parser Word64 -&gt; Parser WireValue
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">Parser Word64
+</span><a href="Data.ProtoLens.Encoding.Bytes.html#getFixed64"><span class="hs-identifier hs-var">getFixed64</span></a></span><span>
+</span><span id="line-104"></span><span>        </span><span class="annot"><span class="annottext">Word8
+</span><span class="hs-number">2</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; WireValue
+</span><a href="Data.ProtoLens.Encoding.Wire.html#Lengthy"><span class="hs-identifier hs-var">Lengthy</span></a></span><span> </span><span class="annot"><span class="annottext">(ByteString -&gt; WireValue) -&gt; Parser ByteString -&gt; Parser WireValue
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-105"></span><span>                </span><span id="local-6989586621679075991"><span class="annot"><span class="annottext">Word64
+</span><a href="#local-6989586621679075991"><span class="hs-identifier hs-var">len</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Parser Word64
+</span><a href="Data.ProtoLens.Encoding.Bytes.html#getVarInt"><span class="hs-identifier hs-var">getVarInt</span></a></span><span>
+</span><span id="line-106"></span><span>                </span><span class="annot"><span class="annottext">Int -&gt; Parser ByteString
+</span><a href="Data.ProtoLens.Encoding.Parser.html#getBytes"><span class="hs-identifier hs-var">getBytes</span></a></span><span> </span><span class="annot"><span class="annottext">(Int -&gt; Parser ByteString) -&gt; Int -&gt; Parser ByteString
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Word64 -&gt; Int
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">Word64
+</span><a href="#local-6989586621679075991"><span class="hs-identifier hs-var">len</span></a></span><span>
+</span><span id="line-107"></span><span>        </span><span class="annot"><span class="annottext">Word8
+</span><span class="hs-number">3</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">WireValue -&gt; Parser WireValue
+forall a. a -&gt; Parser a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">WireValue
+</span><a href="Data.ProtoLens.Encoding.Wire.html#StartGroup"><span class="hs-identifier hs-var">StartGroup</span></a></span><span>
+</span><span id="line-108"></span><span>        </span><span class="annot"><span class="annottext">Word8
+</span><span class="hs-number">4</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">WireValue -&gt; Parser WireValue
+forall a. a -&gt; Parser a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">WireValue
+</span><a href="Data.ProtoLens.Encoding.Wire.html#EndGroup"><span class="hs-identifier hs-var">EndGroup</span></a></span><span>
+</span><span id="line-109"></span><span>        </span><span class="annot"><span class="annottext">Word8
+</span><span class="hs-number">5</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; WireValue
+</span><a href="Data.ProtoLens.Encoding.Wire.html#Fixed32"><span class="hs-identifier hs-var">Fixed32</span></a></span><span> </span><span class="annot"><span class="annottext">(Word32 -&gt; WireValue) -&gt; Parser Word32 -&gt; Parser WireValue
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">Parser Word32
+</span><a href="Data.ProtoLens.Encoding.Bytes.html#getFixed32"><span class="hs-identifier hs-var">getFixed32</span></a></span><span>
+</span><span id="line-110"></span><span>        </span><span class="annot"><span class="annottext">Word8
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">String -&gt; Parser WireValue
+forall a. String -&gt; Parser a
+forall (m :: * -&gt; *) a. MonadFail m =&gt; String -&gt; m a
+</span><span class="hs-identifier hs-var">fail</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; Parser WireValue) -&gt; String -&gt; Parser WireValue
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;Unknown wire type &quot;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
+forall a. [a] -&gt; [a] -&gt; [a]
+</span><span class="hs-operator hs-var">++</span></span><span> </span><span class="annot"><span class="annottext">Word8 -&gt; String
+forall a. Show a =&gt; a -&gt; String
+</span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">Word8
+</span><a href="#local-6989586621679075988"><span class="hs-identifier hs-var">w</span></a></span><span>
+</span><span id="line-111"></span><span>
+</span><span id="line-112"></span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#parseMessageSetTaggedValueFromWire"><span class="hs-identifier hs-type">parseMessageSetTaggedValueFromWire</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word64</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.ProtoLens.Encoding.Parser.Internal.html#Parser"><span class="hs-identifier hs-type">Parser</span></a></span><span> </span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#TaggedValue"><span class="hs-identifier hs-type">TaggedValue</span></a></span><span>
+</span><span id="line-113"></span><span id="parseMessageSetTaggedValueFromWire"><span class="annot"><span class="annottext">parseMessageSetTaggedValueFromWire :: Word64 -&gt; Parser TaggedValue
+</span><a href="Data.ProtoLens.Encoding.Wire.html#parseMessageSetTaggedValueFromWire"><span class="hs-identifier hs-var hs-var">parseMessageSetTaggedValueFromWire</span></a></span></span><span> </span><span id="local-6989586621679075995"><span class="annot"><span class="annottext">Word64
+</span><a href="#local-6989586621679075995"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-114"></span><span>    </span><span class="annot"><span class="annottext">Word64 -&gt; Parser TaggedValue
+</span><a href="Data.ProtoLens.Encoding.Wire.html#parseTaggedValueFromWire"><span class="hs-identifier hs-var">parseTaggedValueFromWire</span></a></span><span> </span><span class="annot"><span class="annottext">Word64
+</span><a href="#local-6989586621679075995"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="annot"><span class="annottext">Parser TaggedValue
+-&gt; (TaggedValue -&gt; Parser TaggedValue) -&gt; Parser TaggedValue
+forall a b. Parser a -&gt; (a -&gt; Parser b) -&gt; Parser b
+forall (m :: * -&gt; *) a b. Monad m =&gt; m a -&gt; (a -&gt; m b) -&gt; m b
+</span><span class="hs-operator hs-var">&gt;&gt;=</span></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679075996"><span class="annot"><span class="annottext">TaggedValue
+</span><a href="#local-6989586621679075996"><span class="hs-identifier hs-var">v</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">TaggedValue
+</span><a href="#local-6989586621679075996"><span class="hs-identifier hs-var">v</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-115"></span><span>        </span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#TaggedValue"><span class="hs-identifier hs-type">TaggedValue</span></a></span><span> </span><span class="annot"><span class="annottext">Tag
+</span><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="annottext">WireValue
+</span><a href="Data.ProtoLens.Encoding.Wire.html#StartGroup"><span class="hs-identifier hs-var">StartGroup</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Parser TaggedValue
+</span><a href="Data.ProtoLens.Encoding.Wire.html#parseTaggedValue"><span class="hs-identifier hs-var">parseTaggedValue</span></a></span><span> </span><span class="annot"><span class="annottext">Parser TaggedValue
+-&gt; (TaggedValue -&gt; Parser TaggedValue) -&gt; Parser TaggedValue
+forall a b. Parser a -&gt; (a -&gt; Parser b) -&gt; Parser b
+forall (m :: * -&gt; *) a b. Monad m =&gt; m a -&gt; (a -&gt; m b) -&gt; m b
+</span><span class="hs-operator hs-var">&gt;&gt;=</span></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679075997"><span class="annot"><span class="annottext">TaggedValue
+</span><a href="#local-6989586621679075997"><span class="hs-identifier hs-var">ft</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">TaggedValue
+</span><a href="#local-6989586621679075997"><span class="hs-identifier hs-var">ft</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-116"></span><span>            </span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#TaggedValue"><span class="hs-identifier hs-type">TaggedValue</span></a></span><span> </span><span class="annot"><span class="annottext">Tag
+</span><span class="hs-number">2</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#VarInt"><span class="hs-identifier hs-type">VarInt</span></a></span><span> </span><span id="local-6989586621679075998"><span class="annot"><span class="annottext">Word64
+</span><a href="#local-6989586621679075998"><span class="hs-identifier hs-var">f</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Parser TaggedValue
+</span><a href="Data.ProtoLens.Encoding.Wire.html#parseTaggedValue"><span class="hs-identifier hs-var">parseTaggedValue</span></a></span><span> </span><span class="annot"><span class="annottext">Parser TaggedValue
+-&gt; (TaggedValue -&gt; Parser TaggedValue) -&gt; Parser TaggedValue
+forall a b. Parser a -&gt; (a -&gt; Parser b) -&gt; Parser b
+forall (m :: * -&gt; *) a b. Monad m =&gt; m a -&gt; (a -&gt; m b) -&gt; m b
+</span><span class="hs-operator hs-var">&gt;&gt;=</span></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679075999"><span class="annot"><span class="annottext">TaggedValue
+</span><a href="#local-6989586621679075999"><span class="hs-identifier hs-var">dt</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">TaggedValue
+</span><a href="#local-6989586621679075999"><span class="hs-identifier hs-var">dt</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-117"></span><span>                </span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#TaggedValue"><span class="hs-identifier hs-type">TaggedValue</span></a></span><span> </span><span class="annot"><span class="annottext">Tag
+</span><span class="hs-number">3</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#Lengthy"><span class="hs-identifier hs-type">Lengthy</span></a></span><span> </span><span id="local-6989586621679076000"><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679076000"><span class="hs-identifier hs-var">b</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Parser TaggedValue
+</span><a href="Data.ProtoLens.Encoding.Wire.html#parseTaggedValue"><span class="hs-identifier hs-var">parseTaggedValue</span></a></span><span> </span><span class="annot"><span class="annottext">Parser TaggedValue
+-&gt; (TaggedValue -&gt; Parser TaggedValue) -&gt; Parser TaggedValue
+forall a b. Parser a -&gt; (a -&gt; Parser b) -&gt; Parser b
+forall (m :: * -&gt; *) a b. Monad m =&gt; m a -&gt; (a -&gt; m b) -&gt; m b
+</span><span class="hs-operator hs-var">&gt;&gt;=</span></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679076001"><span class="annot"><span class="annottext">TaggedValue
+</span><a href="#local-6989586621679076001"><span class="hs-identifier hs-var">et</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">TaggedValue
+</span><a href="#local-6989586621679076001"><span class="hs-identifier hs-var">et</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-118"></span><span>                    </span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#TaggedValue"><span class="hs-identifier hs-type">TaggedValue</span></a></span><span> </span><span class="annot"><span class="annottext">Tag
+</span><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="annottext">WireValue
+</span><a href="Data.ProtoLens.Encoding.Wire.html#EndGroup"><span class="hs-identifier hs-var">EndGroup</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">TaggedValue -&gt; Parser TaggedValue
+forall a. a -&gt; Parser a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">(TaggedValue -&gt; Parser TaggedValue)
+-&gt; TaggedValue -&gt; Parser TaggedValue
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Tag -&gt; WireValue -&gt; TaggedValue
+</span><a href="Data.ProtoLens.Encoding.Wire.html#TaggedValue"><span class="hs-identifier hs-var">TaggedValue</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int -&gt; Tag
+</span><a href="Data.ProtoLens.Encoding.Wire.html#Tag"><span class="hs-identifier hs-var">Tag</span></a></span><span> </span><span class="annot"><span class="annottext">(Int -&gt; Tag) -&gt; Int -&gt; Tag
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Word64 -&gt; Int
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">Word64
+</span><a href="#local-6989586621679075998"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ByteString -&gt; WireValue
+</span><a href="Data.ProtoLens.Encoding.Wire.html#Lengthy"><span class="hs-identifier hs-var">Lengthy</span></a></span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679076000"><span class="hs-identifier hs-var">b</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-119"></span><span>                    </span><span class="annot"><span class="annottext">TaggedValue
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">String -&gt; Parser TaggedValue
+forall a. String -&gt; Parser a
+forall (m :: * -&gt; *) a. MonadFail m =&gt; String -&gt; m a
+</span><span class="hs-identifier hs-var">fail</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;missing end_group&quot;</span></span><span>
+</span><span id="line-120"></span><span>                </span><span class="annot"><span class="annottext">TaggedValue
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">String -&gt; Parser TaggedValue
+forall a. String -&gt; Parser a
+forall (m :: * -&gt; *) a. MonadFail m =&gt; String -&gt; m a
+</span><span class="hs-identifier hs-var">fail</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;missing message&quot;</span></span><span>
+</span><span id="line-121"></span><span>            </span><span class="annot"><span class="annottext">TaggedValue
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">String -&gt; Parser TaggedValue
+forall a. String -&gt; Parser a
+forall (m :: * -&gt; *) a. MonadFail m =&gt; String -&gt; m a
+</span><span class="hs-identifier hs-var">fail</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;missing field tag&quot;</span></span><span>
+</span><span id="line-122"></span><span>        </span><span class="annot"><span class="annottext">TaggedValue
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">TaggedValue -&gt; Parser TaggedValue
+forall a. a -&gt; Parser a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">TaggedValue
+</span><a href="#local-6989586621679075996"><span class="hs-identifier hs-var">v</span></a></span><span>
+</span><span id="line-123"></span><span>
+</span><span id="line-124"></span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#splitTypeAndTag"><span class="hs-identifier hs-type">splitTypeAndTag</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word64</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#Tag"><span class="hs-identifier hs-type">Tag</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word8</span></span><span class="hs-special">)</span><span>
+</span><span id="line-125"></span><span id="splitTypeAndTag"><span class="annot"><span class="annottext">splitTypeAndTag :: Word64 -&gt; (Tag, Word8)
+</span><a href="Data.ProtoLens.Encoding.Wire.html#splitTypeAndTag"><span class="hs-identifier hs-var hs-var">splitTypeAndTag</span></a></span></span><span> </span><span id="local-6989586621679076002"><span class="annot"><span class="annottext">Word64
+</span><a href="#local-6989586621679076002"><span class="hs-identifier hs-var">w</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word64 -&gt; Tag
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">(Word64 -&gt; Tag) -&gt; Word64 -&gt; Tag
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Word64
+</span><a href="#local-6989586621679076002"><span class="hs-identifier hs-var">w</span></a></span><span> </span><span class="annot"><span class="annottext">Word64 -&gt; Int -&gt; Word64
+forall a. Bits a =&gt; a -&gt; Int -&gt; a
+</span><span class="hs-operator hs-var">`shiftR`</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">3</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word64 -&gt; Word8
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word64
+</span><a href="#local-6989586621679076002"><span class="hs-identifier hs-var">w</span></a></span><span> </span><span class="annot"><span class="annottext">Word64 -&gt; Word64 -&gt; Word64
+forall a. Bits a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">.&amp;.</span></span><span> </span><span class="annot"><span class="annottext">Word64
+</span><span class="hs-number">7</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-126"></span><span>
+</span><span id="line-127"></span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#joinTypeAndTag"><span class="hs-identifier hs-type">joinTypeAndTag</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#Tag"><span class="hs-identifier hs-type">Tag</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word8</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word64</span></span><span>
+</span><span id="line-128"></span><span id="joinTypeAndTag"><span class="annot"><span class="annottext">joinTypeAndTag :: Tag -&gt; Word8 -&gt; Word64
+</span><a href="Data.ProtoLens.Encoding.Wire.html#joinTypeAndTag"><span class="hs-identifier hs-var hs-var">joinTypeAndTag</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#Tag"><span class="hs-identifier hs-type">Tag</span></a></span><span> </span><span id="local-6989586621679076003"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679076003"><span class="hs-identifier hs-var">t</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621679076004"><span class="annot"><span class="annottext">Word8
+</span><a href="#local-6989586621679076004"><span class="hs-identifier hs-var">w</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int -&gt; Word64
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679076003"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="annot"><span class="annottext">Word64 -&gt; Int -&gt; Word64
+forall a. Bits a =&gt; a -&gt; Int -&gt; a
+</span><span class="hs-operator hs-var">`shiftL`</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">3</span></span><span> </span><span class="annot"><span class="annottext">Word64 -&gt; Word64 -&gt; Word64
+forall a. Bits a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">.|.</span></span><span> </span><span class="annot"><span class="annottext">Word8 -&gt; Word64
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">Word8
+</span><a href="#local-6989586621679076004"><span class="hs-identifier hs-var">w</span></a></span><span>
+</span><span id="line-129"></span><span>
+</span><span id="line-130"></span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#parseFieldSet"><span class="hs-identifier hs-type">parseFieldSet</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.ProtoLens.Encoding.Parser.Internal.html#Parser"><span class="hs-identifier hs-type">Parser</span></a></span><span> </span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#FieldSet"><span class="hs-identifier hs-type">FieldSet</span></a></span><span>
+</span><span id="line-131"></span><span id="parseFieldSet"><span class="annot"><span class="annottext">parseFieldSet :: Parser FieldSet
+</span><a href="Data.ProtoLens.Encoding.Wire.html#parseFieldSet"><span class="hs-identifier hs-var hs-var">parseFieldSet</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">FieldSet -&gt; Parser FieldSet
+</span><a href="#local-6989586621679076005"><span class="hs-identifier hs-var">loop</span></a></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-132"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-133"></span><span>    </span><span id="local-6989586621679076005"><span class="annot"><span class="annottext">loop :: FieldSet -&gt; Parser FieldSet
+</span><a href="#local-6989586621679076005"><span class="hs-identifier hs-var hs-var">loop</span></a></span></span><span> </span><span id="local-6989586621679076009"><span class="annot"><span class="annottext">FieldSet
+</span><a href="#local-6989586621679076009"><span class="hs-identifier hs-var">ws</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-134"></span><span>        </span><span id="local-6989586621679076010"><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621679076010"><span class="hs-identifier hs-var">end</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Parser Bool
+</span><a href="Data.ProtoLens.Encoding.Parser.html#atEnd"><span class="hs-identifier hs-var">atEnd</span></a></span><span>
+</span><span id="line-135"></span><span>        </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621679076010"><span class="hs-identifier hs-var">end</span></a></span><span>
+</span><span id="line-136"></span><span>            </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">FieldSet -&gt; Parser FieldSet
+forall a. a -&gt; Parser a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">(FieldSet -&gt; Parser FieldSet) -&gt; FieldSet -&gt; Parser FieldSet
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$!</span></span><span> </span><span class="annot"><span class="annottext">FieldSet -&gt; FieldSet
+forall a. [a] -&gt; [a]
+</span><span class="hs-identifier hs-var">reverse</span></span><span> </span><span class="annot"><span class="annottext">FieldSet
+</span><a href="#local-6989586621679076009"><span class="hs-identifier hs-var">ws</span></a></span><span>
+</span><span id="line-137"></span><span>            </span><span class="hs-keyword">else</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-138"></span><span>                </span><span class="hs-glyph">!</span><span id="local-6989586621679076014"><span class="annot"><span class="annottext">TaggedValue
+</span><a href="#local-6989586621679076014"><span class="hs-identifier hs-var">w</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Parser TaggedValue
+</span><a href="Data.ProtoLens.Encoding.Wire.html#parseTaggedValue"><span class="hs-identifier hs-var">parseTaggedValue</span></a></span><span>
+</span><span id="line-139"></span><span>                </span><span class="annot"><span class="annottext">FieldSet -&gt; Parser FieldSet
+</span><a href="#local-6989586621679076005"><span class="hs-identifier hs-var">loop</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">TaggedValue
+</span><a href="#local-6989586621679076014"><span class="hs-identifier hs-var">w</span></a></span><span class="annot"><span class="annottext">TaggedValue -&gt; FieldSet -&gt; FieldSet
+forall a. a -&gt; [a] -&gt; [a]
+</span><span class="hs-glyph hs-var">:</span></span><span class="annot"><span class="annottext">FieldSet
+</span><a href="#local-6989586621679076009"><span class="hs-identifier hs-var">ws</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-140"></span><span>
+</span><span id="line-141"></span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#buildFieldSet"><span class="hs-identifier hs-type">buildFieldSet</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#FieldSet"><span class="hs-identifier hs-type">FieldSet</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Builder</span></span><span>
+</span><span id="line-142"></span><span id="buildFieldSet"><span class="annot"><span class="annottext">buildFieldSet :: FieldSet -&gt; Builder
+</span><a href="Data.ProtoLens.Encoding.Wire.html#buildFieldSet"><span class="hs-identifier hs-var hs-var">buildFieldSet</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Builder] -&gt; Builder
+forall a. Monoid a =&gt; [a] -&gt; a
+</span><span class="hs-identifier hs-var">mconcat</span></span><span> </span><span class="annot"><span class="annottext">([Builder] -&gt; Builder)
+-&gt; (FieldSet -&gt; [Builder]) -&gt; FieldSet -&gt; Builder
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">(TaggedValue -&gt; Builder) -&gt; FieldSet -&gt; [Builder]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">TaggedValue -&gt; Builder
+</span><a href="Data.ProtoLens.Encoding.Wire.html#buildTaggedValue"><span class="hs-identifier hs-var">buildTaggedValue</span></a></span><span> </span><span>
+</span><span id="line-143"></span><span>
+</span><span id="line-144"></span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#buildMessageSet"><span class="hs-identifier hs-type">buildMessageSet</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.ProtoLens.Encoding.Wire.html#FieldSet"><span class="hs-identifier hs-type">FieldSet</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Builder</span></span><span>
+</span><span id="line-145"></span><span id="buildMessageSet"><span class="annot"><span class="annottext">buildMessageSet :: FieldSet -&gt; Builder
+</span><a href="Data.ProtoLens.Encoding.Wire.html#buildMessageSet"><span class="hs-identifier hs-var hs-var">buildMessageSet</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Builder] -&gt; Builder
+forall a. Monoid a =&gt; [a] -&gt; a
+</span><span class="hs-identifier hs-var">mconcat</span></span><span> </span><span class="annot"><span class="annottext">([Builder] -&gt; Builder)
+-&gt; (FieldSet -&gt; [Builder]) -&gt; FieldSet -&gt; Builder
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">(TaggedValue -&gt; Builder) -&gt; FieldSet -&gt; [Builder]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">TaggedValue -&gt; Builder
+</span><a href="Data.ProtoLens.Encoding.Wire.html#buildTaggedValueAsMessageSet"><span class="hs-identifier hs-var">buildTaggedValueAsMessageSet</span></a></span><span>
+</span><span id="line-146"></span></pre></body></html>

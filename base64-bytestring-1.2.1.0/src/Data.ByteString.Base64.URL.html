@@ -104,16 +104,20 @@
 </span><span id="line-76"></span><span class="annot"><a href="Data.ByteString.Base64.URL.html#alphabet"><span class="hs-identifier hs-type">alphabet</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ByteString</span></span><span>
 </span><span id="line-77"></span><span id="alphabet"><span class="annot"><span class="annottext">alphabet :: ByteString
 </span><a href="Data.ByteString.Base64.URL.html#alphabet"><span class="hs-identifier hs-var hs-var">alphabet</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Word8] -&gt; ByteString
-</span><span class="hs-identifier hs-var">B.pack</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">B.pack</span></span><span> </span><span class="annot"><span class="annottext">([Word8] -&gt; ByteString) -&gt; [Word8] -&gt; ByteString
+forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Word8
 </span><span class="hs-number">65</span></span><span class="hs-glyph">..</span><span class="annot"><span class="annottext">Word8
-</span><span class="hs-number">90</span></span><span class="hs-special">]</span><span> </span><span class="annot"><span class="annottext">forall a. [a] -&gt; [a] -&gt; [a]
+</span><span class="hs-number">90</span></span><span class="hs-special">]</span><span> </span><span class="annot"><span class="annottext">[Word8] -&gt; [Word8] -&gt; [Word8]
+forall a. [a] -&gt; [a] -&gt; [a]
 </span><span class="hs-operator hs-var">++</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Word8
 </span><span class="hs-number">97</span></span><span class="hs-glyph">..</span><span class="annot"><span class="annottext">Word8
-</span><span class="hs-number">122</span></span><span class="hs-special">]</span><span> </span><span class="annot"><span class="annottext">forall a. [a] -&gt; [a] -&gt; [a]
+</span><span class="hs-number">122</span></span><span class="hs-special">]</span><span> </span><span class="annot"><span class="annottext">[Word8] -&gt; [Word8] -&gt; [Word8]
+forall a. [a] -&gt; [a] -&gt; [a]
 </span><span class="hs-operator hs-var">++</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Word8
 </span><span class="hs-number">48</span></span><span class="hs-glyph">..</span><span class="annot"><span class="annottext">Word8
-</span><span class="hs-number">57</span></span><span class="hs-special">]</span><span> </span><span class="annot"><span class="annottext">forall a. [a] -&gt; [a] -&gt; [a]
+</span><span class="hs-number">57</span></span><span class="hs-special">]</span><span> </span><span class="annot"><span class="annottext">[Word8] -&gt; [Word8] -&gt; [Word8]
+forall a. [a] -&gt; [a] -&gt; [a]
 </span><span class="hs-operator hs-var">++</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Word8
 </span><span class="hs-number">45</span></span><span class="hs-special">,</span><span class="annot"><span class="annottext">Word8
 </span><span class="hs-number">95</span></span><span class="hs-special">]</span><span>
@@ -128,54 +132,80 @@
 </span><span class="hs-identifier">PS</span><span> </span><span class="hs-identifier">decodeFP</span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-glyph">=</span><span class="hs-cpp">
 #endif
 </span><span>  </span><span class="annot"><span class="annottext">[Word8] -&gt; ByteString
-</span><span class="hs-identifier hs-var">B.pack</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall a. Int -&gt; a -&gt; [a]
+</span><span class="hs-identifier hs-var">B.pack</span></span><span> </span><span class="annot"><span class="annottext">([Word8] -&gt; ByteString) -&gt; [Word8] -&gt; ByteString
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Word8 -&gt; [Word8]
+forall a. Int -&gt; a -&gt; [a]
 </span><span class="hs-identifier hs-var">replicate</span></span><span> </span><span class="annot"><span class="annottext">Int
-</span><span class="hs-number">45</span></span><span> </span><span class="annot"><span class="annottext">forall a. Integral a =&gt; a
+</span><span class="hs-number">45</span></span><span> </span><span class="annot"><span class="annottext">Word8
+forall a. Integral a =&gt; a
 </span><a href="Data.ByteString.Base64.URL.html#x"><span class="hs-identifier hs-var">x</span></a></span><span>
-</span><span id="line-87"></span><span>    </span><span class="annot"><span class="annottext">forall a. [a] -&gt; [a] -&gt; [a]
+</span><span id="line-87"></span><span>    </span><span class="annot"><span class="annottext">[Word8] -&gt; [Word8] -&gt; [Word8]
+forall a. [a] -&gt; [a] -&gt; [a]
 </span><span class="hs-operator hs-var">++</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Word8
-</span><span class="hs-number">62</span></span><span class="hs-special">,</span><span class="annot"><span class="annottext">forall a. Integral a =&gt; a
-</span><a href="Data.ByteString.Base64.URL.html#x"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">,</span><span class="annot"><span class="annottext">forall a. Integral a =&gt; a
+</span><span class="hs-number">62</span></span><span class="hs-special">,</span><span class="annot"><span class="annottext">Word8
+forall a. Integral a =&gt; a
+</span><a href="Data.ByteString.Base64.URL.html#x"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">,</span><span class="annot"><span class="annottext">Word8
+forall a. Integral a =&gt; a
 </span><a href="Data.ByteString.Base64.URL.html#x"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">]</span><span>
-</span><span id="line-88"></span><span>    </span><span class="annot"><span class="annottext">forall a. [a] -&gt; [a] -&gt; [a]
+</span><span id="line-88"></span><span>    </span><span class="annot"><span class="annottext">[Word8] -&gt; [Word8] -&gt; [Word8]
+forall a. [a] -&gt; [a] -&gt; [a]
 </span><span class="hs-operator hs-var">++</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Word8
 </span><span class="hs-number">52</span></span><span class="hs-glyph">..</span><span class="annot"><span class="annottext">Word8
 </span><span class="hs-number">61</span></span><span class="hs-special">]</span><span>
-</span><span id="line-89"></span><span>    </span><span class="annot"><span class="annottext">forall a. [a] -&gt; [a] -&gt; [a]
-</span><span class="hs-operator hs-var">++</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">forall a. Integral a =&gt; a
-</span><a href="Data.ByteString.Base64.URL.html#x"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">,</span><span class="annot"><span class="annottext">forall a. Integral a =&gt; a
-</span><a href="Data.ByteString.Base64.URL.html#x"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">,</span><span class="annot"><span class="annottext">forall a. Integral a =&gt; a
-</span><a href="Data.ByteString.Base64.URL.html#x"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">,</span><span class="annot"><span class="annottext">forall a. Integral a =&gt; a
-</span><a href="Data.ByteString.Base64.Internal.html#done"><span class="hs-identifier hs-var">done</span></a></span><span class="hs-special">,</span><span class="annot"><span class="annottext">forall a. Integral a =&gt; a
-</span><a href="Data.ByteString.Base64.URL.html#x"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">,</span><span class="annot"><span class="annottext">forall a. Integral a =&gt; a
-</span><a href="Data.ByteString.Base64.URL.html#x"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">,</span><span class="annot"><span class="annottext">forall a. Integral a =&gt; a
+</span><span id="line-89"></span><span>    </span><span class="annot"><span class="annottext">[Word8] -&gt; [Word8] -&gt; [Word8]
+forall a. [a] -&gt; [a] -&gt; [a]
+</span><span class="hs-operator hs-var">++</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Word8
+forall a. Integral a =&gt; a
+</span><a href="Data.ByteString.Base64.URL.html#x"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">,</span><span class="annot"><span class="annottext">Word8
+forall a. Integral a =&gt; a
+</span><a href="Data.ByteString.Base64.URL.html#x"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">,</span><span class="annot"><span class="annottext">Word8
+forall a. Integral a =&gt; a
+</span><a href="Data.ByteString.Base64.URL.html#x"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">,</span><span class="annot"><span class="annottext">Word8
+forall a. Integral a =&gt; a
+</span><a href="Data.ByteString.Base64.Internal.html#done"><span class="hs-identifier hs-var">done</span></a></span><span class="hs-special">,</span><span class="annot"><span class="annottext">Word8
+forall a. Integral a =&gt; a
+</span><a href="Data.ByteString.Base64.URL.html#x"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">,</span><span class="annot"><span class="annottext">Word8
+forall a. Integral a =&gt; a
+</span><a href="Data.ByteString.Base64.URL.html#x"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">,</span><span class="annot"><span class="annottext">Word8
+forall a. Integral a =&gt; a
 </span><a href="Data.ByteString.Base64.URL.html#x"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">]</span><span>
-</span><span id="line-90"></span><span>    </span><span class="annot"><span class="annottext">forall a. [a] -&gt; [a] -&gt; [a]
+</span><span id="line-90"></span><span>    </span><span class="annot"><span class="annottext">[Word8] -&gt; [Word8] -&gt; [Word8]
+forall a. [a] -&gt; [a] -&gt; [a]
 </span><span class="hs-operator hs-var">++</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Word8
 </span><span class="hs-number">0</span></span><span class="hs-glyph">..</span><span class="annot"><span class="annottext">Word8
 </span><span class="hs-number">25</span></span><span class="hs-special">]</span><span>
-</span><span id="line-91"></span><span>    </span><span class="annot"><span class="annottext">forall a. [a] -&gt; [a] -&gt; [a]
-</span><span class="hs-operator hs-var">++</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">forall a. Integral a =&gt; a
-</span><a href="Data.ByteString.Base64.URL.html#x"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">,</span><span class="annot"><span class="annottext">forall a. Integral a =&gt; a
-</span><a href="Data.ByteString.Base64.URL.html#x"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">,</span><span class="annot"><span class="annottext">forall a. Integral a =&gt; a
-</span><a href="Data.ByteString.Base64.URL.html#x"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">,</span><span class="annot"><span class="annottext">forall a. Integral a =&gt; a
+</span><span id="line-91"></span><span>    </span><span class="annot"><span class="annottext">[Word8] -&gt; [Word8] -&gt; [Word8]
+forall a. [a] -&gt; [a] -&gt; [a]
+</span><span class="hs-operator hs-var">++</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Word8
+forall a. Integral a =&gt; a
 </span><a href="Data.ByteString.Base64.URL.html#x"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">,</span><span class="annot"><span class="annottext">Word8
-</span><span class="hs-number">63</span></span><span class="hs-special">,</span><span class="annot"><span class="annottext">forall a. Integral a =&gt; a
+forall a. Integral a =&gt; a
+</span><a href="Data.ByteString.Base64.URL.html#x"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">,</span><span class="annot"><span class="annottext">Word8
+forall a. Integral a =&gt; a
+</span><a href="Data.ByteString.Base64.URL.html#x"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">,</span><span class="annot"><span class="annottext">Word8
+forall a. Integral a =&gt; a
+</span><a href="Data.ByteString.Base64.URL.html#x"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">,</span><span class="annot"><span class="annottext">Word8
+</span><span class="hs-number">63</span></span><span class="hs-special">,</span><span class="annot"><span class="annottext">Word8
+forall a. Integral a =&gt; a
 </span><a href="Data.ByteString.Base64.URL.html#x"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">]</span><span>
-</span><span id="line-92"></span><span>    </span><span class="annot"><span class="annottext">forall a. [a] -&gt; [a] -&gt; [a]
+</span><span id="line-92"></span><span>    </span><span class="annot"><span class="annottext">[Word8] -&gt; [Word8] -&gt; [Word8]
+forall a. [a] -&gt; [a] -&gt; [a]
 </span><span class="hs-operator hs-var">++</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Word8
 </span><span class="hs-number">26</span></span><span class="hs-glyph">..</span><span class="annot"><span class="annottext">Word8
 </span><span class="hs-number">51</span></span><span class="hs-special">]</span><span>
-</span><span id="line-93"></span><span>    </span><span class="annot"><span class="annottext">forall a. [a] -&gt; [a] -&gt; [a]
-</span><span class="hs-operator hs-var">++</span></span><span> </span><span class="annot"><span class="annottext">forall a. Int -&gt; a -&gt; [a]
+</span><span id="line-93"></span><span>    </span><span class="annot"><span class="annottext">[Word8] -&gt; [Word8] -&gt; [Word8]
+forall a. [a] -&gt; [a] -&gt; [a]
+</span><span class="hs-operator hs-var">++</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Word8 -&gt; [Word8]
+forall a. Int -&gt; a -&gt; [a]
 </span><span class="hs-identifier hs-var">replicate</span></span><span> </span><span class="annot"><span class="annottext">Int
-</span><span class="hs-number">133</span></span><span> </span><span class="annot"><span class="annottext">forall a. Integral a =&gt; a
+</span><span class="hs-number">133</span></span><span> </span><span class="annot"><span class="annottext">Word8
+forall a. Integral a =&gt; a
 </span><a href="Data.ByteString.Base64.URL.html#x"><span class="hs-identifier hs-var">x</span></a></span><span>
 </span><span id="line-94"></span><span>
 </span><span id="line-95"></span><span class="hs-pragma">{-# NOINLINE</span><span> </span><span class="annot"><a href="Data.ByteString.Base64.URL.html#decodeFP"><span class="hs-pragma hs-type">decodeFP</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
 </span><span id="line-96"></span><span>
-</span><span id="line-97"></span><span id="local-6989586621679040720"><span class="annot"><a href="Data.ByteString.Base64.URL.html#x"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Integral</span></span><span> </span><span class="annot"><a href="#local-6989586621679040720"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679040720"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-97"></span><span id="local-6989586621679041547"><span class="annot"><a href="Data.ByteString.Base64.URL.html#x"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Integral</span></span><span> </span><span class="annot"><a href="#local-6989586621679041547"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679041547"><span class="hs-identifier hs-type">a</span></a></span></span><span>
 </span><span id="line-98"></span><span id="x"><span class="annot"><span class="annottext">x :: forall a. Integral a =&gt; a
 </span><a href="Data.ByteString.Base64.URL.html#x"><span class="hs-identifier hs-var hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a
 </span><span class="hs-number">255</span></span><span>

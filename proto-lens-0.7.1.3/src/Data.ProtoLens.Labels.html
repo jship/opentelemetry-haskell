@@ -1,0 +1,48 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE CPP #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE FlexibleInstances #-}</span><span>
+</span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE MagicHash #-}</span><span>
+</span><span id="line-4"></span><span class="hs-pragma">{-# LANGUAGE MultiParamTypeClasses #-}</span><span>
+</span><span id="line-5"></span><span class="hs-pragma">{-# LANGUAGE TypeFamilies #-}</span><span>
+</span><span id="line-6"></span><span class="hs-pragma">{-# LANGUAGE UndecidableInstances #-}</span><span class="hs-cpp">
+#if __GLASGOW_HASKELL__ &gt;= 802
+</span><span class="hs-pragma">{-# LANGUAGE ScopedTypeVariables #-}</span><span class="hs-cpp">
+#endif
+</span><span class="hs-pragma">{-# OPTIONS_GHC -fno-warn-orphans #-}</span><span>
+</span><span id="line-11"></span><span>
+</span><span id="line-12"></span><span class="hs-comment">------------------------------------------------------------------------------</span><span>
+</span><span id="line-13"></span><span class="hs-comment">-- | This module provides OverloadedLabels 'IsLabel' support via an</span><span>
+</span><span id="line-14"></span><span class="hs-comment">-- orphan instance. This means a @Lens.Family.Lens@ can be referenced</span><span>
+</span><span id="line-15"></span><span class="hs-comment">-- as @#foo@ whenever we have an instance of 'Data.ProtoLens.Field.HasField'</span><span>
+</span><span id="line-16"></span><span class="hs-comment">-- with the label @&quot;foo&quot;@.&quot;</span><span>
+</span><span id="line-17"></span><span class="hs-comment">--</span><span>
+</span><span id="line-18"></span><span class="hs-comment">-- To use these labels, enable the @OverloadedLabels@ extension, and then</span><span>
+</span><span id="line-19"></span><span class="hs-comment">-- import:</span><span>
+</span><span id="line-20"></span><span class="hs-comment">--</span><span>
+</span><span id="line-21"></span><span class="hs-comment">-- &gt; import Data.ProtoLens.Labels()</span><span>
+</span><span id="line-22"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Data.ProtoLens.Labels</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-23"></span><span>
+</span><span id="line-24"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">GHC.OverloadedLabels</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">IsLabel</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-cpp">
+#if __GLASGOW_HASKELL__ &gt;= 802
+</span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">GHC.Prim</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Proxy#</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">proxy#</span></span><span class="hs-special">)</span><span class="hs-cpp">
+#endif
+</span><span>
+</span><span id="line-29"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Data.ProtoLens.Field.html"><span class="hs-identifier">Data.ProtoLens.Field</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.ProtoLens.Field.html#HasField"><span class="hs-identifier">HasField</span></a></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-30"></span><span>
+</span><span id="line-31"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679076048"><span id="local-6989586621679076049"><span id="local-6989586621679076050"><span id="local-6989586621679076051"><span id="local-6989586621679076052"><span id="local-6989586621679076053"><span id="local-6989586621679076054"><span class="hs-special">(</span><span class="annot"><a href="Data.ProtoLens.Field.html#HasField"><span class="hs-identifier hs-type">HasField</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679076048"><span class="hs-identifier hs-type">s</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679076049"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679076050"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="#local-6989586621679076051"><span class="hs-identifier hs-type">p</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679076050"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679076052"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679076050"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="#local-6989586621679076053"><span class="hs-identifier hs-type">q</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679076048"><span class="hs-identifier hs-type">s</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679076052"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679076048"><span class="hs-identifier hs-type">s</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Functor</span></span><span> </span><span class="annot"><a href="#local-6989586621679076052"><span class="hs-identifier hs-type">f</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-32"></span><span>        </span><span class="annot"><a href="#local-6989586621679076050"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~</span></span><span> </span><span class="annot"><a href="#local-6989586621679076054"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IsLabel</span></span><span> </span><span class="annot"><a href="#local-6989586621679076049"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679076051"><span class="hs-identifier hs-type">p</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679076053"><span class="hs-identifier hs-type">q</span></a></span><span class="hs-special">)</span></span></span></span></span></span></span></span><span> </span><span class="hs-keyword">where</span><span class="hs-cpp">
+#if __GLASGOW_HASKELL__ &gt;= 802
+</span><span>  </span><span id="local-6989586621679076076"><span class="annot"><span class="annottext">fromLabel :: p -&gt; q
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">fromLabel</span></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Proxy# x -&gt; (b -&gt; f b) -&gt; s -&gt; f s
+forall s (x :: Symbol) a (f :: * -&gt; *).
+(HasField s x a, Functor f) =&gt;
+Proxy# x -&gt; (a -&gt; f a) -&gt; s -&gt; f s
+forall (f :: * -&gt; *).
+Functor f =&gt;
+Proxy# x -&gt; (b -&gt; f b) -&gt; s -&gt; f s
+</span><a href="Data.ProtoLens.Field.html#fieldOf"><span class="hs-identifier hs-var">fieldOf</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Proxy# x
+forall {k} (a :: k). Proxy# a
+</span><span class="hs-identifier hs-var">proxy#</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Proxy#</span></span><span> </span><span class="annot"><a href="#local-6989586621679076049"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">)</span><span class="hs-cpp">
+#else
+</span><span>  </span><span class="hs-identifier">fromLabel</span><span> </span><span class="hs-identifier">x</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier">fieldOf</span><span> </span><span class="hs-identifier">x</span><span class="hs-cpp">
+#endif
+</span></pre></body></html>

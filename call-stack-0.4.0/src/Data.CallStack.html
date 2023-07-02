@@ -44,14 +44,18 @@
 </span><span id="line-44"></span><span class="annot"><a href="Data.CallStack.html#callStack"><span class="hs-identifier hs-type">callStack</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier">HasCallStack_</span><span> </span><span class="hs-identifier">CallStack</span><span>
 </span><span id="line-45"></span><span id="callStack"><span class="annot"><span class="annottext">callStack :: HasCallStack =&gt; CallStack
 </span><a href="Data.CallStack.html#callStack"><span class="hs-identifier hs-var hs-var">callStack</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">CallStack -&gt; CallStack
-</span><a href="Data.CallStack.html#workaroundForIssue19236"><span class="hs-identifier hs-var">workaroundForIssue19236</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><a href="Data.CallStack.html#workaroundForIssue19236"><span class="hs-identifier hs-var">workaroundForIssue19236</span></a></span><span> </span><span class="annot"><span class="annottext">(CallStack -&gt; CallStack) -&gt; CallStack -&gt; CallStack
+forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span class="hs-cpp">
 #if MIN_VERSION_base(4,9,0)
-</span><span>  </span><span class="annot"><span class="annottext">forall a. Int -&gt; [a] -&gt; [a]
+</span><span>  </span><span class="annot"><span class="annottext">Int -&gt; CallStack -&gt; CallStack
+forall a. Int -&gt; [a] -&gt; [a]
 </span><span class="hs-identifier hs-var">drop</span></span><span> </span><span class="annot"><span class="annottext">Int
-</span><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="annottext">(CallStack -&gt; CallStack) -&gt; CallStack -&gt; CallStack
+forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">CallStack -&gt; CallStack
-</span><span class="hs-identifier hs-var">GHC.getCallStack</span></span><span> </span><span class="annot"><span class="annottext">HasCallStack =&gt; CallStack
+</span><span class="hs-identifier hs-var">GHC.getCallStack</span></span><span> </span><span class="annot"><span class="annottext">CallStack
+HasCallStack =&gt; CallStack
 </span><span class="hs-identifier hs-var">GHC.callStack</span></span><span class="hs-cpp">
 #elif MIN_VERSION_base(4,8,1)
 </span><span>  </span><span class="hs-identifier">drop</span><span> </span><span class="hs-number">2</span><span> </span><span class="hs-operator">$</span><span> </span><span class="hs-identifier">GHC.getCallStack</span><span> </span><span class="">?callStack</span><span class="hs-cpp">
@@ -61,9 +65,12 @@
 </span><span>
 </span><span id="line-54"></span><span class="annot"><a href="Data.CallStack.html#callSite"><span class="hs-identifier hs-type">callSite</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier">HasCallStack_</span><span> </span><span class="hs-identifier">Maybe</span><span> </span><span class="hs-special">(</span><span class="hs-identifier">String</span><span class="hs-special">,</span><span> </span><span class="hs-identifier">SrcLoc</span><span class="hs-special">)</span><span>
 </span><span id="line-55"></span><span id="callSite"><span class="annot"><span class="annottext">callSite :: HasCallStack =&gt; Maybe (String, SrcLoc)
-</span><a href="Data.CallStack.html#callSite"><span class="hs-identifier hs-var hs-var">callSite</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. [a] -&gt; Maybe a
-</span><span class="hs-identifier hs-var">listToMaybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. [a] -&gt; [a]
-</span><span class="hs-identifier hs-var">reverse</span></span><span> </span><span class="annot"><span class="annottext">HasCallStack =&gt; CallStack
+</span><a href="Data.CallStack.html#callSite"><span class="hs-identifier hs-var hs-var">callSite</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">CallStack -&gt; Maybe (String, SrcLoc)
+forall a. [a] -&gt; Maybe a
+</span><span class="hs-identifier hs-var">listToMaybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">CallStack -&gt; CallStack
+forall a. [a] -&gt; [a]
+</span><span class="hs-identifier hs-var">reverse</span></span><span> </span><span class="annot"><span class="annottext">CallStack
+HasCallStack =&gt; CallStack
 </span><a href="Data.CallStack.html#callStack"><span class="hs-identifier hs-var">callStack</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-56"></span><span>
 </span><span id="line-57"></span><span class="annot"><a href="Data.CallStack.html#workaroundForIssue19236"><span class="hs-identifier hs-type">workaroundForIssue19236</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.CallStack.html#CallStack"><span class="hs-identifier hs-type">CallStack</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.CallStack.html#CallStack"><span class="hs-identifier hs-type">CallStack</span></a></span><span> </span><span class="hs-comment">-- https://gitlab.haskell.org/ghc/ghc/-/issues/19236</span><span>
@@ -79,7 +86,8 @@
 </span><span id="line-66"></span><span>    </span><span class="hs-identifier">fixPath</span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-67"></span><span>      </span><span class="hs-identifier">joinPath</span><span> </span><span class="hs-operator">.</span><span> </span><span class="hs-identifier">splitDirectories</span><span class="hs-cpp">
 #else
-</span><span>  </span><span class="annot"><span class="annottext">forall a. a -&gt; a
+</span><span>  </span><span class="annot"><span class="annottext">CallStack -&gt; CallStack
+forall a. a -&gt; a
 </span><span class="hs-identifier hs-var">id</span></span><span class="hs-cpp">
 #endif
 </span></pre></body></html>

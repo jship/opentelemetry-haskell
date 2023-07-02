@@ -994,20 +994,6 @@ Fail :: Text -> [String] -> String -> Result r
 --   been consumed (if any) when the parse succeeded.
 Done :: Text -> r -> Result r
 
--- | Compare two <a>IResult</a> values for equality.
---   
---   If both <a>IResult</a>s are <a>Partial</a>, the result will be
---   <a>Nothing</a>, as they are incomplete and hence their equality cannot
---   be known. (This is why there is no <a>Eq</a> instance for
---   <a>IResult</a>.)
-compareResults :: (Eq i, Eq r) => IResult i r -> IResult i r -> Maybe Bool
-
--- | Match only if all input has been consumed.
-endOfInput :: forall t. Chunk t => Parser t ()
-
--- | Return an indication of whether the end of input has been reached.
-atEnd :: Chunk t => Parser t Bool
-
 -- | A numeric type that can represent integers accurately, and floating
 --   point numbers to the precision of a <a>Double</a>.
 --   
@@ -1016,6 +1002,12 @@ atEnd :: Chunk t => Parser t Bool
 data Number
 I :: !Integer -> Number
 D :: {-# UNPACK #-} !Double -> Number
+type Parser = Parser Text
+
+-- | Parse a scientific number.
+--   
+--   The syntax accepted by this parser is the same as for <a>double</a>.
+scientific :: Parser Scientific
 
 -- | Attempt a parse, and if it fails, rewind the input so that no input
 --   appears to have been consumed.
@@ -1024,132 +1016,19 @@ D :: {-# UNPACK #-} !Double -> Number
 --   parsers always backtrack on failure.
 try :: Parser i a -> Parser i a
 
--- | Name the parser, in case failure occurs.
-(<?>) :: Parser i a -> String -> Parser i a
-infix 0 <?>
-
--- | <tt>choice ps</tt> tries to apply the actions in the list <tt>ps</tt>
---   in order, until one of them succeeds. Returns the value of the
---   succeeding action.
-choice :: Alternative f => [f a] -> f a
-
--- | <tt>option x p</tt> tries to apply action <tt>p</tt>. If <tt>p</tt>
---   fails without consuming input, it returns the value <tt>x</tt>,
---   otherwise the value returned by <tt>p</tt>.
+-- | Consume input as long as the predicate returns <a>True</a>, and return
+--   the consumed input.
 --   
---   <pre>
---   priority  = option 0 (digitToInt &lt;$&gt; digit)
---   </pre>
-option :: Alternative f => a -> f a -> f a
-
--- | <tt>many' p</tt> applies the action <tt>p</tt> <i>zero</i> or more
---   times. Returns a list of the returned values of <tt>p</tt>. The value
---   returned by <tt>p</tt> is forced to WHNF.
+--   This parser does not fail. It will return an empty string if the
+--   predicate returns <a>False</a> on the first character of input.
 --   
---   <pre>
---   word  = many' letter
---   </pre>
-many' :: MonadPlus m => m a -> m [a]
+--   <i>Note</i>: Because this parser does not fail, do not use it with
+--   combinators such as <a>many</a>, because such parsers loop until a
+--   failure occurs. Careless use will thus result in an infinite loop.
+takeWhile :: (Char -> Bool) -> Parser Text
 
--- | <tt>many1 p</tt> applies the action <tt>p</tt> <i>one</i> or more
---   times. Returns a list of the returned values of <tt>p</tt>.
---   
---   <pre>
---   word  = many1 letter
---   </pre>
-many1 :: Alternative f => f a -> f [a]
-
--- | <tt>many1' p</tt> applies the action <tt>p</tt> <i>one</i> or more
---   times. Returns a list of the returned values of <tt>p</tt>. The value
---   returned by <tt>p</tt> is forced to WHNF.
---   
---   <pre>
---   word  = many1' letter
---   </pre>
-many1' :: MonadPlus m => m a -> m [a]
-
--- | <tt>sepBy p sep</tt> applies <i>zero</i> or more occurrences of
---   <tt>p</tt>, separated by <tt>sep</tt>. Returns a list of the values
---   returned by <tt>p</tt>.
---   
---   <pre>
---   commaSep p  = p `sepBy` (char ',')
---   </pre>
-sepBy :: Alternative f => f a -> f s -> f [a]
-
--- | <tt>sepBy' p sep</tt> applies <i>zero</i> or more occurrences of
---   <tt>p</tt>, separated by <tt>sep</tt>. Returns a list of the values
---   returned by <tt>p</tt>. The value returned by <tt>p</tt> is forced to
---   WHNF.
---   
---   <pre>
---   commaSep p  = p `sepBy'` (char ',')
---   </pre>
-sepBy' :: MonadPlus m => m a -> m s -> m [a]
-
--- | <tt>sepBy1 p sep</tt> applies <i>one</i> or more occurrences of
---   <tt>p</tt>, separated by <tt>sep</tt>. Returns a list of the values
---   returned by <tt>p</tt>.
---   
---   <pre>
---   commaSep p  = p `sepBy1` (char ',')
---   </pre>
-sepBy1 :: Alternative f => f a -> f s -> f [a]
-
--- | <tt>sepBy1' p sep</tt> applies <i>one</i> or more occurrences of
---   <tt>p</tt>, separated by <tt>sep</tt>. Returns a list of the values
---   returned by <tt>p</tt>. The value returned by <tt>p</tt> is forced to
---   WHNF.
---   
---   <pre>
---   commaSep p  = p `sepBy1'` (char ',')
---   </pre>
-sepBy1' :: MonadPlus m => m a -> m s -> m [a]
-
--- | <tt>manyTill p end</tt> applies action <tt>p</tt> <i>zero</i> or more
---   times until action <tt>end</tt> succeeds, and returns the list of
---   values returned by <tt>p</tt>. This can be used to scan comments:
---   
---   <pre>
---   simpleComment   = string "&lt;!--" *&gt; manyTill anyChar (string "--&gt;")
---   </pre>
---   
---   (Note the overlapping parsers <tt>anyChar</tt> and <tt>string
---   "--&gt;"</tt>. While this will work, it is not very efficient, as it
---   will cause a lot of backtracking.)
-manyTill :: Alternative f => f a -> f b -> f [a]
-
--- | <tt>manyTill' p end</tt> applies action <tt>p</tt> <i>zero</i> or more
---   times until action <tt>end</tt> succeeds, and returns the list of
---   values returned by <tt>p</tt>. This can be used to scan comments:
---   
---   <pre>
---   simpleComment   = string "&lt;!--" *&gt; manyTill' anyChar (string "--&gt;")
---   </pre>
---   
---   (Note the overlapping parsers <tt>anyChar</tt> and <tt>string
---   "--&gt;"</tt>. While this will work, it is not very efficient, as it
---   will cause a lot of backtracking.)
---   
---   The value returned by <tt>p</tt> is forced to WHNF.
-manyTill' :: MonadPlus m => m a -> m b -> m [a]
-
--- | Skip zero or more instances of an action.
-skipMany :: Alternative f => f a -> f ()
-
--- | Skip one or more instances of an action.
-skipMany1 :: Alternative f => f a -> f ()
-
--- | Apply the given action repeatedly, returning every result.
-count :: Monad m => Int -> m a -> m [a]
-
--- | Combine two alternatives.
-eitherP :: Alternative f => f a -> f b -> f (Either a b)
-
--- | If a parser has returned a <a>Partial</a> result, supply it with more
---   input.
-feed :: Monoid i => IResult i r -> i -> IResult i r
-type Parser = Parser Text
+-- | Consume exactly <tt>n</tt> characters of input.
+take :: Int -> Parser Text
 
 -- | The parser <tt>satisfy p</tt> succeeds for any character for which the
 --   predicate <tt>p</tt> returns <a>True</a>. Returns the character that
@@ -1161,23 +1040,8 @@ type Parser = Parser Text
 --   </pre>
 satisfy :: (Char -> Bool) -> Parser Char
 
--- | The parser <tt>skip p</tt> succeeds for any character for which the
---   predicate <tt>p</tt> returns <a>True</a>.
---   
---   <pre>
---   skipDigit = skip isDigit
---       where isDigit c = c &gt;= '0' &amp;&amp; c &lt;= '9'
---   </pre>
-skip :: (Char -> Bool) -> Parser ()
-
--- | The parser <tt>satisfyWith f p</tt> transforms a character, and
---   succeeds if the predicate <tt>p</tt> returns <a>True</a> on the
---   transformed value. The parser returns the transformed character that
---   was parsed.
-satisfyWith :: (Char -> a) -> (a -> Bool) -> Parser a
-
--- | Consume exactly <tt>n</tt> characters of input.
-take :: Int -> Parser Text
+-- | Match a specific character.
+char :: Char -> Parser Char
 
 -- | <tt>string s</tt> parses a sequence of characters that identically
 --   match <tt>s</tt>. Returns the parsed string (i.e. <tt>s</tt>). This
@@ -1198,158 +1062,83 @@ take :: Int -> Parser Text
 --   that input, because the failed first branch will consume nothing.
 string :: Text -> Parser Text
 
--- | Satisfy a literal string, ignoring case.
---   
---   Note: this function is currently quite inefficient. Unicode case
---   folding can change the length of a string ("ß" becomes "ss"), which
---   makes a simple, efficient implementation tricky. We have (for now)
---   chosen simplicity over efficiency.
+-- | <tt>choice ps</tt> tries to apply the actions in the list <tt>ps</tt>
+--   in order, until one of them succeeds. Returns the value of the
+--   succeeding action.
+choice :: Alternative f => [f a] -> f a
 
--- | <i>Deprecated: this is very inefficient, use asciiCI instead</i>
-stringCI :: Text -> Parser Text
+-- | Apply the given action repeatedly, returning every result.
+count :: Monad m => Int -> m a -> m [a]
 
--- | Satisfy a literal string, ignoring case for characters in the ASCII
---   range.
-asciiCI :: Text -> Parser Text
-
--- | Skip past input for as long as the predicate returns <a>True</a>.
-skipWhile :: (Char -> Bool) -> Parser ()
-
--- | Consume input as long as the predicate returns <a>False</a> (i.e.
---   until it returns <a>True</a>), and return the consumed input.
---   
---   This parser does not fail. It will return an empty string if the
---   predicate returns <a>True</a> on the first character of input.
---   
---   <i>Note</i>: Because this parser does not fail, do not use it with
---   combinators such as <a>many</a>, because such parsers loop until a
---   failure occurs. Careless use will thus result in an infinite loop.
-takeTill :: (Char -> Bool) -> Parser Text
-
--- | Consume input as long as the predicate returns <a>True</a>, and return
---   the consumed input.
---   
---   This parser does not fail. It will return an empty string if the
---   predicate returns <a>False</a> on the first character of input.
---   
---   <i>Note</i>: Because this parser does not fail, do not use it with
---   combinators such as <a>many</a>, because such parsers loop until a
---   failure occurs. Careless use will thus result in an infinite loop.
-takeWhile :: (Char -> Bool) -> Parser Text
-
--- | Consume all remaining input and return it as a single string.
-takeText :: Parser Text
-
--- | Consume all remaining input and return it as a single string.
-takeLazyText :: Parser Text
-
--- | A stateful scanner. The predicate consumes and transforms a state
---   argument, and each transformed state is passed to successive
---   invocations of the predicate on each character of the input until one
---   returns <a>Nothing</a> or the input ends.
---   
---   This parser does not fail. It will return an empty string if the
---   predicate returns <a>Nothing</a> on the first character of input.
---   
---   <i>Note</i>: Because this parser does not fail, do not use it with
---   combinators such as <a>many</a>, because such parsers loop until a
---   failure occurs. Careless use will thus result in an infinite loop.
-scan :: s -> (s -> Char -> Maybe s) -> Parser Text
-
--- | Like <a>scan</a>, but generalized to return the final state of the
---   scanner.
-runScanner :: s -> (s -> Char -> Maybe s) -> Parser (Text, s)
-
--- | Consume input as long as the predicate returns <a>True</a>, and return
---   the consumed input.
---   
---   This parser requires the predicate to succeed on at least one
---   character of input: it will fail if the predicate never returns
---   <a>True</a> or if there is no input left.
-takeWhile1 :: (Char -> Bool) -> Parser Text
-
--- | Match any character in a set.
+-- | <tt>option x p</tt> tries to apply action <tt>p</tt>. If <tt>p</tt>
+--   fails without consuming input, it returns the value <tt>x</tt>,
+--   otherwise the value returned by <tt>p</tt>.
 --   
 --   <pre>
---   vowel = inClass "aeiou"
+--   priority  = option 0 (digitToInt &lt;$&gt; digit)
 --   </pre>
---   
---   Range notation is supported.
+option :: Alternative f => a -> f a -> f a
+
+-- | <tt>many1 p</tt> applies the action <tt>p</tt> <i>one</i> or more
+--   times. Returns a list of the returned values of <tt>p</tt>.
 --   
 --   <pre>
---   halfAlphabet = inClass "a-nA-N"
+--   word  = many1 letter
+--   </pre>
+many1 :: Alternative f => f a -> f [a]
+
+-- | Skip zero or more instances of an action.
+skipMany :: Alternative f => f a -> f ()
+
+-- | Skip one or more instances of an action.
+skipMany1 :: Alternative f => f a -> f ()
+
+-- | <tt>sepBy p sep</tt> applies <i>zero</i> or more occurrences of
+--   <tt>p</tt>, separated by <tt>sep</tt>. Returns a list of the values
+--   returned by <tt>p</tt>.
+--   
+--   <pre>
+--   commaSep p  = p `sepBy` (char ',')
+--   </pre>
+sepBy :: Alternative f => f a -> f s -> f [a]
+
+-- | <tt>sepBy1 p sep</tt> applies <i>one</i> or more occurrences of
+--   <tt>p</tt>, separated by <tt>sep</tt>. Returns a list of the values
+--   returned by <tt>p</tt>.
+--   
+--   <pre>
+--   commaSep p  = p `sepBy1` (char ',')
+--   </pre>
+sepBy1 :: Alternative f => f a -> f s -> f [a]
+
+-- | <tt>manyTill p end</tt> applies action <tt>p</tt> <i>zero</i> or more
+--   times until action <tt>end</tt> succeeds, and returns the list of
+--   values returned by <tt>p</tt>. This can be used to scan comments:
+--   
+--   <pre>
+--   simpleComment   = string "&lt;!--" *&gt; manyTill anyChar (string "--&gt;")
 --   </pre>
 --   
---   To add a literal <tt>'-'</tt> to a set, place it at the beginning or
---   end of the string.
-inClass :: String -> Char -> Bool
+--   (Note the overlapping parsers <tt>anyChar</tt> and <tt>string
+--   "--&gt;"</tt>. While this will work, it is not very efficient, as it
+--   will cause a lot of backtracking.)
+manyTill :: Alternative f => f a -> f b -> f [a]
 
--- | Match any character not in a set.
-notInClass :: String -> Char -> Bool
-
--- | Match any character.
-anyChar :: Parser Char
-
--- | Match a specific character.
-char :: Char -> Parser Char
-
--- | Match any character except the given one.
-notChar :: Char -> Parser Char
-
--- | Match any character, to perform lookahead. Returns <a>Nothing</a> if
---   end of input has been reached. Does not consume any input.
+-- | The parser <tt>skip p</tt> succeeds for any character for which the
+--   predicate <tt>p</tt> returns <a>True</a>.
 --   
---   <i>Note</i>: Because this parser does not fail, do not use it with
---   combinators such as <a>many</a>, because such parsers loop until a
---   failure occurs. Careless use will thus result in an infinite loop.
-peekChar :: Parser (Maybe Char)
-
--- | Match any character, to perform lookahead. Does not consume any input,
---   but will fail if end of input has been reached.
-peekChar' :: Parser Char
-
--- | Match either a single newline character <tt>'\n'</tt>, or a carriage
---   return followed by a newline character <tt>"\r\n"</tt>.
-endOfLine :: Parser ()
+--   <pre>
+--   skipDigit = skip isDigit
+--       where isDigit c = c &gt;= '0' &amp;&amp; c &lt;= '9'
+--   </pre>
+skip :: (Char -> Bool) -> Parser ()
 
 -- | Return both the result of a parse and the portion of the input that
 --   was consumed while it was being parsed.
 match :: Parser a -> Parser (Text, a)
 
--- | A predicate that matches either a carriage return <tt>'\r'</tt> or
---   newline <tt>'\n'</tt> character.
-isEndOfLine :: Char -> Bool
-
--- | A predicate that matches either a space <tt>' '</tt> or horizontal tab
---   <tt>'\t'</tt> character.
-isHorizontalSpace :: Char -> Bool
-
--- | Parse and decode an unsigned hexadecimal number. The hex digits
---   <tt>'a'</tt> through <tt>'f'</tt> may be upper or lower case.
---   
---   This parser does not accept a leading <tt>"0x"</tt> string.
-hexadecimal :: (Integral a, Bits a) => Parser a
-
--- | Parse and decode an unsigned decimal number.
-decimal :: Integral a => Parser a
-
--- | Parse a number with an optional leading <tt>'+'</tt> or <tt>'-'</tt>
---   sign character.
-signed :: Num a => Parser a -> Parser a
-
--- | Parse a rational number.
---   
---   The syntax accepted by this parser is the same as for <a>double</a>.
---   
---   <i>Note</i>: this parser is not safe for use with inputs from
---   untrusted sources. An input with a suitably large exponent such as
---   <tt>"1e1000000000"</tt> will cause a huge <a>Integer</a> to be
---   allocated, resulting in what is effectively a denial-of-service
---   attack.
---   
---   In most cases, it is better to use <a>double</a> or <a>scientific</a>
---   instead.
-rational :: Fractional a => Parser a
+-- | Parse a space character, as recognised by <a>isSpace</a>.
+space :: Parser Char
 
 -- | Parse a <a>Double</a>.
 --   
@@ -1395,29 +1184,205 @@ rational :: Fractional a => Parser a
 --   "Infinity".
 double :: Parser Double
 
--- | Parse a number, attempting to preserve both speed and precision.
+-- | Parse a rational number.
 --   
 --   The syntax accepted by this parser is the same as for <a>double</a>.
 --   
---   This function does not accept string representations of "NaN" or
---   "Infinity".
-
--- | <i>Deprecated: Use <a>scientific</a> instead.</i>
-number :: Parser Number
-
--- | Parse a scientific number.
+--   <i>Note</i>: this parser is not safe for use with inputs from
+--   untrusted sources. An input with a suitably large exponent such as
+--   <tt>"1e1000000000"</tt> will cause a huge <a>Integer</a> to be
+--   allocated, resulting in what is effectively a denial-of-service
+--   attack.
 --   
---   The syntax accepted by this parser is the same as for <a>double</a>.
-scientific :: Parser Scientific
+--   In most cases, it is better to use <a>double</a> or <a>scientific</a>
+--   instead.
+rational :: Fractional a => Parser a
+
+-- | Parse and decode an unsigned decimal number.
+decimal :: Integral a => Parser a
+
+-- | Parse and decode an unsigned hexadecimal number. The hex digits
+--   <tt>'a'</tt> through <tt>'f'</tt> may be upper or lower case.
+--   
+--   This parser does not accept a leading <tt>"0x"</tt> string.
+hexadecimal :: (Integral a, Bits a) => Parser a
+
+-- | Parse a number with an optional leading <tt>'+'</tt> or <tt>'-'</tt>
+--   sign character.
+signed :: Num a => Parser a -> Parser a
+
+-- | Compare two <a>IResult</a> values for equality.
+--   
+--   If both <a>IResult</a>s are <a>Partial</a>, the result will be
+--   <a>Nothing</a>, as they are incomplete and hence their equality cannot
+--   be known. (This is why there is no <a>Eq</a> instance for
+--   <a>IResult</a>.)
+compareResults :: (Eq i, Eq r) => IResult i r -> IResult i r -> Maybe Bool
+
+-- | If a parser has returned a <a>Partial</a> result, supply it with more
+--   input.
+feed :: Monoid i => IResult i r -> i -> IResult i r
+
+-- | The parser <tt>satisfyWith f p</tt> transforms a character, and
+--   succeeds if the predicate <tt>p</tt> returns <a>True</a> on the
+--   transformed value. The parser returns the transformed character that
+--   was parsed.
+satisfyWith :: (Char -> a) -> (a -> Bool) -> Parser a
+
+-- | Match any character in a set.
+--   
+--   <pre>
+--   vowel = inClass "aeiou"
+--   </pre>
+--   
+--   Range notation is supported.
+--   
+--   <pre>
+--   halfAlphabet = inClass "a-nA-N"
+--   </pre>
+--   
+--   To add a literal <tt>'-'</tt> to a set, place it at the beginning or
+--   end of the string.
+inClass :: String -> Char -> Bool
+
+-- | Match any character not in a set.
+notInClass :: String -> Char -> Bool
+
+-- | Skip past input for as long as the predicate returns <a>True</a>.
+skipWhile :: (Char -> Bool) -> Parser ()
+
+-- | A stateful scanner. The predicate consumes and transforms a state
+--   argument, and each transformed state is passed to successive
+--   invocations of the predicate on each character of the input until one
+--   returns <a>Nothing</a> or the input ends.
+--   
+--   This parser does not fail. It will return an empty string if the
+--   predicate returns <a>Nothing</a> on the first character of input.
+--   
+--   <i>Note</i>: Because this parser does not fail, do not use it with
+--   combinators such as <a>many</a>, because such parsers loop until a
+--   failure occurs. Careless use will thus result in an infinite loop.
+scan :: s -> (s -> Char -> Maybe s) -> Parser Text
+
+-- | Like <a>scan</a>, but generalized to return the final state of the
+--   scanner.
+runScanner :: s -> (s -> Char -> Maybe s) -> Parser (Text, s)
+
+-- | Consume input as long as the predicate returns <a>True</a>, and return
+--   the consumed input.
+--   
+--   This parser requires the predicate to succeed on at least one
+--   character of input: it will fail if the predicate never returns
+--   <a>True</a> or if there is no input left.
+takeWhile1 :: (Char -> Bool) -> Parser Text
+
+-- | Consume input as long as the predicate returns <a>False</a> (i.e.
+--   until it returns <a>True</a>), and return the consumed input.
+--   
+--   This parser does not fail. It will return an empty string if the
+--   predicate returns <a>True</a> on the first character of input.
+--   
+--   <i>Note</i>: Because this parser does not fail, do not use it with
+--   combinators such as <a>many</a>, because such parsers loop until a
+--   failure occurs. Careless use will thus result in an infinite loop.
+takeTill :: (Char -> Bool) -> Parser Text
+
+-- | Name the parser, in case failure occurs.
+(<?>) :: Parser i a -> String -> Parser i a
+infix 0 <?>
+
+-- | <tt>many' p</tt> applies the action <tt>p</tt> <i>zero</i> or more
+--   times. Returns a list of the returned values of <tt>p</tt>. The value
+--   returned by <tt>p</tt> is forced to WHNF.
+--   
+--   <pre>
+--   word  = many' letter
+--   </pre>
+many' :: MonadPlus m => m a -> m [a]
+
+-- | <tt>many1' p</tt> applies the action <tt>p</tt> <i>one</i> or more
+--   times. Returns a list of the returned values of <tt>p</tt>. The value
+--   returned by <tt>p</tt> is forced to WHNF.
+--   
+--   <pre>
+--   word  = many1' letter
+--   </pre>
+many1' :: MonadPlus m => m a -> m [a]
+
+-- | <tt>manyTill' p end</tt> applies action <tt>p</tt> <i>zero</i> or more
+--   times until action <tt>end</tt> succeeds, and returns the list of
+--   values returned by <tt>p</tt>. This can be used to scan comments:
+--   
+--   <pre>
+--   simpleComment   = string "&lt;!--" *&gt; manyTill' anyChar (string "--&gt;")
+--   </pre>
+--   
+--   (Note the overlapping parsers <tt>anyChar</tt> and <tt>string
+--   "--&gt;"</tt>. While this will work, it is not very efficient, as it
+--   will cause a lot of backtracking.)
+--   
+--   The value returned by <tt>p</tt> is forced to WHNF.
+manyTill' :: MonadPlus m => m a -> m b -> m [a]
+
+-- | <tt>sepBy' p sep</tt> applies <i>zero</i> or more occurrences of
+--   <tt>p</tt>, separated by <tt>sep</tt>. Returns a list of the values
+--   returned by <tt>p</tt>. The value returned by <tt>p</tt> is forced to
+--   WHNF.
+--   
+--   <pre>
+--   commaSep p  = p `sepBy'` (char ',')
+--   </pre>
+sepBy' :: MonadPlus m => m a -> m s -> m [a]
+
+-- | <tt>sepBy1' p sep</tt> applies <i>one</i> or more occurrences of
+--   <tt>p</tt>, separated by <tt>sep</tt>. Returns a list of the values
+--   returned by <tt>p</tt>. The value returned by <tt>p</tt> is forced to
+--   WHNF.
+--   
+--   <pre>
+--   commaSep p  = p `sepBy1'` (char ',')
+--   </pre>
+sepBy1' :: MonadPlus m => m a -> m s -> m [a]
+
+-- | Combine two alternatives.
+eitherP :: Alternative f => f a -> f b -> f (Either a b)
+
+-- | Match only if all input has been consumed.
+endOfInput :: forall t. Chunk t => Parser t ()
+
+-- | Return an indication of whether the end of input has been reached.
+atEnd :: Chunk t => Parser t Bool
+
+-- | Match any character.
+anyChar :: Parser Char
+
+-- | Match any character except the given one.
+notChar :: Char -> Parser Char
+
+-- | Match any character, to perform lookahead. Returns <a>Nothing</a> if
+--   end of input has been reached. Does not consume any input.
+--   
+--   <i>Note</i>: Because this parser does not fail, do not use it with
+--   combinators such as <a>many</a>, because such parsers loop until a
+--   failure occurs. Careless use will thus result in an infinite loop.
+peekChar :: Parser (Maybe Char)
+
+-- | Match any character, to perform lookahead. Does not consume any input,
+--   but will fail if end of input has been reached.
+peekChar' :: Parser Char
 
 -- | Parse a single digit, as recognised by <a>isDigit</a>.
 digit :: Parser Char
 
--- | Parse a letter, as recognised by <a>isAlpha</a>.
-letter :: Parser Char
+-- | Satisfy a literal string, ignoring case.
+--   
+--   Note: this function is currently quite inefficient. Unicode case
+--   folding can change the length of a string ("ß" becomes "ss"), which
+--   makes a simple, efficient implementation tricky. We have (for now)
+--   chosen simplicity over efficiency.
 
--- | Parse a space character, as recognised by <a>isSpace</a>.
-space :: Parser Char
+-- | <i>Deprecated: this is very inefficient, use asciiCI instead</i>
+stringCI :: Text -> Parser Text
 
 -- | Skip over white space.
 skipSpace :: Parser ()
@@ -1435,6 +1400,41 @@ skipSpace :: Parser ()
 -- | <i>Deprecated: This is no longer necessary, and will be removed. Use
 --   <a>&lt;*</a> instead.</i>
 (<*.) :: Parser a -> Text -> Parser a
+
+-- | Match either a single newline character <tt>'\n'</tt>, or a carriage
+--   return followed by a newline character <tt>"\r\n"</tt>.
+endOfLine :: Parser ()
+
+-- | A predicate that matches either a carriage return <tt>'\r'</tt> or
+--   newline <tt>'\n'</tt> character.
+isEndOfLine :: Char -> Bool
+
+-- | A predicate that matches either a space <tt>' '</tt> or horizontal tab
+--   <tt>'\t'</tt> character.
+isHorizontalSpace :: Char -> Bool
+
+-- | Parse a number, attempting to preserve both speed and precision.
+--   
+--   The syntax accepted by this parser is the same as for <a>double</a>.
+--   
+--   This function does not accept string representations of "NaN" or
+--   "Infinity".
+
+-- | <i>Deprecated: Use <a>scientific</a> instead.</i>
+number :: Parser Number
+
+-- | Parse a letter, as recognised by <a>isAlpha</a>.
+letter :: Parser Char
+
+-- | Satisfy a literal string, ignoring case for characters in the ASCII
+--   range.
+asciiCI :: Text -> Parser Text
+
+-- | Consume all remaining input and return it as a single string.
+takeText :: Parser Text
+
+-- | Consume all remaining input and return it as a single string.
+takeLazyText :: Parser Text
 
 -- | Run a parser and return its result.
 parse :: Parser a -> Text -> Result a
@@ -1862,20 +1862,7 @@ Fail :: ByteString -> [String] -> String -> Result r
 -- | The parse succeeded. The <a>ByteString</a> is the input that had not
 --   yet been consumed (if any) when the parse succeeded.
 Done :: ByteString -> r -> Result r
-
--- | Compare two <a>IResult</a> values for equality.
---   
---   If both <a>IResult</a>s are <a>Partial</a>, the result will be
---   <a>Nothing</a>, as they are incomplete and hence their equality cannot
---   be known. (This is why there is no <a>Eq</a> instance for
---   <a>IResult</a>.)
-compareResults :: (Eq i, Eq r) => IResult i r -> IResult i r -> Maybe Bool
-
--- | Match only if all input has been consumed.
-endOfInput :: forall t. Chunk t => Parser t ()
-
--- | Return an indication of whether the end of input has been reached.
-atEnd :: Chunk t => Parser t Bool
+type Parser = Parser ByteString
 
 -- | Attempt a parse, and if it fails, rewind the input so that no input
 --   appears to have been consumed.
@@ -1884,132 +1871,19 @@ atEnd :: Chunk t => Parser t Bool
 --   parsers always backtrack on failure.
 try :: Parser i a -> Parser i a
 
--- | Name the parser, in case failure occurs.
-(<?>) :: Parser i a -> String -> Parser i a
-infix 0 <?>
-
--- | <tt>choice ps</tt> tries to apply the actions in the list <tt>ps</tt>
---   in order, until one of them succeeds. Returns the value of the
---   succeeding action.
-choice :: Alternative f => [f a] -> f a
-
--- | <tt>option x p</tt> tries to apply action <tt>p</tt>. If <tt>p</tt>
---   fails without consuming input, it returns the value <tt>x</tt>,
---   otherwise the value returned by <tt>p</tt>.
+-- | Consume input as long as the predicate returns <a>True</a>, and return
+--   the consumed input.
 --   
---   <pre>
---   priority  = option 0 (digitToInt &lt;$&gt; digit)
---   </pre>
-option :: Alternative f => a -> f a -> f a
-
--- | <tt>many' p</tt> applies the action <tt>p</tt> <i>zero</i> or more
---   times. Returns a list of the returned values of <tt>p</tt>. The value
---   returned by <tt>p</tt> is forced to WHNF.
+--   This parser does not fail. It will return an empty string if the
+--   predicate returns <a>False</a> on the first byte of input.
 --   
---   <pre>
---   word  = many' letter
---   </pre>
-many' :: MonadPlus m => m a -> m [a]
+--   <i>Note</i>: Because this parser does not fail, do not use it with
+--   combinators such as <a>many</a>, because such parsers loop until a
+--   failure occurs. Careless use will thus result in an infinite loop.
+takeWhile :: (Word8 -> Bool) -> Parser ByteString
 
--- | <tt>many1 p</tt> applies the action <tt>p</tt> <i>one</i> or more
---   times. Returns a list of the returned values of <tt>p</tt>.
---   
---   <pre>
---   word  = many1 letter
---   </pre>
-many1 :: Alternative f => f a -> f [a]
-
--- | <tt>many1' p</tt> applies the action <tt>p</tt> <i>one</i> or more
---   times. Returns a list of the returned values of <tt>p</tt>. The value
---   returned by <tt>p</tt> is forced to WHNF.
---   
---   <pre>
---   word  = many1' letter
---   </pre>
-many1' :: MonadPlus m => m a -> m [a]
-
--- | <tt>sepBy p sep</tt> applies <i>zero</i> or more occurrences of
---   <tt>p</tt>, separated by <tt>sep</tt>. Returns a list of the values
---   returned by <tt>p</tt>.
---   
---   <pre>
---   commaSep p  = p `sepBy` (char ',')
---   </pre>
-sepBy :: Alternative f => f a -> f s -> f [a]
-
--- | <tt>sepBy' p sep</tt> applies <i>zero</i> or more occurrences of
---   <tt>p</tt>, separated by <tt>sep</tt>. Returns a list of the values
---   returned by <tt>p</tt>. The value returned by <tt>p</tt> is forced to
---   WHNF.
---   
---   <pre>
---   commaSep p  = p `sepBy'` (char ',')
---   </pre>
-sepBy' :: MonadPlus m => m a -> m s -> m [a]
-
--- | <tt>sepBy1 p sep</tt> applies <i>one</i> or more occurrences of
---   <tt>p</tt>, separated by <tt>sep</tt>. Returns a list of the values
---   returned by <tt>p</tt>.
---   
---   <pre>
---   commaSep p  = p `sepBy1` (char ',')
---   </pre>
-sepBy1 :: Alternative f => f a -> f s -> f [a]
-
--- | <tt>sepBy1' p sep</tt> applies <i>one</i> or more occurrences of
---   <tt>p</tt>, separated by <tt>sep</tt>. Returns a list of the values
---   returned by <tt>p</tt>. The value returned by <tt>p</tt> is forced to
---   WHNF.
---   
---   <pre>
---   commaSep p  = p `sepBy1'` (char ',')
---   </pre>
-sepBy1' :: MonadPlus m => m a -> m s -> m [a]
-
--- | <tt>manyTill p end</tt> applies action <tt>p</tt> <i>zero</i> or more
---   times until action <tt>end</tt> succeeds, and returns the list of
---   values returned by <tt>p</tt>. This can be used to scan comments:
---   
---   <pre>
---   simpleComment   = string "&lt;!--" *&gt; manyTill anyChar (string "--&gt;")
---   </pre>
---   
---   (Note the overlapping parsers <tt>anyChar</tt> and <tt>string
---   "--&gt;"</tt>. While this will work, it is not very efficient, as it
---   will cause a lot of backtracking.)
-manyTill :: Alternative f => f a -> f b -> f [a]
-
--- | <tt>manyTill' p end</tt> applies action <tt>p</tt> <i>zero</i> or more
---   times until action <tt>end</tt> succeeds, and returns the list of
---   values returned by <tt>p</tt>. This can be used to scan comments:
---   
---   <pre>
---   simpleComment   = string "&lt;!--" *&gt; manyTill' anyChar (string "--&gt;")
---   </pre>
---   
---   (Note the overlapping parsers <tt>anyChar</tt> and <tt>string
---   "--&gt;"</tt>. While this will work, it is not very efficient, as it
---   will cause a lot of backtracking.)
---   
---   The value returned by <tt>p</tt> is forced to WHNF.
-manyTill' :: MonadPlus m => m a -> m b -> m [a]
-
--- | Skip zero or more instances of an action.
-skipMany :: Alternative f => f a -> f ()
-
--- | Skip one or more instances of an action.
-skipMany1 :: Alternative f => f a -> f ()
-
--- | Apply the given action repeatedly, returning every result.
-count :: Monad m => Int -> m a -> m [a]
-
--- | Combine two alternatives.
-eitherP :: Alternative f => f a -> f b -> f (Either a b)
-
--- | If a parser has returned a <a>Partial</a> result, supply it with more
---   input.
-feed :: Monoid i => IResult i r -> i -> IResult i r
-type Parser = Parser ByteString
+-- | Consume exactly <tt>n</tt> bytes of input.
+take :: Int -> Parser ByteString
 
 -- | The parser <tt>satisfy p</tt> succeeds for any byte for which the
 --   predicate <tt>p</tt> returns <a>True</a>. Returns the byte that is
@@ -2020,23 +1894,6 @@ type Parser = Parser ByteString
 --       where isDigit w = w &gt;= 48 &amp;&amp; w &lt;= 57
 --   </pre>
 satisfy :: (Word8 -> Bool) -> Parser Word8
-
--- | The parser <tt>skip p</tt> succeeds for any byte for which the
---   predicate <tt>p</tt> returns <a>True</a>.
---   
---   <pre>
---   skipDigit = skip isDigit
---       where isDigit w = w &gt;= 48 &amp;&amp; w &lt;= 57
---   </pre>
-skip :: (Word8 -> Bool) -> Parser ()
-
--- | The parser <tt>satisfyWith f p</tt> transforms a byte, and succeeds if
---   the predicate <tt>p</tt> returns <a>True</a> on the transformed value.
---   The parser returns the transformed byte that was parsed.
-satisfyWith :: (Word8 -> a) -> (a -> Bool) -> Parser a
-
--- | Consume exactly <tt>n</tt> bytes of input.
-take :: Int -> Parser ByteString
 
 -- | <tt>string s</tt> parses a sequence of bytes that identically match
 --   <tt>s</tt>. Returns the parsed string (i.e. <tt>s</tt>). This parser
@@ -2057,48 +1914,140 @@ take :: Int -> Parser ByteString
 --   that input, because the failed first branch will consume nothing.
 string :: ByteString -> Parser ByteString
 
+-- | <tt>choice ps</tt> tries to apply the actions in the list <tt>ps</tt>
+--   in order, until one of them succeeds. Returns the value of the
+--   succeeding action.
+choice :: Alternative f => [f a] -> f a
+
+-- | Apply the given action repeatedly, returning every result.
+count :: Monad m => Int -> m a -> m [a]
+
+-- | <tt>option x p</tt> tries to apply action <tt>p</tt>. If <tt>p</tt>
+--   fails without consuming input, it returns the value <tt>x</tt>,
+--   otherwise the value returned by <tt>p</tt>.
+--   
+--   <pre>
+--   priority  = option 0 (digitToInt &lt;$&gt; digit)
+--   </pre>
+option :: Alternative f => a -> f a -> f a
+
+-- | <tt>many1 p</tt> applies the action <tt>p</tt> <i>one</i> or more
+--   times. Returns a list of the returned values of <tt>p</tt>.
+--   
+--   <pre>
+--   word  = many1 letter
+--   </pre>
+many1 :: Alternative f => f a -> f [a]
+
+-- | Skip zero or more instances of an action.
+skipMany :: Alternative f => f a -> f ()
+
+-- | Skip one or more instances of an action.
+skipMany1 :: Alternative f => f a -> f ()
+
+-- | <tt>sepBy p sep</tt> applies <i>zero</i> or more occurrences of
+--   <tt>p</tt>, separated by <tt>sep</tt>. Returns a list of the values
+--   returned by <tt>p</tt>.
+--   
+--   <pre>
+--   commaSep p  = p `sepBy` (char ',')
+--   </pre>
+sepBy :: Alternative f => f a -> f s -> f [a]
+
+-- | <tt>sepBy1 p sep</tt> applies <i>one</i> or more occurrences of
+--   <tt>p</tt>, separated by <tt>sep</tt>. Returns a list of the values
+--   returned by <tt>p</tt>.
+--   
+--   <pre>
+--   commaSep p  = p `sepBy1` (char ',')
+--   </pre>
+sepBy1 :: Alternative f => f a -> f s -> f [a]
+
+-- | <tt>manyTill p end</tt> applies action <tt>p</tt> <i>zero</i> or more
+--   times until action <tt>end</tt> succeeds, and returns the list of
+--   values returned by <tt>p</tt>. This can be used to scan comments:
+--   
+--   <pre>
+--   simpleComment   = string "&lt;!--" *&gt; manyTill anyChar (string "--&gt;")
+--   </pre>
+--   
+--   (Note the overlapping parsers <tt>anyChar</tt> and <tt>string
+--   "--&gt;"</tt>. While this will work, it is not very efficient, as it
+--   will cause a lot of backtracking.)
+manyTill :: Alternative f => f a -> f b -> f [a]
+
+-- | The parser <tt>skip p</tt> succeeds for any byte for which the
+--   predicate <tt>p</tt> returns <a>True</a>.
+--   
+--   <pre>
+--   skipDigit = skip isDigit
+--       where isDigit w = w &gt;= 48 &amp;&amp; w &lt;= 57
+--   </pre>
+skip :: (Word8 -> Bool) -> Parser ()
+
+-- | Match a specific byte.
+word8 :: Word8 -> Parser Word8
+
+-- | Return both the result of a parse and the portion of the input that
+--   was consumed while it was being parsed.
+match :: Parser a -> Parser (ByteString, a)
+
+-- | Compare two <a>IResult</a> values for equality.
+--   
+--   If both <a>IResult</a>s are <a>Partial</a>, the result will be
+--   <a>Nothing</a>, as they are incomplete and hence their equality cannot
+--   be known. (This is why there is no <a>Eq</a> instance for
+--   <a>IResult</a>.)
+compareResults :: (Eq i, Eq r) => IResult i r -> IResult i r -> Maybe Bool
+
+-- | If a parser has returned a <a>Partial</a> result, supply it with more
+--   input.
+feed :: Monoid i => IResult i r -> i -> IResult i r
+
+-- | Match any byte.
+anyWord8 :: Parser Word8
+
+-- | Match any byte except the given one.
+notWord8 :: Word8 -> Parser Word8
+
+-- | The parser <tt>satisfyWith f p</tt> transforms a byte, and succeeds if
+--   the predicate <tt>p</tt> returns <a>True</a> on the transformed value.
+--   The parser returns the transformed byte that was parsed.
+satisfyWith :: (Word8 -> a) -> (a -> Bool) -> Parser a
+
+-- | Match any byte, to perform lookahead. Returns <a>Nothing</a> if end of
+--   input has been reached. Does not consume any input.
+--   
+--   <i>Note</i>: Because this parser does not fail, do not use it with
+--   combinators such as <a>many</a>, because such parsers loop until a
+--   failure occurs. Careless use will thus result in an infinite loop.
+peekWord8 :: Parser (Maybe Word8)
+
+-- | Match any byte, to perform lookahead. Does not consume any input, but
+--   will fail if end of input has been reached.
+peekWord8' :: Parser Word8
+
+-- | Match any byte in a set.
+--   
+--   <pre>
+--   vowel = inClass "aeiou"
+--   </pre>
+--   
+--   Range notation is supported.
+--   
+--   <pre>
+--   halfAlphabet = inClass "a-nA-N"
+--   </pre>
+--   
+--   To add a literal <tt>'-'</tt> to a set, place it at the beginning or
+--   end of the string.
+inClass :: String -> Word8 -> Bool
+
+-- | Match any byte not in a set.
+notInClass :: String -> Word8 -> Bool
+
 -- | Skip past input for as long as the predicate returns <a>True</a>.
 skipWhile :: (Word8 -> Bool) -> Parser ()
-
--- | Consume input as long as the predicate returns <a>False</a> (i.e.
---   until it returns <a>True</a>), and return the consumed input.
---   
---   This parser does not fail. It will return an empty string if the
---   predicate returns <a>True</a> on the first byte of input.
---   
---   <i>Note</i>: Because this parser does not fail, do not use it with
---   combinators such as <a>many</a>, because such parsers loop until a
---   failure occurs. Careless use will thus result in an infinite loop.
-takeTill :: (Word8 -> Bool) -> Parser ByteString
-
--- | Consume input as long as the predicate returns <a>True</a>, and return
---   the consumed input.
---   
---   This parser does not fail. It will return an empty string if the
---   predicate returns <a>False</a> on the first byte of input.
---   
---   <i>Note</i>: Because this parser does not fail, do not use it with
---   combinators such as <a>many</a>, because such parsers loop until a
---   failure occurs. Careless use will thus result in an infinite loop.
-takeWhile :: (Word8 -> Bool) -> Parser ByteString
-
--- | Consume input until immediately after the predicate returns
---   <a>True</a>, and return the consumed input.
---   
---   This parser will consume at least one <a>Word8</a> or fail.
-takeWhileIncluding :: (Word8 -> Bool) -> Parser ByteString
-
--- | Consume all remaining input and return it as a single string.
-takeByteString :: Parser ByteString
-
--- | Consume all remaining input and return it as a single string.
-takeLazyByteString :: Parser ByteString
-
--- | Return the rest of the current chunk without consuming anything.
---   
---   If the current chunk is empty, then ask for more input. If there is no
---   more input, then return <a>Nothing</a>
-getChunk :: Parser (Maybe ByteString)
 
 -- | A stateful scanner. The predicate consumes and transforms a state
 --   argument, and each transformed state is passed to successive
@@ -2125,49 +2074,100 @@ runScanner :: s -> (s -> Word8 -> Maybe s) -> Parser (ByteString, s)
 --   there is no input left.
 takeWhile1 :: (Word8 -> Bool) -> Parser ByteString
 
--- | Match any byte in a set.
+-- | Consume input until immediately after the predicate returns
+--   <a>True</a>, and return the consumed input.
 --   
---   <pre>
---   vowel = inClass "aeiou"
---   </pre>
+--   This parser will consume at least one <a>Word8</a> or fail.
+takeWhileIncluding :: (Word8 -> Bool) -> Parser ByteString
+
+-- | Consume input as long as the predicate returns <a>False</a> (i.e.
+--   until it returns <a>True</a>), and return the consumed input.
 --   
---   Range notation is supported.
---   
---   <pre>
---   halfAlphabet = inClass "a-nA-N"
---   </pre>
---   
---   To add a literal <tt>'-'</tt> to a set, place it at the beginning or
---   end of the string.
-inClass :: String -> Word8 -> Bool
-
--- | Match any byte not in a set.
-notInClass :: String -> Word8 -> Bool
-
--- | Match any byte.
-anyWord8 :: Parser Word8
-
--- | Match a specific byte.
-word8 :: Word8 -> Parser Word8
-
--- | Match any byte except the given one.
-notWord8 :: Word8 -> Parser Word8
-
--- | Match any byte, to perform lookahead. Returns <a>Nothing</a> if end of
---   input has been reached. Does not consume any input.
+--   This parser does not fail. It will return an empty string if the
+--   predicate returns <a>True</a> on the first byte of input.
 --   
 --   <i>Note</i>: Because this parser does not fail, do not use it with
 --   combinators such as <a>many</a>, because such parsers loop until a
 --   failure occurs. Careless use will thus result in an infinite loop.
-peekWord8 :: Parser (Maybe Word8)
+takeTill :: (Word8 -> Bool) -> Parser ByteString
 
--- | Match any byte, to perform lookahead. Does not consume any input, but
---   will fail if end of input has been reached.
-peekWord8' :: Parser Word8
+-- | Return the rest of the current chunk without consuming anything.
+--   
+--   If the current chunk is empty, then ask for more input. If there is no
+--   more input, then return <a>Nothing</a>
+getChunk :: Parser (Maybe ByteString)
 
--- | Return both the result of a parse and the portion of the input that
---   was consumed while it was being parsed.
-match :: Parser a -> Parser (ByteString, a)
+-- | Consume all remaining input and return it as a single string.
+takeByteString :: Parser ByteString
+
+-- | Consume all remaining input and return it as a single string.
+takeLazyByteString :: Parser ByteString
+
+-- | Name the parser, in case failure occurs.
+(<?>) :: Parser i a -> String -> Parser i a
+infix 0 <?>
+
+-- | <tt>many' p</tt> applies the action <tt>p</tt> <i>zero</i> or more
+--   times. Returns a list of the returned values of <tt>p</tt>. The value
+--   returned by <tt>p</tt> is forced to WHNF.
+--   
+--   <pre>
+--   word  = many' letter
+--   </pre>
+many' :: MonadPlus m => m a -> m [a]
+
+-- | <tt>many1' p</tt> applies the action <tt>p</tt> <i>one</i> or more
+--   times. Returns a list of the returned values of <tt>p</tt>. The value
+--   returned by <tt>p</tt> is forced to WHNF.
+--   
+--   <pre>
+--   word  = many1' letter
+--   </pre>
+many1' :: MonadPlus m => m a -> m [a]
+
+-- | <tt>manyTill' p end</tt> applies action <tt>p</tt> <i>zero</i> or more
+--   times until action <tt>end</tt> succeeds, and returns the list of
+--   values returned by <tt>p</tt>. This can be used to scan comments:
+--   
+--   <pre>
+--   simpleComment   = string "&lt;!--" *&gt; manyTill' anyChar (string "--&gt;")
+--   </pre>
+--   
+--   (Note the overlapping parsers <tt>anyChar</tt> and <tt>string
+--   "--&gt;"</tt>. While this will work, it is not very efficient, as it
+--   will cause a lot of backtracking.)
+--   
+--   The value returned by <tt>p</tt> is forced to WHNF.
+manyTill' :: MonadPlus m => m a -> m b -> m [a]
+
+-- | <tt>sepBy' p sep</tt> applies <i>zero</i> or more occurrences of
+--   <tt>p</tt>, separated by <tt>sep</tt>. Returns a list of the values
+--   returned by <tt>p</tt>. The value returned by <tt>p</tt> is forced to
+--   WHNF.
+--   
+--   <pre>
+--   commaSep p  = p `sepBy'` (char ',')
+--   </pre>
+sepBy' :: MonadPlus m => m a -> m s -> m [a]
+
+-- | <tt>sepBy1' p sep</tt> applies <i>one</i> or more occurrences of
+--   <tt>p</tt>, separated by <tt>sep</tt>. Returns a list of the values
+--   returned by <tt>p</tt>. The value returned by <tt>p</tt> is forced to
+--   WHNF.
+--   
+--   <pre>
+--   commaSep p  = p `sepBy1'` (char ',')
+--   </pre>
+sepBy1' :: MonadPlus m => m a -> m s -> m [a]
+
+-- | Combine two alternatives.
+eitherP :: Alternative f => f a -> f b -> f (Either a b)
+
+-- | Match only if all input has been consumed.
+endOfInput :: forall t. Chunk t => Parser t ()
+
+-- | Return an indication of whether the end of input has been reached.
+atEnd :: Chunk t => Parser t Bool
 
 -- | Run a parser and return its result.
 parse :: Parser a -> ByteString -> Result a

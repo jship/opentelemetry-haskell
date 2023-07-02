@@ -1,6 +1,6 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE CPP, BangPatterns, MagicHash, CApiFFI, UnliftedFFITypes #-}</span><span>
 </span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE Trustworthy #-}</span><span>
-</span><span id="line-3"></span><span class="hs-comment">-- | A module containing low-level hash primitives.</span><span>
+</span><span id="line-3"></span><span class="annot"><span class="hs-comment">-- | A module containing low-level hash primitives.</span></span><span>
 </span><span id="line-4"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Data.Hashable.LowLevel</span><span> </span><span class="hs-special">(</span><span>
 </span><span id="line-5"></span><span>    </span><span class="annot"><a href="Data.Hashable.LowLevel.html#Salt"><span class="hs-identifier">Salt</span></a></span><span class="hs-special">,</span><span>
 </span><span id="line-6"></span><span>    </span><span class="annot"><a href="Data.Hashable.LowLevel.html#defaultSalt"><span class="hs-identifier">defaultSalt</span></a></span><span class="hs-special">,</span><span>
@@ -37,7 +37,7 @@
 </span><span id="line-37"></span><span class="hs-keyword">foreign</span><span> </span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">capi</span><span> </span><span class="hs-string">&quot;HsHashable.h hs_hashable_init&quot;</span><span> </span><span class="hs-identifier">initialSeedC</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier">IO</span><span> </span><span class="hs-identifier">Word64</span><span class="hs-cpp">
 #endif
 </span><span>
-</span><span id="line-40"></span><span class="hs-comment">-- | A default salt used in the implementation of 'hash'.</span><span>
+</span><span id="line-40"></span><span class="annot"><span class="hs-comment">-- | A default salt used in the implementation of 'hash'.</span></span><span>
 </span><span id="line-41"></span><span class="annot"><a href="Data.Hashable.LowLevel.html#defaultSalt"><span class="hs-identifier hs-type">defaultSalt</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.Hashable.LowLevel.html#Salt"><span class="hs-identifier hs-type">Salt</span></a></span><span class="hs-cpp">
 #ifdef HASHABLE_RANDOM_SEED
 </span><span class="hs-identifier">defaultSalt</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier">hashInt</span><span> </span><span class="hs-identifier">defaultSalt'</span><span> </span><span class="hs-special">(</span><span class="hs-identifier">fromIntegral</span><span> </span><span class="hs-identifier">initialSeed</span><span class="hs-special">)</span><span class="hs-cpp">
@@ -67,14 +67,16 @@
 </span><span id="line-63"></span><span class="annot"><a href="Data.Hashable.LowLevel.html#hashInt"><span class="hs-identifier hs-type">hashInt</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.Hashable.LowLevel.html#Salt"><span class="hs-identifier hs-type">Salt</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.Hashable.LowLevel.html#Salt"><span class="hs-identifier hs-type">Salt</span></a></span><span class="hs-cpp">
 #if WORD_SIZE_IN_BITS == 64
 </span><span id="hashInt"><span class="annot"><span class="annottext">hashInt :: Salt -&gt; Salt -&gt; Salt
-</span><a href="Data.Hashable.LowLevel.html#hashInt"><span class="hs-identifier hs-var hs-var">hashInt</span></a></span></span><span> </span><span id="local-6989586621679054674"><span class="annot"><span class="annottext">Salt
-</span><a href="#local-6989586621679054674"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span id="local-6989586621679054673"><span class="annot"><span class="annottext">Salt
-</span><a href="#local-6989586621679054673"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Salt
-</span><a href="#local-6989586621679054674"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><a href="Data.Hashable.LowLevel.html#hashInt"><span class="hs-identifier hs-var hs-var">hashInt</span></a></span></span><span> </span><span id="local-6989586621679057577"><span class="annot"><span class="annottext">Salt
+</span><a href="#local-6989586621679057577"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span id="local-6989586621679057578"><span class="annot"><span class="annottext">Salt
+</span><a href="#local-6989586621679057578"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Salt
+</span><a href="#local-6989586621679057577"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="annot"><span class="annottext">Salt -&gt; Salt -&gt; Salt
+forall a. Num a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">*</span></span><span> </span><span class="annot"><span class="annottext">Salt
-</span><span class="hs-number">1099511628211</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">forall a. Bits a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-number">1099511628211</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Salt -&gt; Salt -&gt; Salt
+forall a. Bits a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">`xor`</span></span><span> </span><span class="annot"><span class="annottext">Salt
-</span><a href="#local-6989586621679054673"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-cpp">
+</span><a href="#local-6989586621679057578"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-cpp">
 #else
 </span><span class="hs-identifier">hashInt</span><span> </span><span class="hs-identifier">s</span><span> </span><span class="hs-identifier">x</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="hs-identifier">s</span><span> </span><span class="hs-operator">*</span><span> </span><span class="hs-number">16777619</span><span class="hs-special">)</span><span> </span><span class="hs-special">`</span><span class="hs-identifier">xor</span><span class="hs-special">`</span><span> </span><span class="hs-identifier">x</span><span class="hs-cpp">
 #endif
@@ -86,21 +88,23 @@
 
 #if WORD_SIZE_IN_BITS == 64
 </span><span id="hashInt64"><span class="annot"><span class="annottext">hashInt64 :: Salt -&gt; Int64 -&gt; Salt
-</span><a href="Data.Hashable.LowLevel.html#hashInt64"><span class="hs-identifier hs-var hs-var">hashInt64</span></a></span></span><span>  </span><span id="local-6989586621679054670"><span class="annot"><span class="annottext">Salt
-</span><a href="#local-6989586621679054670"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span id="local-6989586621679054669"><span class="annot"><span class="annottext">Int64
-</span><a href="#local-6989586621679054669"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Salt -&gt; Salt -&gt; Salt
+</span><a href="Data.Hashable.LowLevel.html#hashInt64"><span class="hs-identifier hs-var hs-var">hashInt64</span></a></span></span><span>  </span><span id="local-6989586621679057581"><span class="annot"><span class="annottext">Salt
+</span><a href="#local-6989586621679057581"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span id="local-6989586621679057582"><span class="annot"><span class="annottext">Int64
+</span><a href="#local-6989586621679057582"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Salt -&gt; Salt -&gt; Salt
 </span><a href="Data.Hashable.LowLevel.html#hashInt"><span class="hs-identifier hs-var">hashInt</span></a></span><span> </span><span class="annot"><span class="annottext">Salt
-</span><a href="#local-6989586621679054670"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><a href="#local-6989586621679057581"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int64 -&gt; Salt
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
 </span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">Int64
-</span><a href="#local-6989586621679054669"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679057582"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-77"></span><span id="hashWord64"><span class="annot"><span class="annottext">hashWord64 :: Salt -&gt; Word64 -&gt; Salt
-</span><a href="Data.Hashable.LowLevel.html#hashWord64"><span class="hs-identifier hs-var hs-var">hashWord64</span></a></span></span><span> </span><span id="local-6989586621679054668"><span class="annot"><span class="annottext">Salt
-</span><a href="#local-6989586621679054668"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span id="local-6989586621679054667"><span class="annot"><span class="annottext">Word64
-</span><a href="#local-6989586621679054667"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Salt -&gt; Salt -&gt; Salt
+</span><a href="Data.Hashable.LowLevel.html#hashWord64"><span class="hs-identifier hs-var hs-var">hashWord64</span></a></span></span><span> </span><span id="local-6989586621679057583"><span class="annot"><span class="annottext">Salt
+</span><a href="#local-6989586621679057583"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span id="local-6989586621679057584"><span class="annot"><span class="annottext">Word64
+</span><a href="#local-6989586621679057584"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Salt -&gt; Salt -&gt; Salt
 </span><a href="Data.Hashable.LowLevel.html#hashInt"><span class="hs-identifier hs-var">hashInt</span></a></span><span> </span><span class="annot"><span class="annottext">Salt
-</span><a href="#local-6989586621679054668"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><a href="#local-6989586621679057583"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word64 -&gt; Salt
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
 </span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">Word64
-</span><a href="#local-6989586621679054667"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">)</span><span class="hs-cpp">
+</span><a href="#local-6989586621679057584"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">)</span><span class="hs-cpp">
 #else
 </span><span class="hs-identifier">hashInt64</span><span>  </span><span class="hs-identifier">s</span><span> </span><span class="hs-identifier">x</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier">hashInt</span><span> </span><span class="hs-special">(</span><span class="hs-identifier">hashInt</span><span> </span><span class="hs-identifier">s</span><span> </span><span class="hs-special">(</span><span class="hs-identifier">fromIntegral</span><span> </span><span class="hs-identifier">x</span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="hs-identifier">fromIntegral</span><span> </span><span class="hs-special">(</span><span class="hs-identifier">x</span><span> </span><span class="hs-special">`</span><span class="hs-identifier">shiftR</span><span class="hs-special">`</span><span> </span><span class="hs-number">32</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
 </span><span id="line-80"></span><span class="hs-identifier">hashWord64</span><span> </span><span class="hs-identifier">s</span><span> </span><span class="hs-identifier">x</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier">hashInt</span><span> </span><span class="hs-special">(</span><span class="hs-identifier">hashInt</span><span> </span><span class="hs-identifier">s</span><span> </span><span class="hs-special">(</span><span class="hs-identifier">fromIntegral</span><span> </span><span class="hs-identifier">x</span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="hs-identifier">fromIntegral</span><span> </span><span class="hs-special">(</span><span class="hs-identifier">x</span><span> </span><span class="hs-special">`</span><span class="hs-identifier">shiftR</span><span class="hs-special">`</span><span> </span><span class="hs-number">32</span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-cpp">
@@ -112,26 +116,32 @@
 </span><span id="line-86"></span><span class="hs-comment">-- This function can for example be used to hash non-contiguous</span><span>
 </span><span id="line-87"></span><span class="hs-comment">-- segments of memory as if they were one contiguous segment, by using</span><span>
 </span><span id="line-88"></span><span class="hs-comment">-- the output of one hash as the salt for the next.</span><span>
-</span><span id="line-89"></span><span id="local-6989586621679054716"><span class="annot"><a href="Data.Hashable.LowLevel.html#hashPtrWithSalt"><span class="hs-identifier hs-type">hashPtrWithSalt</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Ptr</span></span><span> </span><span class="annot"><a href="#local-6989586621679054716"><span class="hs-identifier hs-type">a</span></a></span><span>   </span><span class="hs-comment">-- ^ pointer to the data to hash</span><span>
-</span><span id="line-90"></span><span>                </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span>     </span><span class="hs-comment">-- ^ length, in bytes</span><span>
-</span><span id="line-91"></span><span>                </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.Hashable.LowLevel.html#Salt"><span class="hs-identifier hs-type">Salt</span></a></span><span>    </span><span class="hs-comment">-- ^ salt</span><span>
-</span><span id="line-92"></span><span>                </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="Data.Hashable.LowLevel.html#Salt"><span class="hs-identifier hs-type">Salt</span></a></span></span><span> </span><span class="hs-comment">-- ^ hash value</span><span>
+</span><span id="line-89"></span><span id="local-6989586621679057535"><span class="annot"><a href="Data.Hashable.LowLevel.html#hashPtrWithSalt"><span class="hs-identifier hs-type">hashPtrWithSalt</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Ptr</span></span><span> </span><span class="annot"><a href="#local-6989586621679057535"><span class="hs-identifier hs-type">a</span></a></span><span>   </span><span class="annot"><span class="hs-comment">-- ^ pointer to the data to hash</span></span><span>
+</span><span id="line-90"></span><span>                </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span>     </span><span class="annot"><span class="hs-comment">-- ^ length, in bytes</span></span><span>
+</span><span id="line-91"></span><span>                </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.Hashable.LowLevel.html#Salt"><span class="hs-identifier hs-type">Salt</span></a></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ salt</span></span><span>
+</span><span id="line-92"></span><span>                </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="Data.Hashable.LowLevel.html#Salt"><span class="hs-identifier hs-type">Salt</span></a></span></span><span> </span><span class="annot"><span class="hs-comment">-- ^ hash value</span></span><span>
 </span><span id="line-93"></span><span id="hashPtrWithSalt"><span class="annot"><span class="annottext">hashPtrWithSalt :: forall a. Ptr a -&gt; Salt -&gt; Salt -&gt; IO Salt
-</span><a href="Data.Hashable.LowLevel.html#hashPtrWithSalt"><span class="hs-identifier hs-var hs-var">hashPtrWithSalt</span></a></span></span><span> </span><span id="local-6989586621679054658"><span class="annot"><span class="annottext">Ptr a
-</span><a href="#local-6989586621679054658"><span class="hs-identifier hs-var">p</span></a></span></span><span> </span><span id="local-6989586621679054657"><span class="annot"><span class="annottext">Salt
-</span><a href="#local-6989586621679054657"><span class="hs-identifier hs-var">len</span></a></span></span><span> </span><span id="local-6989586621679054656"><span class="annot"><span class="annottext">Salt
-</span><a href="#local-6989586621679054656"><span class="hs-identifier hs-var">salt</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-94"></span><span>    </span><span class="annot"><span class="annottext">forall a b. (Integral a, Num b) =&gt; a -&gt; b
-</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><a href="Data.Hashable.LowLevel.html#hashPtrWithSalt"><span class="hs-identifier hs-var hs-var">hashPtrWithSalt</span></a></span></span><span> </span><span id="local-6989586621679057593"><span class="annot"><span class="annottext">Ptr a
+</span><a href="#local-6989586621679057593"><span class="hs-identifier hs-var">p</span></a></span></span><span> </span><span id="local-6989586621679057594"><span class="annot"><span class="annottext">Salt
+</span><a href="#local-6989586621679057594"><span class="hs-identifier hs-var">len</span></a></span></span><span> </span><span id="local-6989586621679057595"><span class="annot"><span class="annottext">Salt
+</span><a href="#local-6989586621679057595"><span class="hs-identifier hs-var">salt</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-94"></span><span>    </span><span class="annot"><span class="annottext">Word64 -&gt; Salt
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">(Word64 -&gt; Salt) -&gt; IO Word64 -&gt; IO Salt
+forall a b. (a -&gt; b) -&gt; IO a -&gt; IO b
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
 </span><span class="hs-operator hs-var">`fmap`</span></span><span> </span><span class="annot"><span class="annottext">CString -&gt; Int64 -&gt; Int64 -&gt; IO Word64
-</span><a href="Data.Hashable.LowLevel.html#c_hashCString"><span class="hs-identifier hs-var">c_hashCString</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a b. Ptr a -&gt; Ptr b
+</span><a href="Data.Hashable.LowLevel.html#c_hashCString"><span class="hs-identifier hs-var">c_hashCString</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Ptr a -&gt; CString
+forall a b. Ptr a -&gt; Ptr b
 </span><span class="hs-identifier hs-var">castPtr</span></span><span> </span><span class="annot"><span class="annottext">Ptr a
-</span><a href="#local-6989586621679054658"><span class="hs-identifier hs-var">p</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><a href="#local-6989586621679057593"><span class="hs-identifier hs-var">p</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Salt -&gt; Int64
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
 </span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">Salt
-</span><a href="#local-6989586621679054657"><span class="hs-identifier hs-var">len</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-95"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><a href="#local-6989586621679057594"><span class="hs-identifier hs-var">len</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-95"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Salt -&gt; Int64
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
 </span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">Salt
-</span><a href="#local-6989586621679054656"><span class="hs-identifier hs-var">salt</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679057595"><span class="hs-identifier hs-var">salt</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-96"></span><span>
 </span><span id="line-97"></span><span class="hs-comment">-- | Compute a hash value for the content of this 'ByteArray#', using</span><span>
 </span><span id="line-98"></span><span class="hs-comment">-- an initial salt.</span><span>
@@ -140,29 +150,34 @@
 </span><span id="line-101"></span><span class="hs-comment">-- segments of memory as if they were one contiguous segment, by using</span><span>
 </span><span id="line-102"></span><span class="hs-comment">-- the output of one hash as the salt for the next.</span><span>
 </span><span id="line-103"></span><span class="annot"><a href="Data.Hashable.LowLevel.html#hashByteArrayWithSalt"><span class="hs-identifier hs-type">hashByteArrayWithSalt</span></a></span><span>
-</span><span id="line-104"></span><span>    </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ByteArray#</span></span><span>  </span><span class="hs-comment">-- ^ data to hash</span><span>
-</span><span id="line-105"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span>         </span><span class="hs-comment">-- ^ offset, in bytes</span><span>
-</span><span id="line-106"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span>         </span><span class="hs-comment">-- ^ length, in bytes</span><span>
-</span><span id="line-107"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.Hashable.LowLevel.html#Salt"><span class="hs-identifier hs-type">Salt</span></a></span><span>        </span><span class="hs-comment">-- ^ salt</span><span>
-</span><span id="line-108"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.Hashable.LowLevel.html#Salt"><span class="hs-identifier hs-type">Salt</span></a></span><span>        </span><span class="hs-comment">-- ^ hash value</span><span>
+</span><span id="line-104"></span><span>    </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ByteArray#</span></span><span>  </span><span class="annot"><span class="hs-comment">-- ^ data to hash</span></span><span>
+</span><span id="line-105"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span>         </span><span class="annot"><span class="hs-comment">-- ^ offset, in bytes</span></span><span>
+</span><span id="line-106"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span>         </span><span class="annot"><span class="hs-comment">-- ^ length, in bytes</span></span><span>
+</span><span id="line-107"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.Hashable.LowLevel.html#Salt"><span class="hs-identifier hs-type">Salt</span></a></span><span>        </span><span class="annot"><span class="hs-comment">-- ^ salt</span></span><span>
+</span><span id="line-108"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.Hashable.LowLevel.html#Salt"><span class="hs-identifier hs-type">Salt</span></a></span><span>        </span><span class="annot"><span class="hs-comment">-- ^ hash value</span></span><span>
 </span><span id="line-109"></span><span id="hashByteArrayWithSalt"><span class="annot"><span class="annottext">hashByteArrayWithSalt :: ByteArray# -&gt; Salt -&gt; Salt -&gt; Salt -&gt; Salt
-</span><a href="Data.Hashable.LowLevel.html#hashByteArrayWithSalt"><span class="hs-identifier hs-var hs-var">hashByteArrayWithSalt</span></a></span></span><span> </span><span id="local-6989586621679054654"><span class="annot"><span class="annottext">ByteArray#
-</span><a href="#local-6989586621679054654"><span class="hs-identifier hs-var">ba</span></a></span></span><span> </span><span class="hs-glyph">!</span><span id="local-6989586621679054653"><span class="annot"><span class="annottext">Salt
-</span><a href="#local-6989586621679054653"><span class="hs-identifier hs-var">off</span></a></span></span><span> </span><span class="hs-glyph">!</span><span id="local-6989586621679054652"><span class="annot"><span class="annottext">Salt
-</span><a href="#local-6989586621679054652"><span class="hs-identifier hs-var">len</span></a></span></span><span> </span><span class="hs-glyph">!</span><span id="local-6989586621679054651"><span class="annot"><span class="annottext">Salt
-</span><a href="#local-6989586621679054651"><span class="hs-identifier hs-var">h</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-110"></span><span>    </span><span class="annot"><span class="annottext">forall a b. (Integral a, Num b) =&gt; a -&gt; b
-</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><a href="Data.Hashable.LowLevel.html#hashByteArrayWithSalt"><span class="hs-identifier hs-var hs-var">hashByteArrayWithSalt</span></a></span></span><span> </span><span id="local-6989586621679057597"><span class="annot"><span class="annottext">ByteArray#
+</span><a href="#local-6989586621679057597"><span class="hs-identifier hs-var">ba</span></a></span></span><span> </span><span class="hs-glyph">!</span><span id="local-6989586621679057598"><span class="annot"><span class="annottext">Salt
+</span><a href="#local-6989586621679057598"><span class="hs-identifier hs-var">off</span></a></span></span><span> </span><span class="hs-glyph">!</span><span id="local-6989586621679057599"><span class="annot"><span class="annottext">Salt
+</span><a href="#local-6989586621679057599"><span class="hs-identifier hs-var">len</span></a></span></span><span> </span><span class="hs-glyph">!</span><span id="local-6989586621679057600"><span class="annot"><span class="annottext">Salt
+</span><a href="#local-6989586621679057600"><span class="hs-identifier hs-var">h</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-110"></span><span>    </span><span class="annot"><span class="annottext">Word64 -&gt; Salt
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">(Word64 -&gt; Salt) -&gt; Word64 -&gt; Salt
+forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">ByteArray# -&gt; Int64 -&gt; Int64 -&gt; Int64 -&gt; Word64
 </span><a href="Data.Hashable.LowLevel.html#c_hashByteArray"><span class="hs-identifier hs-var">c_hashByteArray</span></a></span><span> </span><span class="annot"><span class="annottext">ByteArray#
-</span><a href="#local-6989586621679054654"><span class="hs-identifier hs-var">ba</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><a href="#local-6989586621679057597"><span class="hs-identifier hs-var">ba</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Salt -&gt; Int64
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
 </span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">Salt
-</span><a href="#local-6989586621679054653"><span class="hs-identifier hs-var">off</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><a href="#local-6989586621679057598"><span class="hs-identifier hs-var">off</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Salt -&gt; Int64
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
 </span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">Salt
-</span><a href="#local-6989586621679054652"><span class="hs-identifier hs-var">len</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-111"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><a href="#local-6989586621679057599"><span class="hs-identifier hs-var">len</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-111"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Salt -&gt; Int64
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
 </span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">Salt
-</span><a href="#local-6989586621679054651"><span class="hs-identifier hs-var">h</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679057600"><span class="hs-identifier hs-var">h</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-112"></span><span>
 </span><span id="line-113"></span><span class="hs-keyword">foreign</span><span> </span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-keyword">capi</span></span><span> </span><span class="annot"><span class="hs-keyword">unsafe</span></span><span> </span><span class="annot"><span class="hs-string">&quot;HsHashable.h hashable_fnv_hash&quot;</span></span><span> </span><span id="c_hashCString"><span class="annot"><a href="Data.Hashable.LowLevel.html#c_hashCString"><span class="hs-identifier hs-var">c_hashCString</span></a></span></span><span class="hs-cpp">
 #if WORD_SIZE_IN_BITS == 64

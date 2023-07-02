@@ -123,9 +123,9 @@ class MonadTrans t => MonadTransControl t where {
     --   <pre>
     --   StT <a>IdentityT</a>    a ~ a
     --   StT <a>MaybeT</a>       a ~ <a>Maybe</a> a
-    --   StT (<a>ErrorT</a> e)   a ~ <a>Error</a> e =&gt; <a>Either</a> e a
+    --   StT (<tt>ErrorT</tt> e)   a ~ <tt>Error</tt> e =&gt; <a>Either</a> e a
     --   StT (<a>ExceptT</a> e)  a ~ <a>Either</a> e a
-    --   StT <a>ListT</a>        a ~ [a]
+    --   StT <tt>ListT</tt>        a ~ [a]
     --   StT (<a>ReaderT</a> r)  a ~ a
     --   StT (<a>StateT</a> s)   a ~ (a, s)
     --   StT (<a>WriterT</a> w)  a ~ <a>Monoid</a> w =&gt; (a, w)
@@ -211,9 +211,9 @@ liftWith :: (MonadTransControl t, Monad m) => (Run t -> m a) -> t m a
 --   <pre>
 --   restoreT :: <a>Monad</a> m             =&gt; m a            -&gt; <a>IdentityT</a> m a
 --   restoreT :: <a>Monad</a> m             =&gt; m (<a>Maybe</a> a)    -&gt; <a>MaybeT</a> m a
---   restoreT :: (<a>Monad</a> m, <a>Error</a> e)  =&gt; m (<a>Either</a> e a) -&gt; <a>ErrorT</a> e m a
+--   restoreT :: (<a>Monad</a> m, <tt>Error</tt> e)  =&gt; m (<a>Either</a> e a) -&gt; <tt>ErrorT</tt> e m a
 --   restoreT :: <a>Monad</a> m             =&gt; m (<a>Either</a> e a) -&gt; <a>ExceptT</a> e m a
---   restoreT :: <a>Monad</a> m             =&gt; m [a]          -&gt; <a>ListT</a> m a
+--   restoreT :: <a>Monad</a> m             =&gt; m [a]          -&gt; <tt>ListT</tt> m a
 --   restoreT :: <a>Monad</a> m             =&gt; m a            -&gt; <a>ReaderT</a> r m a
 --   restoreT :: <a>Monad</a> m             =&gt; m (a, s)       -&gt; <a>StateT</a> s m a
 --   restoreT :: (<a>Monad</a> m, <a>Monoid</a> w) =&gt; m (a, w)       -&gt; <a>WriterT</a> w m a
@@ -233,9 +233,9 @@ restoreT :: (MonadTransControl t, Monad m) => m (StT t a) -> t m a
 --   <pre>
 --   Run <a>IdentityT</a>    ~ forall n b. <a>Monad</a> n             =&gt; <a>IdentityT</a>  n b -&gt; n b
 --   Run <a>MaybeT</a>       ~ forall n b. <a>Monad</a> n             =&gt; <a>MaybeT</a>     n b -&gt; n (<a>Maybe</a> b)
---   Run (<a>ErrorT</a> e)   ~ forall n b. (<a>Monad</a> n, <a>Error</a> e)  =&gt; <a>ErrorT</a> e   n b -&gt; n (<a>Either</a> e b)
+--   Run (<tt>ErrorT</tt> e)   ~ forall n b. (<a>Monad</a> n, <tt>Error</tt> e)  =&gt; <tt>ErrorT</tt> e   n b -&gt; n (<a>Either</a> e b)
 --   Run (<a>ExceptT</a> e)  ~ forall n b. <a>Monad</a> n             =&gt; <a>ExceptT</a> e  n b -&gt; n (<a>Either</a> e b)
---   Run <a>ListT</a>        ~ forall n b. <a>Monad</a> n             =&gt; <a>ListT</a>      n b -&gt; n [b]
+--   Run <tt>ListT</tt>        ~ forall n b. <a>Monad</a> n             =&gt; <tt>ListT</tt>      n b -&gt; n [b]
 --   Run (<a>ReaderT</a> r)  ~ forall n b. <a>Monad</a> n             =&gt; <a>ReaderT</a> r  n b -&gt; n b
 --   Run (<a>StateT</a> s)   ~ forall n b. <a>Monad</a> n             =&gt; <a>StateT</a> s   n b -&gt; n (a, s)
 --   Run (<a>WriterT</a> w)  ~ forall n b. (<a>Monad</a> n, <a>Monoid</a> w) =&gt; <a>WriterT</a> w  n b -&gt; n (a, w)
@@ -309,9 +309,9 @@ class MonadBase b m => MonadBaseControl b m | m -> b where {
     --   <pre>
     --   StM (<a>IdentityT</a>  m) a ~ <a>ComposeSt</a> <a>IdentityT</a> m a ~ StM m a
     --   StM (<a>MaybeT</a>     m) a ~ <a>ComposeSt</a> <a>MaybeT</a>    m a ~ StM m (<a>Maybe</a> a)
-    --   StM (<a>ErrorT</a> e   m) a ~ <a>ComposeSt</a> <a>ErrorT</a>    m a ~ <a>Error</a> e =&gt; StM m (<a>Either</a> e a)
+    --   StM (<tt>ErrorT</tt> e   m) a ~ <a>ComposeSt</a> <tt>ErrorT</tt>    m a ~ <tt>Error</tt> e =&gt; StM m (<a>Either</a> e a)
     --   StM (<a>ExceptT</a> e  m) a ~ <a>ComposeSt</a> <a>ExceptT</a>   m a ~ StM m (<a>Either</a> e a)
-    --   StM (<a>ListT</a>      m) a ~ <a>ComposeSt</a> <a>ListT</a>     m a ~ StM m [a]
+    --   StM (<tt>ListT</tt>      m) a ~ <a>ComposeSt</a> <tt>ListT</tt>     m a ~ StM m [a]
     --   StM (<a>ReaderT</a> r  m) a ~ <a>ComposeSt</a> <a>ReaderT</a>   m a ~ StM m a
     --   StM (<a>StateT</a> s   m) a ~ <a>ComposeSt</a> <a>StateT</a>    m a ~ StM m (a, s)
     --   StM (<a>WriterT</a> w  m) a ~ <a>ComposeSt</a> <a>WriterT</a>   m a ~ <a>Monoid</a> w =&gt; StM m (a, w)
@@ -384,9 +384,9 @@ restoreM :: MonadBaseControl b m => StM m a -> m a
 --   <pre>
 --   RunInBase (<a>IdentityT</a>  m) b ~ forall a.             <a>IdentityT</a>  m a -&gt; b (<a>StM</a> m a)
 --   RunInBase (<a>MaybeT</a>     m) b ~ forall a.             <a>MaybeT</a>     m a -&gt; b (<a>StM</a> m (<a>Maybe</a> a))
---   RunInBase (<a>ErrorT</a> e   m) b ~ forall a. <a>Error</a> e =&gt;  <a>ErrorT</a> e   m a -&gt; b (<a>StM</a> m (<a>Either</a> e a))
+--   RunInBase (<tt>ErrorT</tt> e   m) b ~ forall a. <tt>Error</tt> e =&gt;  <tt>ErrorT</tt> e   m a -&gt; b (<a>StM</a> m (<a>Either</a> e a))
 --   RunInBase (<a>ExceptT</a> e  m) b ~ forall a.             <a>ExceptT</a> e  m a -&gt; b (<a>StM</a> m (<a>Either</a> e a))
---   RunInBase (<a>ListT</a>      m) b ~ forall a.             <a>ListT</a>      m a -&gt; b (<a>StM</a> m [a])
+--   RunInBase (<tt>ListT</tt>      m) b ~ forall a.             <tt>ListT</tt>      m a -&gt; b (<a>StM</a> m [a])
 --   RunInBase (<a>ReaderT</a> r  m) b ~ forall a.             <a>ReaderT</a>    m a -&gt; b (<a>StM</a> m a)
 --   RunInBase (<a>StateT</a> s   m) b ~ forall a.             <a>StateT</a> s   m a -&gt; b (<a>StM</a> m (a, s))
 --   RunInBase (<a>WriterT</a> w  m) b ~ forall a. <a>Monoid</a> w =&gt; <a>WriterT</a> w  m a -&gt; b (<a>StM</a> m (a, w))
@@ -562,8 +562,6 @@ instance (GHC.Base.Monoid w, Control.Monad.Trans.Control.MonadBaseControl b m) =
 instance (GHC.Base.Monoid w, Control.Monad.Trans.Control.MonadBaseControl b m) => Control.Monad.Trans.Control.MonadBaseControl b (Control.Monad.Trans.Writer.Lazy.WriterT w m)
 instance (GHC.Base.Monoid w, Control.Monad.Trans.Control.MonadBaseControl b m) => Control.Monad.Trans.Control.MonadBaseControl b (Control.Monad.Trans.RWS.Strict.RWST r w s m)
 instance (GHC.Base.Monoid w, Control.Monad.Trans.Control.MonadBaseControl b m) => Control.Monad.Trans.Control.MonadBaseControl b (Control.Monad.Trans.RWS.Lazy.RWST r w s m)
-instance Control.Monad.Trans.Control.MonadBaseControl b m => Control.Monad.Trans.Control.MonadBaseControl b (Control.Monad.Trans.List.ListT m)
-instance (Control.Monad.Trans.Error.Error e, Control.Monad.Trans.Control.MonadBaseControl b m) => Control.Monad.Trans.Control.MonadBaseControl b (Control.Monad.Trans.Error.ErrorT e m)
 instance Control.Monad.Trans.Control.MonadBaseControl GHC.Types.IO GHC.Types.IO
 instance Control.Monad.Trans.Control.MonadBaseControl GHC.Maybe.Maybe GHC.Maybe.Maybe
 instance Control.Monad.Trans.Control.MonadBaseControl (Data.Either.Either e) (Data.Either.Either e)
@@ -575,8 +573,6 @@ instance Control.Monad.Trans.Control.MonadBaseControl (GHC.ST.ST s) (GHC.ST.ST s
 instance Control.Monad.Trans.Control.MonadBaseControl (Control.Monad.ST.Lazy.Imp.ST s) (Control.Monad.ST.Lazy.Imp.ST s)
 instance Control.Monad.Trans.Control.MonadTransControl Control.Monad.Trans.Identity.IdentityT
 instance Control.Monad.Trans.Control.MonadTransControl Control.Monad.Trans.Maybe.MaybeT
-instance Control.Monad.Trans.Control.MonadTransControl Control.Monad.Trans.List.ListT
-instance Control.Monad.Trans.Error.Error e => Control.Monad.Trans.Control.MonadTransControl (Control.Monad.Trans.Error.ErrorT e)
 instance Control.Monad.Trans.Control.MonadTransControl (Control.Monad.Trans.Except.ExceptT e)
 instance Control.Monad.Trans.Control.MonadTransControl (Control.Monad.Trans.Reader.ReaderT r)
 instance Control.Monad.Trans.Control.MonadTransControl (Control.Monad.Trans.State.Lazy.StateT s)

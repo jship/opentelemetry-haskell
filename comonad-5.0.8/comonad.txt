@@ -186,8 +186,11 @@ Cokleisli :: (w a -> b) -> Cokleisli w a b
 --   
 --   Note, that the second law follows from the free theorem of the type
 --   <a>fmap</a> and the first law, so you need only check that the former
---   condition holds.
-class Functor (f :: Type -> Type)
+--   condition holds. See
+--   <a>https://www.schoolofhaskell.com/user/edwardk/snippets/fmap</a> or
+--   <a>https://github.com/quchen/articles/blob/master/second_functor_law.md</a>
+--   for an explanation.
+class () => Functor (f :: Type -> Type)
 
 -- | <a>fmap</a> is used to apply a function of type <tt>(a -&gt; b)</tt>
 --   to a value of type <tt>f a</tt>, where f is a functor, to produce a
@@ -259,6 +262,19 @@ fmap :: Functor f => (a -> b) -> f a -> f b
 -- | Replace all locations in the input with the same value. The default
 --   definition is <tt><a>fmap</a> . <a>const</a></tt>, but this may be
 --   overridden with a more efficient version.
+--   
+--   <h4><b>Examples</b></h4>
+--   
+--   Perform a computation with <a>Maybe</a> and replace the result with a
+--   constant value if it is <a>Just</a>:
+--   
+--   <pre>
+--   &gt;&gt;&gt; 'a' &lt;$ Just 2
+--   Just 'a'
+--   
+--   &gt;&gt;&gt; 'a' &lt;$ Nothing
+--   Nothing
+--   </pre>
 (<$) :: Functor f => a -> f b -> f a
 infixl 4 <$
 
@@ -476,7 +492,7 @@ module Control.Comonad.Trans.Identity
 
 -- | The trivial monad transformer, which maps a monad to an equivalent
 --   monad.
-newtype IdentityT (f :: k -> Type) (a :: k)
+newtype () => IdentityT (f :: k -> Type) (a :: k)
 IdentityT :: f a -> IdentityT (f :: k -> Type) (a :: k)
 [runIdentityT] :: IdentityT (f :: k -> Type) (a :: k) -> f a
 

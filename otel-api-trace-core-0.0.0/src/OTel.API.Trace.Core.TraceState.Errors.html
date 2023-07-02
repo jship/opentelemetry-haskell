@@ -28,42 +28,51 @@
 </span><span id="line-28"></span><span class="hs-keyword">newtype</span><span> </span><span id="TraceStateErrors"><span class="annot"><a href="OTel.API.Trace.Core.TraceState.Errors.html#TraceStateErrors"><span class="hs-identifier hs-var">TraceStateErrors</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="TraceStateErrors"><span class="annot"><a href="OTel.API.Trace.Core.TraceState.Errors.html#TraceStateErrors"><span class="hs-identifier hs-var">TraceStateErrors</span></a></span></span><span>
 </span><span id="line-29"></span><span>  </span><span class="hs-special">{</span><span> </span><span id="%24sel%3AunTraceStateErrors%3ATraceStateErrors"><span class="annot"><span class="annottext">TraceStateErrors -&gt; [TraceStateError]
 </span><a href="OTel.API.Trace.Core.TraceState.Errors.html#%24sel%3AunTraceStateErrors%3ATraceStateErrors"><span class="hs-identifier hs-var hs-var">unTraceStateErrors</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="OTel.API.Trace.Core.TraceState.Errors.html#TraceStateError"><span class="hs-identifier hs-type">TraceStateError</span></a></span><span class="hs-special">]</span><span>
-</span><span id="line-30"></span><span>  </span><span class="hs-special">}</span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">stock</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679110036"><span id="local-6989586621679110041"><span class="annot"><span class="annottext">TraceStateErrors -&gt; TraceStateErrors -&gt; Bool
+</span><span id="line-30"></span><span>  </span><span class="hs-special">}</span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">stock</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679114173"><span id="local-6989586621679114178"><span class="annot"><span class="annottext">TraceStateErrors -&gt; TraceStateErrors -&gt; Bool
+(TraceStateErrors -&gt; TraceStateErrors -&gt; Bool)
+-&gt; (TraceStateErrors -&gt; TraceStateErrors -&gt; Bool)
+-&gt; Eq TraceStateErrors
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
-/= :: TraceStateErrors -&gt; TraceStateErrors -&gt; Bool
-$c/= :: TraceStateErrors -&gt; TraceStateErrors -&gt; Bool
-== :: TraceStateErrors -&gt; TraceStateErrors -&gt; Bool
 $c== :: TraceStateErrors -&gt; TraceStateErrors -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679110024"><span id="local-6989586621679110026"><span id="local-6989586621679110033"><span class="annot"><span class="annottext">Int -&gt; TraceStateErrors -&gt; ShowS
+== :: TraceStateErrors -&gt; TraceStateErrors -&gt; Bool
+$c/= :: TraceStateErrors -&gt; TraceStateErrors -&gt; Bool
+/= :: TraceStateErrors -&gt; TraceStateErrors -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679114184"><span id="local-6989586621679114191"><span id="local-6989586621679114195"><span class="annot"><span class="annottext">Int -&gt; TraceStateErrors -&gt; ShowS
 [TraceStateErrors] -&gt; ShowS
 TraceStateErrors -&gt; String
+(Int -&gt; TraceStateErrors -&gt; ShowS)
+-&gt; (TraceStateErrors -&gt; String)
+-&gt; ([TraceStateErrors] -&gt; ShowS)
+-&gt; Show TraceStateErrors
 forall a.
 (Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
-showList :: [TraceStateErrors] -&gt; ShowS
-$cshowList :: [TraceStateErrors] -&gt; ShowS
-show :: TraceStateErrors -&gt; String
-$cshow :: TraceStateErrors -&gt; String
-showsPrec :: Int -&gt; TraceStateErrors -&gt; ShowS
 $cshowsPrec :: Int -&gt; TraceStateErrors -&gt; ShowS
+showsPrec :: Int -&gt; TraceStateErrors -&gt; ShowS
+$cshow :: TraceStateErrors -&gt; String
+show :: TraceStateErrors -&gt; String
+$cshowList :: [TraceStateErrors] -&gt; ShowS
+showList :: [TraceStateErrors] -&gt; ShowS
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
-</span><span id="line-31"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">anyclass</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679110013"><span id="local-6989586621679110015"><span id="local-6989586621679110017"><span class="annot"><span class="annottext">Show TraceStateErrors
+</span><span id="line-31"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">anyclass</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679114204"><span id="local-6989586621679114208"><span id="local-6989586621679114211"><span class="annot"><span class="annottext">Show TraceStateErrors
 Typeable TraceStateErrors
+(Typeable TraceStateErrors, Show TraceStateErrors) =&gt;
+(TraceStateErrors -&gt; SomeException)
+-&gt; (SomeException -&gt; Maybe TraceStateErrors)
+-&gt; (TraceStateErrors -&gt; String)
+-&gt; Exception TraceStateErrors
 SomeException -&gt; Maybe TraceStateErrors
 TraceStateErrors -&gt; String
 TraceStateErrors -&gt; SomeException
 forall e.
-Typeable e
--&gt; Show e
--&gt; (e -&gt; SomeException)
--&gt; (SomeException -&gt; Maybe e)
--&gt; (e -&gt; String)
--&gt; Exception e
-displayException :: TraceStateErrors -&gt; String
-$cdisplayException :: TraceStateErrors -&gt; String
-fromException :: SomeException -&gt; Maybe TraceStateErrors
-$cfromException :: SomeException -&gt; Maybe TraceStateErrors
-toException :: TraceStateErrors -&gt; SomeException
+(Typeable e, Show e) =&gt;
+(e -&gt; SomeException)
+-&gt; (SomeException -&gt; Maybe e) -&gt; (e -&gt; String) -&gt; Exception e
 $ctoException :: TraceStateErrors -&gt; SomeException
+toException :: TraceStateErrors -&gt; SomeException
+$cfromException :: SomeException -&gt; Maybe TraceStateErrors
+fromException :: SomeException -&gt; Maybe TraceStateErrors
+$cdisplayException :: TraceStateErrors -&gt; String
+displayException :: TraceStateErrors -&gt; String
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Exception</span></span></span></span></span><span class="hs-special">)</span><span>
 </span><span id="line-32"></span><span>
 </span><span id="line-33"></span><span class="hs-keyword">data</span><span> </span><span id="TraceStateError"><span class="annot"><a href="OTel.API.Trace.Core.TraceState.Errors.html#TraceStateError"><span class="hs-identifier hs-var">TraceStateError</span></a></span></span><span>
@@ -80,50 +89,66 @@ $ctoException :: TraceStateErrors -&gt; SomeException
 </span><span id="line-44"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span id="TraceStateValueIsEmpty"><span class="annot"><a href="OTel.API.Trace.Core.TraceState.Errors.html#TraceStateValueIsEmpty"><span class="hs-identifier hs-var">TraceStateValueIsEmpty</span></a></span></span><span> </span><span class="annot"><a href="OTel.API.Trace.Core.TraceState.Errors.html#TraceStateValueIsEmptyError"><span class="hs-identifier hs-type">TraceStateValueIsEmptyError</span></a></span><span>
 </span><span id="line-45"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span id="TraceStateValueContainsInvalidChars"><span class="annot"><a href="OTel.API.Trace.Core.TraceState.Errors.html#TraceStateValueContainsInvalidChars"><span class="hs-identifier hs-var">TraceStateValueContainsInvalidChars</span></a></span></span><span> </span><span class="annot"><a href="OTel.API.Trace.Core.TraceState.Errors.html#TraceStateValueContainsInvalidCharsError"><span class="hs-identifier hs-type">TraceStateValueContainsInvalidCharsError</span></a></span><span>
 </span><span id="line-46"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span id="TraceStateValueTooLong"><span class="annot"><a href="OTel.API.Trace.Core.TraceState.Errors.html#TraceStateValueTooLong"><span class="hs-identifier hs-var">TraceStateValueTooLong</span></a></span></span><span> </span><span class="annot"><a href="OTel.API.Trace.Core.TraceState.Errors.html#TraceStateValueTooLongError"><span class="hs-identifier hs-type">TraceStateValueTooLongError</span></a></span><span>
-</span><span id="line-47"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">stock</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679109982"><span id="local-6989586621679109997"><span class="annot"><span class="annottext">TraceStateError -&gt; TraceStateError -&gt; Bool
+</span><span id="line-47"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">stock</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679114228"><span id="local-6989586621679114256"><span class="annot"><span class="annottext">TraceStateError -&gt; TraceStateError -&gt; Bool
+(TraceStateError -&gt; TraceStateError -&gt; Bool)
+-&gt; (TraceStateError -&gt; TraceStateError -&gt; Bool)
+-&gt; Eq TraceStateError
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
-/= :: TraceStateError -&gt; TraceStateError -&gt; Bool
-$c/= :: TraceStateError -&gt; TraceStateError -&gt; Bool
-== :: TraceStateError -&gt; TraceStateError -&gt; Bool
 $c== :: TraceStateError -&gt; TraceStateError -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679109950"><span id="local-6989586621679109952"><span id="local-6989586621679109980"><span class="annot"><span class="annottext">Int -&gt; TraceStateError -&gt; ShowS
+== :: TraceStateError -&gt; TraceStateError -&gt; Bool
+$c/= :: TraceStateError -&gt; TraceStateError -&gt; Bool
+/= :: TraceStateError -&gt; TraceStateError -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679114259"><span id="local-6989586621679114300"><span id="local-6989586621679114303"><span class="annot"><span class="annottext">Int -&gt; TraceStateError -&gt; ShowS
 [TraceStateError] -&gt; ShowS
 TraceStateError -&gt; String
+(Int -&gt; TraceStateError -&gt; ShowS)
+-&gt; (TraceStateError -&gt; String)
+-&gt; ([TraceStateError] -&gt; ShowS)
+-&gt; Show TraceStateError
 forall a.
 (Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
-showList :: [TraceStateError] -&gt; ShowS
-$cshowList :: [TraceStateError] -&gt; ShowS
-show :: TraceStateError -&gt; String
-$cshow :: TraceStateError -&gt; String
-showsPrec :: Int -&gt; TraceStateError -&gt; ShowS
 $cshowsPrec :: Int -&gt; TraceStateError -&gt; ShowS
+showsPrec :: Int -&gt; TraceStateError -&gt; ShowS
+$cshow :: TraceStateError -&gt; String
+show :: TraceStateError -&gt; String
+$cshowList :: [TraceStateError] -&gt; ShowS
+showList :: [TraceStateError] -&gt; ShowS
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
 </span><span id="line-48"></span><span>
 </span><span id="line-49"></span><span class="hs-keyword">newtype</span><span> </span><span id="TraceStateSimpleKeyIsEmptyError"><span class="annot"><a href="OTel.API.Trace.Core.TraceState.Errors.html#TraceStateSimpleKeyIsEmptyError"><span class="hs-identifier hs-var">TraceStateSimpleKeyIsEmptyError</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="TraceStateSimpleKeyIsEmptyError"><span class="annot"><a href="OTel.API.Trace.Core.TraceState.Errors.html#TraceStateSimpleKeyIsEmptyError"><span class="hs-identifier hs-var">TraceStateSimpleKeyIsEmptyError</span></a></span></span><span>
 </span><span id="line-50"></span><span>  </span><span class="hs-special">{</span><span> </span><span id="%24sel%3ArawValue%3ATraceStateSimpleKeyIsEmptyError"><span class="annot"><span class="annottext">TraceStateSimpleKeyIsEmptyError -&gt; Text
 </span><a href="OTel.API.Trace.Core.TraceState.Errors.html#%24sel%3ArawValue%3ATraceStateSimpleKeyIsEmptyError"><span class="hs-identifier hs-var hs-var">rawValue</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
-</span><span id="line-51"></span><span>  </span><span class="hs-special">}</span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">stock</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679109942"><span id="local-6989586621679109946"><span class="annot"><span class="annottext">TraceStateSimpleKeyIsEmptyError
+</span><span id="line-51"></span><span>  </span><span class="hs-special">}</span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">stock</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679114308"><span id="local-6989586621679114312"><span class="annot"><span class="annottext">TraceStateSimpleKeyIsEmptyError
 -&gt; TraceStateSimpleKeyIsEmptyError -&gt; Bool
+(TraceStateSimpleKeyIsEmptyError
+ -&gt; TraceStateSimpleKeyIsEmptyError -&gt; Bool)
+-&gt; (TraceStateSimpleKeyIsEmptyError
+    -&gt; TraceStateSimpleKeyIsEmptyError -&gt; Bool)
+-&gt; Eq TraceStateSimpleKeyIsEmptyError
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
-/= :: TraceStateSimpleKeyIsEmptyError
--&gt; TraceStateSimpleKeyIsEmptyError -&gt; Bool
-$c/= :: TraceStateSimpleKeyIsEmptyError
+$c== :: TraceStateSimpleKeyIsEmptyError
 -&gt; TraceStateSimpleKeyIsEmptyError -&gt; Bool
 == :: TraceStateSimpleKeyIsEmptyError
 -&gt; TraceStateSimpleKeyIsEmptyError -&gt; Bool
-$c== :: TraceStateSimpleKeyIsEmptyError
+$c/= :: TraceStateSimpleKeyIsEmptyError
 -&gt; TraceStateSimpleKeyIsEmptyError -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679109933"><span id="local-6989586621679109935"><span id="local-6989586621679109940"><span class="annot"><span class="annottext">Int -&gt; TraceStateSimpleKeyIsEmptyError -&gt; ShowS
+/= :: TraceStateSimpleKeyIsEmptyError
+-&gt; TraceStateSimpleKeyIsEmptyError -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679114315"><span id="local-6989586621679114320"><span id="local-6989586621679114323"><span class="annot"><span class="annottext">Int -&gt; TraceStateSimpleKeyIsEmptyError -&gt; ShowS
 [TraceStateSimpleKeyIsEmptyError] -&gt; ShowS
 TraceStateSimpleKeyIsEmptyError -&gt; String
+(Int -&gt; TraceStateSimpleKeyIsEmptyError -&gt; ShowS)
+-&gt; (TraceStateSimpleKeyIsEmptyError -&gt; String)
+-&gt; ([TraceStateSimpleKeyIsEmptyError] -&gt; ShowS)
+-&gt; Show TraceStateSimpleKeyIsEmptyError
 forall a.
 (Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
-showList :: [TraceStateSimpleKeyIsEmptyError] -&gt; ShowS
-$cshowList :: [TraceStateSimpleKeyIsEmptyError] -&gt; ShowS
-show :: TraceStateSimpleKeyIsEmptyError -&gt; String
-$cshow :: TraceStateSimpleKeyIsEmptyError -&gt; String
-showsPrec :: Int -&gt; TraceStateSimpleKeyIsEmptyError -&gt; ShowS
 $cshowsPrec :: Int -&gt; TraceStateSimpleKeyIsEmptyError -&gt; ShowS
+showsPrec :: Int -&gt; TraceStateSimpleKeyIsEmptyError -&gt; ShowS
+$cshow :: TraceStateSimpleKeyIsEmptyError -&gt; String
+show :: TraceStateSimpleKeyIsEmptyError -&gt; String
+$cshowList :: [TraceStateSimpleKeyIsEmptyError] -&gt; ShowS
+showList :: [TraceStateSimpleKeyIsEmptyError] -&gt; ShowS
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
 </span><span id="line-52"></span><span>
 </span><span id="line-53"></span><span class="hs-keyword">data</span><span> </span><span id="TraceStateSimpleKeyContainsInvalidCharsError"><span class="annot"><a href="OTel.API.Trace.Core.TraceState.Errors.html#TraceStateSimpleKeyContainsInvalidCharsError"><span class="hs-identifier hs-var">TraceStateSimpleKeyContainsInvalidCharsError</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="TraceStateSimpleKeyContainsInvalidCharsError"><span class="annot"><a href="OTel.API.Trace.Core.TraceState.Errors.html#TraceStateSimpleKeyContainsInvalidCharsError"><span class="hs-identifier hs-var">TraceStateSimpleKeyContainsInvalidCharsError</span></a></span></span><span>
@@ -133,28 +158,37 @@ $cshowsPrec :: Int -&gt; TraceStateSimpleKeyIsEmptyError -&gt; ShowS
 </span><a href="OTel.API.Trace.Core.TraceState.Errors.html#%24sel%3ArawValue%3ATraceStateSimpleKeyContainsInvalidCharsError"><span class="hs-identifier hs-var hs-var">rawValue</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
 </span><span id="line-56"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="%24sel%3AinvalidChars%3ATraceStateSimpleKeyContainsInvalidCharsError"><span class="annot"><span class="annottext">TraceStateSimpleKeyContainsInvalidCharsError -&gt; Text
 </span><a href="OTel.API.Trace.Core.TraceState.Errors.html#%24sel%3AinvalidChars%3ATraceStateSimpleKeyContainsInvalidCharsError"><span class="hs-identifier hs-var hs-var">invalidChars</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
-</span><span id="line-57"></span><span>  </span><span class="hs-special">}</span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">stock</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679109921"><span id="local-6989586621679109927"><span class="annot"><span class="annottext">TraceStateSimpleKeyContainsInvalidCharsError
+</span><span id="line-57"></span><span>  </span><span class="hs-special">}</span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">stock</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679114330"><span id="local-6989586621679114336"><span class="annot"><span class="annottext">TraceStateSimpleKeyContainsInvalidCharsError
 -&gt; TraceStateSimpleKeyContainsInvalidCharsError -&gt; Bool
+(TraceStateSimpleKeyContainsInvalidCharsError
+ -&gt; TraceStateSimpleKeyContainsInvalidCharsError -&gt; Bool)
+-&gt; (TraceStateSimpleKeyContainsInvalidCharsError
+    -&gt; TraceStateSimpleKeyContainsInvalidCharsError -&gt; Bool)
+-&gt; Eq TraceStateSimpleKeyContainsInvalidCharsError
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
-/= :: TraceStateSimpleKeyContainsInvalidCharsError
--&gt; TraceStateSimpleKeyContainsInvalidCharsError -&gt; Bool
-$c/= :: TraceStateSimpleKeyContainsInvalidCharsError
+$c== :: TraceStateSimpleKeyContainsInvalidCharsError
 -&gt; TraceStateSimpleKeyContainsInvalidCharsError -&gt; Bool
 == :: TraceStateSimpleKeyContainsInvalidCharsError
 -&gt; TraceStateSimpleKeyContainsInvalidCharsError -&gt; Bool
-$c== :: TraceStateSimpleKeyContainsInvalidCharsError
+$c/= :: TraceStateSimpleKeyContainsInvalidCharsError
 -&gt; TraceStateSimpleKeyContainsInvalidCharsError -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679109910"><span id="local-6989586621679109912"><span id="local-6989586621679109919"><span class="annot"><span class="annottext">Int -&gt; TraceStateSimpleKeyContainsInvalidCharsError -&gt; ShowS
+/= :: TraceStateSimpleKeyContainsInvalidCharsError
+-&gt; TraceStateSimpleKeyContainsInvalidCharsError -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679114339"><span id="local-6989586621679114346"><span id="local-6989586621679114349"><span class="annot"><span class="annottext">Int -&gt; TraceStateSimpleKeyContainsInvalidCharsError -&gt; ShowS
 [TraceStateSimpleKeyContainsInvalidCharsError] -&gt; ShowS
 TraceStateSimpleKeyContainsInvalidCharsError -&gt; String
+(Int -&gt; TraceStateSimpleKeyContainsInvalidCharsError -&gt; ShowS)
+-&gt; (TraceStateSimpleKeyContainsInvalidCharsError -&gt; String)
+-&gt; ([TraceStateSimpleKeyContainsInvalidCharsError] -&gt; ShowS)
+-&gt; Show TraceStateSimpleKeyContainsInvalidCharsError
 forall a.
 (Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
-showList :: [TraceStateSimpleKeyContainsInvalidCharsError] -&gt; ShowS
-$cshowList :: [TraceStateSimpleKeyContainsInvalidCharsError] -&gt; ShowS
-show :: TraceStateSimpleKeyContainsInvalidCharsError -&gt; String
-$cshow :: TraceStateSimpleKeyContainsInvalidCharsError -&gt; String
-showsPrec :: Int -&gt; TraceStateSimpleKeyContainsInvalidCharsError -&gt; ShowS
 $cshowsPrec :: Int -&gt; TraceStateSimpleKeyContainsInvalidCharsError -&gt; ShowS
+showsPrec :: Int -&gt; TraceStateSimpleKeyContainsInvalidCharsError -&gt; ShowS
+$cshow :: TraceStateSimpleKeyContainsInvalidCharsError -&gt; String
+show :: TraceStateSimpleKeyContainsInvalidCharsError -&gt; String
+$cshowList :: [TraceStateSimpleKeyContainsInvalidCharsError] -&gt; ShowS
+showList :: [TraceStateSimpleKeyContainsInvalidCharsError] -&gt; ShowS
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
 </span><span id="line-58"></span><span>
 </span><span id="line-59"></span><span class="hs-keyword">data</span><span> </span><span id="TraceStateTenantIdIsEmptyError"><span class="annot"><a href="OTel.API.Trace.Core.TraceState.Errors.html#TraceStateTenantIdIsEmptyError"><span class="hs-identifier hs-var">TraceStateTenantIdIsEmptyError</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="TraceStateTenantIdIsEmptyError"><span class="annot"><a href="OTel.API.Trace.Core.TraceState.Errors.html#TraceStateTenantIdIsEmptyError"><span class="hs-identifier hs-var">TraceStateTenantIdIsEmptyError</span></a></span></span><span>
@@ -162,28 +196,37 @@ $cshowsPrec :: Int -&gt; TraceStateSimpleKeyContainsInvalidCharsError -&gt; Show
 </span><a href="OTel.API.Trace.Core.TraceState.Errors.html#%24sel%3ArawSystemId%3ATraceStateTenantIdIsEmptyError"><span class="hs-identifier hs-var hs-var">rawSystemId</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
 </span><span id="line-61"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="%24sel%3ArawValue%3ATraceStateTenantIdIsEmptyError"><span class="annot"><span class="annottext">TraceStateTenantIdIsEmptyError -&gt; Text
 </span><a href="OTel.API.Trace.Core.TraceState.Errors.html#%24sel%3ArawValue%3ATraceStateTenantIdIsEmptyError"><span class="hs-identifier hs-var hs-var">rawValue</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
-</span><span id="line-62"></span><span>  </span><span class="hs-special">}</span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">stock</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679109901"><span id="local-6989586621679109905"><span class="annot"><span class="annottext">TraceStateTenantIdIsEmptyError
+</span><span id="line-62"></span><span>  </span><span class="hs-special">}</span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">stock</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679114355"><span id="local-6989586621679114359"><span class="annot"><span class="annottext">TraceStateTenantIdIsEmptyError
 -&gt; TraceStateTenantIdIsEmptyError -&gt; Bool
+(TraceStateTenantIdIsEmptyError
+ -&gt; TraceStateTenantIdIsEmptyError -&gt; Bool)
+-&gt; (TraceStateTenantIdIsEmptyError
+    -&gt; TraceStateTenantIdIsEmptyError -&gt; Bool)
+-&gt; Eq TraceStateTenantIdIsEmptyError
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
-/= :: TraceStateTenantIdIsEmptyError
--&gt; TraceStateTenantIdIsEmptyError -&gt; Bool
-$c/= :: TraceStateTenantIdIsEmptyError
+$c== :: TraceStateTenantIdIsEmptyError
 -&gt; TraceStateTenantIdIsEmptyError -&gt; Bool
 == :: TraceStateTenantIdIsEmptyError
 -&gt; TraceStateTenantIdIsEmptyError -&gt; Bool
-$c== :: TraceStateTenantIdIsEmptyError
+$c/= :: TraceStateTenantIdIsEmptyError
 -&gt; TraceStateTenantIdIsEmptyError -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679109892"><span id="local-6989586621679109894"><span id="local-6989586621679109899"><span class="annot"><span class="annottext">Int -&gt; TraceStateTenantIdIsEmptyError -&gt; ShowS
+/= :: TraceStateTenantIdIsEmptyError
+-&gt; TraceStateTenantIdIsEmptyError -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679114362"><span id="local-6989586621679114367"><span id="local-6989586621679114370"><span class="annot"><span class="annottext">Int -&gt; TraceStateTenantIdIsEmptyError -&gt; ShowS
 [TraceStateTenantIdIsEmptyError] -&gt; ShowS
 TraceStateTenantIdIsEmptyError -&gt; String
+(Int -&gt; TraceStateTenantIdIsEmptyError -&gt; ShowS)
+-&gt; (TraceStateTenantIdIsEmptyError -&gt; String)
+-&gt; ([TraceStateTenantIdIsEmptyError] -&gt; ShowS)
+-&gt; Show TraceStateTenantIdIsEmptyError
 forall a.
 (Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
-showList :: [TraceStateTenantIdIsEmptyError] -&gt; ShowS
-$cshowList :: [TraceStateTenantIdIsEmptyError] -&gt; ShowS
-show :: TraceStateTenantIdIsEmptyError -&gt; String
-$cshow :: TraceStateTenantIdIsEmptyError -&gt; String
-showsPrec :: Int -&gt; TraceStateTenantIdIsEmptyError -&gt; ShowS
 $cshowsPrec :: Int -&gt; TraceStateTenantIdIsEmptyError -&gt; ShowS
+showsPrec :: Int -&gt; TraceStateTenantIdIsEmptyError -&gt; ShowS
+$cshow :: TraceStateTenantIdIsEmptyError -&gt; String
+show :: TraceStateTenantIdIsEmptyError -&gt; String
+$cshowList :: [TraceStateTenantIdIsEmptyError] -&gt; ShowS
+showList :: [TraceStateTenantIdIsEmptyError] -&gt; ShowS
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
 </span><span id="line-63"></span><span>
 </span><span id="line-64"></span><span class="hs-keyword">data</span><span> </span><span id="TraceStateTenantIdContainsInvalidCharsError"><span class="annot"><a href="OTel.API.Trace.Core.TraceState.Errors.html#TraceStateTenantIdContainsInvalidCharsError"><span class="hs-identifier hs-var">TraceStateTenantIdContainsInvalidCharsError</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="TraceStateTenantIdContainsInvalidCharsError"><span class="annot"><a href="OTel.API.Trace.Core.TraceState.Errors.html#TraceStateTenantIdContainsInvalidCharsError"><span class="hs-identifier hs-var">TraceStateTenantIdContainsInvalidCharsError</span></a></span></span><span>
@@ -195,28 +238,37 @@ $cshowsPrec :: Int -&gt; TraceStateTenantIdIsEmptyError -&gt; ShowS
 </span><a href="OTel.API.Trace.Core.TraceState.Errors.html#%24sel%3ArawValue%3ATraceStateTenantIdContainsInvalidCharsError"><span class="hs-identifier hs-var hs-var">rawValue</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
 </span><span id="line-68"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="%24sel%3AinvalidChars%3ATraceStateTenantIdContainsInvalidCharsError"><span class="annot"><span class="annottext">TraceStateTenantIdContainsInvalidCharsError -&gt; Text
 </span><a href="OTel.API.Trace.Core.TraceState.Errors.html#%24sel%3AinvalidChars%3ATraceStateTenantIdContainsInvalidCharsError"><span class="hs-identifier hs-var hs-var">invalidChars</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
-</span><span id="line-69"></span><span>  </span><span class="hs-special">}</span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">stock</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679109879"><span id="local-6989586621679109885"><span class="annot"><span class="annottext">TraceStateTenantIdContainsInvalidCharsError
+</span><span id="line-69"></span><span>  </span><span class="hs-special">}</span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">stock</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679114378"><span id="local-6989586621679114384"><span class="annot"><span class="annottext">TraceStateTenantIdContainsInvalidCharsError
 -&gt; TraceStateTenantIdContainsInvalidCharsError -&gt; Bool
+(TraceStateTenantIdContainsInvalidCharsError
+ -&gt; TraceStateTenantIdContainsInvalidCharsError -&gt; Bool)
+-&gt; (TraceStateTenantIdContainsInvalidCharsError
+    -&gt; TraceStateTenantIdContainsInvalidCharsError -&gt; Bool)
+-&gt; Eq TraceStateTenantIdContainsInvalidCharsError
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
-/= :: TraceStateTenantIdContainsInvalidCharsError
--&gt; TraceStateTenantIdContainsInvalidCharsError -&gt; Bool
-$c/= :: TraceStateTenantIdContainsInvalidCharsError
+$c== :: TraceStateTenantIdContainsInvalidCharsError
 -&gt; TraceStateTenantIdContainsInvalidCharsError -&gt; Bool
 == :: TraceStateTenantIdContainsInvalidCharsError
 -&gt; TraceStateTenantIdContainsInvalidCharsError -&gt; Bool
-$c== :: TraceStateTenantIdContainsInvalidCharsError
+$c/= :: TraceStateTenantIdContainsInvalidCharsError
 -&gt; TraceStateTenantIdContainsInvalidCharsError -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679109868"><span id="local-6989586621679109870"><span id="local-6989586621679109877"><span class="annot"><span class="annottext">Int -&gt; TraceStateTenantIdContainsInvalidCharsError -&gt; ShowS
+/= :: TraceStateTenantIdContainsInvalidCharsError
+-&gt; TraceStateTenantIdContainsInvalidCharsError -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679114387"><span id="local-6989586621679114394"><span id="local-6989586621679114397"><span class="annot"><span class="annottext">Int -&gt; TraceStateTenantIdContainsInvalidCharsError -&gt; ShowS
 [TraceStateTenantIdContainsInvalidCharsError] -&gt; ShowS
 TraceStateTenantIdContainsInvalidCharsError -&gt; String
+(Int -&gt; TraceStateTenantIdContainsInvalidCharsError -&gt; ShowS)
+-&gt; (TraceStateTenantIdContainsInvalidCharsError -&gt; String)
+-&gt; ([TraceStateTenantIdContainsInvalidCharsError] -&gt; ShowS)
+-&gt; Show TraceStateTenantIdContainsInvalidCharsError
 forall a.
 (Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
-showList :: [TraceStateTenantIdContainsInvalidCharsError] -&gt; ShowS
-$cshowList :: [TraceStateTenantIdContainsInvalidCharsError] -&gt; ShowS
-show :: TraceStateTenantIdContainsInvalidCharsError -&gt; String
-$cshow :: TraceStateTenantIdContainsInvalidCharsError -&gt; String
-showsPrec :: Int -&gt; TraceStateTenantIdContainsInvalidCharsError -&gt; ShowS
 $cshowsPrec :: Int -&gt; TraceStateTenantIdContainsInvalidCharsError -&gt; ShowS
+showsPrec :: Int -&gt; TraceStateTenantIdContainsInvalidCharsError -&gt; ShowS
+$cshow :: TraceStateTenantIdContainsInvalidCharsError -&gt; String
+show :: TraceStateTenantIdContainsInvalidCharsError -&gt; String
+$cshowList :: [TraceStateTenantIdContainsInvalidCharsError] -&gt; ShowS
+showList :: [TraceStateTenantIdContainsInvalidCharsError] -&gt; ShowS
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
 </span><span id="line-70"></span><span>
 </span><span id="line-71"></span><span class="hs-keyword">data</span><span> </span><span id="TraceStateSystemIdIsEmptyError"><span class="annot"><a href="OTel.API.Trace.Core.TraceState.Errors.html#TraceStateSystemIdIsEmptyError"><span class="hs-identifier hs-var">TraceStateSystemIdIsEmptyError</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="TraceStateSystemIdIsEmptyError"><span class="annot"><a href="OTel.API.Trace.Core.TraceState.Errors.html#TraceStateSystemIdIsEmptyError"><span class="hs-identifier hs-var">TraceStateSystemIdIsEmptyError</span></a></span></span><span>
@@ -224,28 +276,37 @@ $cshowsPrec :: Int -&gt; TraceStateTenantIdContainsInvalidCharsError -&gt; ShowS
 </span><a href="OTel.API.Trace.Core.TraceState.Errors.html#%24sel%3ArawSystemId%3ATraceStateSystemIdIsEmptyError"><span class="hs-identifier hs-var hs-var">rawSystemId</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
 </span><span id="line-73"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="%24sel%3ArawValue%3ATraceStateSystemIdIsEmptyError"><span class="annot"><span class="annottext">TraceStateSystemIdIsEmptyError -&gt; Text
 </span><a href="OTel.API.Trace.Core.TraceState.Errors.html#%24sel%3ArawValue%3ATraceStateSystemIdIsEmptyError"><span class="hs-identifier hs-var hs-var">rawValue</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
-</span><span id="line-74"></span><span>  </span><span class="hs-special">}</span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">stock</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679109859"><span id="local-6989586621679109863"><span class="annot"><span class="annottext">TraceStateSystemIdIsEmptyError
+</span><span id="line-74"></span><span>  </span><span class="hs-special">}</span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">stock</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679114403"><span id="local-6989586621679114407"><span class="annot"><span class="annottext">TraceStateSystemIdIsEmptyError
 -&gt; TraceStateSystemIdIsEmptyError -&gt; Bool
+(TraceStateSystemIdIsEmptyError
+ -&gt; TraceStateSystemIdIsEmptyError -&gt; Bool)
+-&gt; (TraceStateSystemIdIsEmptyError
+    -&gt; TraceStateSystemIdIsEmptyError -&gt; Bool)
+-&gt; Eq TraceStateSystemIdIsEmptyError
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
-/= :: TraceStateSystemIdIsEmptyError
--&gt; TraceStateSystemIdIsEmptyError -&gt; Bool
-$c/= :: TraceStateSystemIdIsEmptyError
+$c== :: TraceStateSystemIdIsEmptyError
 -&gt; TraceStateSystemIdIsEmptyError -&gt; Bool
 == :: TraceStateSystemIdIsEmptyError
 -&gt; TraceStateSystemIdIsEmptyError -&gt; Bool
-$c== :: TraceStateSystemIdIsEmptyError
+$c/= :: TraceStateSystemIdIsEmptyError
 -&gt; TraceStateSystemIdIsEmptyError -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679109850"><span id="local-6989586621679109852"><span id="local-6989586621679109857"><span class="annot"><span class="annottext">Int -&gt; TraceStateSystemIdIsEmptyError -&gt; ShowS
+/= :: TraceStateSystemIdIsEmptyError
+-&gt; TraceStateSystemIdIsEmptyError -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679114410"><span id="local-6989586621679114415"><span id="local-6989586621679114418"><span class="annot"><span class="annottext">Int -&gt; TraceStateSystemIdIsEmptyError -&gt; ShowS
 [TraceStateSystemIdIsEmptyError] -&gt; ShowS
 TraceStateSystemIdIsEmptyError -&gt; String
+(Int -&gt; TraceStateSystemIdIsEmptyError -&gt; ShowS)
+-&gt; (TraceStateSystemIdIsEmptyError -&gt; String)
+-&gt; ([TraceStateSystemIdIsEmptyError] -&gt; ShowS)
+-&gt; Show TraceStateSystemIdIsEmptyError
 forall a.
 (Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
-showList :: [TraceStateSystemIdIsEmptyError] -&gt; ShowS
-$cshowList :: [TraceStateSystemIdIsEmptyError] -&gt; ShowS
-show :: TraceStateSystemIdIsEmptyError -&gt; String
-$cshow :: TraceStateSystemIdIsEmptyError -&gt; String
-showsPrec :: Int -&gt; TraceStateSystemIdIsEmptyError -&gt; ShowS
 $cshowsPrec :: Int -&gt; TraceStateSystemIdIsEmptyError -&gt; ShowS
+showsPrec :: Int -&gt; TraceStateSystemIdIsEmptyError -&gt; ShowS
+$cshow :: TraceStateSystemIdIsEmptyError -&gt; String
+show :: TraceStateSystemIdIsEmptyError -&gt; String
+$cshowList :: [TraceStateSystemIdIsEmptyError] -&gt; ShowS
+showList :: [TraceStateSystemIdIsEmptyError] -&gt; ShowS
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
 </span><span id="line-75"></span><span>
 </span><span id="line-76"></span><span class="hs-keyword">data</span><span> </span><span id="TraceStateSystemIdContainsInvalidCharsError"><span class="annot"><a href="OTel.API.Trace.Core.TraceState.Errors.html#TraceStateSystemIdContainsInvalidCharsError"><span class="hs-identifier hs-var">TraceStateSystemIdContainsInvalidCharsError</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="TraceStateSystemIdContainsInvalidCharsError"><span class="annot"><a href="OTel.API.Trace.Core.TraceState.Errors.html#TraceStateSystemIdContainsInvalidCharsError"><span class="hs-identifier hs-var">TraceStateSystemIdContainsInvalidCharsError</span></a></span></span><span>
@@ -257,28 +318,37 @@ $cshowsPrec :: Int -&gt; TraceStateSystemIdIsEmptyError -&gt; ShowS
 </span><a href="OTel.API.Trace.Core.TraceState.Errors.html#%24sel%3ArawValue%3ATraceStateSystemIdContainsInvalidCharsError"><span class="hs-identifier hs-var hs-var">rawValue</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
 </span><span id="line-80"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="%24sel%3AinvalidChars%3ATraceStateSystemIdContainsInvalidCharsError"><span class="annot"><span class="annottext">TraceStateSystemIdContainsInvalidCharsError -&gt; Text
 </span><a href="OTel.API.Trace.Core.TraceState.Errors.html#%24sel%3AinvalidChars%3ATraceStateSystemIdContainsInvalidCharsError"><span class="hs-identifier hs-var hs-var">invalidChars</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
-</span><span id="line-81"></span><span>  </span><span class="hs-special">}</span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">stock</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679109837"><span id="local-6989586621679109843"><span class="annot"><span class="annottext">TraceStateSystemIdContainsInvalidCharsError
+</span><span id="line-81"></span><span>  </span><span class="hs-special">}</span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">stock</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679114426"><span id="local-6989586621679114432"><span class="annot"><span class="annottext">TraceStateSystemIdContainsInvalidCharsError
 -&gt; TraceStateSystemIdContainsInvalidCharsError -&gt; Bool
+(TraceStateSystemIdContainsInvalidCharsError
+ -&gt; TraceStateSystemIdContainsInvalidCharsError -&gt; Bool)
+-&gt; (TraceStateSystemIdContainsInvalidCharsError
+    -&gt; TraceStateSystemIdContainsInvalidCharsError -&gt; Bool)
+-&gt; Eq TraceStateSystemIdContainsInvalidCharsError
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
-/= :: TraceStateSystemIdContainsInvalidCharsError
--&gt; TraceStateSystemIdContainsInvalidCharsError -&gt; Bool
-$c/= :: TraceStateSystemIdContainsInvalidCharsError
+$c== :: TraceStateSystemIdContainsInvalidCharsError
 -&gt; TraceStateSystemIdContainsInvalidCharsError -&gt; Bool
 == :: TraceStateSystemIdContainsInvalidCharsError
 -&gt; TraceStateSystemIdContainsInvalidCharsError -&gt; Bool
-$c== :: TraceStateSystemIdContainsInvalidCharsError
+$c/= :: TraceStateSystemIdContainsInvalidCharsError
 -&gt; TraceStateSystemIdContainsInvalidCharsError -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679109826"><span id="local-6989586621679109828"><span id="local-6989586621679109835"><span class="annot"><span class="annottext">Int -&gt; TraceStateSystemIdContainsInvalidCharsError -&gt; ShowS
+/= :: TraceStateSystemIdContainsInvalidCharsError
+-&gt; TraceStateSystemIdContainsInvalidCharsError -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679114435"><span id="local-6989586621679114442"><span id="local-6989586621679114445"><span class="annot"><span class="annottext">Int -&gt; TraceStateSystemIdContainsInvalidCharsError -&gt; ShowS
 [TraceStateSystemIdContainsInvalidCharsError] -&gt; ShowS
 TraceStateSystemIdContainsInvalidCharsError -&gt; String
+(Int -&gt; TraceStateSystemIdContainsInvalidCharsError -&gt; ShowS)
+-&gt; (TraceStateSystemIdContainsInvalidCharsError -&gt; String)
+-&gt; ([TraceStateSystemIdContainsInvalidCharsError] -&gt; ShowS)
+-&gt; Show TraceStateSystemIdContainsInvalidCharsError
 forall a.
 (Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
-showList :: [TraceStateSystemIdContainsInvalidCharsError] -&gt; ShowS
-$cshowList :: [TraceStateSystemIdContainsInvalidCharsError] -&gt; ShowS
-show :: TraceStateSystemIdContainsInvalidCharsError -&gt; String
-$cshow :: TraceStateSystemIdContainsInvalidCharsError -&gt; String
-showsPrec :: Int -&gt; TraceStateSystemIdContainsInvalidCharsError -&gt; ShowS
 $cshowsPrec :: Int -&gt; TraceStateSystemIdContainsInvalidCharsError -&gt; ShowS
+showsPrec :: Int -&gt; TraceStateSystemIdContainsInvalidCharsError -&gt; ShowS
+$cshow :: TraceStateSystemIdContainsInvalidCharsError -&gt; String
+show :: TraceStateSystemIdContainsInvalidCharsError -&gt; String
+$cshowList :: [TraceStateSystemIdContainsInvalidCharsError] -&gt; ShowS
+showList :: [TraceStateSystemIdContainsInvalidCharsError] -&gt; ShowS
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
 </span><span id="line-82"></span><span>
 </span><span id="line-83"></span><span class="hs-keyword">data</span><span> </span><span id="TraceStateSimpleKeyTooLongError"><span class="annot"><a href="OTel.API.Trace.Core.TraceState.Errors.html#TraceStateSimpleKeyTooLongError"><span class="hs-identifier hs-var">TraceStateSimpleKeyTooLongError</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="TraceStateSimpleKeyTooLongError"><span class="annot"><a href="OTel.API.Trace.Core.TraceState.Errors.html#TraceStateSimpleKeyTooLongError"><span class="hs-identifier hs-var">TraceStateSimpleKeyTooLongError</span></a></span></span><span>
@@ -286,28 +356,37 @@ $cshowsPrec :: Int -&gt; TraceStateSystemIdContainsInvalidCharsError -&gt; ShowS
 </span><a href="OTel.API.Trace.Core.TraceState.Errors.html#%24sel%3ArawKey%3ATraceStateSimpleKeyTooLongError"><span class="hs-identifier hs-var hs-var">rawKey</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Key</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
 </span><span id="line-85"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="%24sel%3ArawValue%3ATraceStateSimpleKeyTooLongError"><span class="annot"><span class="annottext">TraceStateSimpleKeyTooLongError -&gt; Text
 </span><a href="OTel.API.Trace.Core.TraceState.Errors.html#%24sel%3ArawValue%3ATraceStateSimpleKeyTooLongError"><span class="hs-identifier hs-var hs-var">rawValue</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
-</span><span id="line-86"></span><span>  </span><span class="hs-special">}</span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">stock</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679109817"><span id="local-6989586621679109821"><span class="annot"><span class="annottext">TraceStateSimpleKeyTooLongError
+</span><span id="line-86"></span><span>  </span><span class="hs-special">}</span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">stock</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679114451"><span id="local-6989586621679114455"><span class="annot"><span class="annottext">TraceStateSimpleKeyTooLongError
 -&gt; TraceStateSimpleKeyTooLongError -&gt; Bool
+(TraceStateSimpleKeyTooLongError
+ -&gt; TraceStateSimpleKeyTooLongError -&gt; Bool)
+-&gt; (TraceStateSimpleKeyTooLongError
+    -&gt; TraceStateSimpleKeyTooLongError -&gt; Bool)
+-&gt; Eq TraceStateSimpleKeyTooLongError
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
-/= :: TraceStateSimpleKeyTooLongError
--&gt; TraceStateSimpleKeyTooLongError -&gt; Bool
-$c/= :: TraceStateSimpleKeyTooLongError
+$c== :: TraceStateSimpleKeyTooLongError
 -&gt; TraceStateSimpleKeyTooLongError -&gt; Bool
 == :: TraceStateSimpleKeyTooLongError
 -&gt; TraceStateSimpleKeyTooLongError -&gt; Bool
-$c== :: TraceStateSimpleKeyTooLongError
+$c/= :: TraceStateSimpleKeyTooLongError
 -&gt; TraceStateSimpleKeyTooLongError -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679109808"><span id="local-6989586621679109810"><span id="local-6989586621679109815"><span class="annot"><span class="annottext">Int -&gt; TraceStateSimpleKeyTooLongError -&gt; ShowS
+/= :: TraceStateSimpleKeyTooLongError
+-&gt; TraceStateSimpleKeyTooLongError -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679114458"><span id="local-6989586621679114463"><span id="local-6989586621679114466"><span class="annot"><span class="annottext">Int -&gt; TraceStateSimpleKeyTooLongError -&gt; ShowS
 [TraceStateSimpleKeyTooLongError] -&gt; ShowS
 TraceStateSimpleKeyTooLongError -&gt; String
+(Int -&gt; TraceStateSimpleKeyTooLongError -&gt; ShowS)
+-&gt; (TraceStateSimpleKeyTooLongError -&gt; String)
+-&gt; ([TraceStateSimpleKeyTooLongError] -&gt; ShowS)
+-&gt; Show TraceStateSimpleKeyTooLongError
 forall a.
 (Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
-showList :: [TraceStateSimpleKeyTooLongError] -&gt; ShowS
-$cshowList :: [TraceStateSimpleKeyTooLongError] -&gt; ShowS
-show :: TraceStateSimpleKeyTooLongError -&gt; String
-$cshow :: TraceStateSimpleKeyTooLongError -&gt; String
-showsPrec :: Int -&gt; TraceStateSimpleKeyTooLongError -&gt; ShowS
 $cshowsPrec :: Int -&gt; TraceStateSimpleKeyTooLongError -&gt; ShowS
+showsPrec :: Int -&gt; TraceStateSimpleKeyTooLongError -&gt; ShowS
+$cshow :: TraceStateSimpleKeyTooLongError -&gt; String
+show :: TraceStateSimpleKeyTooLongError -&gt; String
+$cshowList :: [TraceStateSimpleKeyTooLongError] -&gt; ShowS
+showList :: [TraceStateSimpleKeyTooLongError] -&gt; ShowS
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
 </span><span id="line-87"></span><span>
 </span><span id="line-88"></span><span class="hs-keyword">data</span><span> </span><span id="TraceStateTenantIdTooLongError"><span class="annot"><a href="OTel.API.Trace.Core.TraceState.Errors.html#TraceStateTenantIdTooLongError"><span class="hs-identifier hs-var">TraceStateTenantIdTooLongError</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="TraceStateTenantIdTooLongError"><span class="annot"><a href="OTel.API.Trace.Core.TraceState.Errors.html#TraceStateTenantIdTooLongError"><span class="hs-identifier hs-var">TraceStateTenantIdTooLongError</span></a></span></span><span>
@@ -317,28 +396,37 @@ $cshowsPrec :: Int -&gt; TraceStateSimpleKeyTooLongError -&gt; ShowS
 </span><a href="OTel.API.Trace.Core.TraceState.Errors.html#%24sel%3ArawSystemId%3ATraceStateTenantIdTooLongError"><span class="hs-identifier hs-var hs-var">rawSystemId</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
 </span><span id="line-91"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="%24sel%3ArawValue%3ATraceStateTenantIdTooLongError"><span class="annot"><span class="annottext">TraceStateTenantIdTooLongError -&gt; Text
 </span><a href="OTel.API.Trace.Core.TraceState.Errors.html#%24sel%3ArawValue%3ATraceStateTenantIdTooLongError"><span class="hs-identifier hs-var hs-var">rawValue</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
-</span><span id="line-92"></span><span>  </span><span class="hs-special">}</span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">stock</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679109797"><span id="local-6989586621679109802"><span class="annot"><span class="annottext">TraceStateTenantIdTooLongError
+</span><span id="line-92"></span><span>  </span><span class="hs-special">}</span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">stock</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679114473"><span id="local-6989586621679114478"><span class="annot"><span class="annottext">TraceStateTenantIdTooLongError
 -&gt; TraceStateTenantIdTooLongError -&gt; Bool
+(TraceStateTenantIdTooLongError
+ -&gt; TraceStateTenantIdTooLongError -&gt; Bool)
+-&gt; (TraceStateTenantIdTooLongError
+    -&gt; TraceStateTenantIdTooLongError -&gt; Bool)
+-&gt; Eq TraceStateTenantIdTooLongError
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
-/= :: TraceStateTenantIdTooLongError
--&gt; TraceStateTenantIdTooLongError -&gt; Bool
-$c/= :: TraceStateTenantIdTooLongError
+$c== :: TraceStateTenantIdTooLongError
 -&gt; TraceStateTenantIdTooLongError -&gt; Bool
 == :: TraceStateTenantIdTooLongError
 -&gt; TraceStateTenantIdTooLongError -&gt; Bool
-$c== :: TraceStateTenantIdTooLongError
+$c/= :: TraceStateTenantIdTooLongError
 -&gt; TraceStateTenantIdTooLongError -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679109787"><span id="local-6989586621679109789"><span id="local-6989586621679109795"><span class="annot"><span class="annottext">Int -&gt; TraceStateTenantIdTooLongError -&gt; ShowS
+/= :: TraceStateTenantIdTooLongError
+-&gt; TraceStateTenantIdTooLongError -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679114481"><span id="local-6989586621679114487"><span id="local-6989586621679114490"><span class="annot"><span class="annottext">Int -&gt; TraceStateTenantIdTooLongError -&gt; ShowS
 [TraceStateTenantIdTooLongError] -&gt; ShowS
 TraceStateTenantIdTooLongError -&gt; String
+(Int -&gt; TraceStateTenantIdTooLongError -&gt; ShowS)
+-&gt; (TraceStateTenantIdTooLongError -&gt; String)
+-&gt; ([TraceStateTenantIdTooLongError] -&gt; ShowS)
+-&gt; Show TraceStateTenantIdTooLongError
 forall a.
 (Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
-showList :: [TraceStateTenantIdTooLongError] -&gt; ShowS
-$cshowList :: [TraceStateTenantIdTooLongError] -&gt; ShowS
-show :: TraceStateTenantIdTooLongError -&gt; String
-$cshow :: TraceStateTenantIdTooLongError -&gt; String
-showsPrec :: Int -&gt; TraceStateTenantIdTooLongError -&gt; ShowS
 $cshowsPrec :: Int -&gt; TraceStateTenantIdTooLongError -&gt; ShowS
+showsPrec :: Int -&gt; TraceStateTenantIdTooLongError -&gt; ShowS
+$cshow :: TraceStateTenantIdTooLongError -&gt; String
+show :: TraceStateTenantIdTooLongError -&gt; String
+$cshowList :: [TraceStateTenantIdTooLongError] -&gt; ShowS
+showList :: [TraceStateTenantIdTooLongError] -&gt; ShowS
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
 </span><span id="line-93"></span><span>
 </span><span id="line-94"></span><span class="hs-keyword">data</span><span> </span><span id="TraceStateSystemIdTooLongError"><span class="annot"><a href="OTel.API.Trace.Core.TraceState.Errors.html#TraceStateSystemIdTooLongError"><span class="hs-identifier hs-var">TraceStateSystemIdTooLongError</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="TraceStateSystemIdTooLongError"><span class="annot"><a href="OTel.API.Trace.Core.TraceState.Errors.html#TraceStateSystemIdTooLongError"><span class="hs-identifier hs-var">TraceStateSystemIdTooLongError</span></a></span></span><span>
@@ -348,28 +436,37 @@ $cshowsPrec :: Int -&gt; TraceStateTenantIdTooLongError -&gt; ShowS
 </span><a href="OTel.API.Trace.Core.TraceState.Errors.html#%24sel%3ArawSystemId%3ATraceStateSystemIdTooLongError"><span class="hs-identifier hs-var hs-var">rawSystemId</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
 </span><span id="line-97"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="%24sel%3ArawValue%3ATraceStateSystemIdTooLongError"><span class="annot"><span class="annottext">TraceStateSystemIdTooLongError -&gt; Text
 </span><a href="OTel.API.Trace.Core.TraceState.Errors.html#%24sel%3ArawValue%3ATraceStateSystemIdTooLongError"><span class="hs-identifier hs-var hs-var">rawValue</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
-</span><span id="line-98"></span><span>  </span><span class="hs-special">}</span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">stock</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679109776"><span id="local-6989586621679109781"><span class="annot"><span class="annottext">TraceStateSystemIdTooLongError
+</span><span id="line-98"></span><span>  </span><span class="hs-special">}</span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">stock</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679114497"><span id="local-6989586621679114502"><span class="annot"><span class="annottext">TraceStateSystemIdTooLongError
 -&gt; TraceStateSystemIdTooLongError -&gt; Bool
+(TraceStateSystemIdTooLongError
+ -&gt; TraceStateSystemIdTooLongError -&gt; Bool)
+-&gt; (TraceStateSystemIdTooLongError
+    -&gt; TraceStateSystemIdTooLongError -&gt; Bool)
+-&gt; Eq TraceStateSystemIdTooLongError
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
-/= :: TraceStateSystemIdTooLongError
--&gt; TraceStateSystemIdTooLongError -&gt; Bool
-$c/= :: TraceStateSystemIdTooLongError
+$c== :: TraceStateSystemIdTooLongError
 -&gt; TraceStateSystemIdTooLongError -&gt; Bool
 == :: TraceStateSystemIdTooLongError
 -&gt; TraceStateSystemIdTooLongError -&gt; Bool
-$c== :: TraceStateSystemIdTooLongError
+$c/= :: TraceStateSystemIdTooLongError
 -&gt; TraceStateSystemIdTooLongError -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679109766"><span id="local-6989586621679109768"><span id="local-6989586621679109774"><span class="annot"><span class="annottext">Int -&gt; TraceStateSystemIdTooLongError -&gt; ShowS
+/= :: TraceStateSystemIdTooLongError
+-&gt; TraceStateSystemIdTooLongError -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679114505"><span id="local-6989586621679114511"><span id="local-6989586621679114514"><span class="annot"><span class="annottext">Int -&gt; TraceStateSystemIdTooLongError -&gt; ShowS
 [TraceStateSystemIdTooLongError] -&gt; ShowS
 TraceStateSystemIdTooLongError -&gt; String
+(Int -&gt; TraceStateSystemIdTooLongError -&gt; ShowS)
+-&gt; (TraceStateSystemIdTooLongError -&gt; String)
+-&gt; ([TraceStateSystemIdTooLongError] -&gt; ShowS)
+-&gt; Show TraceStateSystemIdTooLongError
 forall a.
 (Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
-showList :: [TraceStateSystemIdTooLongError] -&gt; ShowS
-$cshowList :: [TraceStateSystemIdTooLongError] -&gt; ShowS
-show :: TraceStateSystemIdTooLongError -&gt; String
-$cshow :: TraceStateSystemIdTooLongError -&gt; String
-showsPrec :: Int -&gt; TraceStateSystemIdTooLongError -&gt; ShowS
 $cshowsPrec :: Int -&gt; TraceStateSystemIdTooLongError -&gt; ShowS
+showsPrec :: Int -&gt; TraceStateSystemIdTooLongError -&gt; ShowS
+$cshow :: TraceStateSystemIdTooLongError -&gt; String
+show :: TraceStateSystemIdTooLongError -&gt; String
+$cshowList :: [TraceStateSystemIdTooLongError] -&gt; ShowS
+showList :: [TraceStateSystemIdTooLongError] -&gt; ShowS
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
 </span><span id="line-99"></span><span>
 </span><span id="line-100"></span><span class="hs-keyword">data</span><span> </span><span id="TraceStateKeyTypeUnknownError"><span class="annot"><a href="OTel.API.Trace.Core.TraceState.Errors.html#TraceStateKeyTypeUnknownError"><span class="hs-identifier hs-var">TraceStateKeyTypeUnknownError</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="TraceStateKeyTypeUnknownError"><span class="annot"><a href="OTel.API.Trace.Core.TraceState.Errors.html#TraceStateKeyTypeUnknownError"><span class="hs-identifier hs-var">TraceStateKeyTypeUnknownError</span></a></span></span><span>
@@ -377,50 +474,68 @@ $cshowsPrec :: Int -&gt; TraceStateSystemIdTooLongError -&gt; ShowS
 </span><a href="OTel.API.Trace.Core.TraceState.Errors.html#%24sel%3ArawKey%3ATraceStateKeyTypeUnknownError"><span class="hs-identifier hs-var hs-var">rawKey</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Key</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
 </span><span id="line-102"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="%24sel%3ArawValue%3ATraceStateKeyTypeUnknownError"><span class="annot"><span class="annottext">TraceStateKeyTypeUnknownError -&gt; Text
 </span><a href="OTel.API.Trace.Core.TraceState.Errors.html#%24sel%3ArawValue%3ATraceStateKeyTypeUnknownError"><span class="hs-identifier hs-var hs-var">rawValue</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
-</span><span id="line-103"></span><span>  </span><span class="hs-special">}</span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">stock</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679109757"><span id="local-6989586621679109761"><span class="annot"><span class="annottext">TraceStateKeyTypeUnknownError
+</span><span id="line-103"></span><span>  </span><span class="hs-special">}</span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">stock</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679114520"><span id="local-6989586621679114524"><span class="annot"><span class="annottext">TraceStateKeyTypeUnknownError
 -&gt; TraceStateKeyTypeUnknownError -&gt; Bool
+(TraceStateKeyTypeUnknownError
+ -&gt; TraceStateKeyTypeUnknownError -&gt; Bool)
+-&gt; (TraceStateKeyTypeUnknownError
+    -&gt; TraceStateKeyTypeUnknownError -&gt; Bool)
+-&gt; Eq TraceStateKeyTypeUnknownError
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
-/= :: TraceStateKeyTypeUnknownError
--&gt; TraceStateKeyTypeUnknownError -&gt; Bool
-$c/= :: TraceStateKeyTypeUnknownError
+$c== :: TraceStateKeyTypeUnknownError
 -&gt; TraceStateKeyTypeUnknownError -&gt; Bool
 == :: TraceStateKeyTypeUnknownError
 -&gt; TraceStateKeyTypeUnknownError -&gt; Bool
-$c== :: TraceStateKeyTypeUnknownError
+$c/= :: TraceStateKeyTypeUnknownError
 -&gt; TraceStateKeyTypeUnknownError -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679109748"><span id="local-6989586621679109750"><span id="local-6989586621679109755"><span class="annot"><span class="annottext">Int -&gt; TraceStateKeyTypeUnknownError -&gt; ShowS
+/= :: TraceStateKeyTypeUnknownError
+-&gt; TraceStateKeyTypeUnknownError -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679114527"><span id="local-6989586621679114532"><span id="local-6989586621679114535"><span class="annot"><span class="annottext">Int -&gt; TraceStateKeyTypeUnknownError -&gt; ShowS
 [TraceStateKeyTypeUnknownError] -&gt; ShowS
 TraceStateKeyTypeUnknownError -&gt; String
+(Int -&gt; TraceStateKeyTypeUnknownError -&gt; ShowS)
+-&gt; (TraceStateKeyTypeUnknownError -&gt; String)
+-&gt; ([TraceStateKeyTypeUnknownError] -&gt; ShowS)
+-&gt; Show TraceStateKeyTypeUnknownError
 forall a.
 (Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
-showList :: [TraceStateKeyTypeUnknownError] -&gt; ShowS
-$cshowList :: [TraceStateKeyTypeUnknownError] -&gt; ShowS
-show :: TraceStateKeyTypeUnknownError -&gt; String
-$cshow :: TraceStateKeyTypeUnknownError -&gt; String
-showsPrec :: Int -&gt; TraceStateKeyTypeUnknownError -&gt; ShowS
 $cshowsPrec :: Int -&gt; TraceStateKeyTypeUnknownError -&gt; ShowS
+showsPrec :: Int -&gt; TraceStateKeyTypeUnknownError -&gt; ShowS
+$cshow :: TraceStateKeyTypeUnknownError -&gt; String
+show :: TraceStateKeyTypeUnknownError -&gt; String
+$cshowList :: [TraceStateKeyTypeUnknownError] -&gt; ShowS
+showList :: [TraceStateKeyTypeUnknownError] -&gt; ShowS
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
 </span><span id="line-104"></span><span>
 </span><span id="line-105"></span><span class="hs-keyword">newtype</span><span> </span><span id="TraceStateValueIsEmptyError"><span class="annot"><a href="OTel.API.Trace.Core.TraceState.Errors.html#TraceStateValueIsEmptyError"><span class="hs-identifier hs-var">TraceStateValueIsEmptyError</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="TraceStateValueIsEmptyError"><span class="annot"><a href="OTel.API.Trace.Core.TraceState.Errors.html#TraceStateValueIsEmptyError"><span class="hs-identifier hs-var">TraceStateValueIsEmptyError</span></a></span></span><span>
 </span><span id="line-106"></span><span>  </span><span class="hs-special">{</span><span> </span><span id="%24sel%3ArawKey%3ATraceStateValueIsEmptyError"><span class="annot"><span class="annottext">TraceStateValueIsEmptyError -&gt; Key Text
 </span><a href="OTel.API.Trace.Core.TraceState.Errors.html#%24sel%3ArawKey%3ATraceStateValueIsEmptyError"><span class="hs-identifier hs-var hs-var">rawKey</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Key</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
-</span><span id="line-107"></span><span>  </span><span class="hs-special">}</span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">stock</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679109741"><span id="local-6989586621679109744"><span class="annot"><span class="annottext">TraceStateValueIsEmptyError -&gt; TraceStateValueIsEmptyError -&gt; Bool
+</span><span id="line-107"></span><span>  </span><span class="hs-special">}</span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">stock</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679114540"><span id="local-6989586621679114543"><span class="annot"><span class="annottext">TraceStateValueIsEmptyError -&gt; TraceStateValueIsEmptyError -&gt; Bool
+(TraceStateValueIsEmptyError
+ -&gt; TraceStateValueIsEmptyError -&gt; Bool)
+-&gt; (TraceStateValueIsEmptyError
+    -&gt; TraceStateValueIsEmptyError -&gt; Bool)
+-&gt; Eq TraceStateValueIsEmptyError
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
-/= :: TraceStateValueIsEmptyError -&gt; TraceStateValueIsEmptyError -&gt; Bool
-$c/= :: TraceStateValueIsEmptyError -&gt; TraceStateValueIsEmptyError -&gt; Bool
-== :: TraceStateValueIsEmptyError -&gt; TraceStateValueIsEmptyError -&gt; Bool
 $c== :: TraceStateValueIsEmptyError -&gt; TraceStateValueIsEmptyError -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679109733"><span id="local-6989586621679109735"><span id="local-6989586621679109739"><span class="annot"><span class="annottext">Int -&gt; TraceStateValueIsEmptyError -&gt; ShowS
+== :: TraceStateValueIsEmptyError -&gt; TraceStateValueIsEmptyError -&gt; Bool
+$c/= :: TraceStateValueIsEmptyError -&gt; TraceStateValueIsEmptyError -&gt; Bool
+/= :: TraceStateValueIsEmptyError -&gt; TraceStateValueIsEmptyError -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679114546"><span id="local-6989586621679114550"><span id="local-6989586621679114553"><span class="annot"><span class="annottext">Int -&gt; TraceStateValueIsEmptyError -&gt; ShowS
 [TraceStateValueIsEmptyError] -&gt; ShowS
 TraceStateValueIsEmptyError -&gt; String
+(Int -&gt; TraceStateValueIsEmptyError -&gt; ShowS)
+-&gt; (TraceStateValueIsEmptyError -&gt; String)
+-&gt; ([TraceStateValueIsEmptyError] -&gt; ShowS)
+-&gt; Show TraceStateValueIsEmptyError
 forall a.
 (Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
-showList :: [TraceStateValueIsEmptyError] -&gt; ShowS
-$cshowList :: [TraceStateValueIsEmptyError] -&gt; ShowS
-show :: TraceStateValueIsEmptyError -&gt; String
-$cshow :: TraceStateValueIsEmptyError -&gt; String
-showsPrec :: Int -&gt; TraceStateValueIsEmptyError -&gt; ShowS
 $cshowsPrec :: Int -&gt; TraceStateValueIsEmptyError -&gt; ShowS
+showsPrec :: Int -&gt; TraceStateValueIsEmptyError -&gt; ShowS
+$cshow :: TraceStateValueIsEmptyError -&gt; String
+show :: TraceStateValueIsEmptyError -&gt; String
+$cshowList :: [TraceStateValueIsEmptyError] -&gt; ShowS
+showList :: [TraceStateValueIsEmptyError] -&gt; ShowS
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
 </span><span id="line-108"></span><span>
 </span><span id="line-109"></span><span class="hs-keyword">data</span><span> </span><span id="TraceStateValueContainsInvalidCharsError"><span class="annot"><a href="OTel.API.Trace.Core.TraceState.Errors.html#TraceStateValueContainsInvalidCharsError"><span class="hs-identifier hs-var">TraceStateValueContainsInvalidCharsError</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="TraceStateValueContainsInvalidCharsError"><span class="annot"><a href="OTel.API.Trace.Core.TraceState.Errors.html#TraceStateValueContainsInvalidCharsError"><span class="hs-identifier hs-var">TraceStateValueContainsInvalidCharsError</span></a></span></span><span>
@@ -430,28 +545,37 @@ $cshowsPrec :: Int -&gt; TraceStateValueIsEmptyError -&gt; ShowS
 </span><a href="OTel.API.Trace.Core.TraceState.Errors.html#%24sel%3ArawValue%3ATraceStateValueContainsInvalidCharsError"><span class="hs-identifier hs-var hs-var">rawValue</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
 </span><span id="line-112"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="%24sel%3AinvalidChars%3ATraceStateValueContainsInvalidCharsError"><span class="annot"><span class="annottext">TraceStateValueContainsInvalidCharsError -&gt; Text
 </span><a href="OTel.API.Trace.Core.TraceState.Errors.html#%24sel%3AinvalidChars%3ATraceStateValueContainsInvalidCharsError"><span class="hs-identifier hs-var hs-var">invalidChars</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
-</span><span id="line-113"></span><span>  </span><span class="hs-special">}</span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">stock</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679109722"><span id="local-6989586621679109727"><span class="annot"><span class="annottext">TraceStateValueContainsInvalidCharsError
+</span><span id="line-113"></span><span>  </span><span class="hs-special">}</span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">stock</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679114560"><span id="local-6989586621679114565"><span class="annot"><span class="annottext">TraceStateValueContainsInvalidCharsError
 -&gt; TraceStateValueContainsInvalidCharsError -&gt; Bool
+(TraceStateValueContainsInvalidCharsError
+ -&gt; TraceStateValueContainsInvalidCharsError -&gt; Bool)
+-&gt; (TraceStateValueContainsInvalidCharsError
+    -&gt; TraceStateValueContainsInvalidCharsError -&gt; Bool)
+-&gt; Eq TraceStateValueContainsInvalidCharsError
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
-/= :: TraceStateValueContainsInvalidCharsError
--&gt; TraceStateValueContainsInvalidCharsError -&gt; Bool
-$c/= :: TraceStateValueContainsInvalidCharsError
+$c== :: TraceStateValueContainsInvalidCharsError
 -&gt; TraceStateValueContainsInvalidCharsError -&gt; Bool
 == :: TraceStateValueContainsInvalidCharsError
 -&gt; TraceStateValueContainsInvalidCharsError -&gt; Bool
-$c== :: TraceStateValueContainsInvalidCharsError
+$c/= :: TraceStateValueContainsInvalidCharsError
 -&gt; TraceStateValueContainsInvalidCharsError -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679109712"><span id="local-6989586621679109714"><span id="local-6989586621679109720"><span class="annot"><span class="annottext">Int -&gt; TraceStateValueContainsInvalidCharsError -&gt; ShowS
+/= :: TraceStateValueContainsInvalidCharsError
+-&gt; TraceStateValueContainsInvalidCharsError -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679114568"><span id="local-6989586621679114574"><span id="local-6989586621679114577"><span class="annot"><span class="annottext">Int -&gt; TraceStateValueContainsInvalidCharsError -&gt; ShowS
 [TraceStateValueContainsInvalidCharsError] -&gt; ShowS
 TraceStateValueContainsInvalidCharsError -&gt; String
+(Int -&gt; TraceStateValueContainsInvalidCharsError -&gt; ShowS)
+-&gt; (TraceStateValueContainsInvalidCharsError -&gt; String)
+-&gt; ([TraceStateValueContainsInvalidCharsError] -&gt; ShowS)
+-&gt; Show TraceStateValueContainsInvalidCharsError
 forall a.
 (Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
-showList :: [TraceStateValueContainsInvalidCharsError] -&gt; ShowS
-$cshowList :: [TraceStateValueContainsInvalidCharsError] -&gt; ShowS
-show :: TraceStateValueContainsInvalidCharsError -&gt; String
-$cshow :: TraceStateValueContainsInvalidCharsError -&gt; String
-showsPrec :: Int -&gt; TraceStateValueContainsInvalidCharsError -&gt; ShowS
 $cshowsPrec :: Int -&gt; TraceStateValueContainsInvalidCharsError -&gt; ShowS
+showsPrec :: Int -&gt; TraceStateValueContainsInvalidCharsError -&gt; ShowS
+$cshow :: TraceStateValueContainsInvalidCharsError -&gt; String
+show :: TraceStateValueContainsInvalidCharsError -&gt; String
+$cshowList :: [TraceStateValueContainsInvalidCharsError] -&gt; ShowS
+showList :: [TraceStateValueContainsInvalidCharsError] -&gt; ShowS
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
 </span><span id="line-114"></span><span>
 </span><span id="line-115"></span><span class="hs-keyword">data</span><span> </span><span id="TraceStateValueTooLongError"><span class="annot"><a href="OTel.API.Trace.Core.TraceState.Errors.html#TraceStateValueTooLongError"><span class="hs-identifier hs-var">TraceStateValueTooLongError</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="TraceStateValueTooLongError"><span class="annot"><a href="OTel.API.Trace.Core.TraceState.Errors.html#TraceStateValueTooLongError"><span class="hs-identifier hs-var">TraceStateValueTooLongError</span></a></span></span><span>
@@ -459,22 +583,31 @@ $cshowsPrec :: Int -&gt; TraceStateValueContainsInvalidCharsError -&gt; ShowS
 </span><a href="OTel.API.Trace.Core.TraceState.Errors.html#%24sel%3ArawKey%3ATraceStateValueTooLongError"><span class="hs-identifier hs-var hs-var">rawKey</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Key</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
 </span><span id="line-117"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="%24sel%3ArawValue%3ATraceStateValueTooLongError"><span class="annot"><span class="annottext">TraceStateValueTooLongError -&gt; Text
 </span><a href="OTel.API.Trace.Core.TraceState.Errors.html#%24sel%3ArawValue%3ATraceStateValueTooLongError"><span class="hs-identifier hs-var hs-var">rawValue</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
-</span><span id="line-118"></span><span>  </span><span class="hs-special">}</span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">stock</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679109703"><span id="local-6989586621679109707"><span class="annot"><span class="annottext">TraceStateValueTooLongError -&gt; TraceStateValueTooLongError -&gt; Bool
+</span><span id="line-118"></span><span>  </span><span class="hs-special">}</span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">stock</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679114583"><span id="local-6989586621679114587"><span class="annot"><span class="annottext">TraceStateValueTooLongError -&gt; TraceStateValueTooLongError -&gt; Bool
+(TraceStateValueTooLongError
+ -&gt; TraceStateValueTooLongError -&gt; Bool)
+-&gt; (TraceStateValueTooLongError
+    -&gt; TraceStateValueTooLongError -&gt; Bool)
+-&gt; Eq TraceStateValueTooLongError
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
-/= :: TraceStateValueTooLongError -&gt; TraceStateValueTooLongError -&gt; Bool
-$c/= :: TraceStateValueTooLongError -&gt; TraceStateValueTooLongError -&gt; Bool
-== :: TraceStateValueTooLongError -&gt; TraceStateValueTooLongError -&gt; Bool
 $c== :: TraceStateValueTooLongError -&gt; TraceStateValueTooLongError -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679109694"><span id="local-6989586621679109696"><span id="local-6989586621679109701"><span class="annot"><span class="annottext">Int -&gt; TraceStateValueTooLongError -&gt; ShowS
+== :: TraceStateValueTooLongError -&gt; TraceStateValueTooLongError -&gt; Bool
+$c/= :: TraceStateValueTooLongError -&gt; TraceStateValueTooLongError -&gt; Bool
+/= :: TraceStateValueTooLongError -&gt; TraceStateValueTooLongError -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679114590"><span id="local-6989586621679114595"><span id="local-6989586621679114598"><span class="annot"><span class="annottext">Int -&gt; TraceStateValueTooLongError -&gt; ShowS
 [TraceStateValueTooLongError] -&gt; ShowS
 TraceStateValueTooLongError -&gt; String
+(Int -&gt; TraceStateValueTooLongError -&gt; ShowS)
+-&gt; (TraceStateValueTooLongError -&gt; String)
+-&gt; ([TraceStateValueTooLongError] -&gt; ShowS)
+-&gt; Show TraceStateValueTooLongError
 forall a.
 (Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
-showList :: [TraceStateValueTooLongError] -&gt; ShowS
-$cshowList :: [TraceStateValueTooLongError] -&gt; ShowS
-show :: TraceStateValueTooLongError -&gt; String
-$cshow :: TraceStateValueTooLongError -&gt; String
-showsPrec :: Int -&gt; TraceStateValueTooLongError -&gt; ShowS
 $cshowsPrec :: Int -&gt; TraceStateValueTooLongError -&gt; ShowS
+showsPrec :: Int -&gt; TraceStateValueTooLongError -&gt; ShowS
+$cshow :: TraceStateValueTooLongError -&gt; String
+show :: TraceStateValueTooLongError -&gt; String
+$cshowList :: [TraceStateValueTooLongError] -&gt; ShowS
+showList :: [TraceStateValueTooLongError] -&gt; ShowS
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
 </span><span id="line-119"></span></pre></body></html>
