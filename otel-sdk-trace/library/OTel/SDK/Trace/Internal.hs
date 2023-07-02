@@ -1,4 +1,5 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE GADTs #-}
@@ -117,7 +118,12 @@ module OTel.SDK.Trace.Internal
   , redactHttpExceptionHeaders
   ) where
 
+#if MIN_VERSION_base(4,18,0)
+import Control.Applicative (Alternative(..))
+#else
 import Control.Applicative (Alternative(..), Applicative(..))
+#endif
+
 import Control.Concurrent (MVar, newMVar, withMVar)
 import Control.Concurrent.Async (Async, waitCatch, withAsync)
 import Control.Concurrent.STM (STM, atomically, newTVarIO, readTVar, writeTVar)

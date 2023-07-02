@@ -1,0 +1,14 @@
+resolver: lts-21.1
+packages:
+- ../otel-api-baggage
+- ../otel-api-baggage-core
+- ../otel-api-common
+- ../otel-api-context
+- ../otel-api-context-core
+- ../otel-api-trace
+- ../otel-api-trace-core
+- ../otel-instrumentation-persistent
+- ../otel-instrumentation-wai
+- ../otel-sdk-otlp-bindings
+- ../otel-sdk-resource-core
+- ../otel-sdk-trace

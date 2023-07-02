@@ -1,5 +1,6 @@
 {-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE DerivingVia #-}
@@ -13,6 +14,7 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 module OTel.API.Trace.Core.Internal
   ( -- * Disclaimer
@@ -124,7 +126,12 @@ module OTel.API.Trace.Core.Internal
   , SpanStatus(..)
   ) where
 
+#if MIN_VERSION_base(4,18,0)
+import Control.Applicative ()
+#else
 import Control.Applicative (Applicative(..))
+#endif
+
 import Control.Exception (SomeException(..))
 import Control.Monad.Catch (MonadThrow, throwM)
 import Control.Monad.IO.Class (MonadIO(liftIO))

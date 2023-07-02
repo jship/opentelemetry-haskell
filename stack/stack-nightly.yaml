@@ -1,4 +1,4 @@
-resolver: lts-20.18
+resolver: nightly-2023-07-01
 packages:
 - ../otel-api-baggage
 - ../otel-api-baggage-core
@@ -7,8 +7,21 @@ packages:
 - ../otel-api-context-core
 - ../otel-api-trace
 - ../otel-api-trace-core
-- ../otel-instrumentation-persistent
+# Remove after https://github.com/haskell/aeson/issues/1048 is resolved
+# - ../otel-instrumentation-persistent
 - ../otel-instrumentation-wai
 - ../otel-sdk-otlp-bindings
 - ../otel-sdk-resource-core
 - ../otel-sdk-trace
+extra-deps:
+# These are temporary to ensure we can build against aeson-2.2.
+- monad-logger-aeson-0.4.1.0
+- aeson-2.2.0.0
+- attoparsec-aeson-2.2.0.0
+- integer-conversion-0.1
+- text-iso8601-0.1
+flags:
+  otel-api-common:
+    aeson-pre-2-2: false
+  otel-sdk-trace:
+    aeson-pre-2-2: false

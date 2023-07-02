@@ -1,5 +1,6 @@
 {-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE DisambiguateRecordFields #-}
@@ -8,6 +9,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
 module OTel.API.Baggage.Core.Internal
   ( -- * Disclaimer
     -- $disclaimer
@@ -36,7 +38,12 @@ module OTel.API.Baggage.Core.Internal
   , isRFC7230VCHARChar
   ) where
 
+#if MIN_VERSION_base(4,18,0)
+import Control.Applicative ()
+#else
 import Control.Applicative (Applicative(..))
+#endif
+
 import Control.Exception.Safe (MonadThrow, throwM)
 import Control.Monad.IO.Class (MonadIO(liftIO))
 import Control.Monad.IO.Unlift (MonadUnliftIO(withRunInIO))
