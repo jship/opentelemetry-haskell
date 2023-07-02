@@ -6,6 +6,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -86,12 +87,32 @@ newtype TracingT m a = TracingT
       , MonadBaggage -- @otel-api-baggage-core@
       ) via (ReaderT TracingBackend m)
     deriving
-      ( MonadTrans -- @base@
-      , MonadTransControl -- @monad-control@
+      ( MonadTransControl -- @monad-control@
       ) via (ReaderT TracingBackend)
     deriving
       ( Semigroup, Monoid -- @base@
       ) via (Ap (ReaderT TracingBackend m) a)
+
+-- On GHC 9.6.2/transformers-0.6.0.1, including this 'MonadTrans' instance
+-- in the cleaner way above, e.g.:
+--
+--   deriving
+--     ( MonadTrans -- @transformers@
+--     , MonadTransControl -- @monad-control@
+--     ) via (ReaderT TracingBackend)
+--
+-- produces a redundant constraint warning:
+--
+-- error: [GHC-30606] [-Wredundant-constraints, Werror=redundant-constraints]
+--       • Redundant constraint: Monad m
+--       • When deriving the instance for (MonadTrans TracingT)
+--      |
+--   75 |       ( MonadTrans -- @transformers@
+--      |         ^^^^^^^^^^
+--
+-- Strangely, doing the same style of deriving but using @-XStandaloneDeriving@
+-- does not produce this warning.
+deriving via (ReaderT TracingBackend) instance MonadTrans TracingT
 
 instance (MonadReader r m) => MonadReader r (TracingT m) where
   ask = lift ask

@@ -17,7 +17,7 @@ import Control.Monad.Logger.Aeson
   ( LogLevel(..), Message(..), ToLogStr(toLogStr), (.=), Loc, LogSource, LogStr, fromLogStr
   )
 import Control.Monad.Logger.Aeson.Internal (SeriesElem(..))
-import Data.Aeson ((.:), (.:?), Value, json', withObject)
+import Data.Aeson ((.:), (.:?), Value, withObject)
 import Data.Aeson.KeyMap (KeyMap)
 import Data.Aeson.Types (Parser, parse)
 import Data.Bifunctor (Bifunctor(..))
@@ -431,7 +431,7 @@ parsePairs = \case
 
 runAesonParser :: (Value -> Parser a) -> ByteString -> Maybe a
 runAesonParser parser =
-  Aeson.Parser.decodeStrictWith json' (parse parser)
+  Aeson.Parser.decodeStrictWith Aeson.Parser.json' (parse parser)
 
 withDummyServer :: forall a . (Port -> IO a) -> IO a
 withDummyServer = testWithApplication $ pure dummyServer

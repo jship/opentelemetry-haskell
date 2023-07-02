@@ -26,10 +26,16 @@ ghc-options:
 - -Wincomplete-uni-patterns
 - -Wredundant-constraints
 
+flags:
+  aeson-pre-2-2:
+    description: Build with aeson <2.2
+    manual: false
+    default: true
+
 library:
+  source-dirs: library
   dependencies:
   - async
-  - aeson
   - base >=4.11.1.0 && <5
   - bytestring
   - containers
@@ -43,8 +49,15 @@ library:
   - unliftio-core
   - unordered-containers
   - vector
-  source-dirs: library
   when:
+  - condition: flag(aeson-pre-2-2)
+    then:
+      dependencies:
+      - aeson <2.2.0.0
+    else:
+      dependencies:
+      - aeson >=2.2.0.0
+      - attoparsec-aeson >=2.2.0.0
   - condition: false
     other-modules: Paths_otel_api_common
 
@@ -55,7 +68,6 @@ tests:
     build-tools:
     - hspec-discover
     dependencies:
-    - aeson
     - base
     - hspec
     - monad-logger-aeson
@@ -64,5 +76,13 @@ tests:
     - stm
     - text
     when:
+    - condition: flag(aeson-pre-2-2)
+      then:
+        dependencies:
+        - aeson <2.2.0.0
+      else:
+        dependencies:
+        - aeson >=2.2.0.0
+        - attoparsec-aeson >=2.2.0.0
     - condition: false
       other-modules: Paths_otel_api_common

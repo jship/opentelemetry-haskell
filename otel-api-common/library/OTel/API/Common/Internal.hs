@@ -16,6 +16,7 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 module OTel.API.Common.Internal
   ( -- * Disclaimer
@@ -1267,7 +1268,7 @@ toBufferedLog loc logSource logLevel logStr =
 
   runAesonParser :: (Value -> Parser a) -> ByteString -> Maybe a
   runAesonParser parser =
-    Aeson.Parser.decodeStrictWith Aeson.json' (Aeson.Types.parse parser)
+    Aeson.Parser.decodeStrictWith Aeson.Parser.json' (Aeson.Types.parse parser)
 
 data BufferedLogAgg = BufferedLogAgg
   { bufferedLogAggCount :: Int
