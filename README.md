@@ -1,15 +1,7 @@
-# [opentelemetry-haskell][]
+# opentelemetry-haskell
 
-[![Build badge][]][build]
+This project has moved from GitHub to
+[SourceHut](https://git.sr.ht/~jship/opentelemetry-haskell).
 
-## Synopsis
-
-Haskell implementation of the OpenTelemetry [specification][].
-
-🚧 Not yet ready for public consumption - the libraries are very much
-subject to change! 🚧
-
-[opentelemetry-haskell]: https://github.com/jship/opentelemetry-haskell
-[Build badge]: https://github.com/jship/opentelemetry-haskell/workflows/CI/badge.svg
-[build]: https://github.com/jship/opentelemetry-haskell/actions
-[specification]: https://opentelemetry.io/docs/reference/specification/overview/
+[Give Up GitHub](https://GiveUpGitHub.org) may be a useful resource if
+you are also interested in moving away from GitHub.
